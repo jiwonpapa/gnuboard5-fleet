@@ -1,0 +1,55 @@
+{
+  "$schema": "./governance/schemas/product-manifest.schema.json",
+  "schema_version": 1,
+  "product_id": "g5-fleet",
+  "product_name": "그누보드5 통합 관리자",
+  "deployment_model": "self_hosted_server",
+  "editions": {
+    "fleet_core": {
+      "pricing": "free",
+      "source_license": "decision_required",
+      "required": true,
+      "capabilities": [
+        "multisite_registry",
+        "gnuboard_admin",
+        "site_health",
+        "ssh_sftp",
+        "audit_evidence",
+        "telegram_notifications",
+        "web_push_notifications",
+        "tablet_pwa"
+      ]
+    },
+    "commerce": {
+      "pricing": "paid",
+      "delivery": "optional_plugin",
+      "source_license": "commercial",
+      "required": false,
+      "implementation_location": "separate_private_repository",
+      "contract_location": "plugins/commerce-sdk"
+    }
+  },
+  "provider_scope": {
+    "admin_non_shop": "active",
+    "board": "provider_retained_consumer_deferred",
+    "shop": "provider_retained_commerce_consumer"
+  },
+  "contract_baseline": {
+    "openapi_operations": 312,
+    "openapi_operation_keys_sha256": "ff22a5d1649c9bf81317726f9561b7e1886ebda11b99833628eb9676989f8c62",
+    "active_operations": 189,
+    "admin_non_shop_operations": 184,
+    "bootstrap_operations": 5,
+    "protected_board_operations": 26,
+    "shop_provider_operations": 26
+  },
+  "notification_baseline": {
+    "channels": ["telegram", "web_push"],
+    "enabled_by_default": false,
+    "external_delivery_in_routine_tests": false
+  },
+  "tablet_strategy": {
+    "initial_delivery": "responsive_pwa",
+    "optional_native_wrapper": "tauri_mobile"
+  }
+}

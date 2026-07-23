@@ -1,0 +1,39 @@
+# G5 Fleet
+
+그누보드5 여러 사이트를 한 서버에서 관리하기 위한 self-hosted 통합 관리자입니다.
+
+현재 저장소는 기존 PHP REST API와 Rust/Tauri 관리자의 clean revision을 공개용 sanitized snapshot으로 통합한 마이그레이션 기준선입니다. 원본 private 전체 이력, 과거 `output/` 증적, 현재 `api/`와 어긋난 PHP `api.zip`, Markdown에서 재생성되는 Rust `specs/docs.db`는 공개 이력에 포함하지 않습니다. 서버판은 이 기준선 위에서 Axum BFF, React PWA, 사이트별 세션 격리, 알림 outbox를 추가합니다.
+
+## 제품 구성
+
+- Fleet Core: 무료 사용 정책의 멀티사이트 관리, 비쇼핑몰 관리자 기능, SSH/SFTP, 감사 증적, Telegram/Web Push 알림
+- Commerce: 주문·결제·배송·재고·문의·리뷰·매출을 제공하는 선택형 유료 플러그인
+- PHP Connector: 각 G5 사이트에 소유자 승인 후 별도 설치하는 REST API
+- Desktop: 기존 Tauri 제품을 보존하는 호환 제품
+- Tablet: 서버판 React PWA를 1차 배포 대상으로 사용하고, 필요할 때 Tauri mobile wrapper를 추가
+
+무료 사용 정책은 오픈소스 라이선스를 뜻하지 않습니다. 루트 라이선스는 아직 확정되지 않았으며 `LICENSES.md`가 현재 경계를 설명합니다.
+
+## 검증
+
+```bash
+make doctor
+make bootstrap  # 최초 1회: upstream + PHP/Composer + Bun/Cargo/Python 의존성 준비
+make check
+```
+
+이미 upstream checkout이 준비되어 있으면 `make prepare`만 실행합니다. 이 온라인 준비 단계는 검증된 G5 원본과 현재 clean destination의 PHP connector를 `.cache/composed/gnuboard5-php`에 새로 합성하고 Composer 잠금 의존성을 설치합니다. 이어서 Bun frozen lock, Cargo locked fetch, 격리 Python venv와 정확히 고정된 PyYAML을 준비합니다. 매번 stale Python/runtime 증적을 폐기하고 새 manifest를 기록합니다.
+
+`make check`는 네트워크나 의존성 설치를 수행하지 않습니다. prepared manifest, G5 commit/tree/ref, connector subtree, Composer vendor, Bun local bins, Cargo offline metadata, Python/PyYAML fingerprint가 하나라도 누락되거나 달라지면 실패합니다. 그 뒤 합성 runtime의 실제 `adm/`·`install/`·`vendor/`를 입력으로 PHP docs-check와 Rust child static audit를 실행하며, Cargo와 Composer 네트워크를 차단하고 `bun x --no-install`만 허용합니다. OpenAPI 해시는 tracked connector 원본과 동일해야 합니다.
+
+따라서 `make check`는 외부 서비스나 GitHub Actions 없이 이관 이력, 필수 소스 폐쇄, OpenAPI 312개, 활성 관리자 소비 189개, 일반 게시판 26개, 관리자 Shop 26개를 검증합니다. 소스 또는 lock이 바뀌면 먼저 commit한 뒤 `make prepare`로 prepared runtime을 갱신해야 합니다.
+
+`migration.secret_history_hygiene`는 필수 로컬 게이트입니다. 현재 tracked 파일과 모든 reachable Git 이력의 blob을 자격 증명·고위험 개인정보 패턴으로 검사하고, 이력에 `output/`, `connectors/gnuboard5-php/output/`, `products/admin-desktop/output/`가 한 번이라도 등장하면 실패합니다. 예외는 [`governance/SECRET_HISTORY_POLICY.json`](governance/SECRET_HISTORY_POLICY.json)의 값 SHA-256, 패턴 ID, 경로 glob이 모두 일치하는 명시적 범위에서만 허용하며 원문 비밀값은 기록하지 않습니다. 설치된 Gitleaks로 추가 전수검사를 할 때는 `make secret-scan`을 실행합니다.
+
+## 최신 G5 기준
+
+그누보드5 원본은 저장소에 복사하지 않습니다. `UPSTREAMS.lock.json`이 공식 안정 태그 `v5.6.32`의 commit·tree·파일 해시를 고정하며, 로컬 E2E는 `.cache/upstream/`에 검증된 checkout을 준비합니다.
+
+`make upstream-audit`는 origin의 잠금 태그를 다시 fetch해 tag↔commit을 검증합니다. 네트워크 없이 준비된 checkout만 재검증할 때는 `make upstream-verify`를 사용합니다.
+
+G5 원본과 Composer `vendor/`는 Git에 넣지 않습니다. 재현 입력은 `UPSTREAMS.lock.json`, 현재 destination connector subtree, `composer.lock`이며, 준비 결과와 fingerprint manifest는 모두 ignored `.cache/composed/`에만 존재합니다.

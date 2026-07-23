@@ -1,0 +1,35 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Exact contract and migration object hashes are evidence, not credentials"
+targetRules = ["generic-api-key"]
+regexTarget = "line"
+regexes = [
+  '''"(?:(?:expected|openapi)_)?operation_keys_sha256"\s*:\s*"[0-9a-f]{64}"''',
+  '''"php-rest-api"\s*:\s*"[0-9a-f]{40}"''',
+]
+
+[[allowlists]]
+description = "Explicit PHP unit-test-only JWT fixture"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''(^|/)tests/Support/BuildsDomainServices\.php$''']
+regexes = ['''TEST_JWT_SECRET\s*=\s*'test-jwt-secret-[0-9-]+';''']
+
+[[allowlists]]
+description = "Excluded generated-artifact SHA-256 evidence in migration audit code"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''(^|/)tools/audit/g5audit\.py$''']
+regexes = ['''"(?:api\.zip|specs/docs\.db)"\s*:\s*"[0-9a-f]{64}"''']
+
+[[allowlists]]
+description = "Excluded generated-artifact SHA-256 evidence in migration provenance"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''(^|/)MIGRATION_PROVENANCE\.json$''']
+regexes = ['''"sha256"\s*:\s*"[0-9a-f]{64}"''']

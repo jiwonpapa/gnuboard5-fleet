@@ -1,0 +1,31 @@
+schema_version = 1
+
+[[areas]]
+id = "php-provider"
+paths = ["connectors/gnuboard5-php/**"]
+required_reviews = ["contract", "security"]
+
+[[areas]]
+id = "desktop-origin"
+paths = ["products/admin-desktop/**"]
+required_reviews = ["consumer"]
+
+[[areas]]
+id = "server-application"
+paths = ["apps/admin-server/**", "crates/**"]
+required_reviews = ["architecture", "security"]
+
+[[areas]]
+id = "web-client"
+paths = ["apps/admin-web/**"]
+required_reviews = ["consumer", "security"]
+
+[[areas]]
+id = "audit-governance"
+paths = ["tools/audit/**", "governance/**", "AUDIT_MANIFEST.json"]
+required_reviews = ["audit"]
+
+[[areas]]
+id = "infra-release"
+paths = ["infra/**", "tools/upstream/**", "UPSTREAMS.lock.json"]
+required_reviews = ["operations", "security"]

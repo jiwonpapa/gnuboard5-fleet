@@ -1,0 +1,94 @@
+{
+  "$schema": "./governance/schemas/audit-manifest.schema.json",
+  "schema_version": 1,
+  "audit_contract_id": "G5_FLEET_PIPELINE_AUDIT_V1",
+  "hard_fail_states": [
+    "missing",
+    "failed",
+    "blocked_required",
+    "skipped_required",
+    "stale",
+    "scanner_zero",
+    "artifact_mismatch"
+  ],
+  "profiles": {
+    "scaffold": {
+      "proof_level": "SCAFFOLD_PASS",
+      "required_checks": [
+        "repository.destination_state",
+        "governance.schemas",
+        "governance.constitution",
+        "governance.product_manifest",
+        "migration.provenance",
+        "upstream.lock"
+      ]
+    },
+    "migration_static": {
+      "proof_level": "MIGRATION_STATIC_PASS",
+      "inherits": "scaffold",
+      "required_checks": [
+        "migration.history",
+        "migration.secret_history_hygiene",
+        "migration.source_closure",
+        "runtime.composed_provider",
+        "runtime.consumer_dependencies",
+        "php.contract_inventory",
+        "rust.consumer_scope",
+        "commerce.provider_retention",
+        "product.notification_boundary"
+      ]
+    },
+    "server_static": {
+      "proof_level": "SERVER_STATIC_PASS",
+      "inherits": "migration_static",
+      "required_checks": [
+        "server.route_registry",
+        "web.transport_registry",
+        "web.field_consumption",
+        "security.site_context",
+        "security.csrf",
+        "security.ssrf",
+        "notification.telegram_contract",
+        "notification.web_push_contract",
+        "commerce.core_isolation"
+      ]
+    },
+    "local": {
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "inherits": "server_static",
+      "required_checks": [
+        "compose.gnuboard_5_6_32",
+        "runtime.provider_identity",
+        "runtime.server_browser_e2e",
+        "runtime.mutation_readback_cleanup",
+        "notification.telegram_fake_delivery",
+        "notification.web_push_fake_delivery"
+      ]
+    },
+    "package": {
+      "proof_level": "PACKAGE_PASS",
+      "inherits": "local",
+      "required_checks": [
+        "package.server_image",
+        "package.php_connector",
+        "package.checksums",
+        "package.sbom",
+        "upgrade.backup_restore",
+        "upgrade.rollback"
+      ]
+    },
+    "staging": {
+      "proof_level": "STAGING_PASS",
+      "inherits": "package",
+      "required_checks": [
+        "staging.provider_identity",
+        "staging.deploy_smoke",
+        "staging.rollback_rehearsal"
+      ]
+    }
+  },
+  "optional_live_checks": [
+    "notification.telegram_live_delivery",
+    "notification.web_push_live_delivery"
+  ]
+}

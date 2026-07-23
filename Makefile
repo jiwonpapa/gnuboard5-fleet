@@ -1,0 +1,82 @@
+PYTHON ?= python3
+ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+AUDIT_VENV := $(ROOT)/.cache/runtime/python-audit
+AUDIT_PYTHON := $(AUDIT_VENV)/bin/python
+AUDIT_PATH := $(AUDIT_VENV)/bin:$(PATH)
+export PYTHONDONTWRITEBYTECODE := 1
+
+.NOTPARALLEL: bootstrap prepare check
+.PHONY: doctor bootstrap prepare check test-audit test-upstream test-runtime runtime-prepare runtime-verify consumer-prepare consumer-verify audit-scaffold audit-migration upstream-sync upstream-audit upstream-verify secret-scan
+
+doctor:
+	@cd "$(ROOT)" && command -v git >/dev/null
+	@cd "$(ROOT)" && command -v $(PYTHON) >/dev/null
+	@cd "$(ROOT)" && command -v bash >/dev/null
+	@cd "$(ROOT)" && command -v php >/dev/null
+	@cd "$(ROOT)" && command -v composer >/dev/null
+	@cd "$(ROOT)" && command -v rg >/dev/null
+	@cd "$(ROOT)" && command -v bun >/dev/null
+	@cd "$(ROOT)" && command -v cargo >/dev/null
+	@cd "$(ROOT)" && command -v rustfmt >/dev/null
+	@cd "$(ROOT)" && command -v node >/dev/null
+	@cd "$(ROOT)" && $(PYTHON) --version
+	@cd "$(ROOT)" && git --version
+
+test-audit:
+	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s tools/audit/tests -p 'test_*.py'
+
+test-upstream:
+	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s tools/upstream/tests -p 'test_*.py'
+
+test-runtime:
+	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s tools/runtime/tests -p 'test_*.py'
+
+runtime-prepare:
+	cd "$(ROOT)" && $(PYTHON) tools/runtime/compose_gnuboard.py
+
+runtime-verify:
+	cd "$(ROOT)" && $(PYTHON) tools/runtime/compose_gnuboard.py --verify-only
+
+consumer-prepare:
+	cd "$(ROOT)" && $(PYTHON) tools/runtime/prepare_consumers.py prepare --python "$(PYTHON)"
+
+consumer-verify:
+	cd "$(ROOT)" && $(PYTHON) tools/runtime/prepare_consumers.py verify --python "$(PYTHON)"
+
+bootstrap:
+	+$(MAKE) upstream-sync
+	+$(MAKE) prepare
+
+prepare:
+	+$(MAKE) upstream-verify
+	+$(MAKE) runtime-prepare
+	+$(MAKE) consumer-prepare
+
+audit-scaffold:
+	cd "$(ROOT)" && $(PYTHON) tools/audit/g5audit.py --profile scaffold
+
+audit-migration:
+	cd "$(ROOT)" && test -x "$(AUDIT_PYTHON)"
+	cd "$(ROOT)" && PATH="$(AUDIT_PATH)" CARGO_NET_OFFLINE=true COMPOSER_DISABLE_NETWORK=1 "$(AUDIT_PYTHON)" tools/audit/g5audit.py --profile migration_static
+
+check:
+	+$(MAKE) doctor
+	+$(MAKE) test-audit
+	+$(MAKE) test-upstream
+	+$(MAKE) test-runtime
+	+$(MAKE) runtime-verify
+	+$(MAKE) consumer-verify
+	+$(MAKE) audit-migration
+
+secret-scan:
+	@cd "$(ROOT)" && command -v gitleaks >/dev/null
+	cd "$(ROOT)" && gitleaks git . --redact=100 --log-opts=--all
+
+upstream-sync:
+	cd "$(ROOT)" && $(PYTHON) tools/upstream/sync_gnuboard.py
+
+upstream-audit:
+	cd "$(ROOT)" && $(PYTHON) tools/upstream/sync_gnuboard.py
+
+upstream-verify:
+	cd "$(ROOT)" && $(PYTHON) tools/upstream/sync_gnuboard.py --verify-only

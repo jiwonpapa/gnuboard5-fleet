@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g5-fleet.local/schemas/migration-provenance.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema_version", "migration_id", "status", "destination", "policy", "sources", "upstream_lock", "import_commits"],
+  "properties": {
+    "$schema": {"const": "./governance/schemas/migration-provenance.schema.json"},
+    "schema_version": {"const": 1},
+    "migration_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["observed_not_locked", "locked", "imported", "verified"]},
+    "destination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "remote"],
+      "properties": {
+        "branch": {"type": "string", "minLength": 1},
+        "remote": {"type": "string", "minLength": 1}
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["direction", "history_strategy", "require_clean_sources", "legacy_evidence_certifies_destination", "private_source_history_reachable", "sensitive_outputs_imported"],
+      "properties": {
+        "direction": {"const": "one_way"},
+        "history_strategy": {"const": "sanitized_snapshot"},
+        "require_clean_sources": {"const": true},
+        "legacy_evidence_certifies_destination": {"const": false},
+        "private_source_history_reachable": {"const": false},
+        "sensitive_outputs_imported": {"const": false}
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "role", "origin", "source_branch", "source_commit", "source_tree", "original_source_commit", "original_source_tree", "original_repository_visibility", "excluded_output_files", "excluded_generated_artifacts", "clean", "destination_prefix"],
+        "properties": {
+          "id": {"enum": ["php-rest-api", "rust-admin"]},
+          "role": {"type": "string", "minLength": 1},
+          "origin": {"type": "string", "minLength": 1},
+          "source_branch": {"type": "string", "minLength": 1},
+          "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "source_tree": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "original_source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "original_source_tree": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "original_repository_visibility": {"const": "private_at_migration"},
+          "excluded_output_files": {"type": "integer", "minimum": 1},
+          "excluded_generated_artifacts": {
+            "type": "array",
+            "maxItems": 16,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "sha256", "reason"],
+              "properties": {
+                "path": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+                "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                "reason": {"type": "string", "minLength": 12, "maxLength": 240}
+              }
+            }
+          },
+          "clean": {"const": true},
+          "destination_prefix": {"enum": ["connectors/gnuboard5-php", "products/admin-desktop"]}
+        }
+      }
+    },
+    "upstream_lock": {"const": "UPSTREAMS.lock.json"},
+    "import_commits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["php-rest-api", "rust-admin"],
+      "properties": {
+        "php-rest-api": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "rust-admin": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+      }
+    }
+  }
+}

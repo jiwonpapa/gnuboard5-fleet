@@ -1,0 +1,36 @@
+{
+  "$schema": "./governance/schemas/upstream-lock.schema.json",
+  "schema_version": 1,
+  "policy": {
+    "floating_refs_forbidden": true,
+    "require_tag_commit_tree": true,
+    "require_version_probe": true,
+    "require_license_fingerprint": true,
+    "update_gate": "make upstream-audit"
+  },
+  "upstreams": [
+    {
+      "id": "gnuboard5",
+      "kind": "git",
+      "role": "integration_runtime",
+      "repository": "https://github.com/gnuboard/gnuboard5.git",
+      "version": "5.6.32",
+      "ref": "refs/tags/v5.6.32",
+      "commit": "1f48f6bd804b3243f13f97e2a16f394101912ef9",
+      "tree": "5e4b7ee60f06f5ac04def093b8ebc5788176eeca",
+      "upstream_signature": "unsigned",
+      "release_url": "https://github.com/gnuboard/gnuboard5/releases/tag/v5.6.32",
+      "version_probe": {
+        "path": "version.php",
+        "expected": "5.6.32",
+        "sha256": "337acb76f72d463cf2bbc6629f05f7572c7ac52ceffa44988c0332f6c81dd20a"
+      },
+      "license": {
+        "path": "LICENSE.txt",
+        "declared": "GNU LGPL 2.1",
+        "sha256": "034afec589ec9fe5a10d61ae40e1404b83bf7c6fed9d53cfec0bc2a58bf7aad9",
+        "review_status": "pending"
+      }
+    }
+  ]
+}

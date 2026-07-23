@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g5-fleet.local/schemas/upstream-lock.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema_version", "policy", "upstreams"],
+  "properties": {
+    "$schema": {"const": "./governance/schemas/upstream-lock.schema.json"},
+    "schema_version": {"const": 1},
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["floating_refs_forbidden", "require_tag_commit_tree", "require_version_probe", "require_license_fingerprint", "update_gate"],
+      "properties": {
+        "floating_refs_forbidden": {"const": true},
+        "require_tag_commit_tree": {"const": true},
+        "require_version_probe": {"const": true},
+        "require_license_fingerprint": {"const": true},
+        "update_gate": {"const": "make upstream-audit"}
+      }
+    },
+    "upstreams": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "role", "repository", "version", "ref", "commit", "tree", "upstream_signature", "release_url", "version_probe", "license"],
+        "properties": {
+          "id": {"const": "gnuboard5"},
+          "kind": {"const": "git"},
+          "role": {"const": "integration_runtime"},
+          "repository": {"const": "https://github.com/gnuboard/gnuboard5.git"},
+          "version": {"const": "5.6.32"},
+          "ref": {"const": "refs/tags/v5.6.32"},
+          "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "tree": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "upstream_signature": {"enum": ["verified", "unsigned"]},
+          "release_url": {"const": "https://github.com/gnuboard/gnuboard5/releases/tag/v5.6.32"},
+          "version_probe": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "expected", "sha256"],
+            "properties": {
+              "path": {"const": "version.php"},
+              "expected": {"const": "5.6.32"},
+              "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+            }
+          },
+          "license": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "declared", "sha256", "review_status"],
+            "properties": {
+              "path": {"const": "LICENSE.txt"},
+              "declared": {"const": "GNU LGPL 2.1"},
+              "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "review_status": {"enum": ["pending", "approved", "rejected"]}
+            }
+          }
+        }
+      }
+    }
+  }
+}

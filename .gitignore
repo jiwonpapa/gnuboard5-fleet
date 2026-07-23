@@ -1,0 +1,17 @@
+.DS_Store
+.cache/
+.env
+.env.*
+!.env.example
+output/
+target/
+node_modules/
+vendor/
+dist/
+build/
+coverage/
+*.log
+*.pid
+*.tmp
+__pycache__/
+*.pyc

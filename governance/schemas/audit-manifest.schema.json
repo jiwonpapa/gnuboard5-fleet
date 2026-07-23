@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://g5-fleet.local/schemas/audit-manifest.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema_version", "audit_contract_id", "hard_fail_states", "profiles", "optional_live_checks"],
+  "properties": {
+    "$schema": {"const": "./governance/schemas/audit-manifest.schema.json"},
+    "schema_version": {"const": 1},
+    "audit_contract_id": {"const": "G5_FLEET_PIPELINE_AUDIT_V1"},
+    "hard_fail_states": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": {"enum": ["missing", "failed", "blocked_required", "skipped_required", "stale", "scanner_zero", "artifact_mismatch"]}
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scaffold", "migration_static", "server_static", "local", "package", "staging"],
+      "properties": {
+        "scaffold": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["proof_level", "required_checks"],
+          "properties": {
+            "proof_level": {"const": "SCAFFOLD_PASS"},
+            "required_checks": {"const": ["repository.destination_state", "governance.schemas", "governance.constitution", "governance.product_manifest", "migration.provenance", "upstream.lock"]}
+          }
+        },
+        "migration_static": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["proof_level", "inherits", "required_checks"],
+          "properties": {
+            "proof_level": {"const": "MIGRATION_STATIC_PASS"},
+            "inherits": {"const": "scaffold"},
+            "required_checks": {"const": ["migration.history", "migration.secret_history_hygiene", "migration.source_closure", "runtime.composed_provider", "runtime.consumer_dependencies", "php.contract_inventory", "rust.consumer_scope", "commerce.provider_retention", "product.notification_boundary"]}
+          }
+        },
+        "server_static": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["proof_level", "inherits", "required_checks"],
+          "properties": {
+            "proof_level": {"const": "SERVER_STATIC_PASS"},
+            "inherits": {"const": "migration_static"},
+            "required_checks": {"const": ["server.route_registry", "web.transport_registry", "web.field_consumption", "security.site_context", "security.csrf", "security.ssrf", "notification.telegram_contract", "notification.web_push_contract", "commerce.core_isolation"]}
+          }
+        },
+        "local": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["proof_level", "inherits", "required_checks"],
+          "properties": {
+            "proof_level": {"const": "LOCAL_RUNTIME_PASS"},
+            "inherits": {"const": "server_static"},
+            "required_checks": {"const": ["compose.gnuboard_5_6_32", "runtime.provider_identity", "runtime.server_browser_e2e", "runtime.mutation_readback_cleanup", "notification.telegram_fake_delivery", "notification.web_push_fake_delivery"]}
+          }
+        },
+        "package": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["proof_level", "inherits", "required_checks"],
+          "properties": {
+            "proof_level": {"const": "PACKAGE_PASS"},
+            "inherits": {"const": "local"},
+            "required_checks": {"const": ["package.server_image", "package.php_connector", "package.checksums", "package.sbom", "upgrade.backup_restore", "upgrade.rollback"]}
+          }
+        },
+        "staging": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["proof_level", "inherits", "required_checks"],
+          "properties": {
+            "proof_level": {"const": "STAGING_PASS"},
+            "inherits": {"const": "package"},
+            "required_checks": {"const": ["staging.provider_identity", "staging.deploy_smoke", "staging.rollback_rehearsal"]}
+          }
+        }
+      }
+    },
+    "optional_live_checks": {"const": ["notification.telegram_live_delivery", "notification.web_push_live_delivery"]}
+  }
+}
