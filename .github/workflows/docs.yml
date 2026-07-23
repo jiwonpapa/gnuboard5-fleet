@@ -1,0 +1,43 @@
+name: Document Audit
+
+on:
+  pull_request:
+    paths:
+      - "AGENTS.md"
+      - "README.md"
+      - ".agent/**"
+      - "specs/**"
+      - "scripts/check_document_*.py"
+      - "scripts/check-doc-governance.sh"
+      - "scripts/doc-index.py"
+      - "scripts/run_document_audit.sh"
+      - ".github/workflows/docs.yml"
+  push:
+    branches: [main]
+    paths:
+      - "AGENTS.md"
+      - "README.md"
+      - ".agent/**"
+      - "specs/**"
+      - "scripts/check_document_*.py"
+      - "scripts/check-doc-governance.sh"
+      - "scripts/doc-index.py"
+      - "scripts/run_document_audit.sh"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  document-audit:
+    name: Rust Document Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run document audit
+        run: bash scripts/run_document_audit.sh

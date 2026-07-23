@@ -1,0 +1,19 @@
+.site-ssh-xterm .xterm {
+  height: 100%;
+}
+
+.site-ssh-xterm .xterm-viewport {
+  background: #000000 !important;
+  overflow-y: auto !important;
+  scrollbar-width: none;
+}
+
+.site-ssh-xterm .xterm-viewport::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.site-ssh-xterm .xterm-screen,
+.site-ssh-xterm .xterm-screen canvas {
+  background: #000000;
+}

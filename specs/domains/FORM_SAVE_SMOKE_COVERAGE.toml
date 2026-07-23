@@ -1,0 +1,221 @@
+version = 1
+
+[[features]]
+feature = "boards"
+path = "g5-admin/src/features/boards"
+transport = "remote"
+priority = "p2"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/boards/AdminBoardsPage.test.tsx"]
+supporting_tests = ["g5-admin/src/features/boards/admin-boards-form.test.ts"]
+save_symbols = ["createAdminBoard", "updateAdminBoard"]
+next_action = "add board create/update page save smoke and unsupported 404 handling"
+
+[[features]]
+feature = "board-groups"
+path = "g5-admin/src/features/board-groups"
+transport = "remote"
+priority = "p2"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/board-groups/AdminBoardGroupsPage.test.tsx"]
+supporting_tests = ["g5-admin/src/features/board-groups/admin-board-groups-form.test.ts"]
+save_symbols = ["createAdminBoardGroup", "updateAdminBoardGroup"]
+next_action = "add group create/update page save smoke and unsupported 404 handling"
+
+[[features]]
+feature = "config"
+path = "g5-admin/src/features/config"
+transport = "remote"
+priority = "p1"
+target_level = "page_save_404_validation"
+page_tests = [
+  "g5-admin/src/features/config/AdminConfigPage.test.tsx",
+  "g5-admin/src/features/config/AdminConfigPage.validation.test.tsx",
+]
+supporting_tests = ["g5-admin/src/features/config/admin-config-form.test.ts"]
+save_symbols = ["updateAdminConfig"]
+next_action = "add config page save smoke around diff-only save and unsupported 404"
+
+[[features]]
+feature = "contents"
+path = "g5-admin/src/features/contents"
+transport = "remote"
+priority = "p2"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/contents/AdminContentsPage.test.tsx"]
+supporting_tests = ["g5-admin/src/features/contents/admin-contents-form.test.ts"]
+save_symbols = ["createAdminContent", "updateAdminContent"]
+next_action = "add content create/update page save smoke and unsupported 404 handling"
+
+[[features]]
+feature = "faqs"
+path = "g5-admin/src/features/faqs"
+transport = "remote"
+priority = "p2"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/faqs/AdminFaqsPage.test.tsx"]
+supporting_tests = ["g5-admin/src/features/faqs/admin-faqs-form.test.ts"]
+save_symbols = ["createAdminFaqMaster", "updateAdminFaqMaster", "createAdminFaq", "updateAdminFaq"]
+next_action = "add FAQ master/item page save smoke and unsupported 404 handling"
+
+[[features]]
+feature = "layouts"
+path = "g5-admin/src/features/layouts"
+transport = "remote"
+priority = "p1"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/layouts/AdminLayoutsPage.test.tsx"]
+supporting_tests = []
+save_symbols = ["saveAdminLayout", "updateAdminLayoutWidget"]
+next_action = "add layout save/widget update page smoke and unsupported 404 handling"
+
+[[features]]
+feature = "mails"
+path = "g5-admin/src/features/mails"
+transport = "remote"
+priority = "p1"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/mails/AdminMailsPage.test.tsx"]
+supporting_tests = ["g5-admin/src/features/mails/admin-mails-form.test.ts"]
+save_symbols = ["createAdminMailTemplate", "updateAdminMailTemplate", "sendAdminMail"]
+next_action = "add mail template/save-send page smoke and unsupported 404 handling"
+
+[[features]]
+feature = "members"
+path = "g5-admin/src/features/members"
+transport = "remote"
+priority = "p1"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/members/AdminMembersPage.test.tsx"]
+supporting_tests = [
+  "g5-admin/src/features/members/MemberDetailCard.test.tsx",
+  "g5-admin/src/features/members/admin-members-form.test.ts",
+]
+save_symbols = ["updateAdminMember", "updateAdminMemberLevel"]
+next_action = "add member detail route save smoke and unsupported 404 handling around profile/level edits"
+
+[[features]]
+feature = "menus"
+path = "g5-admin/src/features/menus"
+transport = "remote"
+priority = "p2"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/menus/AdminMenusPage.test.tsx"]
+supporting_tests = ["g5-admin/src/features/menus/admin-menus-form.test.ts"]
+save_symbols = ["createAdminMenu", "updateAdminMenu"]
+next_action = "add menu create/update page save smoke and unsupported 404 handling"
+
+[[features]]
+feature = "points"
+path = "g5-admin/src/features/points"
+transport = "remote"
+priority = "p1"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/points/AdminPointsPage.test.tsx"]
+supporting_tests = ["g5-admin/src/features/points/admin-points-form.test.ts"]
+save_symbols = ["grantAdminPoint", "deductAdminPoint", "expireAdminPoints"]
+next_action = "add point action page save smoke and unsupported 404 handling"
+
+[[features]]
+feature = "polls"
+path = "g5-admin/src/features/polls"
+transport = "remote"
+priority = "p2"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/polls/AdminPollsPage.test.tsx"]
+supporting_tests = ["g5-admin/src/features/polls/admin-polls-form.test.ts"]
+save_symbols = ["createAdminPoll", "updateAdminPoll"]
+next_action = "add poll create/update page save smoke and unsupported 404 handling"
+
+[[features]]
+feature = "popups"
+path = "g5-admin/src/features/popups"
+transport = "remote"
+priority = "p2"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/popups/AdminPopupsPage.test.tsx"]
+supporting_tests = ["g5-admin/src/features/popups/admin-popups-form.test.ts"]
+save_symbols = ["createAdminPopup", "updateAdminPopup"]
+next_action = "add popup create/update page save smoke and unsupported 404 handling"
+
+[[features]]
+feature = "security"
+path = "g5-admin/src/features/security"
+transport = "local"
+priority = "p1"
+target_level = "page_save_validation"
+page_tests = ["g5-admin/src/features/security/SecuritySettingsPage.test.tsx"]
+supporting_tests = []
+save_symbols = [
+  "updateIdleTimeout",
+  "changePassword",
+  "enableTotp",
+  "disableTotp",
+  "startTotpEnrollment",
+]
+next_action = "add idle-timeout or password/TOTP page save smoke with direct mutation assertion"
+
+[[features]]
+feature = "system"
+path = "g5-admin/src/features/system"
+transport = "remote"
+priority = "p1"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/system/AdminSmsConfigPage.test.tsx"]
+supporting_tests = ["g5-admin/src/features/system/admin-sms-config-form.test.ts"]
+save_symbols = ["updateAdminSmsConfig"]
+next_action = "add SMS config page save smoke to pair existing 404 evidence with success path"
+
+[[features]]
+feature = "theme"
+path = "g5-admin/src/features/theme"
+transport = "remote"
+priority = "p1"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/theme/AdminThemePage.test.tsx"]
+supporting_tests = ["g5-admin/src/features/theme/admin-theme-form.test.ts"]
+save_symbols = ["updateAdminThemeConfig"]
+next_action = "add theme selection save smoke and unsupported 404 handling"
+
+[[features]]
+feature = "sms-contacts"
+path = "g5-admin/src/features/sms-contacts"
+transport = "remote"
+priority = "p1"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/sms-contacts/AdminSmsContactsPage.test.tsx"]
+supporting_tests = ["g5-admin/src/features/sms-contacts/admin-sms-contacts-form.test.ts"]
+save_symbols = [
+  "createAdminSmsContactGroup",
+  "updateAdminSmsContactGroup",
+  "createAdminSmsContact",
+  "updateAdminSmsContact",
+]
+next_action = "add contact/group page save smoke and unsupported 404 handling"
+
+[[features]]
+feature = "sms-messages"
+path = "g5-admin/src/features/sms-messages"
+transport = "remote"
+priority = "p1"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/sms-messages/AdminSmsMessagesPage.test.tsx"]
+supporting_tests = ["g5-admin/src/features/sms-messages/admin-sms-messages-form.test.ts"]
+save_symbols = ["sendAdminSmsMessage"]
+next_action = "add SMS send page save smoke and unsupported 404 handling"
+
+[[features]]
+feature = "sms-templates"
+path = "g5-admin/src/features/sms-templates"
+transport = "remote"
+priority = "p1"
+target_level = "page_save_404_validation"
+page_tests = ["g5-admin/src/features/sms-templates/AdminSmsTemplatesPage.test.tsx"]
+supporting_tests = ["g5-admin/src/features/sms-templates/admin-sms-templates-form.test.ts"]
+save_symbols = [
+  "createAdminSmsTemplateGroup",
+  "updateAdminSmsTemplateGroup",
+  "createAdminSmsTemplate",
+  "updateAdminSmsTemplate",
+]
+next_action = "add template/group page save smoke and unsupported 404 handling"

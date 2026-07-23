@@ -1,0 +1,8 @@
+[package]
+name = "g5-admin-runtime-types"
+version = "0.1.0"
+edition = "2021"
+license = "LicenseRef-Proprietary"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }

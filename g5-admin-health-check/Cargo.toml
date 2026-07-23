@@ -1,0 +1,15 @@
+[package]
+name = "g5-admin-health-check"
+version = "0.1.0"
+edition = "2021"
+license = "LicenseRef-Proprietary"
+
+[dependencies]
+g5-admin-error-contract = { path = "../g5-admin-error-contract" }
+reqwest = { version = "0.13", features = ["native-tls"], default-features = false }
+thiserror = "2"
+tokio = { version = "1", features = ["time"] }
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["io-util", "macros", "net", "rt", "time"] }

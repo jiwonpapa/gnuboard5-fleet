@@ -1,0 +1,17 @@
+version = 1
+
+# Active waivers only. Remove the entry once the debt is gone.
+# Required fields:
+# id, audit, severity, rule, path, owner, reason, introduced_on, expires_on, removal_criteria
+#
+# [[waivers]]
+# id = "W-2026-001"
+# audit = "structure"
+# severity = "warning"
+# rule = "root_orchestrator_growth"
+# path = "g5-admin/src/features/layout/navigation.ts"
+# owner = "rust-admin"
+# reason = "navigation manifest generation split is scheduled in T2-187"
+# introduced_on = "2026-03-13"
+# expires_on = "2026-03-27"
+# removal_criteria = "replace manual navigation manifest with generated source"

@@ -1,0 +1,14 @@
+[package]
+name = "g5-admin-error-contract"
+version = "0.1.0"
+edition = "2021"
+license = "LicenseRef-Proprietary"
+
+[features]
+default = []
+ts-bindings = ["dep:ts-rs"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ts-rs = { version = "12", optional = true }

@@ -1,0 +1,269 @@
+{
+  "schema": "gnuboard5.rust.live-domain-certification-registry/v1",
+  "audit_id": "API_PIPELINE_AUDIT_V1",
+  "expected_domain_count": 17,
+  "policy": {
+    "allow_external_delivery": false,
+    "require_readback_after_mutation": true,
+    "require_cleanup_after_mutation": true,
+    "require_current_run_artifact": true,
+    "allowed_modes": [
+      "reversible_entity",
+      "reversible_snapshot",
+      "reversible_ledger",
+      "optional_reversible_entity",
+      "optional_reversible_snapshot",
+      "read_only_external_guard"
+    ]
+  },
+  "domains": [
+    {
+      "domain": "groups",
+      "mode": "reversible_entity",
+      "depends_on": [],
+      "operations": {
+        "baseline": ["adminListBoardGroups"],
+        "setup": [],
+        "mutate": ["adminCreateBoardGroup", "adminUpdateBoardGroup"],
+        "readback": ["adminGetBoardGroup"],
+        "cleanup": ["adminDeleteBoardGroup"],
+        "unavailable_probe": []
+      },
+      "excluded_irreversible_operations": []
+    },
+    {
+      "domain": "boards",
+      "mode": "reversible_entity",
+      "depends_on": ["groups"],
+      "operations": {
+        "baseline": ["adminListBoards", "adminListBoardGroups"],
+        "setup": ["adminCreateBoardGroup"],
+        "mutate": ["adminCreateBoard", "adminUpdateBoard"],
+        "readback": ["adminGetBoard"],
+        "cleanup": ["adminDeleteBoard", "adminDeleteBoardGroup"],
+        "unavailable_probe": []
+      },
+      "excluded_irreversible_operations": ["adminDeleteNewPosts"]
+    },
+    {
+      "domain": "config",
+      "mode": "reversible_snapshot",
+      "depends_on": [],
+      "operations": {
+        "baseline": ["adminGetConfig"],
+        "setup": [],
+        "mutate": ["adminUpdateConfig"],
+        "readback": ["adminGetConfig"],
+        "cleanup": ["adminUpdateConfig", "adminGetConfig"],
+        "unavailable_probe": []
+      },
+      "excluded_irreversible_operations": []
+    },
+    {
+      "domain": "contents",
+      "mode": "reversible_entity",
+      "depends_on": [],
+      "operations": {
+        "baseline": ["adminListContents"],
+        "setup": [],
+        "mutate": ["adminCreateContent", "adminUpdateContent"],
+        "readback": ["adminGetContent"],
+        "cleanup": ["adminDeleteContent"],
+        "unavailable_probe": []
+      },
+      "excluded_irreversible_operations": []
+    },
+    {
+      "domain": "faq-masters",
+      "mode": "reversible_entity",
+      "depends_on": [],
+      "operations": {
+        "baseline": ["adminListFaqMasters"],
+        "setup": [],
+        "mutate": ["adminCreateFaqMaster", "adminUpdateFaqMaster"],
+        "readback": ["adminGetFaqMaster"],
+        "cleanup": ["adminDeleteFaqMaster"],
+        "unavailable_probe": []
+      },
+      "excluded_irreversible_operations": []
+    },
+    {
+      "domain": "faqs",
+      "mode": "reversible_entity",
+      "depends_on": ["faq-masters"],
+      "operations": {
+        "baseline": ["adminListFaqs", "adminListFaqMasters"],
+        "setup": ["adminCreateFaqMaster"],
+        "mutate": ["adminCreateFaq", "adminUpdateFaq"],
+        "readback": ["adminGetFaq"],
+        "cleanup": ["adminDeleteFaq", "adminDeleteFaqMaster"],
+        "unavailable_probe": []
+      },
+      "excluded_irreversible_operations": []
+    },
+    {
+      "domain": "mails",
+      "mode": "reversible_entity",
+      "depends_on": [],
+      "operations": {
+        "baseline": ["adminListMails"],
+        "setup": [],
+        "mutate": ["adminCreateMailTemplate", "adminUpdateMailTemplate"],
+        "readback": ["adminGetMail"],
+        "cleanup": ["adminDeleteMail"],
+        "unavailable_probe": []
+      },
+      "excluded_irreversible_operations": [
+        "adminSendMail",
+        "adminSendTestMail",
+        "adminCreateMailTest",
+        "adminSystemSendMemberMail",
+        "adminSystemSendMailTest"
+      ]
+    },
+    {
+      "domain": "members",
+      "mode": "reversible_snapshot",
+      "depends_on": [],
+      "operations": {
+        "baseline": ["adminListMembers", "adminGetMember"],
+        "setup": [],
+        "mutate": ["adminUpdateMember"],
+        "readback": ["adminGetMember"],
+        "cleanup": ["adminUpdateMember", "adminGetMember"],
+        "unavailable_probe": []
+      },
+      "excluded_irreversible_operations": ["adminDeleteMember"]
+    },
+    {
+      "domain": "menus",
+      "mode": "reversible_entity",
+      "depends_on": [],
+      "operations": {
+        "baseline": ["adminListMenus"],
+        "setup": [],
+        "mutate": ["adminCreateMenu", "adminUpdateMenu"],
+        "readback": ["adminGetMenu"],
+        "cleanup": ["adminDeleteMenu"],
+        "unavailable_probe": []
+      },
+      "excluded_irreversible_operations": []
+    },
+    {
+      "domain": "points",
+      "mode": "reversible_ledger",
+      "depends_on": ["members"],
+      "operations": {
+        "baseline": ["adminPointSummary", "adminListPoints"],
+        "setup": [],
+        "mutate": ["adminCreatePointAction"],
+        "readback": ["adminPointSummary", "adminListPoints"],
+        "cleanup": ["adminDeletePoints", "adminPointSummary"],
+        "unavailable_probe": []
+      },
+      "excluded_irreversible_operations": ["adminExpirePoints"]
+    },
+    {
+      "domain": "polls",
+      "mode": "reversible_entity",
+      "depends_on": [],
+      "operations": {
+        "baseline": ["adminListPolls"],
+        "setup": [],
+        "mutate": ["adminCreatePoll", "adminUpdatePoll"],
+        "readback": ["adminGetPoll"],
+        "cleanup": ["adminDeletePoll"],
+        "unavailable_probe": []
+      },
+      "excluded_irreversible_operations": []
+    },
+    {
+      "domain": "popups",
+      "mode": "reversible_entity",
+      "depends_on": [],
+      "operations": {
+        "baseline": ["adminListPopups"],
+        "setup": [],
+        "mutate": ["adminCreatePopup", "adminUpdatePopup"],
+        "readback": ["adminGetPopup"],
+        "cleanup": ["adminDeletePopup"],
+        "unavailable_probe": []
+      },
+      "excluded_irreversible_operations": []
+    },
+    {
+      "domain": "system",
+      "mode": "optional_reversible_snapshot",
+      "depends_on": [],
+      "operations": {
+        "baseline": ["adminGetSmsConfig"],
+        "setup": [],
+        "mutate": ["adminUpdateSmsConfig"],
+        "readback": ["adminGetSmsConfig"],
+        "cleanup": ["adminUpdateSmsConfig", "adminGetSmsConfig"],
+        "unavailable_probe": ["adminGetSmsConfig"]
+      },
+      "excluded_irreversible_operations": ["adminSyncSmsMembers"]
+    },
+    {
+      "domain": "sms-contacts",
+      "mode": "optional_reversible_entity",
+      "depends_on": ["system"],
+      "operations": {
+        "baseline": ["adminGetSmsConfig", "adminListSmsContacts"],
+        "setup": ["adminCreateSmsContactGroup"],
+        "mutate": ["adminCreateSmsContact", "adminUpdateSmsContact"],
+        "readback": ["adminGetSmsContact"],
+        "cleanup": ["adminDeleteSmsContact", "adminDeleteSmsContactGroup"],
+        "unavailable_probe": ["adminGetSmsConfig", "adminListSmsContacts"]
+      },
+      "excluded_irreversible_operations": ["adminImportSmsContacts", "adminSyncSmsMembers"]
+    },
+    {
+      "domain": "sms-messages",
+      "mode": "read_only_external_guard",
+      "depends_on": ["system"],
+      "operations": {
+        "baseline": ["adminGetSmsConfig"],
+        "setup": [],
+        "mutate": [],
+        "readback": ["adminListSmsMessageBatches", "adminListSmsDeliveries"],
+        "cleanup": [],
+        "unavailable_probe": ["adminGetSmsConfig", "adminListSmsMessageBatches"]
+      },
+      "excluded_irreversible_operations": [
+        "adminCreateSmsMessage",
+        "adminResendAllSmsBatch",
+        "adminResendSmsFailures"
+      ]
+    },
+    {
+      "domain": "sms-templates",
+      "mode": "optional_reversible_entity",
+      "depends_on": ["system"],
+      "operations": {
+        "baseline": ["adminGetSmsConfig", "adminListSmsTemplates"],
+        "setup": ["adminCreateSmsTemplateGroup"],
+        "mutate": ["adminCreateSmsTemplate", "adminUpdateSmsTemplate"],
+        "readback": ["adminGetSmsTemplate"],
+        "cleanup": ["adminDeleteSmsTemplate", "adminDeleteSmsTemplateGroup"],
+        "unavailable_probe": ["adminGetSmsConfig", "adminListSmsTemplates"]
+      },
+      "excluded_irreversible_operations": []
+    },
+    {
+      "domain": "theme",
+      "mode": "reversible_snapshot",
+      "depends_on": [],
+      "operations": {
+        "baseline": ["adminSystemGetTheme", "adminSystemListThemes"],
+        "setup": [],
+        "mutate": ["adminSystemUpdateTheme"],
+        "readback": ["adminSystemGetTheme"],
+        "cleanup": ["adminSystemUpdateTheme", "adminSystemGetTheme"],
+        "unavailable_probe": []
+      },
+      "excluded_irreversible_operations": []
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+version = 1
+
+[[blockers]]
+id = "T2-285"
+audit = "consumer"
+scope = "public-live-write-certification"
+owner = "infrastructure"
+reason = "modsecurity_crs_911100_method_policy"
+source_registry = "specs/integration/LIVE_DOMAIN_CERTIFICATION.json"
+handoff_report = "specs/audits/2026-07-22-live-admin-domain-roundtrip.md"
+generated_report_json = "specs/audits/2026-07-22-live-admin-domain-roundtrip.blocker.json"
+generated_report_md = "specs/audits/2026-07-22-live-admin-domain-roundtrip.md"
+feature_count = 1
+features = ["public-write-certification"]
+unblock_signal = "Approved ModSecurity method policy allows PUT, PATCH, and DELETE without weakening the separate VPSGuard boundary."
+rust_followup = "Re-run the current-run live domain roundtrip and retain its JSON only after provider revision and OpenAPI SHA match the destination."

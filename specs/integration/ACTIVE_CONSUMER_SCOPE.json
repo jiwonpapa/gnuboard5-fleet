@@ -1,0 +1,261 @@
+{
+  "version": 2,
+  "consumer": "rust-admin",
+  "audit_contract": {
+    "id": "API_PIPELINE_AUDIT_V1",
+    "provider_contract": "connectors/gnuboard5-php/api/docs/openapi.yaml",
+    "included_path_prefixes": [
+      "/admin/"
+    ],
+    "included_operations": [
+      {
+        "method": "POST",
+        "path": "/auth/login"
+      },
+      {
+        "method": "POST",
+        "path": "/auth/logout"
+      },
+      {
+        "method": "POST",
+        "path": "/auth/refresh"
+      },
+      {
+        "method": "GET",
+        "path": "/health"
+      },
+      {
+        "method": "GET",
+        "path": "/members/me"
+      }
+    ],
+    "path_equivalents": {},
+    "expected_operation_counts": {
+      "openapi_total": 312,
+      "admin_total": 210,
+      "shop_provider_only": 26,
+      "admin_non_shop_exact": 184,
+      "bootstrap": 5,
+      "active_total_exact": 189
+    },
+    "expected_schema_domains": [
+      "boards",
+      "config",
+      "contents",
+      "faq-masters",
+      "faqs",
+      "groups",
+      "mails",
+      "members",
+      "menus",
+      "points",
+      "polls",
+      "popups",
+      "sms-contacts",
+      "sms-messages",
+      "sms-templates",
+      "system",
+      "theme"
+    ],
+    "required_layers": [
+      "php_declared_route_graph",
+      "php_runtime_route_table",
+      "php_handler_contract_binding",
+      "openapi_operation",
+      "openapi_request_response_schema",
+      "rust_wire_client",
+      "tauri_command_operation_edge",
+      "tauri_ipc_registry",
+      "frontend_api_target",
+      "frontend_field_consumer",
+      "frontend_fixture_render_rehydrate",
+      "frontend_live_write_readback",
+      "multisite_request_context",
+      "live_provider_identity"
+    ],
+    "capabilities": [
+      {
+        "id": "php_declared_route_graph",
+        "mode": "static",
+        "status": "implemented",
+        "required_check_ids": [
+          "php.route_openapi_graph",
+          "php.route_graph_mutations",
+          "harness.mutation_regressions"
+        ],
+        "evidence": "token-resolved reachable include graph plus removal, include-kind and method-drift mutations"
+      },
+      {
+        "id": "php_runtime_route_table",
+        "mode": "static",
+        "status": "implemented",
+        "required_check_ids": [
+          "cap.php_runtime_route_table",
+          "harness.mutation_regressions"
+        ],
+        "evidence": "the current PHP Slim app is bootstrapped without DB I/O and its effective RouteCollector proves 189 active plus 26 protected operations with exact handler/middleware/security/status bindings; eight runtime mutation tests with 717 assertions fail closed"
+      },
+      {
+        "id": "php_handler_contract_binding",
+        "mode": "static",
+        "status": "implemented",
+        "required_check_ids": [
+          "cap.php_handler_contract_binding",
+          "harness.mutation_regressions"
+        ],
+        "evidence": "current-run PHP field-flow analysis traces 215 audited operations from runtime handler through request reads, controller/service/repository layers and response writes; all 215 pass with zero missing request/response fields, undocumented implementation fields, semantic gaps, missing required layers or dynamic accesses, backed by 17 mutation tests"
+      },
+      {
+        "id": "openapi_operation",
+        "mode": "static",
+        "status": "implemented",
+        "required_check_ids": [
+          "php.route_openapi_graph",
+          "cross.operation_dto_graph",
+          "harness.mutation_regressions"
+        ],
+        "evidence": "exact active method/path graph with 189-operation count gate; path aliases cannot hide operations"
+      },
+      {
+        "id": "openapi_request_response_schema",
+        "mode": "static",
+        "status": "implemented",
+        "required_check_ids": [
+          "cap.openapi_request_response_schema",
+          "harness.mutation_regressions"
+        ],
+        "evidence": "all 189 active operations have exact operationId/security/parameter/request/response fingerprints; 230 parameters, 1186 status-specific responses and 997 RFC7807 ProblemDetails errors are preserved, and runtime validation checks response media/body before both presentation deserialization and API error mapping"
+      },
+      {
+        "id": "rust_wire_client",
+        "mode": "static",
+        "status": "implemented",
+        "required_check_ids": [
+          "cross.operation_dto_graph",
+          "cap.rust_wire_client_semantics",
+          "harness.mutation_regressions"
+        ],
+        "evidence": "canonical snapshot generates 371 serde/ts-rs component DTOs and an exact 189-operation runtime manifest; 210 admin/board object schemas and 1682 fields pass name/type/ref/nullable/required parity with zero missing, mismatch or unverified rows; shared transport validates query/path/body and raw success responses before presentation deserialization"
+      },
+      {
+        "id": "tauri_command_operation_edge",
+        "mode": "static",
+        "status": "implemented",
+        "required_check_ids": [
+          "cross.operation_dto_graph",
+          "harness.mutation_regressions"
+        ],
+        "evidence": "recursive same-file helper resolution maps all 186 admin client methods to registered Tauri commands with zero unresolved or mismatched edges; swap mutations remain hard failures"
+      },
+      {
+        "id": "tauri_ipc_registry",
+        "mode": "static",
+        "status": "implemented",
+        "required_check_ids": [
+          "rust.ipc_ownership",
+          "cap.tauri_ipc_registry_ast",
+          "harness.mutation_regressions"
+        ],
+        "evidence": "the imported app_invoke_handler macro reaches generate_handler with 253 unique commands; every command resolves to a real module function carrying #[tauri::command], while comments, duplicate entries and orphan registry groups are rejected"
+      },
+      {
+        "id": "frontend_api_target",
+        "mode": "static",
+        "status": "implemented",
+        "required_check_ids": [
+          "rust.ipc_ownership",
+          "cap.frontend_api_target_edge",
+          "harness.mutation_regressions"
+        ],
+        "evidence": "all 191 active edges have exactly one exported frontend wrapper, invoke command and exact apiTarget path bound to the Rust-derived HTTP method/path; all 253 apiTargets are inventoried and active orphans and command/path swaps fail closed"
+      },
+      {
+        "id": "frontend_field_consumer",
+        "mode": "static",
+        "status": "implemented",
+        "required_check_ids": [
+          "rust.field_consumer_parity",
+          "cap.frontend_field_consumer_semantics",
+          "harness.mutation_regressions"
+        ],
+        "evidence": "all 17 non-shop domains are checked through reachable production Page.tsx import graphs; 414 contract-scoped fields and their save/read-only ownership have zero gaps, the Tauri presentation DTO preserves option_source, and the runtime schema guard fail-closes domain/count/index/control/data/required/create-only/readonly/default/options/option_source drift; source-field deletion mutation remains a hard failure"
+      },
+      {
+        "id": "frontend_fixture_render_rehydrate",
+        "mode": "full",
+        "status": "partial",
+        "required_check_ids": [
+          "rust.fixture_render_rehydrate",
+          "harness.mutation_regressions"
+        ],
+        "exit_criteria": "live-fetched fixture DOM and mocked save/rehydrate adapters for all 17 non-shop schema domains; current baseline 2 of 17 and this capability never proves server write/readback"
+      },
+      {
+        "id": "frontend_live_write_readback",
+        "mode": "full",
+        "status": "partial",
+        "required_check_ids": [
+          "harness.live_domain_registry",
+          "cap.frontend_api_target_edge",
+          "cap.rust_wire_client_semantics",
+          "cap.frontend_live_write_readback",
+          "rust.live_admin_domain_roundtrip",
+          "harness.mutation_regressions"
+        ],
+        "exit_criteria": "the fail-closed registry fixes reversible strategies and irreversible/external-effect guards for all 17 domains, while current-run artifacts must prove each planned operation through per-domain executed_operation_ids or explicit unavailable accounting; certification still requires a newly retained destination artifact and invoke-through-Tauri coverage for every writable domain"
+      },
+      {
+        "id": "multisite_request_context",
+        "mode": "static",
+        "status": "implemented",
+        "required_check_ids": [
+          "cap.multisite_request_context",
+          "harness.mutation_regressions"
+        ],
+        "evidence": "one owned async read/write context gate spans site_id, base_url and token selection; every active remote/auth/health request captures the read context before token load, site switching commits base_url and site_id under one write lock, and a two-site concurrent switch test proves token-a cannot reach site-b or vice versa"
+      },
+      {
+        "id": "live_provider_identity",
+        "mode": "full",
+        "status": "implemented",
+        "required_check_ids": [
+          "php.live_domain_pipeline",
+          "cap.live_provider_identity",
+          "harness.mutation_regressions"
+        ],
+        "evidence": "current-run live health and admin-inspect identity plus deployed runtime revision and OpenAPI bytes are fail-closed compared with the local PHP HEAD and canonical contract"
+      }
+    ],
+    "hard_fail_states": [
+      "missing",
+      "extra",
+      "mismatch",
+      "scanner_zero",
+      "blocked",
+      "skipped",
+      "stale",
+      "child_process_failed"
+    ],
+    "freshness": {
+      "require_live_provider_for_certification": true,
+      "require_current_run_artifacts": true,
+      "allow_summarize_existing_for_certification": false
+    }
+  },
+  "provider_only_allowances": [
+    {
+      "id": "shop",
+      "php_feature": "shop",
+      "reason": "루트 헌법상 쇼핑몰 API는 Rust 관리자 앱 활성 소비 범위 밖이다. 단, PHP 레거시 감사에서는 adm/shop_admin 파일을 계속 전수 분류한다.",
+      "path_exact": [
+        "/admin/shop"
+      ],
+      "path_prefixes": [
+        "/admin/shop/"
+      ],
+      "schema_domain_prefixes": [
+        "shop-"
+      ]
+    }
+  ]
+}

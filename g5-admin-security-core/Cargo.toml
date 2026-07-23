@@ -1,0 +1,10 @@
+[package]
+name = "g5-admin-security-core"
+version = "0.1.0"
+edition = "2021"
+license = "LicenseRef-Proprietary"
+
+[dependencies]
+getrandom = "0.4"
+thiserror = "2"
+totp-rs = { version = "5.7.2", features = ["gen_secret", "otpauth"] }

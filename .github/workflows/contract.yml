@@ -1,0 +1,79 @@
+name: Contract
+
+on:
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "g5-admin/**"
+      - "g5-admin-*/**"
+      - "scripts/check_openapi_contract.mjs"
+      - "scripts/run_integrated_audit.py"
+      - ".github/workflows/contract.yml"
+  push:
+    branches: [main]
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "g5-admin/**"
+      - "g5-admin-*/**"
+      - "scripts/check_openapi_contract.mjs"
+      - "scripts/run_integrated_audit.py"
+      - ".github/workflows/contract.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: contract-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  g5-admin-contract:
+    name: G5 Admin Contract Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout canonical PHP provider contract
+        uses: actions/checkout@v4
+        with:
+          repository: jiwonpapa/gnubard5restapi-php
+          path: php-provider
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend dependencies
+        working-directory: g5-admin
+        run: bun install --frozen-lockfile
+
+      - name: Contract check
+        working-directory: g5-admin
+        env:
+          G5_OPENAPI_PATH: ${{ github.workspace }}/php-provider/api/docs/openapi.yaml
+          G5_OPENAPI_MANIFEST_PATH: ${{ github.workspace }}/php-provider/api/docs/openapi.contract-manifest.json
+        run: bun run contract:check
+
+      - name: Frontend type and lint
+        working-directory: g5-admin
+        run: bun x tsc --noEmit && bun run lint
+
+      - name: Rust format
+        run: cargo fmt --manifest-path Cargo.toml --all --check
+
+      - name: Cargo check
+        run: cargo check --manifest-path g5-admin/src-tauri/Cargo.toml
+
+      - name: Frontend tests
+        working-directory: g5-admin
+        run: bun run test
+
+      - name: Frontend build
+        working-directory: g5-admin
+        run: bun run build:web:fast

@@ -1,0 +1,153 @@
+version = 1
+
+[[features]]
+feature = "boards"
+path = "g5-admin/src/features/boards"
+mode = "schema_live"
+schema_domains = ["boards"]
+priority = "maintain"
+target_level = "schema_full"
+next_action = "keep schema_full coverage and prevent label/widget regressions"
+
+[[features]]
+feature = "config"
+path = "g5-admin/src/features/config"
+mode = "schema_live"
+schema_domains = ["config"]
+priority = "maintain"
+target_level = "schema_full"
+next_action = "keep schema_full coverage and prevent field metadata regressions"
+
+[[features]]
+feature = "contents"
+path = "g5-admin/src/features/contents"
+mode = "schema_live"
+schema_domains = ["contents"]
+priority = "p2"
+target_level = "schema_labels"
+next_action = "keep label/description gate stable until provider offers richer widget metadata"
+
+[[features]]
+feature = "faqs"
+path = "g5-admin/src/features/faqs"
+mode = "schema_live"
+schema_domains = ["faq-masters", "faqs"]
+priority = "p2"
+target_level = "schema_labels"
+next_action = "keep label/description gate stable until provider offers richer widget metadata"
+
+[[features]]
+feature = "board-groups"
+path = "g5-admin/src/features/board-groups"
+mode = "schema_live"
+schema_domains = ["groups"]
+priority = "maintain"
+target_level = "schema_full"
+next_action = "keep schema_full coverage and prevent option drift"
+
+[[features]]
+feature = "members"
+path = "g5-admin/src/features/members"
+mode = "schema_live"
+schema_domains = ["members"]
+priority = "maintain"
+target_level = "schema_full"
+next_action = "keep schema_full coverage and prevent member detail regressions"
+
+[[features]]
+feature = "menus"
+path = "g5-admin/src/features/menus"
+mode = "schema_live"
+schema_domains = ["menus"]
+priority = "p2"
+target_level = "schema_labels"
+next_action = "keep label/description gate stable until provider offers richer widget metadata"
+
+[[features]]
+feature = "polls"
+path = "g5-admin/src/features/polls"
+mode = "schema_live"
+schema_domains = ["polls"]
+priority = "p2"
+target_level = "schema_labels"
+next_action = "keep label/description gate stable until provider offers richer widget metadata"
+
+[[features]]
+feature = "popups"
+path = "g5-admin/src/features/popups"
+mode = "schema_live"
+schema_domains = ["popups"]
+priority = "maintain"
+target_level = "schema_full"
+next_action = "keep schema_full coverage and prevent option drift"
+
+[[features]]
+feature = "mails"
+path = "g5-admin/src/features/mails"
+mode = "schema_live"
+schema_domains = ["mails"]
+priority = "maintain"
+target_level = "schema_full"
+next_action = "keep schema_full coverage and prevent mail template/send/recipient metadata regressions"
+
+[[features]]
+feature = "points"
+path = "g5-admin/src/features/points"
+mode = "schema_live"
+schema_domains = ["points"]
+priority = "maintain"
+target_level = "schema_full"
+next_action = "keep schema_full coverage and prevent point search/action metadata regressions"
+
+[[features]]
+feature = "security"
+path = "g5-admin/src/features/security"
+mode = "local_canonical"
+priority = "maintain"
+target_level = "local_metadata"
+next_action = "keep local security labels and descriptions explicit without classifying the app security surface as a PHP /admin/schema backlog"
+
+[[features]]
+feature = "system"
+path = "g5-admin/src/features/system"
+mode = "schema_live"
+schema_domains = ["system"]
+priority = "maintain"
+target_level = "schema_full"
+next_action = "keep SMS config schema_full coverage and prevent provider label/default drift"
+
+[[features]]
+feature = "theme"
+path = "g5-admin/src/features/theme"
+mode = "schema_live"
+schema_domains = ["theme"]
+priority = "maintain"
+target_level = "schema_full"
+next_action = "keep theme schema_full coverage and prevent selector label/default drift"
+
+[[features]]
+feature = "sms-contacts"
+path = "g5-admin/src/features/sms-contacts"
+mode = "schema_live"
+schema_domains = ["sms-contacts"]
+priority = "maintain"
+target_level = "schema_full"
+next_action = "keep schema_full coverage and prevent SMS contacts editor/import metadata regressions"
+
+[[features]]
+feature = "sms-messages"
+path = "g5-admin/src/features/sms-messages"
+mode = "schema_live"
+schema_domains = ["sms-messages"]
+priority = "maintain"
+target_level = "schema_full"
+next_action = "keep schema_full coverage and prevent SMS send form metadata regressions"
+
+[[features]]
+feature = "sms-templates"
+path = "g5-admin/src/features/sms-templates"
+mode = "schema_live"
+schema_domains = ["sms-templates"]
+priority = "maintain"
+target_level = "schema_full"
+next_action = "keep schema_full coverage and prevent SMS template group/editor metadata regressions"

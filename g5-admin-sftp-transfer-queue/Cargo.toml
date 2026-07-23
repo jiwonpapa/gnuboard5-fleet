@@ -1,0 +1,12 @@
+[package]
+name = "g5-admin-sftp-transfer-queue"
+version = "0.1.0"
+edition = "2021"
+license = "LicenseRef-Proprietary"
+
+[dependencies]
+tokio = { version = "1", features = ["sync", "rt"] }
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt"] }

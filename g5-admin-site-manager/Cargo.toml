@@ -1,0 +1,8 @@
+[package]
+name = "g5-admin-site-manager"
+version = "0.1.0"
+edition = "2021"
+license = "LicenseRef-Proprietary"
+
+[dependencies]
+thiserror = "2"

@@ -1,0 +1,116 @@
+G5 Admin Desktop — 상용 소스 라이선스
+G5 Admin Desktop — Commercial Source License
+=============================================
+
+버전 / Version: 1.0.0
+시행일 / Effective Date: 2026-03-09
+Copyright (c) 2026 jiwonpapa. All rights reserved.
+
+---------------------------------------------------------------------
+
+1. 독점 소프트웨어 / PROPRIETARY SOFTWARE
+
+   G5 Admin Desktop의 모든 소스 코드, 문서 및 관련 자료는 저작권자의
+   독점적 지적 재산입니다.
+
+   All source code, documentation, and associated materials of
+   G5 Admin Desktop are the exclusive intellectual property of
+   the copyright holder.
+
+2. 소스 코드 접근 / SOURCE CODE ACCESS
+
+   소스 코드 접근은 저작권자로부터 유효한 상용 소스 라이선스를 구매한
+   라이선스 보유자에게만 부여됩니다.
+
+   Source code access is granted ONLY to licensees who have purchased
+   a valid Commercial Source License from the copyright holder.
+
+3. 라이선스 부여 (유료 라이선스 보유자만) / GRANT OF LICENSE (Paid Licensees Only)
+
+   상용 소스 라이선스 구매 시 라이선스 보유자는 다음을 받습니다:
+
+   Upon purchase of a Commercial Source License, the licensee receives:
+
+   a) 전체 소스 코드 저장소 접근 권한
+      Access to the full source code repository.
+
+   b) 내부 사용 목적의 소스 코드 수정 권한
+      Right to modify the source code for internal use.
+
+   c) 커스텀 버전 내부 빌드 및 배포 권한
+      Right to build and deploy custom versions internally.
+
+   d) 라이선스 기간 동안 버전 업데이트 접근 권한
+      Access to version updates for the duration of the license term.
+
+4. 제한 사항 (유료 라이선스 보유자 포함) / RESTRICTIONS (Paid Licensees)
+
+   상용 소스 라이선스가 있더라도 다음 행위는 금지됩니다:
+
+   Even with a Commercial Source License, you may NOT:
+
+   a) 소스 코드 또는 파생 저작물을 제3자에게 재배포, 재판매 또는
+      재라이선스하는 행위
+      Redistribute, resell, or sublicense the source code or any
+      derivative works to third parties.
+
+   b) 소스 코드를 공개하거나 공개적으로 이용 가능하게 하는 행위
+      Publish, disclose, or make the source code publicly available.
+
+   c) 소스 코드를 사용하여 경쟁 제품을 만드는 행위
+      Use the source code to create a competing product.
+
+   d) 저작권자의 사전 서면 동의 없이 라이선스를 타인에게 양도하는 행위
+      Transfer the license to another party without prior written
+      consent from the copyright holder.
+
+5. 무단 접근 / UNAUTHORIZED ACCESS
+
+   유효한 상용 소스 라이선스 없이 소스 코드에 접근, 복제, 배포 또는
+   사용하는 것은 저작권 침해에 해당하며 법적 조치의 대상이 될 수 있습니다.
+
+   Accessing, copying, distributing, or using the source code without
+   a valid Commercial Source License constitutes copyright infringement
+   and may result in legal action.
+
+6. 무보증 / NO WARRANTY
+
+   소스 코드는 어떠한 종류의 보증 없이 "있는 그대로" 제공됩니다.
+   저작권자는 소스 코드의 적합성, 신뢰성 또는 정확성에 대하여 어떠한
+   진술이나 보증도 하지 않습니다.
+
+   THE SOURCE CODE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+   THE COPYRIGHT HOLDER MAKES NO REPRESENTATIONS OR WARRANTIES
+   REGARDING THE SOURCE CODE'S SUITABILITY, RELIABILITY, OR ACCURACY.
+
+7. 해지 / TERMINATION
+
+   라이선스는 다음의 경우 해지됩니다:
+   The license terminates:
+
+   a) 라이선스 기간 종료 시 갱신하지 않은 경우
+      At the end of the license term if not renewed.
+
+   b) 본 계약 조항 위반 시 즉시 해지
+      Immediately upon breach of any term of this Agreement.
+
+   c) 일방 당사자의 서면 통지 시
+      Upon written notice from either party.
+
+   해지 시 라이선스 보유자는 소스 코드의 모든 사본을 파기하고
+   서면으로 파기를 증명해야 합니다.
+
+   Upon termination, the licensee must destroy all copies of the
+   source code and certify destruction in writing.
+
+8. 준거법 / GOVERNING LAW
+
+   본 계약은 대한민국 법률에 의해 규율됩니다.
+   This Agreement shall be governed by the laws of the Republic of Korea.
+
+9. 연락처 / CONTACT
+
+   라이선스 문의:
+   For licensing inquiries:
+   jiwonpapa
+   [연락처 정보 추가 예정 / Contact information to be added]

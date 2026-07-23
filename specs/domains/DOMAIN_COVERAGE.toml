@@ -1,0 +1,151 @@
+version = 1
+
+[[domains]]
+feature = "contents"
+routes = ["/boards/contents"]
+sdds = ["specs/domains/ADMIN_CONTENT_FAQ_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/contents/AdminContentsPage.test.tsx",
+  "g5-admin/src/features/contents/admin-contents-form.test.ts",
+]
+
+[[domains]]
+feature = "faqs"
+routes = ["/boards/faqs"]
+sdds = ["specs/domains/ADMIN_CONTENT_FAQ_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/faqs/AdminFaqsPage.test.tsx",
+  "g5-admin/src/features/faqs/admin-faqs-form.test.ts",
+]
+
+[[domains]]
+feature = "menus"
+routes = ["/environment/menus"]
+sdds = ["specs/domains/ADMIN_MENU_LAYOUT_THEME_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/menus/AdminMenusPage.test.tsx",
+  "g5-admin/src/features/menus/admin-menus-form.test.ts",
+]
+
+[[domains]]
+feature = "layouts"
+routes = ["/tools/layouts"]
+sdds = ["specs/domains/ADMIN_MENU_LAYOUT_THEME_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/layouts/AdminLayoutsPage.test.tsx",
+]
+
+[[domains]]
+feature = "theme"
+routes = ["/environment/theme"]
+sdds = ["specs/domains/ADMIN_MENU_LAYOUT_THEME_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/theme/AdminThemePage.test.tsx",
+  "g5-admin/src/features/theme/admin-theme-form.test.ts",
+]
+
+[[domains]]
+feature = "mails"
+routes = ["/members/mails"]
+sdds = ["specs/domains/ADMIN_MAIL_REPORT_VISIT_SYSTEM_TOOLS_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/mails/AdminMailsPage.test.tsx",
+  "g5-admin/src/features/mails/admin-mails-form.test.ts",
+]
+
+[[domains]]
+feature = "reports"
+routes = ["/tools/reports"]
+sdds = ["specs/domains/ADMIN_MAIL_REPORT_VISIT_SYSTEM_TOOLS_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/reports/AdminReportsPage.test.tsx",
+]
+
+[[domains]]
+feature = "visits"
+routes = ["/members/visits/stats", "/members/visits/search", "/members/visits/delete"]
+sdds = ["specs/domains/ADMIN_MAIL_REPORT_VISIT_SYSTEM_TOOLS_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/visits/AdminVisitStatsPage.test.tsx",
+  "g5-admin/src/features/visits/admin-visits-form.test.ts",
+]
+
+[[domains]]
+feature = "system-tools"
+routes = ["/environment/phpinfo", "/environment/browscap"]
+sdds = ["specs/domains/ADMIN_MAIL_REPORT_VISIT_SYSTEM_TOOLS_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/system-tools/AdminPhpInfoPage.test.tsx",
+  "g5-admin/src/features/system-tools/admin-browscap-form.test.ts",
+]
+
+[[domains]]
+feature = "board-groups"
+routes = ["/boards/groups"]
+sdds = ["specs/domains/ADMIN_BOARD_GROUPS_POINTS_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/board-groups/AdminBoardGroupsPage.test.tsx",
+  "g5-admin/src/features/board-groups/admin-board-groups-form.test.ts",
+]
+
+[[domains]]
+feature = "points"
+routes = ["/members/points"]
+sdds = ["specs/domains/ADMIN_BOARD_GROUPS_POINTS_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/points/AdminPointsPage.test.tsx",
+  "g5-admin/src/features/points/admin-points-form.test.ts",
+]
+
+[[domains]]
+feature = "security"
+routes = ["/local/security"]
+sdds = ["specs/domains/ADMIN_SECURITY_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/security/SecuritySettingsPage.test.tsx",
+]
+
+[[domains]]
+feature = "system"
+routes = ["/settings/sms"]
+sdds = ["specs/domains/ADMIN_SMS_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/system/AdminSmsConfigPage.test.tsx",
+  "g5-admin/src/features/system/admin-sms-config-form.test.ts",
+]
+
+[[domains]]
+feature = "sms-contacts"
+routes = ["/sms/contacts", "/sms/contacts/groups", "/sms/contacts/files"]
+sdds = ["specs/domains/ADMIN_SMS_WORKSPACE_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/sms-contacts/AdminSmsContactsPage.test.tsx",
+  "g5-admin/src/features/sms-contacts/admin-sms-contacts-form.test.ts",
+]
+
+[[domains]]
+feature = "sms-history"
+routes = ["/sms/history/batches", "/sms/history/deliveries"]
+sdds = ["specs/domains/ADMIN_SMS_WORKSPACE_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/sms-history/AdminSmsHistoryPage.test.tsx",
+  "g5-admin/src/features/sms-history/admin-sms-history-form.test.ts",
+]
+
+[[domains]]
+feature = "sms-messages"
+routes = ["/sms/messages"]
+sdds = ["specs/domains/ADMIN_SMS_WORKSPACE_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/sms-messages/AdminSmsMessagesPage.test.tsx",
+  "g5-admin/src/features/sms-messages/admin-sms-messages-form.test.ts",
+]
+
+[[domains]]
+feature = "sms-templates"
+routes = ["/sms/templates", "/sms/templates/groups"]
+sdds = ["specs/domains/ADMIN_SMS_WORKSPACE_SDD.md"]
+automated_evidence = [
+  "g5-admin/src/features/sms-templates/AdminSmsTemplatesPage.test.tsx",
+  "g5-admin/src/features/sms-templates/admin-sms-templates-form.test.ts",
+]
