@@ -11,6 +11,8 @@ bounded_context: global
 ---
 # G5 Rust Workspace — 설계 문서
 
+> **Legacy reference scope:** 이 문서 묶음의 `active`와 `source_of_truth` 메타데이터는 이관된 Tauri snapshot 내부에서만 유효합니다. 현재 G5 Fleet 제품 정본은 루트 `governance/CONSTITUTION.md`, `docs/adr/0006-server-only-product-pivot.md`, `docs/architecture/SERVER_WEB_TECH_STACK.md`이며 데스크톱이나 native wrapper는 배포하지 않습니다.
+
 ## 프로젝트
 
 | 프로젝트 | 설명 | 상태 |

@@ -1,5 +1,17 @@
 # Codex Wrapper For Rust
 
+## 0. 통합 저장소에서의 상태
+
+이 디렉터리는 서버 전환을 위한 봉인된 legacy reference snapshot입니다. 활성 제품, 데스크톱 배포물 또는 신규 기능 구현 대상이 아닙니다.
+
+- 신규 제품 구현은 루트 `apps/admin-server`, `apps/admin-web`, `crates/*`에서 수행합니다.
+- 이 디렉터리는 기존 UI, DTO, G5 client, SSH/SFTP와 소비 감사 구현을 읽고 추출할 때만 사용합니다.
+- Tauri command, `tauri::State`, OS keychain·biometry, native updater와 데스크톱 전역 상태를 활성 코드로 복사하지 않습니다.
+- 이 디렉터리의 기존 빌드·감사 문서는 snapshot 자체를 설명하며 루트 `governance/CONSTITUTION.md`, `docs/adr/0006-server-only-product-pivot.md`, `docs/architecture/SERVER_WEB_TECH_STACK.md`보다 우선하지 않습니다.
+- 보안·provenance 수정 외에는 이 snapshot에서 신규 기능, 릴리스, 서명 또는 배포 작업을 하지 않습니다.
+
+아래 내용은 이관 원본의 내부 구조를 해석하기 위한 역사적 규칙입니다.
+
 이 디렉토리는 **그누보드5 REST API 소비자** 프로젝트입니다.
 Codex는 이 파일을 `rust` 작업의 1차 진입점으로 사용합니다.
 

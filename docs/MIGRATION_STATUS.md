@@ -9,14 +9,20 @@
 - 공식 GnuBoard5 v5.6.32 commit·tree·파일 fingerprint 고정
 - Fleet Core·공개 SDK Apache-2.0, 플러그인별 독립 라이선스, Telegram/Web Push 기본 경계 고정
 - Python migration audit와 변이 회귀 테스트 구축
+- 활성 제품을 Rust Axum 서버 + React 반응형 PWA로 확정
+- Tauri desktop/mobile 배포를 폐기하고 `products/admin-desktop`을 이관 참조 snapshot으로 봉인
+
+현재 migration profile은 기존 Tauri 소비 구현의 source closure를 이관 증거로 검증합니다. 이는 데스크톱 제품 지원 또는 서버판 구현 완료를 뜻하지 않습니다.
 
 ## 아직 인증하지 않는 것
 
 - Axum 서버 구현
-- React HttpTransport와 태블릿 PWA
+- React typed HttpTransport와 반응형 PWA
 - 사용자·사이트 동시 세션 격리
 - Telegram/Web Push 실제 발송
 - Compose 설치·업그레이드·rollback
 - GnuBoard5 v5.6.32 대상 live 저장/readback/cleanup
 
 따라서 이번 완료 등급의 상한은 `MIGRATION_STATIC_PASS`입니다.
+
+다음 구현 배치는 `docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md`의 **B01 legacy 감사 분리**입니다.

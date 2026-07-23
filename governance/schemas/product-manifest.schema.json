@@ -3,10 +3,10 @@
   "$id": "https://g5-fleet.local/schemas/product-manifest.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$schema", "schema_version", "product_id", "product_name", "deployment_model", "editions", "provider_scope", "contract_baseline", "notification_baseline", "tablet_strategy"],
+  "required": ["$schema", "schema_version", "product_id", "product_name", "deployment_model", "editions", "provider_scope", "contract_baseline", "notification_baseline", "server_storage", "web_delivery"],
   "properties": {
     "$schema": {"const": "./governance/schemas/product-manifest.schema.json"},
-    "schema_version": {"const": 1},
+    "schema_version": {"const": 2},
     "product_id": {"const": "g5-fleet"},
     "product_name": {"type": "string", "minLength": 1},
     "deployment_model": {"const": "self_hosted_server"},
@@ -77,13 +77,31 @@
         "external_delivery_in_routine_tests": {"const": false}
       }
     },
-    "tablet_strategy": {
+    "server_storage": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["initial_delivery", "optional_native_wrapper"],
+      "required": ["engine", "journal_mode", "synchronous", "external_database_required", "secret_encryption", "corruption_policy", "consistent_backup_required", "restore_readback_required"],
       "properties": {
-        "initial_delivery": {"const": "responsive_pwa"},
-        "optional_native_wrapper": {"const": "tauri_mobile"}
+        "engine": {"const": "sqlite"},
+        "journal_mode": {"const": "wal"},
+        "synchronous": {"const": "full"},
+        "external_database_required": {"const": false},
+        "secret_encryption": {"const": "application_level"},
+        "corruption_policy": {"const": "fail_closed_no_auto_recreate"},
+        "consistent_backup_required": {"const": true},
+        "restore_readback_required": {"const": true}
+      }
+    },
+    "web_delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["application_type", "runtime", "served_by", "desktop_binary", "native_wrapper"],
+      "properties": {
+        "application_type": {"const": "responsive_spa_pwa"},
+        "runtime": {"const": "browser"},
+        "served_by": {"const": "admin_server"},
+        "desktop_binary": {"const": false},
+        "native_wrapper": {"const": false}
       }
     }
   }

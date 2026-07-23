@@ -1,10 +1,12 @@
-# G5 Fleet 제품 헌법 v1.0
+# G5 Fleet 제품 헌법 v1.1
 
 ## 1. 제품 정체성
 
 G5 Fleet는 여러 그누보드5 사이트를 관리하는 self-hosted 서버 제품입니다. Fleet Core와 공개 SDK는 Apache-2.0이며, Commerce는 독립 라이선스를 사용하는 선택형 유료 플러그인입니다. Telegram과 Web Push는 Fleet Core 기본 알림 채널이지만 자격 증명이 없는 상태도 정상 설치 상태입니다.
 
 PHP REST API와 관리자 서버는 같은 Git 저장소에서 개발하되 별도 산출물로 배포합니다. PHP Connector는 사이트 소유자의 명시적 승인 없이 설치·수정하지 않습니다.
+
+활성 사용자 인터페이스는 서버가 제공하는 React 반응형 SPA/PWA입니다. Tauri 데스크톱 앱과 native wrapper는 제품·에디션·배포물이 아닙니다. `products/admin-desktop`은 이관 참조 snapshot으로만 보존하며 신규 기능, 릴리스, 코드 서명·공증과 updater 지원을 금지합니다.
 
 ## 2. 계약과 공급 범위
 
@@ -23,6 +25,7 @@ PHP REST API와 관리자 서버는 같은 Git 저장소에서 개발하되 별�
 - 공개 SDK는 Apache-2.0으로 배포하고 공식·제3자 플러그인은 각 저장소에서 독립 라이선스를 선택할 수 있습니다.
 - 기능 잠금은 브라우저 UI가 아니라 PHP Connector, 서버 route·권한, application service, 계약 overlay 전체에서 강제합니다.
 - 결제 취소·환불·회원 삭제 등 고위험 작업은 step-up 인증과 감사 로그 없이 제공하지 않습니다.
+- 활성 `apps/*`와 `crates/*`는 Tauri package, Tauri command 또는 native wrapper에 의존하지 않습니다.
 
 ## 4. 서버 보안 경계
 
@@ -49,6 +52,7 @@ RequestContext(principal_id, web_session_id, site_id, request_id)
 ## 6. 배포·업그레이드
 
 - 서버는 OCI/Docker Compose, PHP Connector는 별도 checksum·SBOM 포함 패키지입니다.
+- 웹은 별도 네이티브 패키지가 아니라 서버와 함께 배포하는 정적 SPA/PWA 자산입니다.
 - Connector 배포는 preflight, 백업, 임시 release 업로드, checksum, lint, health, login smoke, 원자적 전환, rollback을 거칩니다.
 - G5 코어와 root Composer/vendor를 덮어쓰지 않습니다.
 - 기본 배포 명령에 운영 host를 하드코딩하거나 `rsync --delete`, `777/666` 권한을 사용하지 않습니다.
@@ -62,8 +66,9 @@ G5 legacy source
 → PHP runtime route/handler/field
 → canonical OpenAPI
 → Rust wire/application
-→ Tauri + Axum adapter
-→ React transport/UI field
+→ Axum route/application adapter
+→ HTTP/WebSocket transport
+→ React UI field
 → live 저장/readback/cleanup
 ```
 
@@ -73,6 +78,19 @@ G5 legacy source
 
 Python이 정책·JSON·증적 orchestration을 소유하고 PHP는 PHP 의미 분석, Rust는 소비 구현, Shell은 얇은 실행 연결만 담당합니다.
 
-## 8. 로컬 우선 개발
+## 8. 서버·웹 기술 기준
+
+- 서버는 Rust stable, Tokio, Axum, Tower, Serde, Reqwest, tracing을 사용합니다.
+- 서버 상태는 내장 SQLite WAL과 SQLx migration으로 관리하며 외부 DB 서버를 필수로 두지 않습니다.
+- SQLite는 `synchronous=FULL`, foreign key와 로컬 영구 volume을 사용합니다. 기존 설치의 DB가 없거나 손상됐을 때 빈 DB를 자동 생성하지 않습니다.
+- schema migration 전 일관된 backup·checksum을 생성하고 integrity·restore·핵심 row readback을 검증합니다.
+- 웹은 React, TypeScript strict, Vite, Bun, Tailwind CSS, TanStack Query, React Hook Form과 Zod를 사용합니다.
+- CRUD는 typed HTTP, SSH/SFTP와 장기 작업은 인증된 WebSocket·streaming 경계를 사용합니다.
+- SSR, Next.js, Tauri runtime, OS keychain·biometry와 네이티브 updater를 활성 제품에 도입하지 않습니다.
+- PWA는 정적 자산만 cache하며 API 응답과 사용자 데이터를 offline cache에 저장하지 않습니다.
+
+세부 기준은 `docs/architecture/SERVER_WEB_TECH_STACK.md`와 `docs/operations/SQLITE_DURABILITY.md`를 따릅니다.
+
+## 9. 로컬 우선 개발
 
 `make check`가 정본입니다. GitHub Actions는 수동 fallback만 허용하며 hosted CI 결과가 로컬·staging·live 증거를 대체하지 않습니다. 기존 저장소의 PASS는 이관된 새 저장소를 자동 인증하지 않습니다.

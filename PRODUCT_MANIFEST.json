@@ -1,6 +1,6 @@
 {
   "$schema": "./governance/schemas/product-manifest.schema.json",
-  "schema_version": 1,
+  "schema_version": 2,
   "product_id": "g5-fleet",
   "product_name": "그누보드5 통합 관리자",
   "deployment_model": "self_hosted_server",
@@ -17,7 +17,7 @@
         "audit_evidence",
         "telegram_notifications",
         "web_push_notifications",
-        "tablet_pwa"
+        "responsive_web_pwa"
       ]
     },
     "commerce": {
@@ -50,8 +50,21 @@
     "enabled_by_default": false,
     "external_delivery_in_routine_tests": false
   },
-  "tablet_strategy": {
-    "initial_delivery": "responsive_pwa",
-    "optional_native_wrapper": "tauri_mobile"
+  "server_storage": {
+    "engine": "sqlite",
+    "journal_mode": "wal",
+    "synchronous": "full",
+    "external_database_required": false,
+    "secret_encryption": "application_level",
+    "corruption_policy": "fail_closed_no_auto_recreate",
+    "consistent_backup_required": true,
+    "restore_readback_required": true
+  },
+  "web_delivery": {
+    "application_type": "responsive_spa_pwa",
+    "runtime": "browser",
+    "served_by": "admin_server",
+    "desktop_binary": false,
+    "native_wrapper": false
   }
 }

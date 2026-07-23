@@ -2,17 +2,20 @@
 
 그누보드5 여러 사이트를 한 서버에서 관리하기 위한 self-hosted 통합 관리자입니다.
 
-현재 저장소는 기존 PHP REST API와 Rust/Tauri 관리자의 clean revision을 공개용 sanitized snapshot으로 통합한 마이그레이션 기준선입니다. 원본 private 전체 이력, 과거 `output/` 증적, 현재 `api/`와 어긋난 PHP `api.zip`, Markdown에서 재생성되는 Rust `specs/docs.db`는 공개 이력에 포함하지 않습니다. 서버판은 이 기준선 위에서 Axum BFF, React PWA, 사이트별 세션 격리, 알림 outbox를 추가합니다.
+현재 저장소는 기존 PHP REST API와 Rust/Tauri 관리자의 clean revision을 공개용 sanitized snapshot으로 통합한 마이그레이션 기준선입니다. 원본 private 전체 이력, 과거 `output/` 증적, 현재 `api/`와 어긋난 PHP `api.zip`, Markdown에서 재생성되는 Rust `specs/docs.db`는 공개 이력에 포함하지 않습니다.
+
+활성 제품은 Rust Axum 서버와 React PWA로만 배포합니다. 기존 Tauri 코드는 UI와 Rust 소비 구현을 서버 구조로 이관하기 위한 참조 snapshot이며 데스크톱 제품, 네이티브 wrapper, 코드 서명·공증 또는 updater를 제공하지 않습니다. 결정 근거는 [`ADR-0006`](docs/adr/0006-server-only-product-pivot.md), 구현 기준은 [`서버·웹 기술 스택`](docs/architecture/SERVER_WEB_TECH_STACK.md)에 있습니다.
+
+구현은 [`서버 전환 목표 기반 배치 계획`](docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md)의 B00 → B10 순서로 진행합니다. 현재 첫 실행 대상은 legacy Tauri 감사와 활성 서버 검증을 분리하는 B01입니다.
 
 ## 제품 구성
 
-- Fleet Core: 무료 사용 정책의 멀티사이트 관리, 비쇼핑몰 관리자 기능, SSH/SFTP, 감사 증적, Telegram/Web Push 알림
+- Fleet Core Server: 무료 사용 정책의 멀티사이트 관리, 비쇼핑몰 관리자 기능, SSH/SFTP, 감사 증적, Telegram/Web Push 알림
+- Admin Web: 서버가 제공하는 React 반응형 SPA/PWA
 - Commerce: 주문·결제·배송·재고·문의·리뷰·매출을 제공하는 선택형 유료 플러그인
 - PHP Connector: 각 G5 사이트에 소유자 승인 후 별도 설치하는 REST API
-- Desktop: 기존 Tauri 제품을 보존하는 호환 제품
-- Tablet: 서버판 React PWA를 1차 배포 대상으로 사용하고, 필요할 때 Tauri mobile wrapper를 추가
 
-Fleet Core, PHP Connector, Desktop, 공개 SDK는 Apache License 2.0으로 배포합니다. 공식 Commerce 구현과 제3자 플러그인은 각 플러그인 저장소에서 독립 라이선스를 선택할 수 있으며, `LICENSES.md`가 현재 경계를 설명합니다.
+Fleet Core Server, Admin Web, PHP Connector와 공개 SDK는 Apache License 2.0으로 배포합니다. 공식 Commerce 구현과 제3자 플러그인은 각 플러그인 저장소에서 독립 라이선스를 선택할 수 있으며, `LICENSES.md`가 현재 경계를 설명합니다. `products/admin-desktop`의 참조 snapshot도 Apache-2.0이지만 활성 제품이나 배포물은 아닙니다.
 
 ## 검증
 
@@ -26,7 +29,7 @@ make check
 
 `make check`는 네트워크나 의존성 설치를 수행하지 않습니다. prepared manifest, G5 commit/tree/ref, connector subtree, Composer vendor, Bun local bins, Cargo offline metadata, Python/PyYAML fingerprint가 하나라도 누락되거나 달라지면 실패합니다. 그 뒤 합성 runtime의 실제 `adm/`·`install/`·`vendor/`를 입력으로 PHP docs-check와 Rust child static audit를 실행하며, Cargo와 Composer 네트워크를 차단하고 `bun x --no-install`만 허용합니다. OpenAPI 해시는 tracked connector 원본과 동일해야 합니다.
 
-따라서 `make check`는 외부 서비스나 GitHub Actions 없이 이관 이력, 필수 소스 폐쇄, OpenAPI 312개, 활성 관리자 소비 189개, 일반 게시판 26개, 관리자 Shop 26개를 검증합니다. 소스 또는 lock이 바뀌면 먼저 commit한 뒤 `make prepare`로 prepared runtime을 갱신해야 합니다.
+따라서 `make check`는 외부 서비스나 GitHub Actions 없이 이관 이력, 필수 소스 폐쇄, OpenAPI 312개, 활성 관리자 소비 189개, 일반 게시판 26개, 관리자 Shop 26개를 검증합니다. 현재 migration profile이 참조 Tauri snapshot의 소비 폐쇄를 확인하는 것은 이관 무결성 검증일 뿐 데스크톱 제품 지원이나 서버 구현 인증을 뜻하지 않습니다. 소스 또는 lock이 바뀌면 먼저 commit한 뒤 `make prepare`로 prepared runtime을 갱신해야 합니다.
 
 `migration.secret_history_hygiene`는 필수 로컬 게이트입니다. 현재 tracked 파일과 모든 reachable Git 이력의 blob을 자격 증명·고위험 개인정보 패턴으로 검사하고, 이력에 `output/`, `connectors/gnuboard5-php/output/`, `products/admin-desktop/output/`가 한 번이라도 등장하면 실패합니다. 예외는 [`governance/SECRET_HISTORY_POLICY.json`](governance/SECRET_HISTORY_POLICY.json)의 값 SHA-256, 패턴 ID, 경로 glob이 모두 일치하는 명시적 범위에서만 허용하며 원문 비밀값은 기록하지 않습니다. 설치된 Gitleaks로 추가 전수검사를 할 때는 `make secret-scan`을 실행합니다.
 

@@ -6,9 +6,9 @@ paths = ["connectors/gnuboard5-php/**"]
 required_reviews = ["contract", "security"]
 
 [[areas]]
-id = "desktop-origin"
+id = "legacy-desktop-reference"
 paths = ["products/admin-desktop/**"]
-required_reviews = ["consumer"]
+required_reviews = ["migration", "consumer"]
 
 [[areas]]
 id = "server-application"

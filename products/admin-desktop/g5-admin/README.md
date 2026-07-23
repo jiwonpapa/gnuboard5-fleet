@@ -1,6 +1,8 @@
 # G5 Admin Desktop
 
-Tauri v2 기반의 Gnuboard5 관리자 데스크톱 앱입니다.
+> **Reference-only:** 이 소스는 React UI와 Rust 소비 구현을 서버판으로 이관하기 위한 legacy snapshot입니다. G5 Fleet는 데스크톱 앱을 빌드·배포·지원하지 않습니다.
+
+Tauri v2 기반으로 구현됐던 Gnuboard5 관리자 데스크톱 앱입니다.
 
 ## Stack
 

@@ -1,6 +1,10 @@
 # G5 Rust Workspace
 
-Gnuboard5 관리자용 Rust 워크스페이스입니다.
+> **Reference-only:** 이 디렉터리는 서버 전환을 위해 보존한 Tauri/Rust/React 이관 snapshot입니다. 활성 제품이나 배포물이 아니며 신규 기능, 데스크톱 릴리스, 코드 서명·공증과 updater 작업을 하지 않습니다. 현재 제품 기준은 루트 `governance/CONSTITUTION.md`와 `docs/adr/0006-server-only-product-pivot.md`입니다.
+
+아래 내용은 이관 원본의 구조와 재현을 위한 역사적 설명입니다.
+
+Gnuboard5 관리자용 기존 Rust 워크스페이스입니다.
 
 ## Workspace 구성
 

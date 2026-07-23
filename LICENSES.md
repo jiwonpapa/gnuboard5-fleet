@@ -2,7 +2,8 @@
 
 G5 Fleet의 공개 Core와 공개 플러그인 계약은 Apache License 2.0으로 배포합니다.
 
-- Fleet Core, PHP Connector, Desktop, Server, Web: Apache-2.0
+- Fleet Core Server, Admin Web, PHP Connector: Apache-2.0
+- `products/admin-desktop`: Apache-2.0 이관 참조 snapshot이며 활성 제품·배포물 아님
 - `plugins/commerce-sdk`: Apache-2.0 공개 계약
 - 공식 Commerce 구현: 별도 비공개 저장소의 독립 상용 라이선스
 - 제3자 플러그인: 각 저작권자가 독립적으로 라이선스 선택
