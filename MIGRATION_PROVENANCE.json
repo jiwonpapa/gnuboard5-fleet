@@ -1,0 +1,67 @@
+{
+  "$schema": "./governance/schemas/migration-provenance.schema.json",
+  "schema_version": 1,
+  "migration_id": "g5-fleet-initial-migration-2026-07-23",
+  "status": "verified",
+  "destination": {
+    "branch": "main",
+    "remote": "https://github.com/jiwonpapa/gnuboard5-fleet.git"
+  },
+  "policy": {
+    "direction": "one_way",
+    "history_strategy": "sanitized_snapshot",
+    "require_clean_sources": true,
+    "legacy_evidence_certifies_destination": false,
+    "private_source_history_reachable": false,
+    "sensitive_outputs_imported": false
+  },
+  "sources": [
+    {
+      "id": "php-rest-api",
+      "role": "openapi_provider",
+      "origin": "https://github.com/jiwonpapa/gnubard5restapi-php.git",
+      "source_branch": "codex/php-structure-normalization",
+      "source_commit": "48eea2bf5f50f74070e90607a059e8f4590bf5ef",
+      "source_tree": "827bff1845623be57866d9f9e869fb2e57c85784",
+      "original_source_commit": "dc990cfafa8ce8490cbce25a7a7881941dc1bfa1",
+      "original_source_tree": "6c1b03e4c92199c569e893e5746a79526f06b578",
+      "original_repository_visibility": "private_at_migration",
+      "excluded_output_files": 231,
+      "excluded_generated_artifacts": [
+        {
+          "path": "api.zip",
+          "sha256": "77ff9641dfb3e15a5f0142a460edf3525c9c8ed4b274dbf258c7c9d08e02ddf4",
+          "reason": "Stale duplicate deployment archive diverged from the canonical tracked api directory."
+        }
+      ],
+      "clean": true,
+      "destination_prefix": "connectors/gnuboard5-php"
+    },
+    {
+      "id": "rust-admin",
+      "role": "active_consumer_origin",
+      "origin": "https://github.com/jiwonpapa/g5-rust-admin.git",
+      "source_branch": "codex/tauri-openapi-consumer-parity",
+      "source_commit": "8e78aa79a7fa032eff294a543e03644a6d912414",
+      "source_tree": "ddd2e7540110400bc11c6e54b2dddcd084710ff2",
+      "original_source_commit": "23772afb33456cddf86f36ea8841c58fa09b4edf",
+      "original_source_tree": "08cdf5d641b1ca23f9af276a1d6e69e53d2c9f56",
+      "original_repository_visibility": "private_at_migration",
+      "excluded_output_files": 77,
+      "excluded_generated_artifacts": [
+        {
+          "path": "specs/docs.db",
+          "sha256": "85da29ecdd343efe70369fad91c7202c412a21d44bbaba5178e97474397bd385",
+          "reason": "Generated non-deterministic FTS index is rebuilt into ignored cache from canonical Markdown."
+        }
+      ],
+      "clean": true,
+      "destination_prefix": "products/admin-desktop"
+    }
+  ],
+  "upstream_lock": "UPSTREAMS.lock.json",
+  "import_commits": {
+    "php-rest-api": "1e928d8eae9236db335be11f07b1f137373518d2",
+    "rust-admin": "d3d2e343d2552b9094ea4f730a9077ceabfb3bf0"
+  }
+}
