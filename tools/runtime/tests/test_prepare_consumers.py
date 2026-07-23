@@ -81,7 +81,9 @@ class ConsumerFixture:
         self.bun = base / "fake-bun"
         self.cargo = base / "fake-cargo"
         self.python = base / "fake-python"
+        self.system_yaml = base / "fake-system-yaml.py"
         self.venv_python_template = base / "fake-venv-python-template"
+        self.system_yaml.write_text("__version__ = '6.0.3'\n", encoding="utf-8")
         self.bun.write_text(
             "#!/usr/bin/env python3\n"
             "import json, pathlib, sys\n"
@@ -139,10 +141,12 @@ class ConsumerFixture:
             "import json, pathlib, shutil, sys\n"
             f"log=pathlib.Path({str(self.log)!r}); template=pathlib.Path({str(self.venv_python_template)!r})\n"
             f"identity=pathlib.Path({str(self.python)!r}).resolve()\n"
+            f"system_yaml=pathlib.Path({str(self.system_yaml)!r}).resolve()\n"
             "args=sys.argv[1:]\n"
             "with log.open('a') as out: out.write(json.dumps({'tool':'python-system','args':args})+'\\n')\n"
             "if args and args[0] == '-c':\n"
-            " print(json.dumps({'version':'3.12.9','executable':str(identity),'implementation':'CPython'},sort_keys=True));"
+            " print(json.dumps({'version':'3.12.9','executable':str(identity),'implementation':'CPython',"
+            "'pyyaml_metadata_version':'6.0.3','yaml_version':'6.0.3','yaml_file':str(system_yaml)},sort_keys=True));"
             " raise SystemExit(0)\n"
             "if args[:2] == ['-m','venv'] and len(args) == 3:\n"
             " target=pathlib.Path.cwd()/args[2]; executable=target/'bin/python'; executable.parent.mkdir(parents=True)\n"
@@ -205,6 +209,7 @@ class PrepareConsumersTests(unittest.TestCase):
         )
         calls = self.fixture.calls()
         self.assertFalse(any(call["tool"] in {"bun", "cargo"} for call in calls))
+        self.assertFalse(any(call["tool"] == "python-venv" for call in calls))
         self.assertEqual({"python"}, set(payload["tools"]))
         self.assertEqual(
             consumers.AUDIT_REQUIREMENTS_RELATIVE.as_posix(),

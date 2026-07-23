@@ -54,6 +54,14 @@ SYSTEM_PYTHON_PROBE = (
     "'executable':sys.executable,'implementation':platform.python_implementation()},"
     "sort_keys=True))"
 )
+SYSTEM_AUDIT_PROBE = (
+    "import importlib.metadata,json,pathlib,platform,sys,yaml;"
+    "print(json.dumps({'version':sys.version.split()[0],"
+    "'executable':sys.executable,'implementation':platform.python_implementation(),"
+    "'pyyaml_metadata_version':importlib.metadata.version('PyYAML'),"
+    "'yaml_version':yaml.__version__,'yaml_file':str(pathlib.Path(yaml.__file__).resolve())},"
+    "sort_keys=True))"
+)
 VENV_PYTHON_PROBE = (
     "import importlib.metadata,json,pathlib,sys,yaml;"
     "print(json.dumps({'version':sys.version.split()[0],"
@@ -226,6 +234,54 @@ def system_python_inventory(root: Path, python: str) -> dict[str, str]:
         "version": version,
         "executable": str(resolved),
         "implementation": implementation,
+    }
+
+
+def system_python_audit_inventory(
+    root: Path,
+    python: str,
+    expected_pyyaml: str,
+) -> dict[str, str]:
+    payload = parse_single_line_json(
+        run(python, "-c", SYSTEM_AUDIT_PROBE, cwd=root, timeout_seconds=30),
+        "system Python audit",
+    )
+    required_fields = (
+        "version",
+        "executable",
+        "implementation",
+        "pyyaml_metadata_version",
+        "yaml_version",
+        "yaml_file",
+    )
+    if not all(isinstance(payload.get(key), str) and payload[key] for key in required_fields):
+        raise RuntimeError("system Python audit probe has missing identity fields")
+    try:
+        executable = Path(payload["executable"]).resolve(strict=True)
+        yaml_file = Path(payload["yaml_file"]).resolve(strict=True)
+    except OSError as error:
+        raise RuntimeError("system Python audit probe returned a missing path") from error
+    if not executable.is_file() or not os.access(executable, os.X_OK):
+        raise RuntimeError("system Python audit executable is not usable")
+    if not yaml_file.is_file() or yaml_file.is_symlink():
+        raise RuntimeError("system PyYAML module is missing or unsafe")
+    if (
+        payload["pyyaml_metadata_version"] != expected_pyyaml
+        or payload["yaml_version"] != expected_pyyaml
+    ):
+        raise RuntimeError(
+            "system PyYAML version mismatch: "
+            f"expected={expected_pyyaml} "
+            f"metadata={payload['pyyaml_metadata_version']} "
+            f"import={payload['yaml_version']}"
+        )
+    return {
+        "python_path": str(executable),
+        "python_version": payload["version"],
+        "python_implementation": payload["implementation"],
+        "pyyaml_version": expected_pyyaml,
+        "yaml_path": str(yaml_file),
+        "yaml_sha256": sha256_file(yaml_file),
     }
 
 
@@ -656,14 +712,12 @@ def prepare_audit(
 ) -> dict[str, Any]:
     root = root.resolve(strict=True)
     manifest_path = invalidate_manifest(root, AUDIT_MANIFEST_RELATIVE)
-    python_venv_path(root)
     require_clean_repository(root)
     head = repository_head(root)
     before = audit_input_inventory(root)
     tools = {"python": system_python_inventory(root, python)}
-    pinned_python_requirements(root, AUDIT_REQUIREMENTS_RELATIVE)
-
-    python_audit = prepare_python_audit(root, python, AUDIT_REQUIREMENTS_RELATIVE)
+    requirements = pinned_python_requirements(root, AUDIT_REQUIREMENTS_RELATIVE)
+    python_audit = system_python_audit_inventory(root, python, requirements["pyyaml"])
 
     after = audit_input_inventory(root)
     if after != before:
@@ -679,21 +733,10 @@ def prepare_audit(
         "tools": tools,
         "python_audit": python_audit,
         "commands": {
-            "python_venv": [
+            "python_probe": [
                 "python",
-                "-m",
-                "venv",
-                PYTHON_VENV_RELATIVE.as_posix(),
-            ],
-            "python_install": [
-                "venv-python",
-                "-m",
-                "pip",
-                "install",
-                "--disable-pip-version-check",
-                "--no-deps",
-                "--requirement",
-                AUDIT_REQUIREMENTS_RELATIVE.as_posix(),
+                "-c",
+                "verify exact Python and PyYAML identity",
             ],
         },
     }
@@ -731,9 +774,9 @@ def verify_audit(
         raise RuntimeError("audit dependency Python identity drift detected")
 
     requirements = pinned_python_requirements(root, AUDIT_REQUIREMENTS_RELATIVE)
-    python_audit = python_venv_inventory(root, requirements["pyyaml"])
+    python_audit = system_python_audit_inventory(root, python, requirements["pyyaml"])
     if manifest.get("python_audit") != python_audit:
-        raise RuntimeError("Python audit venv drift detected")
+        raise RuntimeError("Python audit dependency drift detected")
     return {
         "status": "verified",
         "head": head,

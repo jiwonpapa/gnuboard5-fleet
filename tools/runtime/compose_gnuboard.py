@@ -522,6 +522,13 @@ def verify(root: Path) -> dict[str, Any]:
     comparable_actual = dict(actual)
     comparable_recorded.pop("generated_at", None)
     comparable_actual.pop("generated_at", None)
+    for payload in (comparable_recorded, comparable_actual):
+        connector_input = payload.get("inputs", {}).get("connector", {})
+        if isinstance(connector_input, dict):
+            # The prepared commit is provenance metadata. The exact connector
+            # subtree tree/fingerprint below is the reproducibility boundary,
+            # so unrelated repository commits must not force a Composer rebuild.
+            connector_input.pop("destination_commit", None)
     if comparable_actual != comparable_recorded:
         raise RuntimeError("prepared runtime manifest/input fingerprints are stale")
     return actual

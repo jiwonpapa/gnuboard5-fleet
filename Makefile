@@ -1,8 +1,5 @@
 PYTHON ?= python3
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-AUDIT_VENV := $(ROOT)/.cache/runtime/python-audit
-AUDIT_PYTHON := $(AUDIT_VENV)/bin/python
-AUDIT_PATH := $(AUDIT_VENV)/bin:$(PATH)
 export PYTHONDONTWRITEBYTECODE := 1
 
 .NOTPARALLEL: bootstrap prepare check
@@ -62,8 +59,8 @@ audit-scaffold:
 	cd "$(ROOT)" && $(PYTHON) tools/audit/g5audit.py --profile scaffold
 
 audit-migration:
-	cd "$(ROOT)" && test -x "$(AUDIT_PYTHON)"
-	cd "$(ROOT)" && PATH="$(AUDIT_PATH)" CARGO_NET_OFFLINE=true COMPOSER_DISABLE_NETWORK=1 "$(AUDIT_PYTHON)" tools/audit/g5audit.py --profile migration_static
+	cd "$(ROOT)" && command -v "$(PYTHON)" >/dev/null
+	cd "$(ROOT)" && CARGO_NET_OFFLINE=true COMPOSER_DISABLE_NETWORK=1 "$(PYTHON)" tools/audit/g5audit.py --profile migration_static
 
 check:
 	+$(MAKE) doctor

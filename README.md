@@ -21,11 +21,11 @@ Fleet Core Server, Admin Web, PHP Connector와 공개 SDK는 Apache License 2.0�
 
 ```bash
 make doctor
-make bootstrap  # 최초 1회: upstream + PHP/Composer + 격리 Python 감사 환경 준비
+make bootstrap  # 최초 1회: upstream + PHP/Composer + Python 감사 의존성 결속
 make check
 ```
 
-이미 upstream checkout이 준비되어 있으면 `make prepare`만 실행합니다. 이 온라인 준비 단계는 검증된 G5 원본과 현재 clean destination의 PHP connector를 `.cache/composed/gnuboard5-php`에 새로 합성하고 Composer 잠금 의존성을 설치합니다. 이어서 `tools/audit/requirements.txt`만 사용하는 격리 Python venv와 정확히 고정된 PyYAML을 준비합니다. 매번 stale Python/runtime 증적을 폐기하고 새 manifest를 기록합니다.
+이미 upstream checkout이 준비되어 있으면 `make prepare`만 실행합니다. 이 준비 단계는 검증된 G5 원본과 현재 clean destination의 PHP connector를 `.cache/composed/gnuboard5-php`에 새로 합성하고 Composer 잠금 의존성을 설치합니다. 이어서 로컬 Python과 `tools/audit/requirements.txt`에 고정된 PyYAML의 버전·실행 파일·모듈 해시를 기록합니다. 감사 의존성을 새로 설치하지 않으므로 정확한 PyYAML이 없으면 fail-closed됩니다.
 
 `make check`는 네트워크나 의존성 설치를 수행하지 않습니다. prepared manifest, G5 commit/tree/ref, connector subtree, Composer vendor와 Python/PyYAML fingerprint가 하나라도 누락되거나 달라지면 실패합니다. 그 뒤 합성 runtime의 실제 `adm/`·`install/`·`vendor/`를 입력으로 PHP 계약 검사를 실행하며 OpenAPI 해시는 tracked connector 원본과 동일해야 합니다. PHPUnit과 문서 감사가 만드는 `.phpunit.result.cache`와 `output/`은 소스 overlay fingerprint에서 제외하되 symlink와 위험 권한은 계속 거부합니다.
 

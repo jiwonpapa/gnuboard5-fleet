@@ -161,6 +161,11 @@ class ComposeRuntimeTests(unittest.TestCase):
         generated.write_text("{}\n", encoding="utf-8")
         compose.verify(self.fixture.root)
 
+        (self.fixture.root / "unrelated.txt").write_text("unrelated\n", encoding="utf-8")
+        git(self.fixture.root, "add", "unrelated.txt")
+        git(self.fixture.root, "commit", "-m", "unrelated repository change")
+        compose.verify(self.fixture.root)
+
         stale.write_text("stale\n", encoding="utf-8")
         with self.assertRaisesRegex(RuntimeError, "file set mismatch"):
             compose.verify(self.fixture.root)
