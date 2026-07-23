@@ -259,8 +259,18 @@ class G5AuditTest(unittest.TestCase):
                 "product_id": "g5-fleet",
                 "deployment_model": "self_hosted_server",
                 "editions": {
-                    "fleet_core": {"pricing": "free", "required": True},
-                    "commerce": {"pricing": "paid", "required": False},
+                    "fleet_core": {
+                        "pricing": "free",
+                        "source_license": "Apache-2.0",
+                        "required": True,
+                    },
+                    "commerce": {
+                        "pricing": "paid",
+                        "source_license": "commercial",
+                        "sdk_license": "Apache-2.0",
+                        "third_party_license_policy": "independent_per_plugin",
+                        "required": False,
+                    },
                 },
                 "contract_baseline": {
                     "openapi_operations": 311,
@@ -275,6 +285,24 @@ class G5AuditTest(unittest.TestCase):
             (root / "PRODUCT_MANIFEST.json").write_text(json.dumps(payload), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "contract baseline mismatch"):
                 MODULE.check_product_manifest(root)
+
+    def test_product_manifest_and_repository_reject_license_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            payload = json.loads(
+                (MODULE.ROOT / "PRODUCT_MANIFEST.json").read_text(encoding="utf-8")
+            )
+            payload["editions"]["fleet_core"]["source_license"] = "AGPL-3.0-or-later"
+            (root / "PRODUCT_MANIFEST.json").write_text(
+                json.dumps(payload), encoding="utf-8"
+            )
+            with self.assertRaisesRegex(ValueError, "must be Apache-2.0"):
+                MODULE.check_product_manifest(root)
+
+        self.assertIn(
+            "Apache-2.0",
+            MODULE.check_license_policy(MODULE.ROOT),
+        )
 
     def test_exact_operation_set_rejects_same_count_replacement_and_duplicates(self) -> None:
         original = [

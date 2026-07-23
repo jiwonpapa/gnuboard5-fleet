@@ -12,7 +12,7 @@
 - Desktop: 기존 Tauri 제품을 보존하는 호환 제품
 - Tablet: 서버판 React PWA를 1차 배포 대상으로 사용하고, 필요할 때 Tauri mobile wrapper를 추가
 
-무료 사용 정책은 오픈소스 라이선스를 뜻하지 않습니다. 루트 라이선스는 아직 확정되지 않았으며 `LICENSES.md`가 현재 경계를 설명합니다.
+Fleet Core, PHP Connector, Desktop, 공개 SDK는 Apache License 2.0으로 배포합니다. 공식 Commerce 구현과 제3자 플러그인은 각 플러그인 저장소에서 독립 라이선스를 선택할 수 있으며, `LICENSES.md`가 현재 경계를 설명합니다.
 
 ## 검증
 

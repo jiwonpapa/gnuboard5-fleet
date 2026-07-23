@@ -2,7 +2,7 @@
 name = "g5-admin-ssh"
 version = "0.1.0"
 edition = "2021"
-license = "LicenseRef-Proprietary"
+license = "Apache-2.0"
 
 [dependencies]
 russh = { version = "0.62.2", default-features = false, features = ["flate2", "ring", "rsa"] }

@@ -26,7 +26,7 @@
           "required": ["proof_level", "required_checks"],
           "properties": {
             "proof_level": {"const": "SCAFFOLD_PASS"},
-            "required_checks": {"const": ["repository.destination_state", "governance.schemas", "governance.constitution", "governance.product_manifest", "migration.provenance", "upstream.lock"]}
+            "required_checks": {"const": ["repository.destination_state", "governance.schemas", "governance.constitution", "governance.product_manifest", "governance.license_policy", "migration.provenance", "upstream.lock"]}
           }
         },
         "migration_static": {

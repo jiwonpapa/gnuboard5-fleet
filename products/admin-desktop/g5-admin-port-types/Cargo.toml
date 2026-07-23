@@ -2,6 +2,6 @@
 name = "g5-admin-port-types"
 version = "0.1.0"
 edition = "2021"
-license = "LicenseRef-Proprietary"
+license = "Apache-2.0"
 
 [dependencies]

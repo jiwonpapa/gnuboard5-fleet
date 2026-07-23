@@ -7,7 +7,7 @@
 - canonical OpenAPI 312개 축소 금지
 - 활성 관리자 189개, 일반 게시판 26개, 관리자 Shop 26개 기준 고정
 - 공식 GnuBoard5 v5.6.32 commit·tree·파일 fingerprint 고정
-- Fleet Core 무료 정책, Commerce 유료 플러그인, Telegram/Web Push 기본 경계 고정
+- Fleet Core·공개 SDK Apache-2.0, 플러그인별 독립 라이선스, Telegram/Web Push 기본 경계 고정
 - Python migration audit와 변이 회귀 테스트 구축
 
 ## 아직 인증하지 않는 것

@@ -23,4 +23,4 @@ bun run tauri dev
 
 ## License
 
-This package is licensed under the [AGPL-3.0](LICENSE).
+This package is licensed under the [Apache License 2.0](LICENSE).

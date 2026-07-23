@@ -46,4 +46,4 @@ composer run ci:local
 - link management: `/auth/external/links`, `/auth/external/{provider}/links`, `/auth/external/{provider}/links/{provider_user_id}`
 
 ## License
-This project is licensed under the [AGPL-3.0](LICENSE).
+This project is licensed under the [Apache License 2.0](LICENSE).

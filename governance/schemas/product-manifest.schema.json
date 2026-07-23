@@ -21,7 +21,7 @@
           "required": ["pricing", "source_license", "required", "capabilities"],
           "properties": {
             "pricing": {"const": "free"},
-            "source_license": {"type": "string", "minLength": 1},
+            "source_license": {"const": "Apache-2.0"},
             "required": {"const": true},
             "capabilities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
           }
@@ -29,11 +29,13 @@
         "commerce": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["pricing", "delivery", "source_license", "required", "implementation_location", "contract_location"],
+          "required": ["pricing", "delivery", "source_license", "sdk_license", "third_party_license_policy", "required", "implementation_location", "contract_location"],
           "properties": {
             "pricing": {"const": "paid"},
             "delivery": {"const": "optional_plugin"},
             "source_license": {"const": "commercial"},
+            "sdk_license": {"const": "Apache-2.0"},
+            "third_party_license_policy": {"const": "independent_per_plugin"},
             "required": {"const": false},
             "implementation_location": {"const": "separate_private_repository"},
             "contract_location": {"const": "plugins/commerce-sdk"}

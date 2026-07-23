@@ -7,7 +7,7 @@
   "editions": {
     "fleet_core": {
       "pricing": "free",
-      "source_license": "decision_required",
+      "source_license": "Apache-2.0",
       "required": true,
       "capabilities": [
         "multisite_registry",
@@ -24,6 +24,8 @@
       "pricing": "paid",
       "delivery": "optional_plugin",
       "source_license": "commercial",
+      "sdk_license": "Apache-2.0",
+      "third_party_license_policy": "independent_per_plugin",
       "required": false,
       "implementation_location": "separate_private_repository",
       "contract_location": "plugins/commerce-sdk"

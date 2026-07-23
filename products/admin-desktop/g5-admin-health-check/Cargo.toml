@@ -2,7 +2,7 @@
 name = "g5-admin-health-check"
 version = "0.1.0"
 edition = "2021"
-license = "LicenseRef-Proprietary"
+license = "Apache-2.0"
 
 [dependencies]
 g5-admin-error-contract = { path = "../g5-admin-error-contract" }

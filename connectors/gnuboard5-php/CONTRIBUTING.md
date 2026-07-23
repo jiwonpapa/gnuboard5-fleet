@@ -46,4 +46,4 @@ By submitting a pull request, you agree to the [Contributor License Agreement](.
 
 ## License
 
-All contributions are licensed under [AGPL-3.0](./LICENSE).
+All contributions are licensed under the [Apache License 2.0](./LICENSE).

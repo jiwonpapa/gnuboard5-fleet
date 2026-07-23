@@ -1,11 +1,12 @@
 # License Boundary
 
-루트 제품 라이선스는 아직 확정되지 않았습니다. 확정 전에는 이 저장소 공개만으로 별도의 사용·복제·재배포 권한을 부여하지 않습니다.
+G5 Fleet의 공개 Core와 공개 플러그인 계약은 Apache License 2.0으로 배포합니다.
 
-- Fleet Core: 무료 사용 정책, 소스 라이선스 결정 필요
-- Commerce 플러그인 구현: 별도 비공개 저장소의 상용 라이선스
-- PHP Connector: 이관된 원본 저장소의 라이선스 표기 충돌을 해소하기 전 릴리스 차단
-- Rust/Tauri 원본: workspace AGPL 표기와 일부 proprietary 표기를 해소하기 전 릴리스 차단
-- GnuBoard5 upstream: GNU LGPL 2.1, 원본 코드는 이 저장소에 vendor하지 않음
+- Fleet Core, PHP Connector, Desktop, Server, Web: Apache-2.0
+- `plugins/commerce-sdk`: Apache-2.0 공개 계약
+- 공식 Commerce 구현: 별도 비공개 저장소의 독립 상용 라이선스
+- 제3자 플러그인: 각 저작권자가 독립적으로 라이선스 선택
+- GnuBoard5 upstream: GNU LGPL 2.1, 원본 코드는 제품 저장소에 vendor하지 않음
+- 외부 의존성·생성 번들: 각 원저작자의 라이선스와 고지를 그대로 유지
 
-각 이관 하위 트리의 기존 라이선스 파일은 provenance 보존을 위해 유지합니다. 이는 루트 제품 라이선스 결정으로 자동 승계되지 않습니다.
+Apache-2.0은 G5 Fleet 상표·로고에 대한 사용권을 부여하지 않습니다. 플러그인의 독립 라이선스는 Fleet Core의 라이선스를 변경하지 않으며, Fleet Core 역시 플러그인 라이선스를 요구하지 않고 정상 부팅해야 합니다.

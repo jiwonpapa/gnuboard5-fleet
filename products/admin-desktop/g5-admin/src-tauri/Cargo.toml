@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "G5 REST API Admin Desktop App — Tauri v2"
 authors = ["jiwonpapa"]
 edition = "2021"
-license = "LicenseRef-Proprietary"
+license = "Apache-2.0"
 
 [lib]
 name = "g5_admin_lib"

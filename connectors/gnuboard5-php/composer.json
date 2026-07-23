@@ -1,7 +1,7 @@
 {
     "name": "gnuboard5/rest-api",
     "description": "Gnuboard5 REST API Plugin",
-    "license": "AGPL-3.0-or-later",
+    "license": "Apache-2.0",
     "type": "project",
     "require": {
         "php": "^8.1",

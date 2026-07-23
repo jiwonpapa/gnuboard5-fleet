@@ -2,7 +2,7 @@
 
 ## 1. 제품 정체성
 
-G5 Fleet는 여러 그누보드5 사이트를 관리하는 self-hosted 서버 제품입니다. Fleet Core는 무료 사용 정책이며, Commerce는 선택형 유료 플러그인입니다. Telegram과 Web Push는 Fleet Core 기본 알림 채널이지만 자격 증명이 없는 상태도 정상 설치 상태입니다.
+G5 Fleet는 여러 그누보드5 사이트를 관리하는 self-hosted 서버 제품입니다. Fleet Core와 공개 SDK는 Apache-2.0이며, Commerce는 독립 라이선스를 사용하는 선택형 유료 플러그인입니다. Telegram과 Web Push는 Fleet Core 기본 알림 채널이지만 자격 증명이 없는 상태도 정상 설치 상태입니다.
 
 PHP REST API와 관리자 서버는 같은 Git 저장소에서 개발하되 별도 산출물로 배포합니다. PHP Connector는 사이트 소유자의 명시적 승인 없이 설치·수정하지 않습니다.
 
@@ -20,6 +20,7 @@ PHP REST API와 관리자 서버는 같은 Git 저장소에서 개발하되 별�
 - Fleet Core는 Commerce 구현을 import하거나 Commerce 라이선스가 있어야 부팅되도록 만들지 않습니다.
 - Commerce 미설치는 지원되는 정상 상태입니다.
 - Commerce SDK/계약은 공개할 수 있지만 상용 구현은 별도 비공개 저장소에 둡니다.
+- 공개 SDK는 Apache-2.0으로 배포하고 공식·제3자 플러그인은 각 저장소에서 독립 라이선스를 선택할 수 있습니다.
 - 기능 잠금은 브라우저 UI가 아니라 PHP Connector, 서버 route·권한, application service, 계약 overlay 전체에서 강제합니다.
 - 결제 취소·환불·회원 삭제 등 고위험 작업은 step-up 인증과 감사 로그 없이 제공하지 않습니다.
 

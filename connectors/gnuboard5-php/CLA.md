@@ -18,9 +18,9 @@ You represent that your contribution is your original work and that you have the
 
 The project maintainer is not obligated to use your contribution and may modify or reject it at their discretion.
 
-## 4. Dual Licensing
+## 4. Project Licensing
 
-You understand that this project uses AGPL-based open-source distribution and may also be distributed under a separate commercial license.
+You understand that this project is distributed under the Apache License 2.0. Optional plugins are separate works with their own licenses unless explicitly stated otherwise.
 
 ## 5. Agreement
 

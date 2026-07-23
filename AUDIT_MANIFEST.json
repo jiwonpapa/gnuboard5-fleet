@@ -19,6 +19,7 @@
         "governance.schemas",
         "governance.constitution",
         "governance.product_manifest",
+        "governance.license_policy",
         "migration.provenance",
         "upstream.lock"
       ]

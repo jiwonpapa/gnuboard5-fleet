@@ -196,6 +196,7 @@ EXPECTED_PROFILE_CONTRACTS: dict[str, dict[str, object]] = {
             "governance.schemas",
             "governance.constitution",
             "governance.product_manifest",
+            "governance.license_policy",
             "migration.provenance",
             "upstream.lock",
         ],
@@ -899,6 +900,7 @@ def check_constitution(root: Path) -> str:
         "관리자 Shop 26개",
         "전역 `active_site_id`",
         "MIGRATION_STATIC_PASS",
+        "Apache-2.0",
     )
     missing = [item for item in required if item not in text]
     if missing:
@@ -927,8 +929,16 @@ def check_product_manifest(root: Path) -> str:
     commerce = editions.get("commerce")
     if not isinstance(core, dict) or core.get("pricing") != "free" or core.get("required") is not True:
         raise ValueError("Fleet Core boundary mismatch")
+    if core.get("source_license") != "Apache-2.0":
+        raise ValueError("Fleet Core license must be Apache-2.0")
     if not isinstance(commerce, dict) or commerce.get("pricing") != "paid" or commerce.get("required") is not False:
         raise ValueError("Commerce boundary mismatch")
+    if (
+        commerce.get("source_license") != "commercial"
+        or commerce.get("sdk_license") != "Apache-2.0"
+        or commerce.get("third_party_license_policy") != "independent_per_plugin"
+    ):
+        raise ValueError("Commerce plugin license boundary mismatch")
     baseline = payload.get("contract_baseline")
     expected = {
         "openapi_operations": 312,
@@ -941,7 +951,69 @@ def check_product_manifest(root: Path) -> str:
     }
     if baseline != expected:
         raise ValueError("product contract baseline mismatch")
-    return "Fleet Core·Commerce 및 exact operation set 312/189/26/26 기준 확인"
+    return "Apache Core·독립 Commerce 라이선스 및 exact operation set 312/189/26/26 기준 확인"
+
+
+def check_license_policy(root: Path) -> str:
+    canonical_license = root / "LICENSE"
+    canonical_notice = root / "NOTICE"
+    if not canonical_license.is_file() or not canonical_notice.is_file():
+        raise ValueError("root Apache LICENSE or NOTICE is missing")
+    license_text = canonical_license.read_text(encoding="utf-8")
+    if (
+        "Apache License" not in license_text
+        or "Version 2.0, January 2004" not in license_text
+        or "END OF TERMS AND CONDITIONS" not in license_text
+    ):
+        raise ValueError("root LICENSE is not the complete Apache License 2.0 text")
+
+    license_copies = (
+        "connectors/gnuboard5-php/LICENSE",
+        "products/admin-desktop/LICENSE",
+        "products/admin-desktop/g5-admin/LICENSE",
+        "plugins/commerce-sdk/LICENSE",
+    )
+    notice_copies = (
+        "connectors/gnuboard5-php/NOTICE",
+        "products/admin-desktop/NOTICE",
+        "products/admin-desktop/g5-admin/NOTICE",
+        "plugins/commerce-sdk/NOTICE",
+    )
+    for relative in license_copies:
+        path = root / relative
+        if not path.is_file() or sha256(path) != sha256(canonical_license):
+            raise ValueError(f"Apache license copy drifted: {relative}")
+    for relative in notice_copies:
+        path = root / relative
+        if not path.is_file() or sha256(path) != sha256(canonical_notice):
+            raise ValueError(f"NOTICE copy drifted: {relative}")
+
+    legacy_proprietary_files = (
+        root / "products/admin-desktop/g5-admin/LICENSE-RUNTIME",
+        root / "products/admin-desktop/g5-admin/LICENSE-SOURCE",
+    )
+    if any(path.exists() for path in legacy_proprietary_files):
+        raise ValueError("legacy proprietary desktop license files must be absent")
+
+    composer = load_json(root / "connectors/gnuboard5-php/composer.json")
+    package = load_json(root / "products/admin-desktop/g5-admin/package.json")
+    if composer.get("license") != "Apache-2.0" or package.get("license") != "Apache-2.0":
+        raise ValueError("PHP or frontend package license metadata drifted")
+
+    cargo_manifests = sorted((root / "products/admin-desktop").rglob("Cargo.toml"))
+    if not cargo_manifests:
+        raise ValueError("Rust Cargo manifests are missing")
+    for manifest in cargo_manifests:
+        text = manifest.read_text(encoding="utf-8")
+        if not re.search(r'(?m)^license = "Apache-2\.0"$', text):
+            raise ValueError(
+                "Rust package license metadata drifted: "
+                + str(manifest.relative_to(root))
+            )
+    return (
+        f"Apache-2.0 LICENSE·NOTICE와 PHP·frontend·Rust {len(cargo_manifests)}개 "
+        "메타데이터, 독립 플러그인 경계 확인"
+    )
 
 
 def check_provenance(root: Path) -> str:
@@ -1493,6 +1565,7 @@ CHECKS: dict[str, Callable[[Path], str]] = {
     "governance.schemas": check_schema_validation,
     "governance.constitution": check_constitution,
     "governance.product_manifest": check_product_manifest,
+    "governance.license_policy": check_license_policy,
     "migration.provenance": check_provenance,
     "upstream.lock": check_upstream_lock,
     "migration.history": check_history,

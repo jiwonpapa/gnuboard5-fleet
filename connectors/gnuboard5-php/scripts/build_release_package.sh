@@ -37,7 +37,9 @@ tar -czf "${PACKAGE_PATH}" \
   .env.example \
   .gitignore \
   README.md \
+  LICENSE \
   LICENSE.txt \
+  NOTICE \
   SECURITY.md
 
 log "Package created: ${PACKAGE_PATH}"
