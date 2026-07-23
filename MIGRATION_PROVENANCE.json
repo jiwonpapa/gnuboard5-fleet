@@ -39,7 +39,7 @@
     },
     {
       "id": "rust-admin",
-      "role": "active_consumer_origin",
+      "role": "legacy_consumer_reference",
       "origin": "https://github.com/jiwonpapa/g5-rust-admin.git",
       "source_branch": "codex/tauri-openapi-consumer-parity",
       "source_commit": "8e78aa79a7fa032eff294a543e03644a6d912414",

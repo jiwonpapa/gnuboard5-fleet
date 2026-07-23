@@ -67,6 +67,9 @@ class ConsumerFixture:
         requirements = self.desktop / "scripts/requirements-audit.txt"
         requirements.parent.mkdir(parents=True)
         requirements.write_text("PyYAML==6.0.3\n", encoding="utf-8")
+        audit_requirements = self.root / consumers.AUDIT_REQUIREMENTS_RELATIVE
+        audit_requirements.parent.mkdir(parents=True)
+        audit_requirements.write_text("PyYAML==6.0.3\n", encoding="utf-8")
         (self.root / ".gitignore").write_text(
             ".cache/\nnode_modules/\ntarget/\n",
             encoding="utf-8",
@@ -179,6 +182,33 @@ class PrepareConsumersTests(unittest.TestCase):
             str(self.fixture.bun),
             str(self.fixture.cargo),
             str(self.fixture.python),
+        )
+
+    def prepare_audit(self) -> dict[str, object]:
+        return consumers.prepare_audit(
+            self.fixture.root,
+            str(self.fixture.python),
+        )
+
+    def verify_audit(self) -> dict[str, object]:
+        return consumers.verify_audit(
+            self.fixture.root,
+            str(self.fixture.python),
+        )
+
+    def test_routine_audit_runtime_never_invokes_desktop_bun_or_cargo(self) -> None:
+        payload = self.prepare_audit()
+        self.assertEqual(consumers.AUDIT_MANIFEST_KIND, payload["kind"])
+        self.assertEqual(
+            consumers.AUDIT_MANIFEST_RELATIVE.as_posix(),
+            self.verify_audit()["manifest"],
+        )
+        calls = self.fixture.calls()
+        self.assertFalse(any(call["tool"] in {"bun", "cargo"} for call in calls))
+        self.assertEqual({"python"}, set(payload["tools"]))
+        self.assertEqual(
+            consumers.AUDIT_REQUIREMENTS_RELATIVE.as_posix(),
+            payload["inputs"]["python_audit_requirements"]["path"],
         )
 
     def test_prepare_uses_locked_commands_and_verify_is_offline_only(self) -> None:

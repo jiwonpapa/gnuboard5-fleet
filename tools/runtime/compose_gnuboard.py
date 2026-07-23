@@ -28,6 +28,8 @@ MANIFEST_RELATIVE = Path(".cache/composed/gnuboard5-php.manifest.json")
 UPSTREAM_LOCKED_REF = "refs/g5-fleet/upstreams/gnuboard5"
 REGULAR_GIT_MODES = {"100644", "100755"}
 UNSAFE_PERMISSION_BITS = stat.S_IWGRP | stat.S_IWOTH | stat.S_ISUID | stat.S_ISGID | stat.S_ISVTX
+RUNTIME_GENERATED_FILES = {".phpunit.result.cache"}
+RUNTIME_GENERATED_PREFIXES = ("output/",)
 
 
 @dataclass(frozen=True)
@@ -192,7 +194,18 @@ def copy_overlay(entries: dict[str, SourceEntry], destination: Path) -> None:
         os.utime(target, (0, 0), follow_symlinks=False)
 
 
-def filesystem_entries(root: Path, *, exclude_vendor: bool = False) -> list[SourceEntry]:
+def is_runtime_generated(relative: str) -> bool:
+    return relative in RUNTIME_GENERATED_FILES or relative.startswith(
+        RUNTIME_GENERATED_PREFIXES
+    )
+
+
+def filesystem_entries(
+    root: Path,
+    *,
+    exclude_vendor: bool = False,
+    exclude_runtime_generated: bool = False,
+) -> list[SourceEntry]:
     if not root.is_dir() or root.is_symlink():
         raise RuntimeError(f"runtime directory is missing or unsafe: {root}")
     entries: list[SourceEntry] = []
@@ -205,6 +218,8 @@ def filesystem_entries(root: Path, *, exclude_vendor: bool = False) -> list[Sour
         permissions = stat.S_IMODE(path.lstat().st_mode)
         if permissions & UNSAFE_PERMISSION_BITS:
             raise RuntimeError(f"unsafe runtime permissions {permissions:04o}: {relative}")
+        if exclude_runtime_generated and is_runtime_generated(relative):
+            continue
         if path.is_dir():
             continue
         if not path.is_file():
@@ -345,7 +360,7 @@ def manifest_payload(
     composer_version: str,
 ) -> dict[str, Any]:
     installed, vendor_sha = validate_dependencies(runtime)
-    runtime_entries = filesystem_entries(runtime)
+    runtime_entries = filesystem_entries(runtime, exclude_runtime_generated=True)
     connector_openapi = root / "connectors/gnuboard5-php/api/docs/openapi.yaml"
     composed_openapi = runtime / "api/docs/openapi.yaml"
     canonical_sha = sha256_file(connector_openapi)
@@ -473,7 +488,14 @@ def verify(root: Path) -> dict[str, Any]:
     runtime = root / RUNTIME_RELATIVE
     if runtime.is_symlink() or not runtime.is_dir():
         raise RuntimeError("prepared composed runtime is missing or unsafe")
-    actual_non_vendor = {entry.path: entry for entry in filesystem_entries(runtime, exclude_vendor=True)}
+    actual_non_vendor = {
+        entry.path: entry
+        for entry in filesystem_entries(
+            runtime,
+            exclude_vendor=True,
+            exclude_runtime_generated=True,
+        )
+    }
     expected_non_vendor = overlay
     if set(actual_non_vendor) != set(expected_non_vendor):
         missing = sorted(set(expected_non_vendor) - set(actual_non_vendor))[:20]

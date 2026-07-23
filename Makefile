@@ -6,7 +6,7 @@ AUDIT_PATH := $(AUDIT_VENV)/bin:$(PATH)
 export PYTHONDONTWRITEBYTECODE := 1
 
 .NOTPARALLEL: bootstrap prepare check
-.PHONY: doctor bootstrap prepare check test-audit test-upstream test-runtime runtime-prepare runtime-verify consumer-prepare consumer-verify audit-scaffold audit-migration upstream-sync upstream-audit upstream-verify secret-scan
+.PHONY: doctor bootstrap prepare check test-audit test-upstream test-runtime runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration upstream-sync upstream-audit upstream-verify secret-scan
 
 doctor:
 	@cd "$(ROOT)" && command -v git >/dev/null
@@ -37,10 +37,16 @@ runtime-prepare:
 runtime-verify:
 	cd "$(ROOT)" && $(PYTHON) tools/runtime/compose_gnuboard.py --verify-only
 
-consumer-prepare:
+audit-runtime-prepare:
+	cd "$(ROOT)" && $(PYTHON) tools/runtime/prepare_consumers.py prepare-audit --python "$(PYTHON)"
+
+audit-runtime-verify:
+	cd "$(ROOT)" && $(PYTHON) tools/runtime/prepare_consumers.py verify-audit --python "$(PYTHON)"
+
+legacy-consumer-prepare:
 	cd "$(ROOT)" && $(PYTHON) tools/runtime/prepare_consumers.py prepare --python "$(PYTHON)"
 
-consumer-verify:
+legacy-consumer-verify:
 	cd "$(ROOT)" && $(PYTHON) tools/runtime/prepare_consumers.py verify --python "$(PYTHON)"
 
 bootstrap:
@@ -50,7 +56,7 @@ bootstrap:
 prepare:
 	+$(MAKE) upstream-verify
 	+$(MAKE) runtime-prepare
-	+$(MAKE) consumer-prepare
+	+$(MAKE) audit-runtime-prepare
 
 audit-scaffold:
 	cd "$(ROOT)" && $(PYTHON) tools/audit/g5audit.py --profile scaffold
@@ -65,7 +71,7 @@ check:
 	+$(MAKE) test-upstream
 	+$(MAKE) test-runtime
 	+$(MAKE) runtime-verify
-	+$(MAKE) consumer-verify
+	+$(MAKE) audit-runtime-verify
 	+$(MAKE) audit-migration
 
 secret-scan:

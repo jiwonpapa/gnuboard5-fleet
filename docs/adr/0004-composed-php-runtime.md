@@ -27,7 +27,7 @@ Composer install은 prepare 단계에만 있습니다. `make check`는 네트워
 - vendor·전체 runtime fingerprint
 - 합성 OpenAPI/manifest와 canonical tracked connector 원본의 동일 해시
 
-PHP docs-check와 Rust API pipeline child audit의 실행 `php-root`는 composed runtime입니다. 감사 결과의 canonical 계약 식별자는 계속 `connectors/gnuboard5-php/api/docs/openapi.yaml`이며, 두 파일 해시가 다르면 통과할 수 없습니다.
+PHP docs-check의 실행 `php-root`는 composed runtime입니다. 감사 결과의 canonical 계약 식별자는 계속 `connectors/gnuboard5-php/api/docs/openapi.yaml`이며, 두 파일 해시가 다르면 통과할 수 없습니다. 참조 전용 Rust/Tauri child audit는 routine gate에서 실행하지 않으며 B02 이후 활성 Axum/React 감사가 이 composed provider 계약을 소비합니다.
 
 ## 결과
 

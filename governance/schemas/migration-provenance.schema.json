@@ -42,7 +42,7 @@
         "required": ["id", "role", "origin", "source_branch", "source_commit", "source_tree", "original_source_commit", "original_source_tree", "original_repository_visibility", "excluded_output_files", "excluded_generated_artifacts", "clean", "destination_prefix"],
         "properties": {
           "id": {"enum": ["php-rest-api", "rust-admin"]},
-          "role": {"type": "string", "minLength": 1},
+          "role": {"enum": ["openapi_provider", "legacy_consumer_reference"]},
           "origin": {"type": "string", "minLength": 1},
           "source_branch": {"type": "string", "minLength": 1},
           "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},

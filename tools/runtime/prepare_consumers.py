@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Prepare and verify the Rust/Tauri consumer dependency cache.
+"""Prepare and verify dependency caches used by repository audits.
 
 Preparation is the only mode allowed to resolve dependencies. Verification is
 strictly offline and binds the prepared state to the current clean Git commit,
-the JavaScript/Rust/Python dependency inputs, exact tool and venv versions, and
-the local executables required by the audit pipeline.
+the dependency inputs, exact tool and venv versions, and the local executables
+required by the selected audit pipeline.
+
+The legacy ``prepare``/``verify`` modes preserve reproducibility for the
+reference-only desktop snapshot. Routine repository gates use
+``prepare-audit``/``verify-audit`` and never install or inspect its Bun, Cargo,
+Tauri, or native packaging dependencies.
 """
 
 from __future__ import annotations
@@ -32,10 +37,13 @@ BUN_LOCK_RELATIVE = WEB_RELATIVE / "bun.lock"
 CARGO_LOCK_RELATIVE = DESKTOP_RELATIVE / "Cargo.lock"
 PYTHON_REQUIREMENTS_RELATIVE = DESKTOP_RELATIVE / "scripts/requirements-audit.txt"
 MANIFEST_RELATIVE = Path(".cache/runtime/admin-desktop-consumers.manifest.json")
+AUDIT_REQUIREMENTS_RELATIVE = Path("tools/audit/requirements.txt")
+AUDIT_MANIFEST_RELATIVE = Path(".cache/runtime/python-audit.manifest.json")
 PYTHON_VENV_RELATIVE = Path(".cache/runtime/python-audit")
 REQUIRED_LOCAL_BINS = ("tsc", "eslint", "vitest")
 SCHEMA_VERSION = 1
 MANIFEST_KIND = "g5-fleet-admin-desktop-consumers"
+AUDIT_MANIFEST_KIND = "g5-fleet-python-audit-runtime"
 PINNED_REQUIREMENT = re.compile(
     r"^(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)=="
     r"(?P<version>[A-Za-z0-9][A-Za-z0-9.!+_-]*)$"
@@ -252,8 +260,11 @@ def require_declared_bun(root: Path, tools: dict[str, dict[str, str]]) -> None:
         raise RuntimeError(f"Bun version mismatch: package.json={declared} executable={actual}")
 
 
-def pinned_python_requirements(root: Path) -> dict[str, str]:
-    path = safe_file(root, PYTHON_REQUIREMENTS_RELATIVE)
+def pinned_python_requirements(
+    root: Path,
+    requirements_relative: Path = PYTHON_REQUIREMENTS_RELATIVE,
+) -> dict[str, str]:
+    path = safe_file(root, requirements_relative)
     requirements: dict[str, str] = {}
     for line_number, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         line = raw_line.strip()
@@ -263,7 +274,7 @@ def pinned_python_requirements(root: Path) -> dict[str, str]:
         if not match:
             raise RuntimeError(
                 "Python audit requirements must use exact name==version pins "
-                f"({PYTHON_REQUIREMENTS_RELATIVE}:{line_number})"
+                f"({requirements_relative}:{line_number})"
             )
         normalized = re.sub(r"[-_.]+", "-", match.group("name")).lower()
         if normalized in requirements:
@@ -371,8 +382,12 @@ def python_venv_inventory(root: Path, expected_pyyaml: str) -> dict[str, str]:
     }
 
 
-def prepare_python_audit(root: Path, python: str) -> dict[str, str]:
-    requirements = pinned_python_requirements(root)
+def prepare_python_audit(
+    root: Path,
+    python: str,
+    requirements_relative: Path = PYTHON_REQUIREMENTS_RELATIVE,
+) -> dict[str, str]:
+    requirements = pinned_python_requirements(root, requirements_relative)
     reset_python_venv(root)
     run(
         python,
@@ -393,7 +408,7 @@ def prepare_python_audit(root: Path, python: str) -> dict[str, str]:
         "--disable-pip-version-check",
         "--no-deps",
         "--requirement",
-        str(safe_file(root, PYTHON_REQUIREMENTS_RELATIVE)),
+        str(safe_file(root, requirements_relative)),
         cwd=root,
     )
     return python_venv_inventory(root, requirements["pyyaml"])
@@ -436,8 +451,11 @@ def local_bin_inventory(root: Path) -> dict[str, dict[str, str]]:
     return inventory
 
 
-def invalidate_manifest(root: Path) -> Path:
-    manifest = root / MANIFEST_RELATIVE
+def invalidate_manifest(
+    root: Path,
+    manifest_relative: Path = MANIFEST_RELATIVE,
+) -> Path:
+    manifest = root / manifest_relative
     ensure_safe_cache_parent(root, manifest)
     if manifest.is_symlink():
         raise RuntimeError(f"cache manifest symlink is forbidden: {manifest}")
@@ -446,6 +464,15 @@ def invalidate_manifest(root: Path) -> Path:
             raise RuntimeError(f"cache manifest is not a regular file: {manifest}")
         manifest.unlink()
     return manifest
+
+
+def audit_input_inventory(root: Path) -> dict[str, dict[str, str]]:
+    return {
+        "python_audit_requirements": {
+            "path": AUDIT_REQUIREMENTS_RELATIVE.as_posix(),
+            "sha256": sha256_file(safe_file(root, AUDIT_REQUIREMENTS_RELATIVE)),
+        }
+    }
 
 
 def write_manifest(path: Path, payload: dict[str, Any]) -> None:
@@ -623,9 +650,106 @@ def verify(
     }
 
 
+def prepare_audit(
+    root: Path,
+    python: str = sys.executable,
+) -> dict[str, Any]:
+    root = root.resolve(strict=True)
+    manifest_path = invalidate_manifest(root, AUDIT_MANIFEST_RELATIVE)
+    python_venv_path(root)
+    require_clean_repository(root)
+    head = repository_head(root)
+    before = audit_input_inventory(root)
+    tools = {"python": system_python_inventory(root, python)}
+    pinned_python_requirements(root, AUDIT_REQUIREMENTS_RELATIVE)
+
+    python_audit = prepare_python_audit(root, python, AUDIT_REQUIREMENTS_RELATIVE)
+
+    after = audit_input_inventory(root)
+    if after != before:
+        raise RuntimeError("audit dependency preparation changed its requirements input")
+    require_clean_repository(root)
+    payload: dict[str, Any] = {
+        "schema_version": SCHEMA_VERSION,
+        "kind": AUDIT_MANIFEST_KIND,
+        "status": "prepared",
+        "prepared_at": datetime.now(timezone.utc).isoformat(),
+        "repository": {"head": head},
+        "inputs": after,
+        "tools": tools,
+        "python_audit": python_audit,
+        "commands": {
+            "python_venv": [
+                "python",
+                "-m",
+                "venv",
+                PYTHON_VENV_RELATIVE.as_posix(),
+            ],
+            "python_install": [
+                "venv-python",
+                "-m",
+                "pip",
+                "install",
+                "--disable-pip-version-check",
+                "--no-deps",
+                "--requirement",
+                AUDIT_REQUIREMENTS_RELATIVE.as_posix(),
+            ],
+        },
+    }
+    write_manifest(manifest_path, payload)
+    return payload
+
+
+def verify_audit(
+    root: Path,
+    python: str = sys.executable,
+) -> dict[str, Any]:
+    root = root.resolve(strict=True)
+    manifest_path = root / AUDIT_MANIFEST_RELATIVE
+    ensure_safe_cache_parent(root, manifest_path)
+    if manifest_path.is_symlink() or not manifest_path.is_file():
+        raise RuntimeError("audit dependency manifest is missing or unsafe; run prepare-audit first")
+    require_clean_repository(root)
+    manifest = load_json(manifest_path)
+    if manifest.get("schema_version") != SCHEMA_VERSION:
+        raise RuntimeError("audit dependency manifest schema version mismatch")
+    if manifest.get("kind") != AUDIT_MANIFEST_KIND or manifest.get("status") != "prepared":
+        raise RuntimeError("audit dependency manifest identity/status is invalid")
+
+    head = repository_head(root)
+    repository = manifest.get("repository")
+    if not isinstance(repository, dict) or repository.get("head") != head:
+        raise RuntimeError("audit dependency manifest is stale for the current Git HEAD")
+
+    inputs = audit_input_inventory(root)
+    if manifest.get("inputs") != inputs:
+        raise RuntimeError("audit dependency requirements input drift detected")
+
+    tools = {"python": system_python_inventory(root, python)}
+    if manifest.get("tools") != tools:
+        raise RuntimeError("audit dependency Python identity drift detected")
+
+    requirements = pinned_python_requirements(root, AUDIT_REQUIREMENTS_RELATIVE)
+    python_audit = python_venv_inventory(root, requirements["pyyaml"])
+    if manifest.get("python_audit") != python_audit:
+        raise RuntimeError("Python audit venv drift detected")
+    return {
+        "status": "verified",
+        "head": head,
+        "manifest": AUDIT_MANIFEST_RELATIVE.as_posix(),
+        "inputs": inputs,
+        "tools": tools,
+        "python_audit": python_audit,
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("prepare", "verify"))
+    parser.add_argument(
+        "mode",
+        choices=("prepare", "verify", "prepare-audit", "verify-audit"),
+    )
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--bun", default="bun")
     parser.add_argument("--cargo", default="cargo")
@@ -636,13 +760,16 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     try:
-        payload = (
-            prepare(args.root, args.bun, args.cargo, args.python)
-            if args.mode == "prepare"
-            else verify(args.root, args.bun, args.cargo, args.python)
-        )
+        if args.mode == "prepare":
+            payload = prepare(args.root, args.bun, args.cargo, args.python)
+        elif args.mode == "verify":
+            payload = verify(args.root, args.bun, args.cargo, args.python)
+        elif args.mode == "prepare-audit":
+            payload = prepare_audit(args.root, args.python)
+        else:
+            payload = verify_audit(args.root, args.python)
     except RuntimeError as error:
-        print(f"consumer dependencies: FAIL: {error}", file=sys.stderr)
+        print(f"dependency runtime: FAIL: {error}", file=sys.stderr)
         return 1
     print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
     return 0

@@ -72,11 +72,54 @@ class G5AuditTest(unittest.TestCase):
         self.assertEqual(["b.sh"], MODULE.missing_tracked_paths({"a.php"}, required))
         self.assertEqual([], MODULE.missing_tracked_paths(set(required), required))
 
-    def test_each_tauri_bundle_icon_is_required_by_source_closure(self) -> None:
-        complete = set(MODULE.REQUIRED_TRACKED_PATHS)
-        for icon in MODULE.REQUIRED_TAURI_ICONS:
-            with self.subTest(icon=icon):
-                self.assertEqual([icon], MODULE.missing_tracked_paths(complete - {icon}))
+    def test_legacy_reference_boundary_rejects_tauri_in_active_manifests(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "MIGRATION_PROVENANCE.json").write_text(
+                json.dumps(
+                    {
+                        "sources": [
+                            {
+                                "id": "rust-admin",
+                                "role": "legacy_consumer_reference",
+                                "destination_prefix": "products/admin-desktop",
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (root / "PRODUCT_MANIFEST.json").write_text(
+                json.dumps(
+                    {
+                        "web_delivery": {
+                            "desktop_binary": False,
+                            "native_wrapper": False,
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            cargo = root / "apps/admin-server/Cargo.toml"
+            cargo.parent.mkdir(parents=True)
+            cargo.write_text(
+                '[package]\nname = "admin-server"\n[dependencies]\naxum = "1"\n',
+                encoding="utf-8",
+            )
+            package = root / "apps/admin-web/package.json"
+            package.parent.mkdir(parents=True)
+            package.write_text(
+                json.dumps({"dependencies": {"react": "1"}}),
+                encoding="utf-8",
+            )
+            self.assertIn("reference-only", MODULE.check_legacy_reference_boundary(root))
+
+            package.write_text(
+                json.dumps({"dependencies": {"@tauri-apps/api": "1"}}),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "depend on Tauri"):
+                MODULE.check_legacy_reference_boundary(root)
 
     def test_upstream_lock_requires_full_commit_tree_and_file_hashes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -234,22 +277,23 @@ class G5AuditTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "json_secret"):
                 MODULE.check_secret_history_hygiene(root)
 
-    def test_consumer_dependency_check_reuses_prepared_python_command(self) -> None:
+    def test_audit_dependency_check_reuses_prepared_python_command(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             verifier = root / "tools/runtime/prepare_consumers.py"
             verifier.parent.mkdir(parents=True)
             verifier.write_text("# verifier fixture\n", encoding="utf-8")
-            manifest = root / MODULE.CONSUMER_DEPENDENCY_MANIFEST
+            manifest = root / MODULE.AUDIT_DEPENDENCY_MANIFEST
             manifest.parent.mkdir(parents=True)
             manifest.write_text(
                 json.dumps({"tools": {"python": {"command": "python3"}}}),
                 encoding="utf-8",
             )
             with mock.patch.object(MODULE, "run_checked") as run_checked:
-                MODULE.check_consumer_dependencies(root)
+                MODULE.check_audit_dependencies(root)
             arguments = run_checked.call_args.args
             self.assertEqual(sys.executable, arguments[0])
+            self.assertIn("verify-audit", arguments)
             self.assertEqual("python3", arguments[arguments.index("--python") + 1])
 
     def test_product_manifest_rejects_contract_reduction(self) -> None:
@@ -478,6 +522,7 @@ class G5AuditTest(unittest.TestCase):
                 "sources": [
                     {
                         "id": "php-rest-api",
+                        "role": "openapi_provider",
                         "clean": True,
                         "source_commit": "a" * 40,
                         "source_tree": "b" * 40,
@@ -496,6 +541,7 @@ class G5AuditTest(unittest.TestCase):
                     },
                     {
                         "id": "rust-admin",
+                        "role": "legacy_consumer_reference",
                         "clean": True,
                         "source_commit": "c" * 40,
                         "source_tree": "d" * 40,
@@ -549,7 +595,7 @@ class G5AuditTest(unittest.TestCase):
         MODULE.hard_fail_states(audit_manifest)
         MODULE.validate_audit_manifest_contract(audit_manifest)
         audit_manifest["profiles"]["migration_static"]["required_checks"].remove(
-            "rust.consumer_scope"
+            "migration.legacy_reference_boundary"
         )
         with self.assertRaisesRegex(ValueError, "profile contract mismatch"):
             MODULE.validate_audit_manifest_contract(audit_manifest)
@@ -588,7 +634,7 @@ class G5AuditTest(unittest.TestCase):
                 "sources": [
                     {
                         "id": "php-rest-api",
-                        "role": "provider",
+                        "role": "openapi_provider",
                         "origin": "https://example.invalid/php.git",
                         "source_branch": "main",
                         "source_commit": "a" * 40,
@@ -609,7 +655,7 @@ class G5AuditTest(unittest.TestCase):
                     },
                     {
                         "id": "rust-admin",
-                        "role": "consumer",
+                        "role": "legacy_consumer_reference",
                         "origin": "https://example.invalid/rust.git",
                         "source_branch": "main",
                         "source_commit": "c" * 40,

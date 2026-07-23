@@ -12,7 +12,7 @@
 - 활성 제품을 Rust Axum 서버 + React 반응형 PWA로 확정
 - Tauri desktop/mobile 배포를 폐기하고 `products/admin-desktop`을 이관 참조 snapshot으로 봉인
 
-현재 migration profile은 기존 Tauri 소비 구현의 source closure를 이관 증거로 검증합니다. 이는 데스크톱 제품 지원 또는 서버판 구현 완료를 뜻하지 않습니다.
+현재 migration profile은 기존 Tauri snapshot의 provenance와 source closure만 이관 증거로 검증합니다. routine `make prepare/check`는 해당 snapshot의 Bun·Cargo·Tauri·네이티브 패키징 의존성을 준비하거나 빌드하지 않습니다. 이는 데스크톱 제품 지원 또는 서버판 구현 완료를 뜻하지 않습니다.
 
 ## 아직 인증하지 않는 것
 
@@ -25,4 +25,4 @@
 
 따라서 이번 완료 등급의 상한은 `MIGRATION_STATIC_PASS`입니다.
 
-다음 구현 배치는 `docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md`의 **B01 legacy 감사 분리**입니다.
+다음 구현 배치는 `docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md`의 **B02 활성 workspace 골격**입니다.

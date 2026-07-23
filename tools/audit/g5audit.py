@@ -35,6 +35,10 @@ EXPECTED_SOURCE_DESTINATIONS = {
     "php-rest-api": "connectors/gnuboard5-php",
     "rust-admin": "products/admin-desktop",
 }
+EXPECTED_SOURCE_ROLES = {
+    "php-rest-api": "openapi_provider",
+    "rust-admin": "legacy_consumer_reference",
+}
 EXPECTED_EXCLUDED_OUTPUT_FILES = {
     "php-rest-api": 231,
     "rust-admin": 77,
@@ -87,9 +91,7 @@ FORBIDDEN_HISTORY_PREFIXES = (
 )
 SECRET_SCAN_OVERLAP_BYTES = 8192
 SECRET_SCAN_CHUNK_BYTES = 1024 * 1024
-CONSUMER_DEPENDENCY_MANIFEST = Path(
-    ".cache/runtime/admin-desktop-consumers.manifest.json"
-)
+AUDIT_DEPENDENCY_MANIFEST = Path(".cache/runtime/python-audit.manifest.json")
 GENERIC_SECRET_CONFIG_SUFFIXES = {
     ".bash",
     ".cfg",
@@ -208,10 +210,10 @@ EXPECTED_PROFILE_CONTRACTS: dict[str, dict[str, object]] = {
             "migration.history",
             "migration.secret_history_hygiene",
             "migration.source_closure",
+            "migration.legacy_reference_boundary",
             "runtime.composed_provider",
-            "runtime.consumer_dependencies",
+            "runtime.audit_dependencies",
             "php.contract_inventory",
-            "rust.consumer_scope",
             "commerce.provider_retention",
             "product.notification_boundary",
         ],
@@ -1096,6 +1098,14 @@ def check_provenance(root: Path) -> str:
             "source destination mapping mismatch: "
             f"expected={EXPECTED_SOURCE_DESTINATIONS} actual={actual_destinations}"
         )
+    actual_roles = {
+        source_id: source.get("role") for source_id, source in indexed_sources.items()
+    }
+    if actual_roles != EXPECTED_SOURCE_ROLES:
+        raise ValueError(
+            "source role mapping mismatch: "
+            f"expected={EXPECTED_SOURCE_ROLES} actual={actual_roles}"
+        )
     import_commits = payload.get("import_commits")
     if not isinstance(import_commits, dict) or set(import_commits) != set(EXPECTED_SOURCE_DESTINATIONS):
         raise ValueError("import_commits must map both exact source ids")
@@ -1218,14 +1228,6 @@ def check_history(root: Path) -> str:
     return "private 원본 commit 비도달, sanitized PHP·Rust direct parent/subtree, clean HEAD 도달성 확인"
 
 
-REQUIRED_TAURI_ICONS = (
-    "products/admin-desktop/g5-admin/src-tauri/icons/32x32.png",
-    "products/admin-desktop/g5-admin/src-tauri/icons/128x128.png",
-    "products/admin-desktop/g5-admin/src-tauri/icons/128x128@2x.png",
-    "products/admin-desktop/g5-admin/src-tauri/icons/icon.icns",
-    "products/admin-desktop/g5-admin/src-tauri/icons/icon.ico",
-)
-
 REQUIRED_TRACKED_PATHS = (
     "connectors/gnuboard5-php/scripts/run_phpunit_coverage.sh",
     "connectors/gnuboard5-php/scripts/fetch_live_admin_config.sh",
@@ -1237,7 +1239,7 @@ REQUIRED_TRACKED_PATHS = (
     "connectors/gnuboard5-php/api/v1/Admin/Shop/Catalog/Service/AdminShopCatalogStockSmsService.php",
     "products/admin-desktop/specs/integration/ACTIVE_CONSUMER_SCOPE.json",
     "products/admin-desktop/specs/integration/LIVE_DOMAIN_CERTIFICATION.json",
-) + REQUIRED_TAURI_ICONS
+)
 
 
 def missing_tracked_paths(tracked: set[str], required: tuple[str, ...] = REQUIRED_TRACKED_PATHS) -> list[str]:
@@ -1250,6 +1252,82 @@ def check_source_closure(root: Path) -> str:
     if missing:
         raise ValueError("required sources are untracked: " + ", ".join(missing))
     return f"필수 clean-clone 소스 {len(REQUIRED_TRACKED_PATHS)}개 추적 확인"
+
+
+def _manifest_dependency_names(path: Path) -> set[str]:
+    if path.name == "Cargo.toml":
+        text = path.read_text(encoding="utf-8")
+        return {
+            match.group(1).lower()
+            for match in re.finditer(
+                r"(?m)^[ \t]*([A-Za-z0-9_-]+)[ \t]*=",
+                text,
+            )
+        }
+    payload = load_json(path)
+    names: set[str] = set()
+    for section in ("dependencies", "devDependencies", "peerDependencies", "optionalDependencies"):
+        values = payload.get(section)
+        if isinstance(values, dict):
+            names.update(str(name).lower() for name in values)
+    return names
+
+
+def check_legacy_reference_boundary(root: Path) -> str:
+    provenance = load_json(root / "MIGRATION_PROVENANCE.json")
+    sources = provenance.get("sources")
+    if not isinstance(sources, list):
+        raise ValueError("migration source inventory missing")
+    legacy = [
+        row
+        for row in sources
+        if isinstance(row, dict) and row.get("id") == "rust-admin"
+    ]
+    if len(legacy) != 1:
+        raise ValueError("legacy Rust reference provenance must have one source")
+    if (
+        legacy[0].get("role") != "legacy_consumer_reference"
+        or legacy[0].get("destination_prefix") != "products/admin-desktop"
+    ):
+        raise ValueError("legacy Rust source must be reference-only")
+
+    product = load_json(root / "PRODUCT_MANIFEST.json")
+    web_delivery = product.get("web_delivery")
+    if (
+        not isinstance(web_delivery, dict)
+        or web_delivery.get("desktop_binary") is not False
+        or web_delivery.get("native_wrapper") is not False
+    ):
+        raise ValueError("product manifest re-enabled a native desktop/wrapper")
+
+    active_manifests = [
+        path
+        for base in (root / "apps", root / "crates")
+        if base.is_dir()
+        for pattern in ("Cargo.toml", "package.json")
+        for path in base.rglob(pattern)
+    ]
+    forbidden: list[str] = []
+    for manifest in active_manifests:
+        dependencies = _manifest_dependency_names(manifest)
+        tauri_dependencies = sorted(
+            name
+            for name in dependencies
+            if name == "tauri"
+            or name.startswith("tauri-")
+            or name.startswith("@tauri-apps/")
+        )
+        if tauri_dependencies:
+            relative = manifest.relative_to(root).as_posix()
+            forbidden.append(f"{relative}:{','.join(tauri_dependencies)}")
+    if forbidden:
+        raise ValueError(
+            "active server/web manifests depend on Tauri: " + "; ".join(forbidden)
+        )
+    return (
+        "legacy Rust/Tauri provenance는 reference-only이며 "
+        f"활성 manifest {len(active_manifests)}개 Tauri 의존성 0"
+    )
 
 
 def operation_set_sha256(operation_keys: set[str]) -> str:
@@ -1536,20 +1614,20 @@ def check_composed_provider(root: Path) -> str:
     return "잠금 G5+PHP connector+Composer prepared runtime 입력 fingerprint 오프라인 검증"
 
 
-def check_consumer_dependencies(root: Path) -> str:
+def check_audit_dependencies(root: Path) -> str:
     verifier = root / "tools/runtime/prepare_consumers.py"
     if not verifier.is_file():
-        raise ValueError("consumer dependency verifier is missing")
-    manifest = load_json(root / CONSUMER_DEPENDENCY_MANIFEST)
+        raise ValueError("audit dependency verifier is missing")
+    manifest = load_json(root / AUDIT_DEPENDENCY_MANIFEST)
     tools = manifest.get("tools")
     python_tool = tools.get("python") if isinstance(tools, dict) else None
     prepared_python = python_tool.get("command") if isinstance(python_tool, dict) else None
     if not isinstance(prepared_python, str) or not prepared_python.strip():
-        raise ValueError("consumer dependency manifest Python command is missing")
+        raise ValueError("audit dependency manifest Python command is missing")
     run_checked(
         sys.executable,
         str(verifier),
-        "verify",
+        "verify-audit",
         "--root",
         str(root),
         "--python",
@@ -1557,7 +1635,7 @@ def check_consumer_dependencies(root: Path) -> str:
         root=root,
         timeout_seconds=300,
     )
-    return "Bun·Cargo·Python audit dependency lock/cache fingerprint 오프라인 검증"
+    return "Tauri와 분리된 Python audit dependency lock/cache fingerprint 검증"
 
 
 CHECKS: dict[str, Callable[[Path], str]] = {
@@ -1571,10 +1649,10 @@ CHECKS: dict[str, Callable[[Path], str]] = {
     "migration.history": check_history,
     "migration.secret_history_hygiene": check_secret_history_hygiene,
     "migration.source_closure": check_source_closure,
+    "migration.legacy_reference_boundary": check_legacy_reference_boundary,
     "runtime.composed_provider": check_composed_provider,
-    "runtime.consumer_dependencies": check_consumer_dependencies,
+    "runtime.audit_dependencies": check_audit_dependencies,
     "php.contract_inventory": check_contract_inventory,
-    "rust.consumer_scope": check_rust_scope,
     "commerce.provider_retention": check_commerce_retention,
     "product.notification_boundary": check_notification_boundary,
 }

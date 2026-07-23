@@ -53,7 +53,7 @@ scope 확인
 - 외부 DB 없이 SQLite WAL을 기본 저장소로 고정
 - DB 손상 시 fail-closed와 검증 backup 복구를 강제
 
-현재 상태: 문서와 manifest 변경 완료, commit 전.
+현재 상태: 완료. `678e424`로 검증·커밋·push했습니다.
 
 ### B01 — legacy 감사 분리
 
@@ -70,6 +70,8 @@ scope 확인
 - Tauri toolchain이 없는 환경에서 활성 scaffold check가 실행됨
 - legacy source가 없어지거나 변조되면 provenance gate는 실패함
 - legacy PASS를 `SERVER_STATIC_PASS`로 승격하지 않음
+
+현재 상태: 완료. routine gate는 Tauri snapshot을 provenance·tracked source로만 확인하며 별도 Python 감사 runtime을 사용합니다.
 
 ### B02 — 활성 workspace 골격
 
@@ -266,4 +268,4 @@ B06 전체 완료 조건:
 
 ## 4. 현재 바로 시작할 배치
 
-현재 시작점은 **B01 legacy 감사 분리**입니다. B01이 끝나기 전에 React UI 대량 이관이나 Axum route 189개 생성을 시작하지 않습니다. 먼저 활성 제품의 build·audit 경로에서 Tauri를 제거해야 이후 결과가 서버 제품 증거로 남습니다.
+현재 시작점은 **B02 활성 workspace 골격**입니다. React UI 대량 이관이나 Axum route 189개 생성을 바로 시작하지 않고, 먼저 활성 서버·웹 shell과 build·audit 경로를 독립적으로 닫습니다.

@@ -6,7 +6,7 @@
 
 활성 제품은 Rust Axum 서버와 React PWA로만 배포합니다. 기존 Tauri 코드는 UI와 Rust 소비 구현을 서버 구조로 이관하기 위한 참조 snapshot이며 데스크톱 제품, 네이티브 wrapper, 코드 서명·공증 또는 updater를 제공하지 않습니다. 결정 근거는 [`ADR-0006`](docs/adr/0006-server-only-product-pivot.md), 구현 기준은 [`서버·웹 기술 스택`](docs/architecture/SERVER_WEB_TECH_STACK.md)에 있습니다.
 
-구현은 [`서버 전환 목표 기반 배치 계획`](docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md)의 B00 → B10 순서로 진행합니다. 현재 첫 실행 대상은 legacy Tauri 감사와 활성 서버 검증을 분리하는 B01입니다.
+구현은 [`서버 전환 목표 기반 배치 계획`](docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md)의 B00 → B10 순서로 진행합니다. B00 방향 확정과 B01 legacy 감사 분리를 마쳤으며 다음 활성 구현은 B02 서버·웹 workspace입니다.
 
 ## 제품 구성
 
@@ -21,15 +21,17 @@ Fleet Core Server, Admin Web, PHP Connector와 공개 SDK는 Apache License 2.0�
 
 ```bash
 make doctor
-make bootstrap  # 최초 1회: upstream + PHP/Composer + Bun/Cargo/Python 의존성 준비
+make bootstrap  # 최초 1회: upstream + PHP/Composer + 격리 Python 감사 환경 준비
 make check
 ```
 
-이미 upstream checkout이 준비되어 있으면 `make prepare`만 실행합니다. 이 온라인 준비 단계는 검증된 G5 원본과 현재 clean destination의 PHP connector를 `.cache/composed/gnuboard5-php`에 새로 합성하고 Composer 잠금 의존성을 설치합니다. 이어서 Bun frozen lock, Cargo locked fetch, 격리 Python venv와 정확히 고정된 PyYAML을 준비합니다. 매번 stale Python/runtime 증적을 폐기하고 새 manifest를 기록합니다.
+이미 upstream checkout이 준비되어 있으면 `make prepare`만 실행합니다. 이 온라인 준비 단계는 검증된 G5 원본과 현재 clean destination의 PHP connector를 `.cache/composed/gnuboard5-php`에 새로 합성하고 Composer 잠금 의존성을 설치합니다. 이어서 `tools/audit/requirements.txt`만 사용하는 격리 Python venv와 정확히 고정된 PyYAML을 준비합니다. 매번 stale Python/runtime 증적을 폐기하고 새 manifest를 기록합니다.
 
-`make check`는 네트워크나 의존성 설치를 수행하지 않습니다. prepared manifest, G5 commit/tree/ref, connector subtree, Composer vendor, Bun local bins, Cargo offline metadata, Python/PyYAML fingerprint가 하나라도 누락되거나 달라지면 실패합니다. 그 뒤 합성 runtime의 실제 `adm/`·`install/`·`vendor/`를 입력으로 PHP docs-check와 Rust child static audit를 실행하며, Cargo와 Composer 네트워크를 차단하고 `bun x --no-install`만 허용합니다. OpenAPI 해시는 tracked connector 원본과 동일해야 합니다.
+`make check`는 네트워크나 의존성 설치를 수행하지 않습니다. prepared manifest, G5 commit/tree/ref, connector subtree, Composer vendor와 Python/PyYAML fingerprint가 하나라도 누락되거나 달라지면 실패합니다. 그 뒤 합성 runtime의 실제 `adm/`·`install/`·`vendor/`를 입력으로 PHP 계약 검사를 실행하며 OpenAPI 해시는 tracked connector 원본과 동일해야 합니다. PHPUnit과 문서 감사가 만드는 `.phpunit.result.cache`와 `output/`은 소스 overlay fingerprint에서 제외하되 symlink와 위험 권한은 계속 거부합니다.
 
-따라서 `make check`는 외부 서비스나 GitHub Actions 없이 이관 이력, 필수 소스 폐쇄, OpenAPI 312개, 활성 관리자 소비 189개, 일반 게시판 26개, 관리자 Shop 26개를 검증합니다. 현재 migration profile이 참조 Tauri snapshot의 소비 폐쇄를 확인하는 것은 이관 무결성 검증일 뿐 데스크톱 제품 지원이나 서버 구현 인증을 뜻하지 않습니다. 소스 또는 lock이 바뀌면 먼저 commit한 뒤 `make prepare`로 prepared runtime을 갱신해야 합니다.
+따라서 `make check`는 외부 서비스나 GitHub Actions 없이 이관 이력, 필수 legacy 소스 폐쇄, OpenAPI 312개, 활성 분류 189개, 일반 게시판 26개, 관리자 Shop 26개를 검증합니다. 참조 Tauri snapshot은 provenance와 추적 source closure만 확인하며 Bun/Cargo/Tauri 설치·빌드·아이콘 검사를 수행하지 않습니다. 이 결과는 데스크톱 제품 지원이나 아직 없는 서버 구현 인증을 뜻하지 않습니다. 소스 또는 lock이 바뀌면 먼저 commit한 뒤 `make prepare`로 prepared runtime을 갱신해야 합니다.
+
+과거 데스크톱 snapshot의 의존성 재현이 특별히 필요할 때만 `make legacy-consumer-prepare`와 `make legacy-consumer-verify`를 수동 실행합니다. 이 명령은 routine 제품 gate가 아닙니다.
 
 `migration.secret_history_hygiene`는 필수 로컬 게이트입니다. 현재 tracked 파일과 모든 reachable Git 이력의 blob을 자격 증명·고위험 개인정보 패턴으로 검사하고, 이력에 `output/`, `connectors/gnuboard5-php/output/`, `products/admin-desktop/output/`가 한 번이라도 등장하면 실패합니다. 예외는 [`governance/SECRET_HISTORY_POLICY.json`](governance/SECRET_HISTORY_POLICY.json)의 값 SHA-256, 패턴 ID, 경로 glob이 모두 일치하는 명시적 범위에서만 허용하며 원문 비밀값은 기록하지 않습니다. 설치된 Gitleaks로 추가 전수검사를 할 때는 `make secret-scan`을 실행합니다.
 

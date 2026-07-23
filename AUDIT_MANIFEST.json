@@ -31,10 +31,10 @@
         "migration.history",
         "migration.secret_history_hygiene",
         "migration.source_closure",
+        "migration.legacy_reference_boundary",
         "runtime.composed_provider",
-        "runtime.consumer_dependencies",
+        "runtime.audit_dependencies",
         "php.contract_inventory",
-        "rust.consumer_scope",
         "commerce.provider_retention",
         "product.notification_boundary"
       ]

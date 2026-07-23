@@ -155,7 +155,16 @@ class ComposeRuntimeTests(unittest.TestCase):
         stale.write_text("stale\n", encoding="utf-8")
         compose.prepare(self.fixture.root, str(self.fixture.composer))
         self.assertFalse(stale.exists())
+        (runtime / ".phpunit.result.cache").write_text("{}\n", encoding="utf-8")
+        generated = runtime / "output/admin-domain-pipeline/manifest-index.json"
+        generated.parent.mkdir(parents=True)
+        generated.write_text("{}\n", encoding="utf-8")
         compose.verify(self.fixture.root)
+
+        stale.write_text("stale\n", encoding="utf-8")
+        with self.assertRaisesRegex(RuntimeError, "file set mismatch"):
+            compose.verify(self.fixture.root)
+        stale.unlink()
 
         (runtime / "vendor/autoload.php").chmod(0o666)
         with self.assertRaisesRegex(RuntimeError, "unsafe runtime permissions"):

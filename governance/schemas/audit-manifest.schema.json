@@ -36,7 +36,7 @@
           "properties": {
             "proof_level": {"const": "MIGRATION_STATIC_PASS"},
             "inherits": {"const": "scaffold"},
-            "required_checks": {"const": ["migration.history", "migration.secret_history_hygiene", "migration.source_closure", "runtime.composed_provider", "runtime.consumer_dependencies", "php.contract_inventory", "rust.consumer_scope", "commerce.provider_retention", "product.notification_boundary"]}
+            "required_checks": {"const": ["migration.history", "migration.secret_history_hygiene", "migration.source_closure", "migration.legacy_reference_boundary", "runtime.composed_provider", "runtime.audit_dependencies", "php.contract_inventory", "commerce.provider_retention", "product.notification_boundary"]}
           }
         },
         "server_static": {
