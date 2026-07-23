@@ -1,0 +1,62 @@
+{
+  "schema": "gnuboard5.php.openapi-field-binding-policy/v1",
+  "contract": "api/docs/openapi.yaml",
+  "runtime_graph": "output/openapi-provider-audit/runtime-route-graph.json",
+  "consumer_scope": "api/docs/openapi.phase1-consumer-scope.json",
+  "source_roots": [
+    "api/v1",
+    "api/plugins",
+    "api/routes"
+  ],
+  "required_layers": [
+    "Controller",
+    "Service",
+    "Repository"
+  ],
+  "required_layer_overrides": {
+    "GET /health": [
+      "RouteClosure"
+    ],
+    "GET /admin/system/phpinfo": [
+      "Controller",
+      "Service"
+    ],
+    "POST /admin/system/maintenance/session-files/purge": [
+      "Controller",
+      "Service"
+    ],
+    "POST /admin/system/maintenance/cache-files/purge": [
+      "Controller",
+      "Service"
+    ],
+    "POST /admin/system/maintenance/captcha-files/purge": [
+      "Controller",
+      "Service"
+    ],
+    "POST /admin/system/maintenance/thumbnail-files/purge": [
+      "Controller",
+      "Service"
+    ],
+    "POST /admin/system/maintenance/member-list-files/purge": [
+      "Controller",
+      "Service"
+    ]
+  },
+  "request_locations": [
+    "path",
+    "query",
+    "header",
+    "cookie",
+    "body"
+  ],
+  "comparison": {
+    "require_operation_id": true,
+    "require_handler_source": true,
+    "require_no_dynamic_input_access": true,
+    "require_request_field_binding": true,
+    "require_success_response_field_binding": true,
+    "require_type_evidence": true,
+    "require_default_evidence_when_declared": true,
+    "require_enum_evidence_when_declared": true
+  }
+}

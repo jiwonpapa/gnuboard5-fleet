@@ -1,0 +1,10 @@
+parameters:
+    treatPhpDocTypesAsCertain: false
+    scanFiles:
+        - plugin/browscap/Browscap.php
+        - lib/PHPExcel/IOFactory.php
+        - lib/icode.sms.lib.php
+        - lib/icode.lms.lib.php
+    ignoreErrors:
+        -
+            identifier: missingType.iterableValue

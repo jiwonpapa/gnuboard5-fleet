@@ -1,0 +1,3159 @@
+{
+  "version": 1,
+  "domains": [
+    {
+      "domain": "boards",
+      "title": "게시판",
+      "legacy_forms": [
+        {
+          "path": "adm/board_form.php",
+          "schema_scope": "schema_fields"
+        }
+      ],
+      "ignored_section_mismatches": [
+        "bo_sort_field"
+      ],
+      "ignored_render_type_mismatches": [
+        "bo_sort_field"
+      ],
+      "ignored_readonly_mismatches": [
+        "bo_table",
+        "bo_list_level",
+        "bo_reply_level",
+        "bo_link_level",
+        "bo_upload_level",
+        "bo_html_level",
+        "bo_skin",
+        "bo_mobile_skin",
+        "bo_content_head",
+        "bo_content_tail",
+        "bo_mobile_content_head",
+        "bo_mobile_content_tail",
+        "bo_1_subj",
+        "bo_1",
+        "bo_2_subj",
+        "bo_2",
+        "bo_3_subj",
+        "bo_3",
+        "bo_4_subj",
+        "bo_4",
+        "bo_5_subj",
+        "bo_5",
+        "bo_6_subj",
+        "bo_6",
+        "bo_7_subj",
+        "bo_7",
+        "bo_8_subj",
+        "bo_8",
+        "bo_9_subj",
+        "bo_9",
+        "bo_10_subj",
+        "bo_10"
+      ],
+      "ignored_schema_only_fields": [
+        "bo_count_comment",
+        "bo_count_write",
+        "bo_notice"
+      ],
+      "table": "g5_board",
+      "repo_file": "api/v1/Admin/Board/Repository/AdminBoardRepository.php",
+      "repo_field_const": "UPDATABLE_FIELDS",
+      "include_fields": [
+        "bo_table"
+      ],
+      "field_patterns": [
+        {
+          "pattern": "bo_(\\d+)_subj",
+          "label": "여분필드 {1} 제목",
+          "section_key": "anc_bo_extra",
+          "section_label": "게시판 여분필드 설정"
+        },
+        {
+          "pattern": "bo_(\\d+)",
+          "label": "여분필드 {1}",
+          "section_key": "anc_bo_extra",
+          "section_label": "게시판 여분필드 설정"
+        }
+      ],
+      "field_overrides": {
+        "bo_table": {
+          "label": "게시판 코드",
+          "required": true,
+          "create_only": true,
+          "readonly_on_update": true,
+          "description": "영문자, 숫자, _ 만 사용합니다."
+        },
+        "gr_id": {
+          "required": true,
+          "option_source": {
+            "kind": "endpoint",
+            "name": "admin.groups",
+            "endpoint": "/admin/groups",
+            "value_field": "gr_id",
+            "label_field": "gr_subject"
+          }
+        },
+        "bo_subject": {
+          "required": true
+        },
+        "bo_upload_count": {
+          "data_type": "integer",
+          "input_type": "number"
+        },
+        "bo_upload_size": {
+          "data_type": "integer",
+          "input_type": "number"
+        },
+        "bo_use_secret": {
+          "data_type": "integer",
+          "input_type": "select",
+          "options": [
+            {
+              "value": "0",
+              "label": "사용하지 않음"
+            },
+            {
+              "value": "1",
+              "label": "체크박스"
+            },
+            {
+              "value": "2",
+              "label": "무조건"
+            }
+          ]
+        },
+        "bo_select_editor": {
+          "option_source": {
+            "kind": "directory",
+            "name": "editor",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        "bo_reply_order": {
+          "options": [
+            {
+              "value": "1",
+              "label": "나중에 쓴 답변 아래로 달기"
+            },
+            {
+              "value": "0",
+              "label": "나중에 쓴 답변 위로 달기"
+            }
+          ]
+        },
+        "bo_content_head": {
+          "label": "상단 내용",
+          "section_key": "anc_bo_design",
+          "section_label": "게시판 디자인/양식"
+        },
+        "bo_mobile_content_head": {
+          "label": "모바일 상단 내용",
+          "section_key": "anc_bo_design",
+          "section_label": "게시판 디자인/양식"
+        },
+        "bo_content_tail": {
+          "label": "하단 내용",
+          "section_key": "anc_bo_design",
+          "section_label": "게시판 디자인/양식"
+        },
+        "bo_mobile_content_tail": {
+          "label": "모바일 하단 내용",
+          "section_key": "anc_bo_design",
+          "section_label": "게시판 디자인/양식"
+        },
+        "bo_sort_field": {
+          "label": "리스트 정렬 필드"
+        },
+        "bo_count_write": {
+          "label": "원글 수",
+          "section_key": "anc_bo_basic",
+          "section_label": "게시판 기본 설정"
+        },
+        "bo_count_comment": {
+          "label": "댓글 수",
+          "section_key": "anc_bo_basic",
+          "section_label": "게시판 기본 설정"
+        },
+        "bo_notice": {
+          "label": "공지글 ID 목록",
+          "section_key": "anc_bo_basic",
+          "section_label": "게시판 기본 설정",
+          "description": "쉼표로 구분된 공지글 번호 목록입니다."
+        }
+      }
+    },
+    {
+      "domain": "config",
+      "title": "환경설정",
+      "legacy_forms": [
+        {
+          "path": "adm/config_form.php"
+        },
+        {
+          "path": "adm/_rewrite_config_form.php",
+          "default_section": {
+            "key": "anc_cf_url",
+            "label": "짧은주소"
+          }
+        }
+      ],
+      "table": "g5_config",
+      "repo_file": "api/v1/Admin/Config/Repository/AdminConfigRepository.php",
+      "repo_field_file": "api/v1/Admin/Config/Repository/AdminConfigUpdateBuilder.php",
+      "repo_field_const": "UPDATABLE_FIELDS",
+      "runtime_option_fields": [
+        "cf_admin",
+        "cf_new_skin",
+        "cf_search_skin",
+        "cf_connect_skin",
+        "cf_faq_skin",
+        "cf_mobile_new_skin",
+        "cf_mobile_search_skin",
+        "cf_mobile_connect_skin",
+        "cf_mobile_faq_skin",
+        "cf_member_skin",
+        "cf_mobile_member_skin",
+        "cf_editor",
+        "cf_captcha_mp3"
+      ],
+      "layout": {
+        "desktop": "tabs",
+        "mobile": "accordion",
+        "single_open": true
+      },
+      "include_fields": [],
+      "exclude_fields": [
+        "cf_id",
+        "cf_theme",
+        "cf_optimize_date",
+        "cf_visit",
+        "cf_max_po_id",
+        "cf_lg_mid",
+        "cf_lg_mert_key",
+        "cf_toss_client_key",
+        "cf_toss_secret_key",
+        "cf_copy_log",
+        "cf_visitor",
+        "cf_use_sns",
+        "cf_register_skin",
+        "cf_mobile_register_skin",
+        "cf_mobile_editor",
+        "cf_icode_use",
+        "cf_kakao_java_script_key",
+        "cf_use_include_head",
+        "cf_include_head",
+        "cf_include_tail"
+      ],
+      "source_field_map": {
+        "cf_copy_log": "cf_use_copy_log"
+      },
+      "field_patterns": [
+        {
+          "pattern": "cf_(\\d+)_subj",
+          "label": "여분필드 {1} 제목",
+          "section_key": "anc_cf_extra",
+          "section_label": "여분필드 기본 설정"
+        },
+        {
+          "pattern": "cf_(\\d+)",
+          "label": "여분필드 {1}",
+          "section_key": "anc_cf_extra",
+          "section_label": "여분필드 기본 설정"
+        }
+      ],
+      "field_overrides": {
+        "cf_admin": {
+          "label": "최고관리자",
+          "description": "회원 목록에서 최고관리자 계정을 선택합니다.",
+          "section_key": "anc_cf_basic",
+          "section_label": "홈페이지 기본환경 설정",
+          "input_type": "select",
+          "required": true,
+          "option_source": {
+            "kind": "endpoint",
+            "name": "admin.members",
+            "endpoint": "/admin/members",
+            "value_field": "mb_id",
+            "label_field": "mb_id"
+          }
+        },
+        "cf_editor": {
+          "option_source": {
+            "kind": "directory",
+            "name": "editor",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        "cf_captcha_mp3": {
+          "option_source": {
+            "kind": "directory",
+            "name": "captcha.mp3",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        "cf_bbs_rewrite": {
+          "label": "짧은 URL 사용",
+          "section_key": "anc_cf_url",
+          "section_label": "짧은주소",
+          "input_type": "radio",
+          "data_type": "integer",
+          "description": "게시판과 컨텐츠 페이지에 짧은 URL을 사용합니다.",
+          "options": [
+            {
+              "value": "0",
+              "label": "사용 안함"
+            },
+            {
+              "value": "1",
+              "label": "숫자"
+            },
+            {
+              "value": "2",
+              "label": "글 이름"
+            }
+          ]
+        },
+        "cf_register_level": {
+          "label": "회원가입시 권한",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "input_type": "select",
+          "data_type": "integer",
+          "options": [
+            { "value": "1", "label": "1" },
+            { "value": "2", "label": "2" },
+            { "value": "3", "label": "3" },
+            { "value": "4", "label": "4" },
+            { "value": "5", "label": "5" },
+            { "value": "6", "label": "6" },
+            { "value": "7", "label": "7" },
+            { "value": "8", "label": "8" },
+            { "value": "9", "label": "9" }
+          ]
+        },
+        "cf_use_member_icon": {
+          "label": "회원아이콘 사용",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "input_type": "select",
+          "data_type": "integer",
+          "description": "게시물에 게시자 닉네임 대신 회원아이콘을 어떻게 표시할지 선택합니다.",
+          "options": [
+            { "value": "0", "label": "미사용" },
+            { "value": "1", "label": "아이콘만 표시" },
+            { "value": "2", "label": "아이콘+이름 표시" }
+          ]
+        },
+        "cf_icon_level": {
+          "label": "회원 아이콘, 이미지 업로드 권한",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "input_type": "select",
+          "data_type": "integer",
+          "description": "선택한 회원 레벨 이상부터 회원아이콘과 회원이미지를 업로드할 수 있습니다.",
+          "options": [
+            { "value": "1", "label": "1" },
+            { "value": "2", "label": "2" },
+            { "value": "3", "label": "3" },
+            { "value": "4", "label": "4" },
+            { "value": "5", "label": "5" },
+            { "value": "6", "label": "6" },
+            { "value": "7", "label": "7" },
+            { "value": "8", "label": "8" },
+            { "value": "9", "label": "9" }
+          ]
+        },
+        "cf_member_icon_size": {
+          "label": "회원아이콘 용량",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "input_type": "number",
+          "data_type": "integer",
+          "description": "회원아이콘 최대 업로드 용량입니다. 바이트 단위로 입력합니다."
+        },
+        "cf_member_img_size": {
+          "label": "회원이미지 용량",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "input_type": "number",
+          "data_type": "integer",
+          "description": "회원이미지 최대 업로드 용량입니다. 바이트 단위로 입력합니다."
+        },
+        "cf_open_modify": {
+          "label": "정보공개 수정",
+          "section_key": "anc_cf_basic",
+          "section_label": "홈페이지 기본환경 설정",
+          "input_type": "number",
+          "data_type": "integer",
+          "description": "설정한 일수 동안 정보공개 설정을 다시 바꿀 수 없습니다."
+        },
+        "cf_use_homepage": {
+          "label": "홈페이지 입력 표시",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "required": false
+        },
+        "cf_req_homepage": {
+          "label": "홈페이지 입력 필수",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "description": "회원가입 시 홈페이지를 필수 입력으로 받습니다.",
+          "required": false
+        },
+        "cf_use_tel": {
+          "label": "전화번호 입력 표시",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "required": false
+        },
+        "cf_req_tel": {
+          "label": "전화번호 입력 필수",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "description": "회원가입 시 전화번호를 필수 입력으로 받습니다.",
+          "required": false
+        },
+        "cf_use_hp": {
+          "label": "휴대폰번호 입력 표시",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "required": false
+        },
+        "cf_req_hp": {
+          "label": "휴대폰번호 입력 필수",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "description": "회원가입 시 휴대폰번호를 필수 입력으로 받습니다.",
+          "required": false
+        },
+        "cf_use_addr": {
+          "label": "주소 입력 표시",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "required": false
+        },
+        "cf_req_addr": {
+          "label": "주소 입력 필수",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "description": "회원가입 시 주소를 필수 입력으로 받습니다.",
+          "required": false
+        },
+        "cf_use_signature": {
+          "label": "서명 입력 표시",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "required": false
+        },
+        "cf_req_signature": {
+          "label": "서명 입력 필수",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "description": "회원가입 시 서명을 필수 입력으로 받습니다.",
+          "required": false
+        },
+        "cf_use_profile": {
+          "label": "자기소개 입력 표시",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "required": false
+        },
+        "cf_req_profile": {
+          "label": "자기소개 입력 필수",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "description": "회원가입 시 자기소개를 필수 입력으로 받습니다.",
+          "required": false
+        },
+        "cf_use_point": {
+          "data_type": "boolean",
+          "input_type": "checkbox"
+        },
+        "cf_use_email_certify": {
+          "data_type": "boolean",
+          "input_type": "checkbox"
+        },
+        "cf_cert_use": {
+          "label": "본인확인",
+          "section_key": "anc_cf_cert",
+          "section_label": "본인확인 설정",
+          "input_type": "select",
+          "data_type": "integer",
+          "description": "회원가입 시 본인확인 수단을 사용안함, 테스트, 실서비스 중에서 선택합니다.",
+          "options": [
+            { "value": "0", "label": "사용안함" },
+            { "value": "1", "label": "테스트" },
+            { "value": "2", "label": "실서비스" }
+          ]
+        },
+        "cf_social_login_use": {
+          "label": "소셜 로그인 사용",
+          "data_type": "boolean",
+          "input_type": "checkbox",
+          "description": "소셜 로그인 기능 전체 사용 여부를 설정합니다."
+        },
+        "cf_use_promotion": {
+          "label": "광고성 정보 수신 동의 표시",
+          "section_key": "anc_cf_join",
+          "section_label": "회원가입 설정",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "description": "회원가입 약관 동의 단계에서 광고성 정보 수신 동의 항목을 표시할지 설정합니다."
+        },
+        "cf_icode_server_port": {
+          "label": "아이코드 서버 포트",
+          "section_key": "anc_cf_sms",
+          "section_label": "SMS",
+          "input_type": "hidden",
+          "data_type": "integer",
+          "description": "아이코드 전송 서버 포트 번호입니다."
+        },
+        "cf_10": {
+          "label": "여분필드 10",
+          "section_key": "anc_cf_extra",
+          "section_label": "여분필드 기본 설정"
+        }
+      }
+    },
+    {
+      "domain": "system",
+      "title": "SMS 설정",
+      "legacy_forms": [
+        {
+          "path": "adm/config_form.php",
+          "schema_scope": "supported_fields",
+          "default_section": {
+            "key": "anc_cf_sms",
+            "label": "SMS"
+          }
+        },
+        {
+          "path": "adm/sms_admin/config.php",
+          "schema_scope": "supported_fields",
+          "default_section": {
+            "key": "anc_cf_sms",
+            "label": "SMS"
+          }
+        }
+      ],
+      "repo_file": "api/v1/Admin/Sms/Repository/AdminSmsConfigStore.php",
+      "db_observation": {
+        "mode": "multi",
+        "tables": [
+          "g5_config",
+          "g5_sms5_config"
+        ]
+      },
+      "supported_fields": [
+        "cf_sms_use",
+        "cf_sms_type",
+        "cf_icode_id",
+        "cf_icode_pw",
+        "cf_icode_server_ip",
+        "cf_icode_server_port",
+        "cf_icode_token_key",
+        "cf_phone"
+      ],
+      "default_section": {
+        "key": "anc_cf_sms",
+        "label": "SMS"
+      },
+      "ignored_render_type_mismatches": [
+        "cf_icode_server_ip",
+        "cf_icode_server_port"
+      ],
+      "ignored_required_mismatches": [
+        "cf_phone"
+      ],
+      "field_overrides": {
+        "cf_icode_id": {
+          "required": false
+        },
+        "cf_icode_pw": {
+          "required": false
+        },
+        "cf_icode_server_ip": {
+          "label": "아이코드 서버 IP",
+          "input_type": "text",
+          "data_type": "string",
+          "default_value": "211.172.232.124",
+          "section_key": "anc_cf_sms",
+          "section_label": "SMS"
+        },
+        "cf_icode_server_port": {
+          "label": "아이코드 서버 포트",
+          "input_type": "number",
+          "data_type": "integer",
+          "default_value": 7295,
+          "section_key": "anc_cf_sms",
+          "section_label": "SMS"
+        },
+        "cf_phone": {
+          "label": "회신번호",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "description": "SMS 발송 시 기본 회신번호입니다.",
+          "section_key": "anc_cf_sms",
+          "section_label": "SMS"
+        }
+      }
+    },
+    {
+      "domain": "theme",
+      "title": "테마 설정",
+      "legacy_forms": [
+        {
+          "path": "adm/theme.php",
+          "default_section": {
+            "key": "theme_settings",
+            "label": "테마 설정"
+          }
+        },
+        {
+          "path": "adm/config_form.php",
+          "schema_scope": "supported_fields",
+          "default_section": {
+            "key": "theme_settings",
+            "label": "테마 설정"
+          }
+        }
+      ],
+      "repo_file": "api/v1/Admin/System/Repository/AdminSystemConfigRepository.php",
+      "db_observation": {
+        "mode": "table",
+        "tables": [
+          "g5_config"
+        ]
+      },
+      "supported_fields": [
+        "cf_theme",
+        "cf_mobile_theme"
+      ],
+      "default_section": {
+        "key": "theme_settings",
+        "label": "테마 설정"
+      },
+      "ignored_schema_only_fields": [
+        "cf_theme",
+        "cf_mobile_theme"
+      ],
+      "field_overrides": {
+        "cf_theme": {
+          "label": "테마",
+          "input_type": "select",
+          "data_type": "string",
+          "description": "설치된 테마 목록은 /admin/system/themes에서 조회합니다.",
+          "option_source": {
+            "kind": "endpoint",
+            "name": "admin.system.themes",
+            "endpoint": "/admin/system/themes",
+            "value_field": "theme",
+            "label_field": "theme"
+          },
+          "section_key": "theme_settings",
+          "section_label": "테마 설정"
+        },
+        "cf_mobile_theme": {
+          "label": "모바일 테마",
+          "input_type": "select",
+          "data_type": "string",
+          "description": "설치된 테마 목록은 /admin/system/themes에서 조회합니다.",
+          "option_source": {
+            "kind": "endpoint",
+            "name": "admin.system.themes",
+            "endpoint": "/admin/system/themes",
+            "value_field": "theme",
+            "label_field": "theme"
+          },
+          "section_key": "theme_settings",
+          "section_label": "테마 설정"
+        }
+      }
+    },
+    {
+      "domain": "sms-contacts",
+      "title": "휴대폰번호",
+      "legacy_forms": [
+        {
+          "path": "adm/sms_admin/num_group.php",
+          "default_section": {
+            "key": "sms_contact_group",
+            "label": "휴대폰번호 그룹"
+          }
+        },
+        {
+          "path": "adm/sms_admin/num_book_write.php",
+          "default_section": {
+            "key": "sms_contact_entry",
+            "label": "휴대폰번호"
+          }
+        },
+        {
+          "path": "adm/sms_admin/num_book_file.php",
+          "default_section": {
+            "key": "sms_contact_file",
+            "label": "휴대폰번호 파일"
+          }
+        }
+      ],
+      "repo_file": "api/v1/Admin/Sms/Repository/AdminSmsContactStore.php",
+      "db_observation": {
+        "mode": "multi",
+        "tables": [
+          "g5_sms5_book_group",
+          "g5_sms5_book"
+        ]
+      },
+      "supported_fields": [
+        "bg_name",
+        "bg_no",
+        "bk_name",
+        "bk_hp",
+        "bk_receipt",
+        "bk_memo",
+        "contacts_text",
+        "dry_run",
+        "include_no_phone",
+        "with_hyphen"
+      ],
+      "source_field_map": {
+        "include_no_phone": "no_hp",
+        "with_hyphen": "hyphen"
+      },
+      "ignored_legacy_fields": [
+        "ap",
+        "act_button",
+        "bk_no",
+        "chk",
+        "chkall",
+        "csv",
+        "download_bg_no",
+        "get_bg_no",
+        "mb_id",
+        "page",
+        "select_bg_no",
+        "select_bg_no_999",
+        "upload_bg_no",
+        "w"
+      ],
+      "ignored_schema_only_fields": [
+        "contacts_text",
+        "dry_run"
+      ],
+      "default_section": {
+        "key": "sms_contact_entry",
+        "label": "휴대폰번호"
+      },
+      "field_overrides": {
+        "bg_name": {
+          "label": "그룹명",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "section_key": "sms_contact_group",
+          "section_label": "휴대폰번호 그룹"
+        },
+        "bg_no": {
+          "data_type": "integer",
+          "options": [],
+          "option_source": {
+            "kind": "endpoint",
+            "name": "admin.sms.contact-groups",
+            "endpoint": "/admin/sms/contact-groups",
+            "value_field": "bg_no",
+            "label_field": "bg_name"
+          }
+        },
+        "contacts_text": {
+          "label": "텍스트 가져오기",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "sms_contact_file",
+          "section_label": "휴대폰번호 파일"
+        },
+        "dry_run": {
+          "label": "드라이런",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "section_key": "sms_contact_file",
+          "section_label": "휴대폰번호 파일"
+        },
+        "include_no_phone": {
+          "label": "휴대폰 번호 없는 회원 포함",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "section_key": "sms_contact_file",
+          "section_label": "휴대폰번호 파일"
+        },
+        "with_hyphen": {
+          "label": "하이픈 '―' 포함",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "section_key": "sms_contact_file",
+          "section_label": "휴대폰번호 파일"
+        }
+      }
+    },
+    {
+      "domain": "sms-messages",
+      "title": "문자 보내기",
+      "legacy_forms": [
+        {
+          "path": "adm/sms_admin/sms_write.php",
+          "default_section": {
+            "key": "sms_message_send",
+            "label": "문자 보내기"
+          }
+        },
+        {
+          "path": "adm/sms_admin/sms_write_form.php",
+          "default_section": {
+            "key": "sms_message_template",
+            "label": "이모티콘 목록"
+          }
+        }
+      ],
+      "repo_file": "api/v1/Admin/Sms/Repository/AdminSmsMessageStore.php",
+      "db_observation": {
+        "mode": "multi",
+        "tables": [
+          "g5_sms5_write",
+          "g5_sms5_history"
+        ]
+      },
+      "supported_fields": [
+        "template_id",
+        "message",
+        "group_ids_csv",
+        "contact_ids_csv",
+        "member_levels_csv",
+        "manual_targets_text",
+        "booking_at",
+        "wr_reply"
+      ],
+      "source_field_map": {
+        "message": "wr_message"
+      },
+      "ignored_legacy_fields": [
+        "fg_no",
+        "hp_list",
+        "hp_name",
+        "hp_number",
+        "page",
+        "send_list",
+        "st",
+        "sv",
+        "wr_bd",
+        "wr_bh",
+        "wr_bi",
+        "wr_bm",
+        "wr_booking",
+        "wr_by"
+      ],
+      "ignored_readonly_mismatches": [
+        "wr_reply"
+      ],
+      "ignored_schema_only_fields": [
+        "booking_at",
+        "contact_ids_csv",
+        "group_ids_csv",
+        "manual_targets_text",
+        "member_levels_csv",
+        "template_id"
+      ],
+      "default_section": {
+        "key": "sms_message_send",
+        "label": "문자 보내기"
+      },
+      "field_overrides": {
+        "template_id": {
+          "label": "이모티콘 목록",
+          "input_type": "select",
+          "data_type": "integer",
+          "option_source": {
+            "kind": "endpoint",
+            "name": "admin.sms.templates",
+            "endpoint": "/admin/sms/templates",
+            "value_field": "fo_no",
+            "label_field": "fo_name"
+          },
+          "section_key": "sms_message_template",
+          "section_label": "이모티콘 목록"
+        },
+        "message": {
+          "label": "내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "sms_message_send",
+          "section_label": "문자 보내기"
+        },
+        "group_ids_csv": {
+          "label": "그룹",
+          "input_type": "text",
+          "data_type": "string",
+          "section_key": "sms_message_targets",
+          "section_label": "받는사람"
+        },
+        "contact_ids_csv": {
+          "label": "개인",
+          "input_type": "text",
+          "data_type": "string",
+          "section_key": "sms_message_targets",
+          "section_label": "받는사람"
+        },
+        "member_levels_csv": {
+          "label": "권한",
+          "input_type": "text",
+          "data_type": "string",
+          "section_key": "sms_message_targets",
+          "section_label": "받는사람"
+        },
+        "manual_targets_text": {
+          "label": "받는사람",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "sms_message_targets",
+          "section_label": "받는사람"
+        },
+        "booking_at": {
+          "label": "예약전송",
+          "input_type": "datetime-local",
+          "data_type": "string",
+          "section_key": "sms_message_booking",
+          "section_label": "예약전송"
+        },
+        "wr_reply": {
+          "label": "회신",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "section_key": "sms_message_send",
+          "section_label": "문자 보내기"
+        }
+      }
+    },
+    {
+      "domain": "sms-templates",
+      "title": "이모티콘",
+      "legacy_forms": [
+        {
+          "path": "adm/sms_admin/form_group.php",
+          "default_section": {
+            "key": "sms_template_group",
+            "label": "이모티콘 그룹"
+          }
+        },
+        {
+          "path": "adm/sms_admin/form_write.php",
+          "default_section": {
+            "key": "sms_template_entry",
+            "label": "이모티콘"
+          }
+        }
+      ],
+      "repo_file": "api/v1/Admin/Sms/Repository/AdminSmsTemplateStore.php",
+      "db_observation": {
+        "mode": "multi",
+        "tables": [
+          "g5_sms5_form_group",
+          "g5_sms5_form"
+        ]
+      },
+      "supported_fields": [
+        "fg_name",
+        "fg_member",
+        "fg_no",
+        "fo_name",
+        "fo_content"
+      ],
+      "ignored_legacy_fields": [
+        "act_button",
+        "chk",
+        "chkall",
+        "fo_no",
+        "get_fg_no",
+        "page",
+        "select_fg_no",
+        "select_fg_no_999",
+        "w"
+      ],
+      "ignored_schema_only_fields": [
+        "fg_member"
+      ],
+      "default_section": {
+        "key": "sms_template_entry",
+        "label": "이모티콘"
+      },
+      "field_overrides": {
+        "fg_name": {
+          "label": "그룹명",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "section_key": "sms_template_group",
+          "section_label": "이모티콘 그룹"
+        },
+        "fg_member": {
+          "label": "회원",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "section_key": "sms_template_group",
+          "section_label": "이모티콘 그룹"
+        },
+        "fg_no": {
+          "data_type": "integer",
+          "options": [
+            { "value": "0", "label": "미분류" }
+          ],
+          "option_source": {
+            "kind": "endpoint",
+            "name": "admin.sms.template-groups",
+            "endpoint": "/admin/sms/template-groups",
+            "value_field": "fg_no",
+            "label_field": "fg_name"
+          }
+        }
+      }
+    },
+    {
+      "domain": "mails",
+      "title": "회원메일",
+      "legacy_forms": [
+        {
+          "path": "adm/mail_form.php",
+          "schema_scope": "supported_fields",
+          "supported_fields": [
+            "ma_subject",
+            "ma_content"
+          ],
+          "default_section": {
+            "key": "mail_template",
+            "label": "회원메일"
+          }
+        },
+        {
+          "path": "adm/mail_select_form.php",
+          "schema_scope": "supported_fields",
+          "supported_fields": [
+            "level_min",
+            "level_max",
+            "gr_id",
+            "member_id_from",
+            "member_id_to",
+            "email_contains",
+            "mailling_only"
+          ],
+          "default_section": {
+            "key": "mail_recipients",
+            "label": "회원메일발송 대상선택"
+          }
+        }
+      ],
+      "ignored_schema_only_fields": [
+        "level_min",
+        "level_max",
+        "gr_id",
+        "member_id_from",
+        "member_id_to",
+        "email_contains",
+        "mailling_only"
+      ],
+      "repo_file": "api/v1/Admin/Mail/Repository/AdminMailRepository.php",
+      "db_observation": {
+        "mode": "multi",
+        "tables": [
+          "g5_mail",
+          "g5_member"
+        ]
+      },
+      "supported_fields": [
+        "ma_subject",
+        "ma_content",
+        "target_type",
+        "use_selected_template",
+        "subject",
+        "content",
+        "level_min",
+        "level_max",
+        "gr_id",
+        "member_id_from",
+        "member_id_to",
+        "email_contains",
+        "mailling_only",
+        "dry_run"
+      ],
+      "source_field_map": {
+        "subject": "ma_subject",
+        "content": "ma_content",
+        "level_min": "mb_level_from",
+        "level_max": "mb_level_to",
+        "member_id_from": "mb_id1_from",
+        "member_id_to": "mb_id1_to",
+        "email_contains": "mb_email",
+        "mailling_only": "mb_mailling"
+      },
+      "default_section": {
+        "key": "mail_template",
+        "label": "회원메일"
+      },
+      "field_overrides": {
+        "target_type": {
+          "label": "대상선택",
+          "input_type": "select",
+          "data_type": "string",
+          "options": [
+            {
+              "value": "all",
+              "label": "전체"
+            },
+            {
+              "value": "level",
+              "label": "권한"
+            },
+            {
+              "value": "group",
+              "label": "게시판그룹회원"
+            },
+            {
+              "value": "member",
+              "label": "회원 ID"
+            }
+          ],
+          "section_key": "mail_recipients",
+          "section_label": "회원메일발송 대상선택"
+        },
+        "use_selected_template": {
+          "label": "선택 템플릿 사용",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "section_key": "mail_dispatch",
+          "section_label": "메일 발송"
+        },
+        "subject": {
+          "section_key": "mail_dispatch",
+          "section_label": "메일 발송"
+        },
+        "ma_content": {
+          "label": "메일 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": true,
+          "section_key": "mail_template",
+          "section_label": "회원메일"
+        },
+        "content": {
+          "label": "메일 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "mail_dispatch",
+          "section_label": "메일 발송"
+        },
+        "level_min": {
+          "data_type": "integer",
+          "options": [
+            { "value": "1", "label": "1" },
+            { "value": "2", "label": "2" },
+            { "value": "3", "label": "3" },
+            { "value": "4", "label": "4" },
+            { "value": "5", "label": "5" },
+            { "value": "6", "label": "6" },
+            { "value": "7", "label": "7" },
+            { "value": "8", "label": "8" },
+            { "value": "9", "label": "9" },
+            { "value": "10", "label": "10" }
+          ],
+          "section_key": "mail_recipients",
+          "section_label": "회원메일발송 대상선택"
+        },
+        "level_max": {
+          "data_type": "integer",
+          "options": [
+            { "value": "1", "label": "1" },
+            { "value": "2", "label": "2" },
+            { "value": "3", "label": "3" },
+            { "value": "4", "label": "4" },
+            { "value": "5", "label": "5" },
+            { "value": "6", "label": "6" },
+            { "value": "7", "label": "7" },
+            { "value": "8", "label": "8" },
+            { "value": "9", "label": "9" },
+            { "value": "10", "label": "10" }
+          ],
+          "section_key": "mail_recipients",
+          "section_label": "회원메일발송 대상선택"
+        },
+        "gr_id": {
+          "section_key": "mail_recipients",
+          "section_label": "회원메일발송 대상선택",
+          "option_source": {
+            "kind": "endpoint",
+            "name": "admin.groups",
+            "endpoint": "/admin/groups",
+            "value_field": "gr_id",
+            "label_field": "gr_subject"
+          }
+        },
+        "member_id_from": {
+          "section_key": "mail_recipients",
+          "section_label": "회원메일발송 대상선택"
+        },
+        "member_id_to": {
+          "section_key": "mail_recipients",
+          "section_label": "회원메일발송 대상선택"
+        },
+        "email_contains": {
+          "section_key": "mail_recipients",
+          "section_label": "회원메일발송 대상선택"
+        },
+        "mailling_only": {
+          "input_type": "select",
+          "data_type": "boolean",
+          "options": [
+            { "value": "1", "label": "수신동의한 회원만" },
+            { "value": "", "label": "전체" }
+          ],
+          "section_key": "mail_recipients",
+          "section_label": "회원메일발송 대상선택"
+        },
+        "dry_run": {
+          "label": "드라이런",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "section_key": "mail_dispatch",
+          "section_label": "메일 발송"
+        }
+      }
+    },
+    {
+      "domain": "points",
+      "title": "포인트관리",
+      "legacy_forms": [
+        {
+          "path": "adm/point_list.php",
+          "schema_scope": "supported_fields",
+          "default_section": {
+            "key": "point_adjust",
+            "label": "개별회원 포인트 증감 설정"
+          }
+        }
+      ],
+      "ignored_section_mismatches": [
+        "search_field",
+        "search"
+      ],
+      "ignored_required_mismatches": [
+        "search"
+      ],
+      "ignored_schema_only_fields": [
+        "base_date"
+      ],
+      "repo_file": "api/v1/Admin/Point/Repository/AdminPointRepository.php",
+      "db_observation": {
+        "mode": "multi",
+        "tables": [
+          "g5_point",
+          "g5_member"
+        ]
+      },
+      "supported_fields": [
+        "search_field",
+        "search",
+        "mb_id",
+        "po_content",
+        "point",
+        "base_date"
+      ],
+      "source_field_map": {
+        "search_field": "sfl",
+        "search": "stx",
+        "point": "po_point"
+      },
+      "default_section": {
+        "key": "point_adjust",
+        "label": "개별회원 포인트 증감 설정"
+      },
+      "field_overrides": {
+        "search_field": {
+          "label": "검색대상",
+          "input_type": "select",
+          "data_type": "string",
+          "options": [
+            {
+              "value": "mb_id",
+              "label": "회원아이디"
+            },
+            {
+              "value": "po_content",
+              "label": "내용"
+            }
+          ],
+          "section_key": "point_search",
+          "section_label": "포인트관리"
+        },
+        "search": {
+          "label": "검색어",
+          "input_type": "text",
+          "data_type": "string",
+          "section_key": "point_search",
+          "section_label": "포인트관리"
+        },
+        "mb_id": {
+          "section_key": "point_adjust",
+          "section_label": "개별회원 포인트 증감 설정"
+        },
+        "po_content": {
+          "section_key": "point_adjust",
+          "section_label": "개별회원 포인트 증감 설정"
+        },
+        "point": {
+          "label": "포인트",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "section_key": "point_adjust",
+          "section_label": "개별회원 포인트 증감 설정"
+        },
+        "base_date": {
+          "label": "기준일",
+          "input_type": "date",
+          "data_type": "string",
+          "section_key": "point_expire",
+          "section_label": "포인트 만료 실행"
+        }
+      }
+    },
+    {
+      "domain": "members",
+      "title": "회원",
+      "repo_file": "api/v1/Admin/Member/Repository/AdminMemberQueryRepository.php",
+      "repo_field_file": "api/v1/Admin/Member/Repository/AdminMemberMutationRepository.php",
+      "legacy_forms": [
+        {
+          "target": "adm/member_form.php?w=u&mb_id={bootstrap_admin_id}",
+          "path": "adm/member_form.php",
+          "mode": "update",
+          "schema_scope": "supported_fields",
+          "default_section": {
+            "key": "member_profile",
+            "label": "회원 정보"
+          }
+        }
+      ],
+      "table": "g5_member",
+      "supported_fields": [
+        "mb_id",
+        "mb_password",
+        "mb_name",
+        "mb_nick",
+        "mb_level",
+        "mb_email",
+        "mb_homepage",
+        "mb_hp",
+        "mb_tel",
+        "mb_zip",
+        "mb_addr1",
+        "mb_addr2",
+        "mb_addr3",
+        "mb_addr_jibeon",
+        "mb_icon",
+        "mb_img",
+        "mb_mailling",
+        "mb_sms",
+        "mb_marketing_agree",
+        "mb_thirdparty_agree",
+        "mb_open",
+        "mb_signature",
+        "mb_profile",
+        "mb_memo",
+        "mb_certify",
+        "mb_adult",
+        "mb_leave_date",
+        "mb_intercept_date",
+        "mb_1",
+        "mb_2",
+        "mb_3",
+        "mb_4",
+        "mb_5",
+        "mb_6",
+        "mb_7",
+        "mb_8",
+        "mb_9",
+        "mb_10"
+      ],
+      "source_field_map": {
+        "mb_certify": "mb_certify_case"
+      },
+      "field_patterns": [
+        {
+          "pattern": "mb_(\\d+)",
+          "label": "여분필드 {1}",
+          "section_key": "member_extra",
+          "section_label": "회원 여분필드"
+        }
+      ],
+      "field_overrides": {
+        "mb_no": {
+          "label": "회원 번호",
+          "section_key": "member_activity",
+          "section_label": "회원 활동 정보"
+        },
+        "mb_id": {
+          "create_only": true,
+          "readonly_on_update": true,
+          "required": true,
+          "description": "영문, 숫자, 밑줄 조합의 회원 아이디입니다."
+        },
+        "mb_password": {
+          "input_type": "password",
+          "data_type": "string"
+        },
+        "mb_level": {
+          "label": "회원 권한",
+          "data_type": "integer",
+          "input_type": "select",
+          "options": [
+            {
+              "value": "1",
+              "label": "1"
+            },
+            {
+              "value": "2",
+              "label": "2"
+            },
+            {
+              "value": "3",
+              "label": "3"
+            },
+            {
+              "value": "4",
+              "label": "4"
+            },
+            {
+              "value": "5",
+              "label": "5"
+            },
+            {
+              "value": "6",
+              "label": "6"
+            },
+            {
+              "value": "7",
+              "label": "7"
+            },
+            {
+              "value": "8",
+              "label": "8"
+            },
+            {
+              "value": "9",
+              "label": "9"
+            },
+            {
+              "value": "10",
+              "label": "10"
+            }
+          ]
+        },
+        "mb_zip": {
+          "label": "우편번호",
+          "input_type": "text",
+          "data_type": "string"
+        },
+        "mb_addr_jibeon": {
+          "label": "지번주소",
+          "input_type": "hidden",
+          "data_type": "string"
+        },
+        "mb_certify": {
+          "label": "본인확인방법",
+          "input_type": "radio",
+          "data_type": "string",
+          "options": [
+            {
+              "value": "simple",
+              "label": "간편인증"
+            },
+            {
+              "value": "hp",
+              "label": "휴대폰"
+            },
+            {
+              "value": "ipin",
+              "label": "아이핀"
+            }
+          ]
+        },
+        "mb_nick_date": {
+          "label": "닉네임 변경일",
+          "section_key": "member_activity",
+          "section_label": "회원 활동 정보"
+        },
+        "mb_sex": {
+          "label": "성별",
+          "section_key": "member_profile",
+          "section_label": "회원 정보"
+        },
+        "mb_birth": {
+          "label": "생년월일",
+          "section_key": "member_profile",
+          "section_label": "회원 정보"
+        },
+        "mb_dupinfo": {
+          "label": "중복가입 확인값",
+          "section_key": "member_audit",
+          "section_label": "인증 및 추적 정보"
+        },
+        "mb_zip1": {
+          "label": "우편번호 앞자리",
+          "section_key": "member_audit",
+          "section_label": "인증 및 추적 정보"
+        },
+        "mb_zip2": {
+          "label": "우편번호 뒷자리",
+          "section_key": "member_audit",
+          "section_label": "인증 및 추적 정보"
+        },
+        "mb_recommend": {
+          "label": "추천인",
+          "section_key": "member_activity",
+          "section_label": "회원 활동 정보"
+        },
+        "mb_point": {
+          "label": "포인트",
+          "section_key": "member_activity",
+          "section_label": "회원 활동 정보",
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "mb_today_login": {
+          "label": "최근접속일",
+          "section_key": "member_activity",
+          "section_label": "회원 활동 정보"
+        },
+        "mb_login_ip": {
+          "label": "최근 로그인 IP",
+          "section_key": "member_activity",
+          "section_label": "회원 활동 정보"
+        },
+        "mb_datetime": {
+          "label": "회원가입일",
+          "section_key": "member_activity",
+          "section_label": "회원 활동 정보"
+        },
+        "mb_ip": {
+          "label": "가입 IP",
+          "section_key": "member_activity",
+          "section_label": "회원 활동 정보"
+        },
+        "mb_email_certify": {
+          "label": "이메일 인증일시",
+          "section_key": "member_audit",
+          "section_label": "인증 및 추적 정보"
+        },
+        "mb_email_certify2": {
+          "label": "이메일 인증 토큰",
+          "section_key": "member_audit",
+          "section_label": "인증 및 추적 정보"
+        },
+        "mb_lost_certify": {
+          "label": "비밀번호 재설정 인증키",
+          "section_key": "member_audit",
+          "section_label": "인증 및 추적 정보"
+        },
+        "mb_mailling_date": {
+          "label": "광고성 이메일 수신 동의일",
+          "section_key": "member_consent",
+          "section_label": "회원 동의 이력"
+        },
+        "mb_sms_date": {
+          "label": "광고성 SMS/카카오톡 수신 동의일",
+          "section_key": "member_consent",
+          "section_label": "회원 동의 이력"
+        },
+        "mb_open_date": {
+          "label": "정보 공개 동의일",
+          "section_key": "member_consent",
+          "section_label": "회원 동의 이력"
+        },
+        "mb_memo_call": {
+          "label": "메모 호출 ID",
+          "section_key": "member_activity",
+          "section_label": "회원 활동 정보"
+        },
+        "mb_memo_cnt": {
+          "label": "미읽은 메모 수",
+          "section_key": "member_activity",
+          "section_label": "회원 활동 정보",
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "mb_scrap_cnt": {
+          "label": "스크랩 수",
+          "section_key": "member_activity",
+          "section_label": "회원 활동 정보",
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "mb_marketing_date": {
+          "label": "마케팅 수집 동의일",
+          "section_key": "member_consent",
+          "section_label": "회원 동의 이력"
+        },
+        "mb_thirdparty_date": {
+          "label": "제3자 제공 동의일",
+          "section_key": "member_consent",
+          "section_label": "회원 동의 이력"
+        },
+        "mb_agree_log": {
+          "label": "회원 동의 로그",
+          "section_key": "member_consent",
+          "section_label": "회원 동의 이력",
+          "input_type": "textarea",
+          "data_type": "string"
+        },
+        "mb_adult": {
+          "label": "성인인증",
+          "data_type": "boolean",
+          "input_type": "radio",
+          "options": [
+            {
+              "value": "1",
+              "label": "예"
+            },
+            {
+              "value": "0",
+              "label": "아니오"
+            }
+          ]
+        },
+        "mb_mailling": {
+          "label": "광고성 이메일 수신",
+          "data_type": "boolean",
+          "input_type": "radio",
+          "options": [
+            {
+              "value": "1",
+              "label": "예"
+            },
+            {
+              "value": "0",
+              "label": "아니오"
+            }
+          ]
+        },
+        "mb_sms": {
+          "label": "광고성 SMS/카카오톡 수신",
+          "data_type": "boolean",
+          "input_type": "radio",
+          "options": [
+            {
+              "value": "1",
+              "label": "예"
+            },
+            {
+              "value": "0",
+              "label": "아니오"
+            }
+          ]
+        },
+        "mb_marketing_agree": {
+          "label": "마케팅 목적의 개인정보 수집 및 이용",
+          "data_type": "boolean",
+          "input_type": "radio",
+          "options": [
+            {
+              "value": "1",
+              "label": "예"
+            },
+            {
+              "value": "0",
+              "label": "아니오"
+            }
+          ]
+        },
+        "mb_thirdparty_agree": {
+          "label": "개인정보 제3자 제공",
+          "data_type": "boolean",
+          "input_type": "radio",
+          "options": [
+            {
+              "value": "1",
+              "label": "예"
+            },
+            {
+              "value": "0",
+              "label": "아니오"
+            }
+          ]
+        },
+        "mb_open": {
+          "label": "정보 공개",
+          "data_type": "boolean",
+          "input_type": "radio",
+          "options": [
+            {
+              "value": "1",
+              "label": "예"
+            },
+            {
+              "value": "0",
+              "label": "아니오"
+            }
+          ]
+        },
+        "mb_icon": {
+          "label": "회원아이콘",
+          "data_type": "file",
+          "input_type": "file"
+        },
+        "mb_img": {
+          "label": "회원이미지",
+          "data_type": "file",
+          "input_type": "file"
+        },
+        "mb_leave_date": {
+          "label": "탈퇴일자"
+        },
+        "mb_intercept_date": {
+          "label": "접근차단일자"
+        }
+      },
+      "default_section": {
+        "key": "member_profile",
+        "label": "회원 정보"
+      }
+    },
+    {
+      "domain": "polls",
+      "title": "투표",
+      "legacy_forms": [
+        {
+          "path": "adm/poll_form.php",
+          "schema_scope": "schema_fields",
+          "default_section": {
+            "key": "poll_general",
+            "label": "투표 정보"
+          }
+        }
+      ],
+      "ignored_section_mismatches": [
+        "po_cnt1",
+        "po_cnt2",
+        "po_cnt3",
+        "po_cnt4",
+        "po_cnt5",
+        "po_cnt6",
+        "po_cnt7",
+        "po_cnt8",
+        "po_cnt9"
+      ],
+      "ignored_render_type_mismatches": [
+        "po_level",
+        "po_id"
+      ],
+      "ignored_required_mismatches": [
+        "po_cnt1",
+        "po_cnt2"
+      ],
+      "ignored_readonly_mismatches": [
+        "po_cnt1",
+        "po_cnt2",
+        "po_cnt3",
+        "po_cnt4",
+        "po_cnt5",
+        "po_cnt6",
+        "po_cnt7",
+        "po_cnt8",
+        "po_cnt9",
+        "po_id"
+      ],
+      "ignored_schema_only_fields": [
+        "mb_ids",
+        "po_date",
+        "po_ips",
+        "po_use"
+      ],
+      "table": "g5_poll",
+      "repo_file": "api/v1/Admin/Poll/Repository/AdminPollRepository.php",
+      "repo_field_const": "UPDATABLE_FIELDS",
+      "include_fields": [
+        "po_date",
+        "po_cnt1",
+        "po_cnt2",
+        "po_cnt3",
+        "po_cnt4"
+      ],
+      "field_patterns": [
+        {
+          "pattern": "po_cnt(\\d+)",
+          "label": "항목 {1} 투표수",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "poll_results",
+          "section_label": "투표 결과"
+        }
+      ],
+      "field_overrides": {
+        "po_id": {
+          "label": "투표 ID",
+          "section_key": "poll_general",
+          "section_label": "투표 정보",
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "po_subject": {
+          "required": true
+        },
+        "po_poll1": {
+          "label": "항목 1",
+          "section_key": "poll_general",
+          "section_label": "투표 정보",
+          "required": true
+        },
+        "po_poll2": {
+          "label": "항목 2",
+          "section_key": "poll_general",
+          "section_label": "투표 정보",
+          "required": true
+        },
+        "po_poll3": {
+          "label": "항목 3",
+          "section_key": "poll_general",
+          "section_label": "투표 정보"
+        },
+        "po_poll4": {
+          "label": "항목 4",
+          "section_key": "poll_general",
+          "section_label": "투표 정보"
+        },
+        "po_poll5": {
+          "label": "항목 5",
+          "section_key": "poll_general",
+          "section_label": "투표 정보"
+        },
+        "po_poll6": {
+          "label": "항목 6",
+          "section_key": "poll_general",
+          "section_label": "투표 정보"
+        },
+        "po_poll7": {
+          "label": "항목 7",
+          "section_key": "poll_general",
+          "section_label": "투표 정보"
+        },
+        "po_poll8": {
+          "label": "항목 8",
+          "section_key": "poll_general",
+          "section_label": "투표 정보"
+        },
+        "po_poll9": {
+          "label": "항목 9",
+          "section_key": "poll_general",
+          "section_label": "투표 정보"
+        },
+        "po_level": {
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "po_point": {
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "po_use": {
+          "label": "투표사용",
+          "data_type": "boolean",
+          "input_type": "checkbox"
+        },
+        "po_ips": {
+          "label": "투표참가 IP",
+          "section_key": "poll_results",
+          "section_label": "투표 결과",
+          "input_type": "textarea",
+          "data_type": "string"
+        },
+        "mb_ids": {
+          "label": "투표참가 회원",
+          "section_key": "poll_results",
+          "section_label": "투표 결과",
+          "input_type": "textarea",
+          "data_type": "string"
+        },
+        "po_date": {
+          "label": "투표등록일",
+          "section_key": "poll_results",
+          "section_label": "투표 결과"
+        },
+        "po_cnt1": {
+          "label": "항목 1 투표수",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "poll_results",
+          "section_label": "투표 결과"
+        },
+        "po_cnt2": {
+          "label": "항목 2 투표수",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "poll_results",
+          "section_label": "투표 결과"
+        },
+        "po_cnt3": {
+          "label": "항목 3 투표수",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "poll_results",
+          "section_label": "투표 결과"
+        },
+        "po_cnt4": {
+          "label": "항목 4 투표수",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "poll_results",
+          "section_label": "투표 결과"
+        }
+      }
+    },
+    {
+      "domain": "popups",
+      "title": "팝업레이어",
+      "legacy_forms": [
+        {
+          "path": "adm/newwinform.php",
+          "schema_scope": "schema_fields",
+          "default_section": {
+            "key": "popup_general",
+            "label": "팝업 설정"
+          }
+        }
+      ],
+      "ignored_render_type_mismatches": [
+        "nw_id"
+      ],
+      "ignored_required_mismatches": [
+        "nw_content"
+      ],
+      "ignored_readonly_mismatches": [
+        "nw_id"
+      ],
+      "ignored_schema_only_fields": [
+        "nw_content_html"
+      ],
+      "table": "g5_new_win",
+      "repo_file": "api/v1/Admin/Popup/Repository/AdminPopupRepository.php",
+      "repo_field_const": "UPDATABLE_FIELDS",
+      "field_overrides": {
+        "nw_id": {
+          "label": "팝업 ID",
+          "section_key": "popup_general",
+          "section_label": "팝업 설정",
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "nw_division": {
+          "options": [
+            {
+              "value": "both",
+              "label": "커뮤니티와 쇼핑몰"
+            },
+            {
+              "value": "comm",
+              "label": "커뮤니티"
+            },
+            {
+              "value": "shop",
+              "label": "쇼핑몰"
+            },
+            {
+              "value": "layer",
+              "label": "레이어"
+            },
+            {
+              "value": "new",
+              "label": "새 창"
+            }
+          ]
+        },
+        "nw_disable_hours": {
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "nw_left": {
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "nw_top": {
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "nw_width": {
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "nw_height": {
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "nw_subject": {
+          "required": true
+        },
+        "nw_content": {
+          "label": "내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": true,
+          "section_key": "popup_general",
+          "section_label": "팝업 설정"
+        },
+        "nw_content_html": {
+          "label": "HTML 본문",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "section_key": "popup_general",
+          "section_label": "팝업 설정"
+        }
+      }
+    },
+    {
+      "domain": "contents",
+      "title": "내용",
+      "legacy_forms": [
+        {
+          "path": "adm/contentform.php",
+          "schema_scope": "schema_fields",
+          "default_section": {
+            "key": "content_general",
+            "label": "내용 설정"
+          }
+        }
+      ],
+      "ignored_render_type_mismatches": [
+        "co_html"
+      ],
+      "ignored_required_mismatches": [
+        "co_content"
+      ],
+      "ignored_readonly_mismatches": [
+        "co_id"
+      ],
+      "ignored_schema_only_fields": [
+        "co_hit",
+        "co_seo_title",
+        "co_tag_filter_use"
+      ],
+      "table": "g5_content",
+      "repo_file": "api/v1/Admin/Content/Repository/AdminContentRepository.php",
+      "repo_field_const": "UPDATABLE_FIELDS",
+      "include_fields": [
+        "co_id"
+      ],
+      "field_overrides": {
+        "co_id": {
+          "label": "내용 ID",
+          "required": true,
+          "create_only": true,
+          "readonly_on_update": true,
+          "description": "20자 이내의 영문자, 숫자, _ 만 가능합니다."
+        },
+        "co_subject": {
+          "required": true
+        },
+        "co_html": {
+          "label": "HTML 사용",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "section_key": "content_general",
+          "section_label": "내용 설정"
+        },
+        "co_content": {
+          "label": "내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": true,
+          "section_key": "content_general",
+          "section_label": "내용 설정"
+        },
+        "co_mobile_content": {
+          "label": "모바일 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "content_general",
+          "section_label": "내용 설정"
+        },
+        "co_tag_filter_use": {
+          "label": "태그 필터링 사용",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "description": "내용에서 iframe 등의 태그를 제한하려면 사용합니다."
+        },
+        "co_skin": {
+          "label": "스킨 디렉토리"
+        },
+        "co_mobile_skin": {
+          "label": "모바일스킨 디렉토리"
+        },
+        "co_seo_title": {
+          "label": "SEO 제목",
+          "section_key": "content_general",
+          "section_label": "내용 설정"
+        },
+        "co_hit": {
+          "label": "조회수",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "content_general",
+          "section_label": "내용 설정"
+        }
+      }
+    },
+    {
+      "domain": "groups",
+      "title": "게시판그룹",
+      "legacy_forms": [
+        {
+          "path": "adm/boardgroup_form.php",
+          "schema_scope": "schema_fields",
+          "default_section": {
+            "key": "board_group",
+            "label": "게시판그룹 정보"
+          }
+        }
+      ],
+      "ignored_section_mismatches": [
+        "gr_1_subj",
+        "gr_1",
+        "gr_2_subj",
+        "gr_2",
+        "gr_3_subj",
+        "gr_3",
+        "gr_4_subj",
+        "gr_4",
+        "gr_5_subj",
+        "gr_5",
+        "gr_6_subj",
+        "gr_6",
+        "gr_7_subj",
+        "gr_7",
+        "gr_8_subj",
+        "gr_8",
+        "gr_9_subj",
+        "gr_9",
+        "gr_10_subj",
+        "gr_10"
+      ],
+      "ignored_readonly_mismatches": [
+        "gr_id",
+        "gr_1_subj",
+        "gr_1",
+        "gr_2_subj",
+        "gr_2",
+        "gr_3_subj",
+        "gr_3",
+        "gr_4_subj",
+        "gr_4",
+        "gr_5_subj",
+        "gr_5",
+        "gr_6_subj",
+        "gr_6",
+        "gr_7_subj",
+        "gr_7",
+        "gr_8_subj",
+        "gr_8",
+        "gr_9_subj",
+        "gr_9",
+        "gr_10_subj",
+        "gr_10"
+      ],
+      "ignored_schema_only_fields": [
+        "gr_order"
+      ],
+      "table": "g5_group",
+      "repo_file": "api/v1/Admin/Group/Repository/AdminGroupRepository.php",
+      "repo_field_const": "UPDATABLE_FIELDS",
+      "include_fields": [
+        "gr_id"
+      ],
+      "field_patterns": [
+        {
+          "pattern": "gr_(\\d+)_subj",
+          "label": "여분필드 {1} 제목",
+          "section_key": "board_group_extra",
+          "section_label": "게시판그룹 여분필드"
+        },
+        {
+          "pattern": "gr_(\\d+)",
+          "label": "여분필드 {1}",
+          "section_key": "board_group_extra",
+          "section_label": "게시판그룹 여분필드"
+        }
+      ],
+      "field_overrides": {
+        "gr_id": {
+          "required": true,
+          "create_only": true,
+          "readonly_on_update": true,
+          "description": "영문자, 숫자, _ 만 가능합니다."
+        },
+        "gr_subject": {
+          "required": true
+        },
+        "gr_admin": {
+          "label": "그룹 관리자",
+          "section_key": "board_group",
+          "section_label": "게시판그룹 정보"
+        },
+        "gr_order": {
+          "label": "출력 순서",
+          "section_key": "board_group",
+          "section_label": "게시판그룹 정보",
+          "input_type": "number",
+          "data_type": "integer"
+        }
+      }
+    },
+    {
+      "domain": "menus",
+      "title": "메뉴",
+      "legacy_forms": [
+        {
+          "path": "adm/menu_list.php",
+          "schema_scope": "supported_fields",
+          "supported_fields": [
+            "me_name",
+            "me_link",
+            "me_target",
+            "me_order",
+            "me_use",
+            "me_mobile_use"
+          ],
+          "default_section": {
+            "key": "menu_settings",
+            "label": "메뉴 설정"
+          }
+        }
+      ],
+      "ignored_render_type_mismatches": [
+        "me_target",
+        "me_use",
+        "me_mobile_use"
+      ],
+      "ignored_required_mismatches": [
+        "me_order",
+        "me_target"
+      ],
+      "table": "g5_menu",
+      "supported_fields": [
+        "me_code",
+        "me_name",
+        "me_link",
+        "me_target",
+        "me_order",
+        "me_use",
+        "me_mobile_use"
+      ],
+      "field_overrides": {
+        "me_id": {
+          "label": "메뉴 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "menu_settings",
+          "section_label": "메뉴 설정"
+        },
+        "me_code": {
+          "label": "메뉴 코드",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "section_key": "menu_settings",
+          "section_label": "메뉴 설정"
+        },
+        "me_name": {
+          "label": "메뉴 이름",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "section_key": "menu_settings",
+          "section_label": "메뉴 설정"
+        },
+        "me_link": {
+          "label": "메뉴 링크",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "section_key": "menu_settings",
+          "section_label": "메뉴 설정"
+        },
+        "me_target": {
+          "label": "링크 target",
+          "input_type": "text",
+          "data_type": "string",
+          "options": [],
+          "default_value": "_self",
+          "required": true,
+          "section_key": "menu_settings",
+          "section_label": "메뉴 설정"
+        },
+        "me_order": {
+          "label": "표시 순서",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "section_key": "menu_settings",
+          "section_label": "메뉴 설정"
+        },
+        "me_use": {
+          "label": "PC 노출",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "options": [],
+          "default_value": true,
+          "section_key": "menu_settings",
+          "section_label": "메뉴 설정"
+        },
+        "me_mobile_use": {
+          "label": "모바일 노출",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "options": [],
+          "default_value": true,
+          "section_key": "menu_settings",
+          "section_label": "메뉴 설정"
+        }
+      },
+      "default_section": {
+        "key": "menu_settings",
+        "label": "메뉴 설정"
+      }
+    },
+    {
+      "domain": "faq-masters",
+      "title": "FAQ 마스터",
+      "legacy_forms": [
+        {
+          "path": "adm/faqmasterform.php",
+          "schema_scope": "schema_fields",
+          "default_section": {
+            "key": "faq_master",
+            "label": "FAQ 마스터"
+          }
+        }
+      ],
+      "ignored_section_mismatches": [
+        "fm_himg",
+        "fm_timg"
+      ],
+      "ignored_render_type_mismatches": [
+        "fm_id"
+      ],
+      "ignored_readonly_mismatches": [
+        "fm_id"
+      ],
+      "table": "g5_faq_master",
+      "supported_fields": [
+        "fm_subject",
+        "fm_order",
+        "fm_head_html",
+        "fm_tail_html",
+        "fm_mobile_head_html",
+        "fm_mobile_tail_html",
+        "fm_himg",
+        "fm_timg"
+      ],
+      "field_overrides": {
+        "fm_id": {
+          "label": "FAQ 마스터 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "faq_master",
+          "section_label": "FAQ 마스터"
+        },
+        "fm_subject": {
+          "label": "제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "section_key": "faq_master",
+          "section_label": "FAQ 마스터"
+        },
+        "fm_order": {
+          "label": "출력순서",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "faq_master",
+          "section_label": "FAQ 마스터"
+        },
+        "fm_head_html": {
+          "label": "상단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "faq_master",
+          "section_label": "FAQ 마스터"
+        },
+        "fm_tail_html": {
+          "label": "하단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "faq_master",
+          "section_label": "FAQ 마스터"
+        },
+        "fm_mobile_head_html": {
+          "label": "모바일상단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "faq_master",
+          "section_label": "FAQ 마스터"
+        },
+        "fm_mobile_tail_html": {
+          "label": "모바일하단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "faq_master",
+          "section_label": "FAQ 마스터"
+        },
+        "fm_himg": {
+          "label": "상단이미지",
+          "input_type": "file",
+          "data_type": "file",
+          "section_key": "faq_master_assets",
+          "section_label": "FAQ 이미지"
+        },
+        "fm_timg": {
+          "label": "하단이미지",
+          "input_type": "file",
+          "data_type": "file",
+          "section_key": "faq_master_assets",
+          "section_label": "FAQ 이미지"
+        }
+      },
+      "default_section": {
+        "key": "faq_master",
+        "label": "FAQ 마스터"
+      }
+    },
+    {
+      "domain": "faqs",
+      "title": "FAQ 항목",
+      "legacy_forms": [
+        {
+          "path": "adm/faqform.php",
+          "schema_scope": "schema_fields",
+          "default_section": {
+            "key": "faq_item",
+            "label": "FAQ 항목"
+          }
+        }
+      ],
+      "ignored_render_type_mismatches": [
+        "fa_subject",
+        "fm_id",
+        "fa_id"
+      ],
+      "ignored_required_mismatches": [
+        "fa_subject",
+        "fa_content",
+        "fm_id"
+      ],
+      "ignored_readonly_mismatches": [
+        "fa_id"
+      ],
+      "table": "g5_faq",
+      "supported_fields": [
+        "fm_id",
+        "fa_subject",
+        "fa_content",
+        "fa_order"
+      ],
+      "field_overrides": {
+        "fa_id": {
+          "label": "FAQ 항목 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "faq_item",
+          "section_label": "FAQ 항목"
+        },
+        "fm_id": {
+          "label": "FAQ 마스터 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "section_key": "faq_item",
+          "section_label": "FAQ 항목"
+        },
+        "fa_subject": {
+          "label": "질문",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "section_key": "faq_item",
+          "section_label": "FAQ 항목"
+        },
+        "fa_content": {
+          "label": "답변",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": true,
+          "section_key": "faq_item",
+          "section_label": "FAQ 항목"
+        },
+        "fa_order": {
+          "label": "출력순서",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "faq_item",
+          "section_label": "FAQ 항목"
+        }
+      },
+      "default_section": {
+        "key": "faq_item",
+        "label": "FAQ 항목"
+      }
+    },
+    {
+      "domain": "shop-catalog-category",
+      "title": "쇼핑몰 카탈로그 분류",
+      "legacy_forms": [
+        {
+          "path": "adm/shop_admin/categoryform.php",
+          "default_section": {
+            "key": "shop_catalog_category",
+            "label": "쇼핑몰 분류"
+          }
+        }
+      ],
+      "table": "g5_shop_category",
+      "field_patterns": [
+        {
+          "pattern": "ca_(\\d+)_subj",
+          "label": "여분필드 {1} 제목",
+          "section_key": "anc_scatefrm_extra",
+          "section_label": "여분필드 설정"
+        },
+        {
+          "pattern": "ca_(\\d+)",
+          "label": "여분필드 {1}",
+          "section_key": "anc_scatefrm_extra",
+          "section_label": "여분필드 설정"
+        }
+      ],
+      "field_overrides": {
+        "ca_id": {
+          "label": "분류 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "shop_catalog_category",
+          "section_label": "쇼핑몰 분류",
+          "create_only": true,
+          "readonly_on_update": true
+        },
+        "ca_explan_html": {
+          "label": "상세 설명 사용",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "section_key": "anc_scatefrm_view",
+          "section_label": "분류 상단/하단 설정"
+        },
+        "ca_skin": {
+          "option_source": {
+            "kind": "directory",
+            "name": "shop.list_skin",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        "ca_mobile_skin": {
+          "option_source": {
+            "kind": "directory",
+            "name": "shop.mobile_list_skin",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        "ca_head_html": {
+          "label": "상단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "anc_scatefrm_view",
+          "section_label": "분류 상단/하단 설정"
+        },
+        "ca_tail_html": {
+          "label": "하단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "anc_scatefrm_view",
+          "section_label": "분류 상단/하단 설정"
+        },
+        "ca_mobile_head_html": {
+          "label": "모바일 상단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "anc_scatefrm_view",
+          "section_label": "분류 상단/하단 설정"
+        },
+        "ca_mobile_tail_html": {
+          "label": "모바일 하단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "anc_scatefrm_view",
+          "section_label": "분류 상단/하단 설정"
+        }
+      },
+      "default_section": {
+        "key": "shop_catalog_category",
+        "label": "쇼핑몰 분류"
+      }
+    },
+    {
+      "domain": "shop-catalog-product",
+      "title": "쇼핑몰 카탈로그 상품",
+      "legacy_forms": [
+        {
+          "path": "adm/shop_admin/itemform.php",
+          "default_section": {
+            "key": "shop_catalog_product",
+            "label": "상품 관리"
+          }
+        }
+      ],
+      "table": "g5_shop_item",
+      "field_patterns": [
+        {
+          "pattern": "it_(\\d+)_subj",
+          "label": "여분필드 {1} 제목",
+          "section_key": "anc_sitfrm_extra",
+          "section_label": "여분필드 설정"
+        },
+        {
+          "pattern": "it_id(\\d+)",
+          "label": "관련 상품 ID {1}",
+          "section_key": "anc_sitfrm_relation",
+          "section_label": "관련상품"
+        },
+        {
+          "pattern": "it_img(\\d+)",
+          "label": "상품 이미지 {1}",
+          "section_key": "anc_sitfrm_img",
+          "section_label": "상품 이미지"
+        },
+        {
+          "pattern": "it_(\\d+)",
+          "label": "여분필드 {1}",
+          "section_key": "anc_sitfrm_extra",
+          "section_label": "여분필드 설정"
+        }
+      ],
+      "field_overrides": {
+        "it_id": {
+          "label": "상품 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "shop_catalog_product",
+          "section_label": "상품 관리",
+          "create_only": true,
+          "readonly_on_update": true
+        },
+        "ca_id2": {
+          "label": "관련 상품 ID 2",
+          "input_type": "text",
+          "data_type": "string",
+          "section_key": "anc_sitfrm_relation",
+          "section_label": "관련상품"
+        },
+        "ca_id3": {
+          "label": "관련 상품 ID 3",
+          "input_type": "text",
+          "data_type": "string",
+          "section_key": "anc_sitfrm_relation",
+          "section_label": "관련상품"
+        },
+        "it_seo_title": {
+          "label": "SEO 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "section_key": "anc_sitfrm_basic",
+          "section_label": "상품 관리"
+        },
+        "it_option_subject": {
+          "label": "옵션 항목명",
+          "input_type": "text",
+          "data_type": "string",
+          "section_key": "anc_sitfrm_option",
+          "section_label": "상품옵션"
+        },
+        "it_supply_subject": {
+          "label": "추가옵션 항목명",
+          "input_type": "text",
+          "data_type": "string",
+          "section_key": "anc_sitfrm_option",
+          "section_label": "상품추가옵션"
+        },
+        "it_explan": {
+          "label": "상품 상세설명",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "anc_sitfrm_desc",
+          "section_label": "상품 상세설명"
+        },
+        "it_explan2": {
+          "label": "상품 상세설명2",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "anc_sitfrm_desc",
+          "section_label": "상품 상세설명"
+        },
+        "it_mobile_explan": {
+          "label": "모바일 상세설명",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "anc_sitfrm_desc",
+          "section_label": "상품 상세설명"
+        },
+        "it_head_html": {
+          "label": "상품 상세 상단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "anc_sitfrm_detail_html",
+          "section_label": "상세설명 HTML"
+        },
+        "it_tail_html": {
+          "label": "상품 상세 하단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "anc_sitfrm_detail_html",
+          "section_label": "상세설명 HTML"
+        },
+        "it_mobile_head_html": {
+          "label": "모바일 상품 상세 상단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "anc_sitfrm_detail_html",
+          "section_label": "상세설명 HTML"
+        },
+        "it_mobile_tail_html": {
+          "label": "모바일 상품 상세 하단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "section_key": "anc_sitfrm_detail_html",
+          "section_label": "상세설명 HTML"
+        },
+        "it_hit": {
+          "label": "조회수",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "shop_catalog_product",
+          "section_label": "상품 관리"
+        },
+        "it_time": {
+          "label": "등록일시",
+          "input_type": "date",
+          "data_type": "string",
+          "section_key": "shop_catalog_product",
+          "section_label": "상품 관리"
+        },
+        "it_update_time": {
+          "label": "최종수정일시",
+          "input_type": "date",
+          "data_type": "string",
+          "section_key": "shop_catalog_product",
+          "section_label": "상품 관리"
+        },
+        "it_ip": {
+          "label": "등록 IP",
+          "input_type": "text",
+          "data_type": "string",
+          "section_key": "shop_catalog_product",
+          "section_label": "상품 관리"
+        },
+        "it_info_gubun": {
+          "label": "상품군",
+          "input_type": "text",
+          "data_type": "string",
+          "section_key": "anc_sitfrm_compact",
+          "section_label": "상품요약정보"
+        },
+        "it_info_value": {
+          "label": "상품군 상세값",
+          "input_type": "text",
+          "data_type": "string",
+          "section_key": "anc_sitfrm_compact",
+          "section_label": "상품요약정보"
+        },
+        "it_sum_qty": {
+          "label": "총 판매 수량",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "shop_catalog_product",
+          "section_label": "상품 관리"
+        },
+        "it_use_cnt": {
+          "label": "사용 횟수",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "shop_catalog_product",
+          "section_label": "상품 관리"
+        },
+        "it_use_avg": {
+          "label": "사용 평균",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "shop_catalog_product",
+          "section_label": "상품 관리"
+        }
+      },
+      "default_section": {
+        "key": "shop_catalog_product",
+        "label": "상품 관리"
+      }
+    },
+    {
+      "domain": "shop-catalog-review",
+      "title": "쇼핑몰 카탈로그 사용후기",
+      "legacy_forms": [
+        {
+          "path": "adm/shop_admin/itemuseform.php",
+          "default_section": {
+            "key": "shop_catalog_review",
+            "label": "상품 사용후기"
+          }
+        }
+      ],
+      "table": "g5_shop_item_use",
+      "field_overrides": {
+        "is_id": {
+          "label": "사용후기 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "shop_catalog_review",
+          "section_label": "상품 사용후기",
+          "create_only": true,
+          "readonly_on_update": true
+        },
+        "it_id": {
+          "label": "상품 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "shop_catalog_review",
+          "section_label": "상품 사용후기",
+          "required": true
+        },
+        "mb_id": {
+          "label": "작성자 ID",
+          "section_key": "shop_catalog_review",
+          "section_label": "상품 사용후기"
+        },
+        "is_name": {
+          "label": "작성자명",
+          "section_key": "shop_catalog_review",
+          "section_label": "상품 사용후기"
+        },
+        "is_password": {
+          "label": "비밀번호",
+          "section_key": "shop_catalog_review",
+          "section_label": "상품 사용후기"
+        },
+        "is_score": {
+          "label": "평점",
+          "section_key": "shop_catalog_review",
+          "section_label": "상품 사용후기",
+          "data_type": "integer",
+          "input_type": "number"
+        },
+        "is_content": {
+          "label": "후기 내용",
+          "input_type": "textarea",
+          "section_key": "shop_catalog_review",
+          "section_label": "상품 사용후기"
+        },
+        "is_time": {
+          "label": "작성일시",
+          "input_type": "date",
+          "section_key": "shop_catalog_review",
+          "section_label": "상품 사용후기"
+        },
+        "is_ip": {
+          "label": "작성 IP",
+          "section_key": "shop_catalog_review",
+          "section_label": "상품 사용후기"
+        }
+      },
+      "default_section": {
+        "key": "shop_catalog_review",
+        "label": "상품 사용후기"
+      }
+    },
+    {
+      "domain": "shop-catalog-inquiry",
+      "title": "쇼핑몰 카탈로그 상품문의",
+      "legacy_forms": [
+        {
+          "path": "adm/shop_admin/itemqaform.php",
+          "default_section": {
+            "key": "shop_catalog_inquiry",
+            "label": "상품문의"
+          }
+        }
+      ],
+      "table": "g5_shop_item_qa",
+      "field_overrides": {
+        "iq_id": {
+          "label": "상품문의 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "shop_catalog_inquiry",
+          "section_label": "상품문의",
+          "create_only": true,
+          "readonly_on_update": true
+        },
+        "it_id": {
+          "label": "상품 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "shop_catalog_inquiry",
+          "section_label": "상품문의",
+          "required": true
+        },
+        "mb_id": {
+          "label": "작성자 ID",
+          "section_key": "shop_catalog_inquiry",
+          "section_label": "상품문의"
+        },
+        "iq_secret": {
+          "label": "비밀글",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "section_key": "shop_catalog_inquiry",
+          "section_label": "상품문의"
+        },
+        "iq_name": {
+          "label": "작성자명",
+          "section_key": "shop_catalog_inquiry",
+          "section_label": "상품문의"
+        },
+        "iq_email": {
+          "label": "이메일",
+          "section_key": "shop_catalog_inquiry",
+          "section_label": "상품문의"
+        },
+        "iq_hp": {
+          "label": "휴대폰",
+          "section_key": "shop_catalog_inquiry",
+          "section_label": "상품문의"
+        },
+        "iq_password": {
+          "label": "비밀번호",
+          "section_key": "shop_catalog_inquiry",
+          "section_label": "상품문의"
+        },
+        "iq_question": {
+          "label": "문의 내용",
+          "input_type": "textarea",
+          "section_key": "shop_catalog_inquiry",
+          "section_label": "상품문의"
+        },
+        "iq_time": {
+          "label": "작성일시",
+          "input_type": "date",
+          "section_key": "shop_catalog_inquiry",
+          "section_label": "상품문의"
+        },
+        "iq_ip": {
+          "label": "작성 IP",
+          "section_key": "shop_catalog_inquiry",
+          "section_label": "상품문의"
+        }
+      },
+      "default_section": {
+        "key": "shop_catalog_inquiry",
+        "label": "상품문의"
+      }
+    },
+    {
+      "domain": "shop-catalog-event",
+      "title": "쇼핑몰 카탈로그 이벤트",
+      "legacy_forms": [
+        {
+          "path": "adm/shop_admin/itemeventform.php",
+          "default_section": {
+            "key": "shop_catalog_event",
+            "label": "이벤트"
+          }
+        }
+      ],
+      "table": "g5_shop_event",
+      "field_overrides": {
+        "ev_id": {
+          "label": "이벤트 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "section_key": "shop_catalog_event",
+          "section_label": "이벤트",
+          "create_only": true,
+          "readonly_on_update": true
+        },
+        "ev_head_html": {
+          "label": "상단 내용",
+          "input_type": "textarea",
+          "section_key": "shop_catalog_event",
+          "section_label": "이벤트"
+        },
+        "ev_tail_html": {
+          "label": "하단 내용",
+          "input_type": "textarea",
+          "section_key": "shop_catalog_event",
+          "section_label": "이벤트"
+        },
+        "ev_skin": {
+          "option_source": {
+            "kind": "directory",
+            "name": "shop.list_skin",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        "ev_mobile_skin": {
+          "option_source": {
+            "kind": "directory",
+            "name": "shop.mobile_list_skin",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        }
+      },
+      "default_section": {
+        "key": "shop_catalog_event",
+        "label": "이벤트"
+      }
+    },
+    {
+      "domain": "shop-catalog-stocksms",
+      "title": "쇼핑몰 카탈로그 재입고 SMS",
+      "legacy_forms": [
+        {
+          "path": "adm/shop_admin/itemstocksms.php"
+        }
+      ],
+      "table": "g5_shop_item_stocksms",
+      "supported_fields": [
+        "ss_id",
+        "it_id",
+        "ss_hp",
+        "ss_send",
+        "ss_send_time",
+        "ss_datetime",
+        "ss_ip"
+      ],
+      "field_overrides": {
+        "ss_id": {
+          "label": "재입고SMS ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "readonly_on_update": true
+        },
+        "it_id": {
+          "label": "상품 ID",
+          "input_type": "text",
+          "data_type": "string"
+        },
+        "ss_hp": {
+          "label": "휴대전화",
+          "input_type": "text",
+          "data_type": "string"
+        },
+        "ss_send": {
+          "label": "발송 상태",
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "ss_send_time": {
+          "label": "발송 시각",
+          "input_type": "datetime-local",
+          "data_type": "string"
+        },
+        "ss_datetime": {
+          "label": "생성 시각",
+          "input_type": "datetime-local",
+          "data_type": "string"
+        },
+        "ss_ip": {
+          "label": "등록 IP",
+          "input_type": "text",
+          "data_type": "string"
+        }
+      },
+      "default_section": {
+        "key": "shop_catalog_stocksms",
+        "label": "재입고SMS"
+      }
+    },
+    {
+      "domain": "shop-catalog-option",
+      "title": "쇼핑몰 카탈로그 상품옵션",
+      "legacy_forms": [
+        {
+          "path": "adm/shop_admin/itemoption.php"
+        }
+      ],
+      "table": "g5_shop_item_option",
+      "supported_fields": [
+        "io_no",
+        "io_id",
+        "io_type",
+        "it_id",
+        "io_price",
+        "io_stock_qty",
+        "io_noti_qty",
+        "io_use"
+      ],
+      "field_overrides": {
+        "io_no": {
+          "label": "옵션 번호",
+          "input_type": "number",
+          "data_type": "integer",
+          "readonly_on_update": true
+        },
+        "io_id": {
+          "label": "옵션 ID",
+          "input_type": "text",
+          "data_type": "string"
+        },
+        "io_type": {
+          "label": "옵션 타입",
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "it_id": {
+          "label": "상품 ID",
+          "input_type": "text",
+          "data_type": "string"
+        },
+        "io_price": {
+          "label": "옵션 추가금액",
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "io_stock_qty": {
+          "label": "재고 수량",
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "io_noti_qty": {
+          "label": "재입고 알림 수량",
+          "input_type": "number",
+          "data_type": "integer"
+        },
+        "io_use": {
+          "label": "옵션 사용",
+          "input_type": "checkbox",
+          "data_type": "boolean"
+        }
+      },
+      "default_section": {
+        "key": "shop_catalog_option",
+        "label": "상품옵션"
+      }
+    }
+  ]
+}

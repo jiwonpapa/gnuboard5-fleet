@@ -1,0 +1,159 @@
+{
+  "domain": "sms-messages",
+  "title": "문자 보내기",
+  "legacy_form": "adm/sms_admin/sms_write.php",
+  "legacy_forms": [
+    "adm/sms_admin/sms_write.php",
+    "adm/sms_admin/sms_write_form.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.262390+00:00",
+  "field_count": 8,
+  "section_count": 4,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": "api/v1/Admin/Sms/Repository/AdminSmsMessageStore.php",
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": null,
+    "extractor_version": 5,
+    "source_hash": "c8b549285f4c56d1fec383c258ed80b013d73c63ebfea49d3ec6e0049d092ff9"
+  },
+  "sections": [
+    {
+      "key": "sms_message_template",
+      "label": "이모티콘 목록",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "template_id",
+          "label": "이모티콘 목록",
+          "input_type": "select",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null,
+          "option_source": {
+            "kind": "endpoint",
+            "name": "admin.sms.templates",
+            "endpoint": "/admin/sms/templates",
+            "value_field": "fo_no",
+            "label_field": "fo_name"
+          }
+        }
+      ]
+    },
+    {
+      "key": "sms_message_send",
+      "label": "문자 보내기",
+      "order": 2,
+      "description": null,
+      "fields": [
+        {
+          "name": "message",
+          "label": "내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "wr_reply",
+          "label": "회신",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    },
+    {
+      "key": "sms_message_targets",
+      "label": "받는사람",
+      "order": 3,
+      "description": null,
+      "fields": [
+        {
+          "name": "group_ids_csv",
+          "label": "그룹",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "contact_ids_csv",
+          "label": "개인",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "member_levels_csv",
+          "label": "권한",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "manual_targets_text",
+          "label": "받는사람",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    },
+    {
+      "key": "sms_message_booking",
+      "label": "예약전송",
+      "order": 4,
+      "description": null,
+      "fields": [
+        {
+          "name": "booking_at",
+          "label": "예약전송",
+          "input_type": "datetime-local",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,927 @@
+{
+  "domain": "members",
+  "title": "회원",
+  "legacy_form": "adm/member_form.php",
+  "legacy_forms": [
+    "adm/member_form.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.269329+00:00",
+  "field_count": 63,
+  "section_count": 5,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": "api/v1/Admin/Member/Repository/AdminMemberQueryRepository.php",
+    "repo_field_file": "api/v1/Admin/Member/Repository/AdminMemberMutationRepository.php",
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": "g5_member",
+    "extractor_version": 5,
+    "source_hash": "01e4bafb634ca865b9aa4c68f0b35933759587ef801db3b4df52e28666772a31"
+  },
+  "sections": [
+    {
+      "key": "member_activity",
+      "label": "회원 활동 정보",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "mb_no",
+          "label": "회원 번호",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_nick_date",
+          "label": "닉네임 변경일",
+          "input_type": "date",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00"
+        },
+        {
+          "name": "mb_recommend",
+          "label": "추천인",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "mb_point",
+          "label": "포인트",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_today_login",
+          "label": "최근접속일",
+          "input_type": "date",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00 00:00:00"
+        },
+        {
+          "name": "mb_login_ip",
+          "label": "최근 로그인 IP",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "mb_datetime",
+          "label": "회원가입일",
+          "input_type": "date",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00 00:00:00"
+        },
+        {
+          "name": "mb_ip",
+          "label": "가입 IP",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "mb_memo_call",
+          "label": "메모 호출 ID",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "mb_memo_cnt",
+          "label": "미읽은 메모 수",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "mb_scrap_cnt",
+          "label": "스크랩 수",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        }
+      ]
+    },
+    {
+      "key": "member_profile",
+      "label": "회원 정보",
+      "order": 2,
+      "description": null,
+      "fields": [
+        {
+          "name": "mb_id",
+          "label": "아이디",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": true,
+          "readonly_on_update": true,
+          "description": "영문, 숫자, 밑줄 조합의 회원 아이디입니다.",
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_password",
+          "label": "비밀번호",
+          "input_type": "password",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "mb_name",
+          "label": "이름(실명)",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_nick",
+          "label": "닉네임",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_email",
+          "label": "E-mail",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_homepage",
+          "label": "홈페이지",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_level",
+          "label": "회원 권한",
+          "input_type": "select",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "1",
+              "label": "1"
+            },
+            {
+              "value": "2",
+              "label": "2"
+            },
+            {
+              "value": "3",
+              "label": "3"
+            },
+            {
+              "value": "4",
+              "label": "4"
+            },
+            {
+              "value": "5",
+              "label": "5"
+            },
+            {
+              "value": "6",
+              "label": "6"
+            },
+            {
+              "value": "7",
+              "label": "7"
+            },
+            {
+              "value": "8",
+              "label": "8"
+            },
+            {
+              "value": "9",
+              "label": "9"
+            },
+            {
+              "value": "10",
+              "label": "10"
+            }
+          ],
+          "default_value": null
+        },
+        {
+          "name": "mb_sex",
+          "label": "성별",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "mb_birth",
+          "label": "생년월일",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "mb_tel",
+          "label": "전화번호",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_hp",
+          "label": "휴대폰번호",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_certify",
+          "label": "본인확인방법",
+          "input_type": "radio",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "simple",
+              "label": "간편인증"
+            },
+            {
+              "value": "hp",
+              "label": "휴대폰"
+            },
+            {
+              "value": "ipin",
+              "label": "아이핀"
+            }
+          ],
+          "default_value": null
+        },
+        {
+          "name": "mb_adult",
+          "label": "성인인증",
+          "input_type": "radio",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "1",
+              "label": "예"
+            },
+            {
+              "value": "0",
+              "label": "아니오"
+            }
+          ],
+          "default_value": null
+        },
+        {
+          "name": "mb_addr1",
+          "label": "기본주소",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_addr2",
+          "label": "상세주소",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_addr3",
+          "label": "참고항목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_addr_jibeon",
+          "label": "지번주소",
+          "input_type": "hidden",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_signature",
+          "label": "서명",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_leave_date",
+          "label": "탈퇴일자",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_intercept_date",
+          "label": "접근차단일자",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_memo",
+          "label": "메모",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_mailling",
+          "label": "광고성 이메일 수신",
+          "input_type": "radio",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "1",
+              "label": "예"
+            },
+            {
+              "value": "0",
+              "label": "아니오"
+            }
+          ],
+          "default_value": true
+        },
+        {
+          "name": "mb_sms",
+          "label": "광고성 SMS/카카오톡 수신",
+          "input_type": "radio",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "1",
+              "label": "예"
+            },
+            {
+              "value": "0",
+              "label": "아니오"
+            }
+          ],
+          "default_value": true
+        },
+        {
+          "name": "mb_open",
+          "label": "정보 공개",
+          "input_type": "radio",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "1",
+              "label": "예"
+            },
+            {
+              "value": "0",
+              "label": "아니오"
+            }
+          ],
+          "default_value": true
+        },
+        {
+          "name": "mb_profile",
+          "label": "자기 소개",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_marketing_agree",
+          "label": "마케팅 목적의 개인정보 수집 및 이용",
+          "input_type": "radio",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "1",
+              "label": "예"
+            },
+            {
+              "value": "0",
+              "label": "아니오"
+            }
+          ],
+          "default_value": false
+        },
+        {
+          "name": "mb_thirdparty_agree",
+          "label": "개인정보 제3자 제공",
+          "input_type": "radio",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "1",
+              "label": "예"
+            },
+            {
+              "value": "0",
+              "label": "아니오"
+            }
+          ],
+          "default_value": false
+        },
+        {
+          "name": "mb_zip",
+          "label": "우편번호",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_icon",
+          "label": "회원아이콘",
+          "input_type": "file",
+          "data_type": "file",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "이미지 크기는 넓이 ' . $config['cf_member_icon_width'] . '픽셀 높이 ' . $config['cf_member_icon_height'] . '픽셀 로 해주세요.",
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_img",
+          "label": "회원이미지",
+          "input_type": "file",
+          "data_type": "file",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "이미지 크기는 넓이 ' . $config['cf_member_img_width'] . '픽셀 높이 ' . $config['cf_member_img_height'] . '픽셀 로 해주세요.",
+          "options": [],
+          "default_value": null
+        }
+      ]
+    },
+    {
+      "key": "member_audit",
+      "label": "인증 및 추적 정보",
+      "order": 3,
+      "description": null,
+      "fields": [
+        {
+          "name": "mb_dupinfo",
+          "label": "중복가입 확인값",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "mb_zip1",
+          "label": "우편번호 앞자리",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_zip2",
+          "label": "우편번호 뒷자리",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_email_certify",
+          "label": "이메일 인증일시",
+          "input_type": "date",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00 00:00:00"
+        },
+        {
+          "name": "mb_email_certify2",
+          "label": "이메일 인증 토큰",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "mb_lost_certify",
+          "label": "비밀번호 재설정 인증키",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    },
+    {
+      "key": "member_consent",
+      "label": "회원 동의 이력",
+      "order": 4,
+      "description": null,
+      "fields": [
+        {
+          "name": "mb_mailling_date",
+          "label": "광고성 이메일 수신 동의일",
+          "input_type": "date",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00 00:00:00"
+        },
+        {
+          "name": "mb_sms_date",
+          "label": "광고성 SMS/카카오톡 수신 동의일",
+          "input_type": "date",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00 00:00:00"
+        },
+        {
+          "name": "mb_open_date",
+          "label": "정보 공개 동의일",
+          "input_type": "date",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00"
+        },
+        {
+          "name": "mb_marketing_date",
+          "label": "마케팅 수집 동의일",
+          "input_type": "date",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00 00:00:00"
+        },
+        {
+          "name": "mb_thirdparty_date",
+          "label": "제3자 제공 동의일",
+          "input_type": "date",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00 00:00:00"
+        },
+        {
+          "name": "mb_agree_log",
+          "label": "회원 동의 로그",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    },
+    {
+      "key": "member_extra",
+      "label": "회원 여분필드",
+      "order": 5,
+      "description": null,
+      "fields": [
+        {
+          "name": "mb_1",
+          "label": "여분필드 1",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_2",
+          "label": "여분필드 2",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_3",
+          "label": "여분필드 3",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_4",
+          "label": "여분필드 4",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_5",
+          "label": "여분필드 5",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_6",
+          "label": "여분필드 6",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_7",
+          "label": "여분필드 7",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_8",
+          "label": "여분필드 8",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_9",
+          "label": "여분필드 9",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_10",
+          "label": "여분필드 10",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    }
+  ]
+}

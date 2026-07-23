@@ -1,0 +1,17 @@
+location ~ /\.(?!well-known)(.*)$ {
+    deny all;
+    return 404;
+}
+
+location ~* ^/(?:composer\.(?:json|lock)|\.deploy_last_staging_backup)$ {
+    deny all;
+    return 404;
+}
+
+location = /setup {
+    return 404;
+}
+
+location = /api/docs/ {
+    try_files /api/docs/index.html =404;
+}

@@ -1,0 +1,19 @@
+{
+    "name": "hello",
+    "vendor": "wolchuck",
+    "version": "1.0.0",
+    "description": "Hello World sample plugin with route and event demo",
+    "require_api_version": ">=1.1.0",
+    "license": {
+        "type": "free"
+    },
+    "scopes": [
+        "member.read"
+    ],
+    "entry_class": "Plugin",
+    "autoload": {
+        "psr-4": {
+            "Api\\Plugins\\Wolchuck\\Hello\\": "src/"
+        }
+    }
+}

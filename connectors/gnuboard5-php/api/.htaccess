@@ -1,0 +1,12 @@
+RewriteEngine On
+
+# /api/v1은 소스 디렉토리와 이름이 겹치므로 Apache의 디렉토리 403보다
+# API front controller의 일관된 JSON 응답을 우선한다.
+RewriteRule ^v1/?$ index.php [QSA,L]
+
+# 실제 파일이나 디렉토리가 존재하면 그대로 서빙 (Swagger UI 정적 파일 등)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# 모든 요청을 Front Controller(index.php)로 전달
+RewriteRule ^(.*)$ index.php [QSA,L]

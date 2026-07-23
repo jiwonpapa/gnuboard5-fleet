@@ -1,0 +1,221 @@
+{
+  "domain": "popups",
+  "title": "팝업레이어",
+  "legacy_form": "adm/newwinform.php",
+  "legacy_forms": [
+    "adm/newwinform.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.272265+00:00",
+  "field_count": 13,
+  "section_count": 1,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": "api/v1/Admin/Popup/Repository/AdminPopupRepository.php",
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": "g5_new_win",
+    "extractor_version": 5,
+    "source_hash": "0c03d2c24ed87954f3567bf7aa1a64492b5a7c1203e7db3a296677cfa2e7af9c"
+  },
+  "sections": [
+    {
+      "key": "popup_general",
+      "label": "팝업 설정",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "nw_id",
+          "label": "팝업 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "nw_division",
+          "label": "구분",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "커뮤니티에 표시될 것인지 쇼핑몰에 표시될 것인지를 설정합니다.",
+          "options": [
+            {
+              "value": "both",
+              "label": "커뮤니티와 쇼핑몰"
+            },
+            {
+              "value": "comm",
+              "label": "커뮤니티"
+            },
+            {
+              "value": "shop",
+              "label": "쇼핑몰"
+            },
+            {
+              "value": "layer",
+              "label": "레이어"
+            },
+            {
+              "value": "new",
+              "label": "새 창"
+            }
+          ],
+          "default_value": "comm"
+        },
+        {
+          "name": "nw_device",
+          "label": "접속기기",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "팝업레이어가 표시될 접속기기를 설정합니다.",
+          "options": [
+            {
+              "value": "both",
+              "label": "PC와 모바일"
+            },
+            {
+              "value": "pc",
+              "label": "PC"
+            },
+            {
+              "value": "mobile",
+              "label": "모바일"
+            }
+          ],
+          "default_value": "both"
+        },
+        {
+          "name": "nw_begin_time",
+          "label": "시작일시",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "nw_end_time",
+          "label": "종료일시",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "nw_disable_hours",
+          "label": "시간",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "고객이 다시 보지 않음을 선택할 시 몇 시간동안 팝업레이어를 보여주지 않을지 설정합니다.",
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "nw_left",
+          "label": "팝업레이어 좌측 위치",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "nw_top",
+          "label": "팝업레이어 상단 위치",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "nw_height",
+          "label": "팝업레이어 높이",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "nw_width",
+          "label": "팝업레이어 넓이",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "nw_subject",
+          "label": "팝업 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "nw_content",
+          "label": "내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "nw_content_html",
+          "label": "HTML 본문",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": false
+        }
+      ]
+    }
+  ]
+}

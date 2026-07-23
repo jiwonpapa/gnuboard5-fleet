@@ -1,0 +1,100 @@
+{
+  "schema": "gnuboard5.php.openapi-consumer-scope/v1",
+  "scope_id": "phase1-admin",
+  "contract": "api/docs/openapi.yaml",
+  "contract_inventory": {
+    "expected_total_operations": 312,
+    "expected_operation_keys_sha256": "ff22a5d1649c9bf81317726f9561b7e1886ebda11b99833628eb9676989f8c62",
+    "expected_classification_counts": {
+      "active": 189,
+      "deferred_general_board": 26,
+      "deferred_internal_tool": 3,
+      "deferred_non_admin": 68,
+      "excluded_admin_shop": 26
+    }
+  },
+  "active_scope": {
+    "include_path_prefixes": [
+      "/admin/"
+    ],
+    "exclude_path_prefixes": [
+      "/admin/shop/"
+    ],
+    "include_operations": [
+      {
+        "method": "POST",
+        "path": "/auth/login"
+      },
+      {
+        "method": "POST",
+        "path": "/auth/logout"
+      },
+      {
+        "method": "POST",
+        "path": "/auth/refresh"
+      },
+      {
+        "method": "GET",
+        "path": "/health"
+      },
+      {
+        "method": "GET",
+        "path": "/members/me"
+      }
+    ],
+    "expected_admin_non_shop_operations": 184,
+    "expected_bootstrap_operations": 5,
+    "expected_total_operations": 189
+  },
+  "deferred_scope": {
+    "hard_fail": false,
+    "classifications": [
+      {
+        "id": "internal_tool",
+        "include_path_prefixes": [
+          "/admin-inspect/"
+        ]
+      },
+      {
+        "id": "general_board",
+        "include_paths": [
+          "/boards"
+        ],
+        "include_path_prefixes": [
+          "/boards/",
+          "/files/",
+          "/polls/"
+        ],
+        "expected_operations": [
+          "GET /boards",
+          "GET /boards/new-posts",
+          "GET /boards/{bo_table}",
+          "GET /boards/{bo_table}/posts",
+          "POST /boards/{bo_table}/posts",
+          "GET /boards/{bo_table}/posts/{wr_id}",
+          "PUT /boards/{bo_table}/posts/{wr_id}",
+          "DELETE /boards/{bo_table}/posts/{wr_id}",
+          "POST /boards/{bo_table}/posts/{wr_id}/reply",
+          "GET /boards/{bo_table}/posts/{wr_id}/link/{link_no}",
+          "POST /boards/{bo_table}/posts/{wr_id}/scrap",
+          "DELETE /boards/{bo_table}/posts/{wr_id}/scrap",
+          "GET /boards/{bo_table}/posts/{wr_id}/files",
+          "POST /boards/{bo_table}/posts/{wr_id}/files",
+          "GET /boards/{bo_table}/posts/{wr_id}/files/{bf_no}/download",
+          "DELETE /boards/{bo_table}/posts/{wr_id}/files/{bf_no}",
+          "POST /boards/{bo_table}/posts/{wr_id}/good",
+          "GET /boards/{bo_table}/posts/{wr_id}/comments",
+          "POST /boards/{bo_table}/posts/{wr_id}/comments",
+          "PUT /boards/{bo_table}/posts/{wr_id}/comments/{comment_id}",
+          "DELETE /boards/{bo_table}/posts/{wr_id}/comments/{comment_id}",
+          "POST /files/upload",
+          "GET /files/{bo_table}/{wr_id}/{bf_no}",
+          "GET /polls/active",
+          "POST /polls/{po_id}/vote",
+          "GET /polls/{po_id}/result"
+        ]
+      }
+    ],
+    "fallback_classification": "non_admin"
+  }
+}

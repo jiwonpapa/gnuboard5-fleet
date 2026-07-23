@@ -1,0 +1,16 @@
+version = 1
+
+# 현재 활성 waiver 없음.
+# 필요 시 아래 형식으로 [[waivers]] 항목을 추가합니다.
+#
+# [[waivers]]
+# id = "WV-2026-001"
+# audit = "structure"
+# severity = "warning"
+# rule = "example_rule"
+# path = "api/v1/Example/Service/ExampleService.php"
+# owner = "php-api"
+# reason = "일시적 구조 이행 단계"
+# introduced_on = "2026-03-13"
+# expires_on = "2026-04-03"
+# removal_criteria = "후속 리팩터링 완료 후 제거"

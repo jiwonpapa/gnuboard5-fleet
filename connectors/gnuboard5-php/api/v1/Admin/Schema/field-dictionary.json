@@ -1,0 +1,2303 @@
+{
+  "version": "1.0.0",
+  "purpose": "API 필드 라벨 사전. 필드명은 변경하지 않고, 사람이 읽을 라벨을 정의한다.",
+  "generated_at": "2026-03-10",
+  "stats": {
+    "total_fields": 351,
+    "labeled": 218,
+    "unlabeled": 133
+  },
+  "fields": {
+    "access_token": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthSessionPayload"
+      ]
+    },
+    "action": {
+      "label": null,
+      "source_schemas": [
+        "ErrorGuide"
+      ]
+    },
+    "active": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthLinkedMember"
+      ]
+    },
+    "active_days": {
+      "label": null,
+      "source_schemas": [
+        "VisitStatsSummary"
+      ]
+    },
+    "amount": {
+      "label": null,
+      "source_schemas": [
+        "PluginBoardRewardCommand"
+      ]
+    },
+    "api_version": {
+      "label": null,
+      "source_schemas": [
+        "PluginHelloInfoResponse"
+      ]
+    },
+    "au_auth": {
+      "label": "권한값",
+      "source_schemas": [
+        "AdminAuthAssignment"
+      ]
+    },
+    "au_menu": {
+      "label": "권한 메뉴",
+      "source_schemas": [
+        "AdminAuthAssignment"
+      ]
+    },
+    "auths": {
+      "label": null,
+      "source_schemas": [
+        "AdminAuthMember"
+      ]
+    },
+    "before": {
+      "label": null,
+      "source_schemas": [
+        "VisitDeleteResult"
+      ]
+    },
+    "bo_category_list": {
+      "label": "분류 목록",
+      "source_schemas": [
+        "Board"
+      ]
+    },
+    "bo_comment_level": {
+      "label": "댓글 권한",
+      "source_schemas": [
+        "Board"
+      ]
+    },
+    "bo_count_comment": {
+      "label": "댓글 수",
+      "source_schemas": [
+        "Board"
+      ]
+    },
+    "bo_count_write": {
+      "label": "글 수",
+      "source_schemas": [
+        "Board"
+      ]
+    },
+    "bo_download_level": {
+      "label": "다운로드 권한",
+      "source_schemas": [
+        "Board"
+      ]
+    },
+    "bo_read_level": {
+      "label": "읽기 권한",
+      "source_schemas": [
+        "Board"
+      ]
+    },
+    "bo_subject": {
+      "label": "게시판 제목",
+      "source_schemas": [
+        "Board"
+      ]
+    },
+    "bo_table": {
+      "label": "게시판 코드",
+      "source_schemas": [
+        "Board",
+        "PluginBoardRewardBoard"
+      ]
+    },
+    "bo_upload_count": {
+      "label": "업로드 수",
+      "source_schemas": [
+        "Board"
+      ]
+    },
+    "bo_upload_size": {
+      "label": "업로드 용량",
+      "source_schemas": [
+        "Board"
+      ]
+    },
+    "bo_use_category": {
+      "label": "분류 사용",
+      "source_schemas": [
+        "Board"
+      ]
+    },
+    "bo_use_secret": {
+      "label": "비밀글 사용",
+      "source_schemas": [
+        "Board"
+      ]
+    },
+    "bo_write_level": {
+      "label": "쓰기 권한",
+      "source_schemas": [
+        "Board"
+      ]
+    },
+    "board": {
+      "label": null,
+      "source_schemas": [
+        "PluginBoardRewardBoardResponse"
+      ]
+    },
+    "board_id": {
+      "label": null,
+      "source_schemas": [
+        "PluginBoardRewardCommand"
+      ]
+    },
+    "callback_url": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthStartRequest"
+      ]
+    },
+    "candidate_member": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthLinkage"
+      ]
+    },
+    "cf_admin": {
+      "label": "최고관리자",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_admin_email": {
+      "label": "관리자 이메일",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_admin_email_name": {
+      "label": "관리자 이메일 이름",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_captcha": {
+      "label": "캡차",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_cert_use": {
+      "label": "본인인증 사용",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_comment_point": {
+      "label": "댓글 포인트",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_connect_skin": {
+      "label": "접속자 스킨",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_datetime": {
+      "label": "설정 일시",
+      "source_schemas": [
+        "SmsConfig"
+      ]
+    },
+    "cf_download_point": {
+      "label": "다운로드 포인트",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_editor": {
+      "label": "에디터",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_faq_skin": {
+      "label": "FAQ 스킨",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_icode_id": {
+      "label": "iCode ID",
+      "source_schemas": [
+        "SmsConfig"
+      ]
+    },
+    "cf_icode_pw": {
+      "label": "iCode 비밀번호",
+      "source_schemas": [
+        "SmsConfig"
+      ]
+    },
+    "cf_icode_server_ip": {
+      "label": "iCode 서버 IP",
+      "source_schemas": [
+        "SmsConfig"
+      ]
+    },
+    "cf_icode_server_port": {
+      "label": "iCode 서버 포트",
+      "source_schemas": [
+        "SmsConfig"
+      ]
+    },
+    "cf_icode_token_key": {
+      "label": "iCode 토큰 키",
+      "source_schemas": [
+        "SmsConfig"
+      ]
+    },
+    "cf_include_head": {
+      "label": "상단 파일",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_include_tail": {
+      "label": "하단 파일",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_login_point": {
+      "label": "로그인 포인트",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_member_skin": {
+      "label": "회원 스킨",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_memo_send_point": {
+      "label": "쪽지 포인트",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_mobile_member_skin": {
+      "label": "모바일 회원 스킨",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_mobile_register_skin": {
+      "label": "모바일 회원가입 스킨",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_new_skin": {
+      "label": "최근게시물 스킨",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_phone": {
+      "label": "전화번호",
+      "source_schemas": [
+        "SmsConfig"
+      ]
+    },
+    "cf_privacy": {
+      "label": "개인정보처리방침",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_read_point": {
+      "label": "읽기 포인트",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_register_level": {
+      "label": "가입 등급",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_register_point": {
+      "label": "가입 축하 포인트",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_register_skin": {
+      "label": "회원가입 스킨",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_req_addr": {
+      "label": "주소 필수",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_req_homepage": {
+      "label": "홈페이지 필수",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_req_hp": {
+      "label": "휴대폰 필수",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_req_tel": {
+      "label": "전화번호 필수",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_search_skin": {
+      "label": "검색 스킨",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_sms_type": {
+      "label": "SMS 유형",
+      "source_schemas": [
+        "SmsConfig"
+      ]
+    },
+    "cf_sms_use": {
+      "label": "SMS 사용",
+      "source_schemas": [
+        "SmsConfig"
+      ]
+    },
+    "cf_social_login_use": {
+      "label": "소셜 로그인 사용",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_stipulation": {
+      "label": "이용약관",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_title": {
+      "label": "사이트 제목",
+      "source_schemas": [
+        "Config",
+        "SmsConfig"
+      ]
+    },
+    "cf_use_addr": {
+      "label": "주소 사용",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_use_email_certify": {
+      "label": "이메일 인증 사용",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_use_homepage": {
+      "label": "홈페이지 사용",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_use_hp": {
+      "label": "휴대폰 사용",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_use_include_head": {
+      "label": "상단 파일 사용",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_use_point": {
+      "label": "포인트 사용",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_use_sns": {
+      "label": "SNS 사용",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_use_tel": {
+      "label": "전화번호 사용",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "cf_write_point": {
+      "label": "글쓰기 포인트",
+      "source_schemas": [
+        "Config"
+      ]
+    },
+    "co_content": {
+      "label": "본문",
+      "source_schemas": [
+        "ContentItem"
+      ]
+    },
+    "co_html": {
+      "label": "HTML 모드",
+      "source_schemas": [
+        "ContentItem"
+      ]
+    },
+    "co_id": {
+      "label": "내용 코드",
+      "source_schemas": [
+        "ContentItem"
+      ]
+    },
+    "co_include_head": {
+      "label": "상단 파일",
+      "source_schemas": [
+        "ContentItem"
+      ]
+    },
+    "co_include_tail": {
+      "label": "하단 파일",
+      "source_schemas": [
+        "ContentItem"
+      ]
+    },
+    "co_mobile_content": {
+      "label": "모바일 본문",
+      "source_schemas": [
+        "ContentItem"
+      ]
+    },
+    "co_mobile_skin": {
+      "label": "모바일 스킨",
+      "source_schemas": [
+        "ContentItem"
+      ]
+    },
+    "co_skin": {
+      "label": "스킨",
+      "source_schemas": [
+        "ContentItem"
+      ]
+    },
+    "co_subject": {
+      "label": "내용 제목",
+      "source_schemas": [
+        "ContentItem"
+      ]
+    },
+    "co_tag_filter_use": {
+      "label": "태그 필터",
+      "source_schemas": [
+        "ContentItem"
+      ]
+    },
+    "code": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthCompleteRequest"
+      ]
+    },
+    "correlation_id": {
+      "label": null,
+      "source_schemas": [
+        "Meta",
+        "ProblemDetails"
+      ]
+    },
+    "create_only": {
+      "label": null,
+      "source_schemas": [
+        "AdminFieldSchema"
+      ]
+    },
+    "cursor": {
+      "label": null,
+      "source_schemas": [
+        "Pagination"
+      ]
+    },
+    "data": {
+      "label": null,
+      "source_schemas": [
+        "TokenResponse",
+        "RegisterResponse",
+        "ExternalAuthProviderListResponse",
+        "ExternalAuthStartResponse",
+        "ExternalAuthSessionResponse",
+        "ExternalAuthClaimResponse",
+        "ExternalAuthRegistrationResponse",
+        "ExternalAuthLinkResponse",
+        "ExternalAuthLinkListResponse",
+        "ExternalAuthUnlinkResponse",
+        "ExternalAuthCompleteResponse",
+        "BoardListResponse",
+        "BoardDetailResponse",
+        "AdminSchemaCatalogResponse",
+        "AdminSchemaDetailResponse",
+        "PostListResponse",
+        "NewPostListResponse",
+        "CommentListResponse",
+        "MemberListResponse",
+        "MemberMeResponse",
+        "MemberDetailResponse",
+        "MenuListResponse",
+        "MenuDetailResponse",
+        "ConfigResponse",
+        "PointHistoryListResponse",
+        "PointSummaryResponse",
+        "VisitStatsResponse",
+        "VisitSearchResponse",
+        "VisitDeleteResponse",
+        "GroupListResponse",
+        "GroupDetailResponse",
+        "ContentListResponse",
+        "ContentDetailResponse",
+        "AdminAuthListResponse",
+        "PopupListResponse",
+        "PopupDetailResponse",
+        "PollListResponse",
+        "PollDetailResponse",
+        "FaqListResponse",
+        "FaqDetailResponse",
+        "FaqMasterListResponse",
+        "FaqMasterDetailResponse",
+        "SmsConfigResponse",
+        "MessageResponse"
+      ]
+    },
+    "data_type": {
+      "label": null,
+      "source_schemas": [
+        "AdminFieldSchema"
+      ]
+    },
+    "date_from": {
+      "label": null,
+      "source_schemas": [
+        "VisitDeleteResult"
+      ]
+    },
+    "date_to": {
+      "label": null,
+      "source_schemas": [
+        "VisitDeleteResult"
+      ]
+    },
+    "deleted_rows": {
+      "label": null,
+      "source_schemas": [
+        "VisitDeleteResult"
+      ]
+    },
+    "description": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthProviderDefinition",
+        "AdminFieldSchema",
+        "AdminSchemaSection"
+      ]
+    },
+    "detail": {
+      "label": null,
+      "source_schemas": [
+        "ProblemDetails"
+      ]
+    },
+    "display_name": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthProviderUser"
+      ]
+    },
+    "docs": {
+      "label": null,
+      "source_schemas": [
+        "ErrorGuide"
+      ]
+    },
+    "domain": {
+      "label": null,
+      "source_schemas": [
+        "AdminSchemaDomainSummary",
+        "AdminSchemaDetail"
+      ]
+    },
+    "email": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthProviderUser"
+      ]
+    },
+    "error_category": {
+      "label": null,
+      "source_schemas": [
+        "Meta",
+        "ProblemDetails"
+      ]
+    },
+    "error_code": {
+      "label": null,
+      "source_schemas": [
+        "Meta",
+        "ProblemDetails"
+      ]
+    },
+    "errors": {
+      "label": null,
+      "source_schemas": [
+        "ProblemDetails"
+      ]
+    },
+    "exists": {
+      "label": null,
+      "source_schemas": [
+        "FaqImage"
+      ]
+    },
+    "expires_in": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthSessionPayload"
+      ]
+    },
+    "fa_content": {
+      "label": "FAQ 내용",
+      "source_schemas": [
+        "FaqItem"
+      ]
+    },
+    "fa_id": {
+      "label": "FAQ 번호",
+      "source_schemas": [
+        "FaqItem"
+      ]
+    },
+    "fa_order": {
+      "label": "정렬",
+      "source_schemas": [
+        "FaqItem"
+      ]
+    },
+    "fa_subject": {
+      "label": "FAQ 제목",
+      "source_schemas": [
+        "FaqItem"
+      ]
+    },
+    "faq_count": {
+      "label": "FAQ 수",
+      "source_schemas": [
+        "FaqMasterSummary",
+        "FaqMasterDetail"
+      ]
+    },
+    "fault_domain": {
+      "label": null,
+      "source_schemas": [
+        "Meta",
+        "ProblemDetails"
+      ]
+    },
+    "field_count": {
+      "label": null,
+      "source_schemas": [
+        "AdminSchemaDomainSummary",
+        "AdminSchemaDetail"
+      ]
+    },
+    "fields": {
+      "label": null,
+      "source_schemas": [
+        "AdminSchemaSection"
+      ]
+    },
+    "fields_by_name": {
+      "label": null,
+      "source_schemas": [
+        "AdminSchemaDetail"
+      ]
+    },
+    "first_date": {
+      "label": null,
+      "source_schemas": [
+        "VisitStatsSummary"
+      ]
+    },
+    "flow": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthStartRequest"
+      ]
+    },
+    "flows": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthProviderDefinition"
+      ]
+    },
+    "fm_head_html": {
+      "label": "상단 HTML",
+      "source_schemas": [
+        "FaqMasterDetail"
+      ]
+    },
+    "fm_id": {
+      "label": "FAQ 분류 번호",
+      "source_schemas": [
+        "FaqItem",
+        "FaqMasterSummary",
+        "FaqMasterDetail"
+      ]
+    },
+    "fm_mobile_head_html": {
+      "label": "모바일 상단 HTML",
+      "source_schemas": [
+        "FaqMasterDetail"
+      ]
+    },
+    "fm_mobile_tail_html": {
+      "label": "모바일 하단 HTML",
+      "source_schemas": [
+        "FaqMasterDetail"
+      ]
+    },
+    "fm_order": {
+      "label": "정렬",
+      "source_schemas": [
+        "FaqMasterSummary",
+        "FaqMasterDetail"
+      ]
+    },
+    "fm_subject": {
+      "label": "FAQ 분류 제목",
+      "source_schemas": [
+        "FaqItem",
+        "FaqMasterSummary",
+        "FaqMasterDetail"
+      ]
+    },
+    "fm_tail_html": {
+      "label": "하단 HTML",
+      "source_schemas": [
+        "FaqMasterDetail"
+      ]
+    },
+    "footer_image": {
+      "label": null,
+      "source_schemas": [
+        "FaqMasterSummary",
+        "FaqMasterDetail"
+      ]
+    },
+    "generated_at": {
+      "label": null,
+      "source_schemas": [
+        "AdminSchemaDomainSummary",
+        "AdminSchemaDetail"
+      ]
+    },
+    "gr_admin": {
+      "label": "그룹 관리자",
+      "source_schemas": [
+        "Group"
+      ]
+    },
+    "gr_device": {
+      "label": "디바이스",
+      "source_schemas": [
+        "Group"
+      ]
+    },
+    "gr_id": {
+      "label": "그룹 코드",
+      "source_schemas": [
+        "Board",
+        "Group"
+      ]
+    },
+    "gr_subject": {
+      "label": "그룹 제목",
+      "source_schemas": [
+        "Group"
+      ]
+    },
+    "gr_use_access": {
+      "label": "접근 사용",
+      "source_schemas": [
+        "Group"
+      ]
+    },
+    "grant_enabled": {
+      "label": null,
+      "source_schemas": [
+        "PluginBoardRewardPreviewResponse"
+      ]
+    },
+    "group_id": {
+      "label": null,
+      "source_schemas": [
+        "PluginBoardRewardBoard"
+      ]
+    },
+    "guide": {
+      "label": null,
+      "source_schemas": [
+        "ProblemDetails"
+      ]
+    },
+    "has_next": {
+      "label": null,
+      "source_schemas": [
+        "Pagination"
+      ]
+    },
+    "has_prev": {
+      "label": null,
+      "source_schemas": [
+        "Pagination"
+      ]
+    },
+    "header_image": {
+      "label": null,
+      "source_schemas": [
+        "FaqMasterSummary",
+        "FaqMasterDetail"
+      ]
+    },
+    "height": {
+      "label": null,
+      "source_schemas": [
+        "FaqImage"
+      ]
+    },
+    "input_type": {
+      "label": null,
+      "source_schemas": [
+        "AdminFieldSchema"
+      ]
+    },
+    "instance": {
+      "label": null,
+      "source_schemas": [
+        "ProblemDetails"
+      ]
+    },
+    "ip": {
+      "label": null,
+      "source_schemas": [
+        "VisitDeleteResult"
+      ]
+    },
+    "items": {
+      "label": null,
+      "source_schemas": [
+        "AdminSchemaCatalog",
+        "VisitStatsData"
+      ]
+    },
+    "key": {
+      "label": null,
+      "source_schemas": [
+        "AdminSchemaSection"
+      ]
+    },
+    "label": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthProviderDefinition",
+        "AdminFieldOption",
+        "AdminFieldSchema",
+        "AdminSchemaSection"
+      ]
+    },
+    "last_date": {
+      "label": null,
+      "source_schemas": [
+        "VisitStatsSummary"
+      ]
+    },
+    "last_page": {
+      "label": null,
+      "source_schemas": [
+        "Pagination"
+      ]
+    },
+    "legacy_form": {
+      "label": null,
+      "source_schemas": [
+        "AdminSchemaDomainSummary",
+        "AdminSchemaDetail"
+      ]
+    },
+    "license_required_for": {
+      "label": null,
+      "source_schemas": [
+        "PluginPremiumPushStatusResponse"
+      ]
+    },
+    "link": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthSessionPayload"
+      ]
+    },
+    "link_id": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthLinkRecord"
+      ]
+    },
+    "link_token": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthTransitionTokenRequest",
+        "ExternalAuthClaimRequest",
+        "ExternalAuthRegistrationRequest"
+      ]
+    },
+    "linked_at": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthLinkRecord"
+      ]
+    },
+    "linked_member": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthLinkage"
+      ]
+    },
+    "mb_1": {
+      "label": "여분필드1",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_10": {
+      "label": "여분필드10",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_2": {
+      "label": "여분필드2",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_3": {
+      "label": "여분필드3",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_4": {
+      "label": "여분필드4",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_5": {
+      "label": "여분필드5",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_6": {
+      "label": "여분필드6",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_7": {
+      "label": "여분필드7",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_8": {
+      "label": "여분필드8",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_9": {
+      "label": "여분필드9",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_addr1": {
+      "label": "주소1",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_addr2": {
+      "label": "주소2",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_addr3": {
+      "label": "주소3",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_addr_jibeon": {
+      "label": "지번주소",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_adult": {
+      "label": "성인인증",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_agree_log": {
+      "label": "동의 이력",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_certify": {
+      "label": "본인인증",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_datetime": {
+      "label": "가입일",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_email": {
+      "label": "이메일",
+      "source_schemas": [
+        "ExternalAuthLinkedMember",
+        "ExternalAuthRegistrationRequest",
+        "Member"
+      ]
+    },
+    "mb_homepage": {
+      "label": "홈페이지",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_hp": {
+      "label": "휴대폰",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_id": {
+      "label": "회원 아이디",
+      "source_schemas": [
+        "ExternalAuthLinkedMember",
+        "ExternalAuthLinkRecord",
+        "ExternalAuthClaimRequest",
+        "ExternalAuthRegistrationRequest",
+        "ExternalAuthSessionPayload",
+        "Comment",
+        "Member",
+        "PointItem",
+        "PointSummary",
+        "AdminAuthMember"
+      ]
+    },
+    "mb_ids": {
+      "label": "회원 아이디 목록",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "mb_intercept_date": {
+      "label": "차단일",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_leave_date": {
+      "label": "탈퇴일",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_level": {
+      "label": "회원 등급",
+      "source_schemas": [
+        "ExternalAuthLinkedMember",
+        "Member"
+      ]
+    },
+    "mb_mailling": {
+      "label": "메일링",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_mailling_date": {
+      "label": "메일링 변경일",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_marketing_agree": {
+      "label": "마케팅 동의",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_marketing_date": {
+      "label": "마케팅 동의일",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_memo": {
+      "label": "관리자 메모",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_name": {
+      "label": "성명",
+      "source_schemas": [
+        "ExternalAuthLinkedMember",
+        "ExternalAuthRegistrationRequest",
+        "Member",
+        "AdminAuthMember"
+      ]
+    },
+    "mb_nick": {
+      "label": "닉네임",
+      "source_schemas": [
+        "ExternalAuthLinkedMember",
+        "ExternalAuthRegistrationRequest",
+        "Member",
+        "AdminAuthMember"
+      ]
+    },
+    "mb_nick_date": {
+      "label": "닉네임 변경일",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_open": {
+      "label": "정보공개",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_open_date": {
+      "label": "정보공개 변경일",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_password": {
+      "label": "비밀번호",
+      "source_schemas": [
+        "ExternalAuthClaimRequest",
+        "ExternalAuthRegistrationRequest"
+      ]
+    },
+    "mb_point": {
+      "label": "포인트",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_profile": {
+      "label": "자기소개",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_signature": {
+      "label": "서명",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_sms": {
+      "label": "SMS 수신",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_sms_date": {
+      "label": "SMS 변경일",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_tel": {
+      "label": "전화번호",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_thirdparty_agree": {
+      "label": "제3자 제공 동의",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_thirdparty_date": {
+      "label": "제3자 동의일",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_today_login": {
+      "label": "오늘 로그인수",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_zip": {
+      "label": "우편번호",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_zip1": {
+      "label": "우편번호1",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "mb_zip2": {
+      "label": "우편번호2",
+      "source_schemas": [
+        "Member"
+      ]
+    },
+    "me_code": {
+      "label": "메뉴 코드",
+      "source_schemas": [
+        "MenuItem"
+      ]
+    },
+    "me_id": {
+      "label": "메뉴 번호",
+      "source_schemas": [
+        "MenuItem"
+      ]
+    },
+    "me_link": {
+      "label": "링크",
+      "source_schemas": [
+        "MenuItem"
+      ]
+    },
+    "me_mobile_use": {
+      "label": "모바일 사용",
+      "source_schemas": [
+        "MenuItem"
+      ]
+    },
+    "me_name": {
+      "label": "메뉴명",
+      "source_schemas": [
+        "MenuItem"
+      ]
+    },
+    "me_order": {
+      "label": "정렬",
+      "source_schemas": [
+        "MenuItem"
+      ]
+    },
+    "me_target": {
+      "label": "타겟",
+      "source_schemas": [
+        "MenuItem"
+      ]
+    },
+    "me_use": {
+      "label": "사용",
+      "source_schemas": [
+        "MenuItem"
+      ]
+    },
+    "member_id": {
+      "label": null,
+      "source_schemas": [
+        "PluginBoardRewardCommand"
+      ]
+    },
+    "message": {
+      "label": null,
+      "source_schemas": [
+        "PluginHelloGreetResponse",
+        "PluginPremiumPushSendRequest",
+        "PluginPremiumPushSendResponse"
+      ]
+    },
+    "meta": {
+      "label": null,
+      "source_schemas": [
+        "ProblemDetails",
+        "HealthResponse",
+        "TokenResponse",
+        "RegisterResponse",
+        "ExternalAuthProviderListResponse",
+        "ExternalAuthStartResponse",
+        "ExternalAuthSessionResponse",
+        "ExternalAuthClaimResponse",
+        "ExternalAuthRegistrationResponse",
+        "ExternalAuthLinkResponse",
+        "ExternalAuthLinkListResponse",
+        "ExternalAuthCompleteResponse",
+        "BoardListResponse",
+        "BoardDetailResponse",
+        "AdminSchemaCatalogResponse",
+        "AdminSchemaDetailResponse",
+        "PostListResponse",
+        "NewPostListResponse",
+        "CommentListResponse",
+        "MemberListResponse",
+        "MemberMeResponse",
+        "MemberDetailResponse",
+        "MenuListResponse",
+        "MenuDetailResponse",
+        "ConfigResponse",
+        "PointHistoryListResponse",
+        "PointSummaryResponse",
+        "VisitStatsResponse",
+        "VisitSearchResponse",
+        "VisitDeleteResponse",
+        "GroupListResponse",
+        "GroupDetailResponse",
+        "ContentListResponse",
+        "ContentDetailResponse",
+        "AdminAuthListResponse",
+        "PopupListResponse",
+        "PopupDetailResponse",
+        "PollListResponse",
+        "PollDetailResponse",
+        "FaqListResponse",
+        "FaqDetailResponse",
+        "FaqMasterListResponse",
+        "FaqMasterDetailResponse",
+        "SmsConfigResponse",
+        "MessageResponse"
+      ]
+    },
+    "metadata": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthStartRequest"
+      ]
+    },
+    "mime": {
+      "label": null,
+      "source_schemas": [
+        "FaqImage"
+      ]
+    },
+    "missing_tables": {
+      "label": null,
+      "source_schemas": [
+        "SmsConfig"
+      ]
+    },
+    "mode": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthProviderDefinition",
+        "Pagination",
+        "PluginBoardRewardPreviewResponse",
+        "PluginBoardRewardGrantResponse"
+      ]
+    },
+    "name": {
+      "label": null,
+      "source_schemas": [
+        "AdminFieldSchema"
+      ]
+    },
+    "next_cursor": {
+      "label": null,
+      "source_schemas": [
+        "Pagination"
+      ]
+    },
+    "nw_begin_time": {
+      "label": "시작일",
+      "source_schemas": [
+        "Popup"
+      ]
+    },
+    "nw_content": {
+      "label": "팝업 내용",
+      "source_schemas": [
+        "Popup"
+      ]
+    },
+    "nw_content_html": {
+      "label": "팝업 HTML 내용",
+      "source_schemas": [
+        "Popup"
+      ]
+    },
+    "nw_device": {
+      "label": "디바이스",
+      "source_schemas": [
+        "Popup"
+      ]
+    },
+    "nw_disable_hours": {
+      "label": "비활성 시간",
+      "source_schemas": [
+        "Popup"
+      ]
+    },
+    "nw_division": {
+      "label": "구분",
+      "source_schemas": [
+        "Popup"
+      ]
+    },
+    "nw_end_time": {
+      "label": "종료일",
+      "source_schemas": [
+        "Popup"
+      ]
+    },
+    "nw_height": {
+      "label": "높이",
+      "source_schemas": [
+        "Popup"
+      ]
+    },
+    "nw_id": {
+      "label": "팝업 번호",
+      "source_schemas": [
+        "Popup"
+      ]
+    },
+    "nw_left": {
+      "label": "좌측 위치",
+      "source_schemas": [
+        "Popup"
+      ]
+    },
+    "nw_subject": {
+      "label": "팝업 제목",
+      "source_schemas": [
+        "Popup"
+      ]
+    },
+    "nw_top": {
+      "label": "상단 위치",
+      "source_schemas": [
+        "Popup"
+      ]
+    },
+    "nw_width": {
+      "label": "너비",
+      "source_schemas": [
+        "Popup"
+      ]
+    },
+    "options": {
+      "label": null,
+      "source_schemas": [
+        "AdminFieldSchema"
+      ]
+    },
+    "order": {
+      "label": null,
+      "source_schemas": [
+        "AdminSchemaSection"
+      ]
+    },
+    "owner": {
+      "label": null,
+      "source_schemas": [
+        "Meta",
+        "ProblemDetails"
+      ]
+    },
+    "page": {
+      "label": null,
+      "source_schemas": [
+        "Pagination"
+      ]
+    },
+    "pagination": {
+      "label": null,
+      "source_schemas": [
+        "BoardListResponse",
+        "PostListResponse",
+        "NewPostListResponse",
+        "MemberListResponse",
+        "MenuListResponse",
+        "PointHistoryListResponse",
+        "VisitSearchResponse",
+        "GroupListResponse",
+        "ContentListResponse",
+        "AdminAuthListResponse",
+        "PopupListResponse",
+        "PollListResponse",
+        "FaqListResponse",
+        "FaqMasterListResponse"
+      ]
+    },
+    "payload": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthCompleteRequest"
+      ]
+    },
+    "per_page": {
+      "label": null,
+      "source_schemas": [
+        "Pagination"
+      ]
+    },
+    "plugin": {
+      "label": null,
+      "source_schemas": [
+        "PluginHelloInfoResponse",
+        "PluginPremiumPushStatusResponse",
+        "PluginBoardRewardBoardResponse",
+        "PluginBoardRewardPreviewResponse",
+        "PluginBoardRewardGrantResponse"
+      ]
+    },
+    "po_cnt1": {
+      "label": "투표수1",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_cnt2": {
+      "label": "투표수2",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_cnt3": {
+      "label": "투표수3",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_cnt4": {
+      "label": "투표수4",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_cnt5": {
+      "label": "투표수5",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_cnt6": {
+      "label": "투표수6",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_cnt7": {
+      "label": "투표수7",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_cnt8": {
+      "label": "투표수8",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_cnt9": {
+      "label": "투표수9",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_content": {
+      "label": "포인트 내용",
+      "source_schemas": [
+        "PointItem"
+      ]
+    },
+    "po_date": {
+      "label": "투표일",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_datetime": {
+      "label": "발생일",
+      "source_schemas": [
+        "PointItem"
+      ]
+    },
+    "po_etc": {
+      "label": "투표 기타",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_expire_date": {
+      "label": "만료일",
+      "source_schemas": [
+        "PointItem"
+      ]
+    },
+    "po_expired": {
+      "label": "만료 여부",
+      "source_schemas": [
+        "PointItem"
+      ]
+    },
+    "po_id": {
+      "label": "포인트 번호",
+      "source_schemas": [
+        "PointItem",
+        "Poll"
+      ]
+    },
+    "po_ips": {
+      "label": "투표 IP",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_level": {
+      "label": "투표 참여 등급",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_mb_point": {
+      "label": "회원 포인트",
+      "source_schemas": [
+        "PointItem"
+      ]
+    },
+    "po_point": {
+      "label": "투표 포인트",
+      "source_schemas": [
+        "PointItem",
+        "Poll"
+      ]
+    },
+    "po_poll1": {
+      "label": "항목1",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_poll2": {
+      "label": "항목2",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_poll3": {
+      "label": "항목3",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_poll4": {
+      "label": "항목4",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_poll5": {
+      "label": "항목5",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_poll6": {
+      "label": "항목6",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_poll7": {
+      "label": "항목7",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_poll8": {
+      "label": "항목8",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_poll9": {
+      "label": "항목9",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_rel_action": {
+      "label": "관련 동작",
+      "source_schemas": [
+        "PointItem"
+      ]
+    },
+    "po_rel_id": {
+      "label": "관련 ID",
+      "source_schemas": [
+        "PointItem"
+      ]
+    },
+    "po_rel_table": {
+      "label": "관련 테이블",
+      "source_schemas": [
+        "PointItem"
+      ]
+    },
+    "po_subject": {
+      "label": "투표 제목",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_use": {
+      "label": "투표 사용여부",
+      "source_schemas": [
+        "Poll"
+      ]
+    },
+    "po_use_point": {
+      "label": "사용 포인트",
+      "source_schemas": [
+        "PointItem"
+      ]
+    },
+    "provider": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthProviderDefinition",
+        "ExternalAuthLinkRecord",
+        "ExternalAuthSessionPayload"
+      ]
+    },
+    "provider_email": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthLinkRecord"
+      ]
+    },
+    "provider_profile": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthLinkRecord"
+      ]
+    },
+    "provider_ready": {
+      "label": null,
+      "source_schemas": [
+        "SmsConfig"
+      ]
+    },
+    "provider_user_id": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthProviderUser",
+        "ExternalAuthLinkRecord",
+        "ExternalAuthSessionPayload"
+      ]
+    },
+    "readonly_on_update": {
+      "label": null,
+      "source_schemas": [
+        "AdminFieldSchema"
+      ]
+    },
+    "reason": {
+      "label": null,
+      "source_schemas": [
+        "ErrorGuide",
+        "ExternalAuthLinkage",
+        "PluginBoardRewardCommand"
+      ]
+    },
+    "refresh_token": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthSessionPayload"
+      ]
+    },
+    "rel_id": {
+      "label": null,
+      "source_schemas": [
+        "PluginBoardRewardCommand"
+      ]
+    },
+    "related_fields": {
+      "label": null,
+      "source_schemas": [
+        "ErrorGuide"
+      ]
+    },
+    "relative_path": {
+      "label": null,
+      "source_schemas": [
+        "FaqImage"
+      ]
+    },
+    "replay_supported": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthProviderDefinition"
+      ]
+    },
+    "request_id": {
+      "label": null,
+      "source_schemas": [
+        "Meta",
+        "ProblemDetails"
+      ]
+    },
+    "request_token": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthCompleteRequest"
+      ]
+    },
+    "required": {
+      "label": null,
+      "source_schemas": [
+        "AdminFieldSchema"
+      ]
+    },
+    "retryable": {
+      "label": null,
+      "source_schemas": [
+        "Meta",
+        "ProblemDetails"
+      ]
+    },
+    "reward": {
+      "label": null,
+      "source_schemas": [
+        "PluginBoardRewardPreviewResponse",
+        "PluginBoardRewardGrantResponse"
+      ]
+    },
+    "runtime_replay_enabled": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthProviderDefinition"
+      ]
+    },
+    "sandbox_available": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthProviderDefinition"
+      ]
+    },
+    "scenario": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthStartRequest",
+        "ExternalAuthCompleteRequest"
+      ]
+    },
+    "scopes": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthStartRequest",
+        "PluginBoardRewardBoardResponse"
+      ]
+    },
+    "section_count": {
+      "label": null,
+      "source_schemas": [
+        "AdminSchemaDomainSummary",
+        "AdminSchemaDetail"
+      ]
+    },
+    "sections": {
+      "label": null,
+      "source_schemas": [
+        "AdminSchemaDetail"
+      ]
+    },
+    "server_request_id": {
+      "label": null,
+      "source_schemas": [
+        "Meta",
+        "ProblemDetails"
+      ]
+    },
+    "server_time": {
+      "label": null,
+      "source_schemas": [
+        "Meta"
+      ]
+    },
+    "size": {
+      "label": null,
+      "source_schemas": [
+        "FaqImage"
+      ]
+    },
+    "stat_key": {
+      "label": null,
+      "source_schemas": [
+        "VisitStatItem"
+      ]
+    },
+    "state": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthStartRequest",
+        "ExternalAuthCompleteRequest"
+      ]
+    },
+    "status": {
+      "label": null,
+      "source_schemas": [
+        "ProblemDetails",
+        "HealthResponse",
+        "ExternalAuthLinkage",
+        "PluginPremiumPushStatusResponse",
+        "PluginPremiumPushSendResponse",
+        "PluginBoardRewardGrantResponse"
+      ]
+    },
+    "storage_ready": {
+      "label": null,
+      "source_schemas": [
+        "SmsConfig"
+      ]
+    },
+    "subject": {
+      "label": null,
+      "source_schemas": [
+        "PluginBoardRewardBoard"
+      ]
+    },
+    "summary": {
+      "label": null,
+      "source_schemas": [
+        "VisitStatsData"
+      ]
+    },
+    "target": {
+      "label": null,
+      "source_schemas": [
+        "PluginPremiumPushSendRequest",
+        "PluginPremiumPushSendResponse"
+      ]
+    },
+    "timestamp": {
+      "label": null,
+      "source_schemas": [
+        "HealthResponse"
+      ]
+    },
+    "title": {
+      "label": null,
+      "source_schemas": [
+        "ProblemDetails",
+        "AdminSchemaDomainSummary",
+        "AdminSchemaDetail"
+      ]
+    },
+    "total": {
+      "label": null,
+      "source_schemas": [
+        "AdminSchemaCatalog",
+        "Pagination"
+      ]
+    },
+    "total_point": {
+      "label": null,
+      "source_schemas": [
+        "PointSummary"
+      ]
+    },
+    "total_rows": {
+      "label": null,
+      "source_schemas": [
+        "PointSummary"
+      ]
+    },
+    "total_visits": {
+      "label": null,
+      "source_schemas": [
+        "VisitStatsSummary"
+      ]
+    },
+    "transition_token": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthTransitionTokenRequest",
+        "ExternalAuthClaimRequest",
+        "ExternalAuthRegistrationRequest"
+      ]
+    },
+    "type": {
+      "label": null,
+      "source_schemas": [
+        "ProblemDetails",
+        "VisitStatsData"
+      ]
+    },
+    "unique_ips": {
+      "label": null,
+      "source_schemas": [
+        "VisitStatsSummary"
+      ]
+    },
+    "updated_at": {
+      "label": null,
+      "source_schemas": [
+        "ExternalAuthLinkRecord"
+      ]
+    },
+    "url": {
+      "label": null,
+      "source_schemas": [
+        "FaqImage"
+      ]
+    },
+    "user_actionable": {
+      "label": null,
+      "source_schemas": [
+        "Meta",
+        "ProblemDetails"
+      ]
+    },
+    "uses_legacy_credentials": {
+      "label": null,
+      "source_schemas": [
+        "SmsConfig"
+      ]
+    },
+    "uses_token_key": {
+      "label": null,
+      "source_schemas": [
+        "SmsConfig"
+      ]
+    },
+    "value": {
+      "label": null,
+      "source_schemas": [
+        "AdminFieldOption"
+      ]
+    },
+    "vendor": {
+      "label": null,
+      "source_schemas": [
+        "PluginHelloInfoResponse"
+      ]
+    },
+    "version": {
+      "label": null,
+      "source_schemas": [
+        "Meta",
+        "HealthResponse",
+        "PluginHelloGreetResponse"
+      ]
+    },
+    "vi_agent": {
+      "label": "에이전트",
+      "source_schemas": [
+        "VisitLogItem"
+      ]
+    },
+    "vi_browser": {
+      "label": "브라우저",
+      "source_schemas": [
+        "VisitLogItem"
+      ]
+    },
+    "vi_date": {
+      "label": "방문일",
+      "source_schemas": [
+        "VisitLogItem"
+      ]
+    },
+    "vi_device": {
+      "label": "디바이스",
+      "source_schemas": [
+        "VisitLogItem"
+      ]
+    },
+    "vi_id": {
+      "label": "방문 번호",
+      "source_schemas": [
+        "VisitLogItem"
+      ]
+    },
+    "vi_ip": {
+      "label": "방문 IP",
+      "source_schemas": [
+        "VisitLogItem"
+      ]
+    },
+    "vi_os": {
+      "label": "OS",
+      "source_schemas": [
+        "VisitLogItem"
+      ]
+    },
+    "vi_referer": {
+      "label": "유입 경로",
+      "source_schemas": [
+        "VisitLogItem"
+      ]
+    },
+    "vi_time": {
+      "label": "방문 시간",
+      "source_schemas": [
+        "VisitLogItem"
+      ]
+    },
+    "visit_count": {
+      "label": null,
+      "source_schemas": [
+        "VisitStatItem"
+      ]
+    },
+    "visit_rows": {
+      "label": null,
+      "source_schemas": [
+        "VisitStatsSummary"
+      ]
+    },
+    "width": {
+      "label": null,
+      "source_schemas": [
+        "FaqImage"
+      ]
+    },
+    "wr_comment": {
+      "label": "댓글 번호",
+      "source_schemas": [
+        "Comment"
+      ]
+    },
+    "wr_comment_reply": {
+      "label": "대댓글 기호",
+      "source_schemas": [
+        "Comment"
+      ]
+    },
+    "wr_content": {
+      "label": "내용",
+      "source_schemas": [
+        "Post",
+        "Comment"
+      ]
+    },
+    "wr_datetime": {
+      "label": "작성일",
+      "source_schemas": [
+        "Post"
+      ]
+    },
+    "wr_good": {
+      "label": "추천",
+      "source_schemas": [
+        "Post"
+      ]
+    },
+    "wr_hit": {
+      "label": "조회수",
+      "source_schemas": [
+        "Post"
+      ]
+    },
+    "wr_id": {
+      "label": "글 번호",
+      "source_schemas": [
+        "Post",
+        "Comment"
+      ]
+    },
+    "wr_name": {
+      "label": "작성자",
+      "source_schemas": [
+        "Post"
+      ]
+    },
+    "wr_nogood": {
+      "label": "비추천",
+      "source_schemas": [
+        "Post"
+      ]
+    },
+    "wr_parent": {
+      "label": "부모 글",
+      "source_schemas": [
+        "Comment"
+      ]
+    },
+    "wr_subject": {
+      "label": "제목",
+      "source_schemas": [
+        "Post"
+      ]
+    },
+    "mb_sex": {
+      "label": "성별",
+      "source_schemas": []
+    },
+    "mb_birth": {
+      "label": "생년월일",
+      "source_schemas": []
+    }
+  }
+}

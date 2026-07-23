@@ -1,0 +1,12 @@
+version = 1
+
+[[budgets]]
+id = "WB-2026-014"
+audit = "structure"
+rule = "oversized_service_or_repository"
+path = "api/v1/Admin/Board/Service/Support/AdminBoardInputNormalizer.php"
+owner = "php-api"
+reason = "QG-231 contract closeout expanded board input normalization beyond the 320 LOC warning threshold; behavior-preserving split requires a dedicated follow-up"
+introduced_on = "2026-07-14"
+expires_on = "2026-08-31"
+removal_criteria = "split field groups into focused normalizers while preserving 215/215 field binding and reduce this file below 320 LOC"

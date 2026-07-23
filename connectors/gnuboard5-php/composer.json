@@ -1,0 +1,85 @@
+{
+    "name": "gnuboard5/rest-api",
+    "description": "Gnuboard5 REST API Plugin",
+    "license": "AGPL-3.0-or-later",
+    "type": "project",
+    "require": {
+        "php": "^8.1",
+        "slim/slim": "^4.13",
+        "slim/psr7": "^1.6",
+        "firebase/php-jwt": "^7.0",
+        "rakit/validation": "^1.4",
+        "zircote/swagger-php": "^4.8",
+        "doctrine/dbal": "^3.9",
+        "php-di/php-di": "^7.0",
+        "monolog/monolog": "^3.7",
+        "symfony/finder": "^6.4",
+        "symfony/yaml": "^6.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Api\\": "api/v1/",
+            "Api\\Plugins\\": "api/plugins/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11",
+        "mockery/mockery": "^1.6",
+        "phpstan/phpstan": "^1.12",
+        "friendsofphp/php-cs-fixer": "^3.64"
+    },
+    "scripts": {
+    "ci:local": "./scripts/run_local_ci.sh",
+    "hooks:install": "./scripts/install_local_hooks.sh",
+    "test": "./vendor/bin/phpunit --colors=always",
+    "test:coverage": "./scripts/run_phpunit_coverage.sh --coverage-text --coverage-html=coverage-report --colors=always",
+    "test:coverage:ci": "./scripts/run_phpunit_coverage.sh --coverage-clover build/coverage/clover.xml --coverage-text --colors=always",
+    "audit:auto": "./scripts/run_audit_auto.sh",
+    "audit:implementation": "@audit:standard",
+    "audit:structure": "@audit:deep",
+    "audit:hotspots": "python3 ./scripts/run_hotspot_audit.py",
+    "audit:porting": "@audit:field-parity",
+    "audit:blockers": "python3 ./scripts/check_blocker_registry.py",
+    "audit:schema-provider-readiness": "python3 ./scripts/check_admin_schema_provider_readiness.py",
+    "audit:waivers": "python3 ./scripts/check_audit_waivers.py",
+    "audit:warning-budgets": "python3 ./scripts/check_warning_budgets.py",
+    "audit:harness:test": "python3 -m unittest discover -s scripts/tests -p 'test_*.py'",
+    "audit:harness:quality": "ruff check scripts/check_generated_schema_labels.py scripts/tests/test_check_generated_schema_labels.py && mypy scripts/check_generated_schema_labels.py && shellcheck scripts/run_field_parity_audit.sh",
+    "audit:harness": ["@audit:harness:test", "@audit:harness:quality"],
+    "audit:structure-findings": "python3 ./scripts/check_active_structure_boundaries.py",
+    "audit:structure-report": "python3 ./scripts/generate_structure_audit_report.py",
+    "audit:structure-report-freshness": "python3 ./scripts/check_structure_report_freshness.py",
+    "audit:schema-provider-report": "python3 ./scripts/generate_admin_schema_provider_report.py",
+    "audit:standard": "./scripts/run_standard_audit.sh",
+    "audit:deep": "./scripts/run_deep_audit.sh",
+    "audit:field-parity": "./scripts/run_field_parity_audit.sh",
+    "audit:domain-manifest": "python3 ./scripts/check_admin_domain_manifest.py",
+    "audit:domain-pipeline:index": "python3 ./scripts/run_all_admin_domain_pipelines.py",
+    "report:domain-pipeline:index": "python3 ./scripts/run_all_admin_domain_pipelines.py --summarize-existing",
+    "audit:schema-contract": "python3 ./scripts/check_admin_schema_contract.py",
+    "audit:openapi-provider": "python3 ./scripts/check_openapi_provider_contract.py --consumer-scope ./api/docs/openapi.phase1-consumer-scope.json --output-json ./output/openapi-provider-audit/latest.json --output-md ./output/openapi-provider-audit/latest.md",
+    "audit:runtime-routes": "php ./scripts/extract_runtime_route_graph.php --consumer-scope ./api/docs/openapi.phase1-consumer-scope.json --output ./output/openapi-provider-audit/runtime-route-graph.json",
+    "audit:runtime-routes:collect": "php ./scripts/extract_runtime_route_graph.php --no-compare",
+    "audit:openapi-field-bindings": "php ./scripts/check_openapi_field_bindings.php",
+    "audit:domain-pipeline": "python3 ./scripts/run_admin_domain_pipeline.py",
+    "audit:domain-pipeline:all": "python3 ./scripts/run_all_admin_domain_pipelines.py",
+    "audit:integrated": "./scripts/run_integrated_audit.sh",
+    "analyse": "./vendor/bin/phpstan analyse api/ --level=8 --memory-limit=512M",
+        "schema:extract": "python3 ./scripts/extract_admin_schema.py --mode write",
+        "schema:check": "python3 ./scripts/extract_admin_schema.py --mode check",
+        "contract:manifest": "python3 ./scripts/generate_openapi_contract_manifest.py --mode write",
+        "contract:check": "python3 ./scripts/generate_openapi_contract_manifest.py --mode check",
+        "audit:password-hash-compat": "php ./scripts/check_password_hash_compat.php",
+        "cs-fix": "./vendor/bin/php-cs-fixer fix api/ --rules=@PSR12",
+        "quality-gate": "./scripts/run_quality_gates.sh",
+        "test:api:hurl": "./scripts/run_hurl_suite.sh",
+        "test:api:schemathesis": "./scripts/run_schemathesis.sh",
+        "test:api:blackbox": "./scripts/run_api_contract_bombing.sh",
+        "test:plugin:isolation": "./scripts/check_plugin_isolation.sh"
+    }
+}

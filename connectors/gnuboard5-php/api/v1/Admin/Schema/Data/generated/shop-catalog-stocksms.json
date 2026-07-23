@@ -1,0 +1,115 @@
+{
+  "domain": "shop-catalog-stocksms",
+  "title": "쇼핑몰 카탈로그 재입고 SMS",
+  "legacy_form": "adm/shop_admin/itemstocksms.php",
+  "legacy_forms": [
+    "adm/shop_admin/itemstocksms.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.290700+00:00",
+  "field_count": 7,
+  "section_count": 1,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": null,
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": "g5_shop_item_stocksms",
+    "extractor_version": 5,
+    "source_hash": "513b34229e335f6eb25a4a04551e7b2491bb1285247887abad704e69659c90f8"
+  },
+  "sections": [
+    {
+      "key": "shop_catalog_stocksms",
+      "label": "재입고SMS",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "ss_id",
+          "label": "재입고SMS ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "it_id",
+          "label": "상품 ID",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ss_hp",
+          "label": "휴대전화",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ss_send",
+          "label": "발송 상태",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "ss_send_time",
+          "label": "발송 시각",
+          "input_type": "datetime-local",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00 00:00:00"
+        },
+        {
+          "name": "ss_datetime",
+          "label": "생성 시각",
+          "input_type": "datetime-local",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00 00:00:00"
+        },
+        {
+          "name": "ss_ip",
+          "label": "등록 IP",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        }
+      ]
+    }
+  ]
+}

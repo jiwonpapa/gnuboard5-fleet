@@ -1,0 +1,91 @@
+{
+  "domain": "faqs",
+  "title": "FAQ 항목",
+  "legacy_form": "adm/faqform.php",
+  "legacy_forms": [
+    "adm/faqform.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.277756+00:00",
+  "field_count": 5,
+  "section_count": 1,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": null,
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": "g5_faq",
+    "extractor_version": 5,
+    "source_hash": "21ba48fd07ae8c64e182c7b76292fcf3fcad4a22ff373205b9c58c107d0b7a86"
+  },
+  "sections": [
+    {
+      "key": "faq_item",
+      "label": "FAQ 항목",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "fa_id",
+          "label": "FAQ 항목 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "fm_id",
+          "label": "FAQ 마스터 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "fa_subject",
+          "label": "질문",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "fa_content",
+          "label": "답변",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "fa_order",
+          "label": "출력순서",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "숫자가 작을수록 FAQ 페이지에서 먼저 출력됩니다.",
+          "options": [],
+          "default_value": 0
+        }
+      ]
+    }
+  ]
+}

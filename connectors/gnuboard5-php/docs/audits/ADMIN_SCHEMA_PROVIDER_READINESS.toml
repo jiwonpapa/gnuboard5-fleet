@@ -1,0 +1,204 @@
+version = 1
+
+[[features]]
+feature = "boards"
+status = "implemented"
+owner = "php-api"
+priority = "maintain"
+schema_domains = ["boards"]
+summary = "게시판 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "boards domain의 label/default/widget drift를 방지합니다."
+
+[[features]]
+feature = "config"
+status = "implemented"
+owner = "php-api"
+priority = "maintain"
+schema_domains = ["config"]
+summary = "환경설정 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "config domain의 label/default/widget drift를 방지합니다."
+
+[[features]]
+feature = "contents"
+status = "implemented"
+owner = "php-api"
+priority = "maintain"
+schema_domains = ["contents"]
+summary = "컨텐츠 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "contents domain의 label/description drift를 방지합니다."
+
+[[features]]
+feature = "faqs"
+status = "implemented"
+owner = "php-api"
+priority = "maintain"
+schema_domains = ["faq-masters", "faqs"]
+summary = "FAQ 마스터와 FAQ 항목 스키마가 /admin/schema로 제공 중입니다."
+next_action = "faq-masters/faqs label/section drift를 방지합니다."
+
+[[features]]
+feature = "board-groups"
+status = "implemented"
+owner = "php-api"
+priority = "maintain"
+schema_domains = ["groups"]
+summary = "게시판 그룹 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "groups option/required drift를 방지합니다."
+
+[[features]]
+feature = "members"
+status = "implemented"
+owner = "php-api"
+priority = "maintain"
+schema_domains = ["members"]
+summary = "회원 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "members label/default/readonly drift를 방지합니다."
+
+[[features]]
+feature = "menus"
+status = "implemented"
+owner = "php-api"
+priority = "maintain"
+schema_domains = ["menus"]
+summary = "메뉴 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "menus label/description drift를 방지합니다."
+
+[[features]]
+feature = "polls"
+status = "implemented"
+owner = "php-api"
+priority = "maintain"
+schema_domains = ["polls"]
+summary = "설문 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "polls label/description drift를 방지합니다."
+
+[[features]]
+feature = "popups"
+status = "implemented"
+owner = "php-api"
+priority = "maintain"
+schema_domains = ["popups"]
+summary = "팝업 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "popups option/default drift를 방지합니다."
+
+[[features]]
+feature = "system"
+status = "implemented"
+owner = "php-api"
+priority = "maintain"
+schema_domains = ["system"]
+summary = "시스템/SMS 설정 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "system domain의 SMS config label/default/widget drift를 방지합니다."
+
+[[features]]
+feature = "theme"
+status = "implemented"
+owner = "php-api"
+priority = "maintain"
+schema_domains = ["theme"]
+summary = "테마 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "theme domain의 selector/default drift를 방지합니다."
+
+[[features]]
+feature = "sms-contacts"
+status = "implemented"
+owner = "php-api"
+priority = "p1"
+schema_domains = ["sms-contacts"]
+summary = "SMS 주소록 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "sms-contacts domain의 그룹/연락처/import label drift를 방지합니다."
+
+[[features]]
+feature = "sms-messages"
+status = "implemented"
+owner = "php-api"
+priority = "p1"
+schema_domains = ["sms-messages"]
+summary = "SMS 발송 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "sms-messages domain의 발송/수신자 metadata drift를 방지합니다."
+
+[[features]]
+feature = "sms-templates"
+status = "implemented"
+owner = "php-api"
+priority = "p1"
+schema_domains = ["sms-templates"]
+summary = "SMS 템플릿 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "sms-templates domain의 그룹/템플릿 label drift를 방지합니다."
+
+[[features]]
+feature = "mails"
+status = "implemented"
+owner = "php-api"
+priority = "p2"
+schema_domains = ["mails"]
+summary = "메일 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "mails domain의 템플릿/발송 metadata drift를 방지합니다."
+
+[[features]]
+feature = "points"
+status = "implemented"
+owner = "php-api"
+priority = "p2"
+schema_domains = ["points"]
+summary = "포인트 관리자 스키마가 /admin/schema로 제공 중입니다."
+next_action = "points domain의 검색/지급/만료 metadata drift를 방지합니다."
+
+[[features]]
+feature = "shop-config"
+status = "blocked"
+owner = "php-api"
+priority = "p0"
+blocker = "provider_domain_missing"
+planned_schema_domains = ["shop-config"]
+summary = "쇼핑몰 환경설정 메뉴(configform) 포팅이 아직 contract/schema에 없습니다."
+next_action = "configform/Config 관련 legacy 폼 정의와 `/admin/shop/config` 계약을 우선 설계합니다."
+
+[[features]]
+feature = "shop-catalog"
+status = "implemented"
+owner = "php-api"
+priority = "p0"
+schema_domains = ["shop-catalog-category", "shop-catalog-product", "shop-catalog-review", "shop-catalog-inquiry", "shop-catalog-event", "shop-catalog-option", "shop-catalog-stocksms"]
+summary = "쇼핑몰 카탈로그(`/admin/shop/catalog`)의 분류/상품/사용후기/상품문의/이벤트/옵션/재입고SMS 스키마가 `/admin/schema`에 등록되어 정합성이 유지됩니다."
+next_action = "카탈로그 서브도메인(옵션, 재입고SMS) read/write contract의 경계와 예외 응답 동작을 계약 테스트로 고정하고, 소비단이 사용하는 기본값 요구사항을 교차 검증합니다."
+
+[[features]]
+feature = "shop-orders"
+status = "blocked"
+owner = "php-api"
+priority = "p0"
+blocker = "provider_domain_missing"
+planned_schema_domains = ["shop-orders"]
+summary = "주문/미완료주문/출력/배송/부분취소 경로가 `/admin/shop/orders` 계약으로 정리되지 않았습니다."
+next_action = "order/order-list/order-detail/order-update의 legacy 의존값과 필드 생성/수정 의미를 우선 정리합니다."
+
+[[features]]
+feature = "shop-personalpay"
+status = "blocked"
+owner = "php-api"
+priority = "p1"
+blocker = "provider_domain_missing"
+planned_schema_domains = ["shop-personalpay"]
+summary = "개인결제 관리 라우트(`personalpay*`)가 `/admin/schema`와 계약에서 누락되어 있습니다."
+next_action = "개인결제 도메인(`od_id`/`pp_id`/결제 상태 전이)부터 정합성 패리티를 설계합니다."
+
+[[features]]
+feature = "shop-promotion"
+status = "blocked"
+owner = "php-api"
+priority = "p1"
+blocker = "provider_domain_missing"
+planned_schema_domains = ["shop-coupon", "shop-event", "shop-banner", "shop-coupon-zone"]
+summary = "쿠폰/이벤트/배너/스폰서 광고 영역이 계약상으로 미구현입니다."
+next_action = "프로모션 패키지(shop-coupon, shop-event, shop-banner)에서 create-only 기본값과 read-only 필드를 분리 등록합니다."
+
+[[features]]
+feature = "shop-sales"
+status = "blocked"
+owner = "php-api"
+priority = "p2"
+blocker = "provider_domain_missing"
+planned_schema_domains = ["shop-stats", "shop-compare", "shop-wishlist", "shop-stock-alert", "shop-shipping-cost"]
+summary = "매출 통계, 가격비교, 위시리스트, 재입고SMS, 배송비 메뉴가 `/admin/shop/*` 계약에서 빠져 있습니다."
+next_action = "통계/리포트 및 보조 운영 메뉴(`sales`,`stats`,`wishlist`,`shipping-cost`)의 조회 위주 도메인을 먼저 고정합니다."

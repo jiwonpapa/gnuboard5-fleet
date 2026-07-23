@@ -1,0 +1,196 @@
+{
+  "domain": "contents",
+  "title": "내용",
+  "legacy_form": "adm/contentform.php",
+  "legacy_forms": [
+    "adm/contentform.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.273748+00:00",
+  "field_count": 12,
+  "section_count": 1,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": "api/v1/Admin/Content/Repository/AdminContentRepository.php",
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": "g5_content",
+    "extractor_version": 5,
+    "source_hash": "2e5aa46267b5cf69745246c03ddfb709ee5d8054f05767e44be3ce298b14ac56"
+  },
+  "sections": [
+    {
+      "key": "content_general",
+      "label": "내용 설정",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "co_id",
+          "label": "내용 ID",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": true,
+          "readonly_on_update": true,
+          "description": "20자 이내의 영문자, 숫자, _ 만 가능합니다.",
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "co_html",
+          "label": "HTML 사용",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": true
+        },
+        {
+          "name": "co_subject",
+          "label": "제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "co_content",
+          "label": "내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "co_seo_title",
+          "label": "SEO 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "co_mobile_content",
+          "label": "모바일 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "co_skin",
+          "label": "스킨 디렉토리",
+          "input_type": "select",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "basic",
+          "option_source": {
+            "kind": "directory",
+            "name": "skin.content",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        {
+          "name": "co_mobile_skin",
+          "label": "모바일스킨 디렉토리",
+          "input_type": "select",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "basic",
+          "option_source": {
+            "kind": "directory",
+            "name": "mobile_skin.content",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        {
+          "name": "co_tag_filter_use",
+          "label": "태그 필터링 사용",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "내용에서 iframe 등의 태그를 제한하려면 사용합니다.",
+          "options": [
+            {
+              "value": "1",
+              "label": "사용함"
+            },
+            {
+              "value": "0",
+              "label": "사용안함"
+            }
+          ],
+          "default_value": true
+        },
+        {
+          "name": "co_hit",
+          "label": "조회수",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "co_include_head",
+          "label": "상단 파일 경로",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "설정값이 없으면 기본 상단 파일을 사용합니다.",
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "co_include_tail",
+          "label": "하단 파일 경로",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "설정값이 없으면 기본 하단 파일을 사용합니다.",
+          "options": [],
+          "default_value": ""
+        }
+      ]
+    }
+  ]
+}

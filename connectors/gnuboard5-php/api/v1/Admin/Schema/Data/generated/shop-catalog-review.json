@@ -1,0 +1,172 @@
+{
+  "domain": "shop-catalog-review",
+  "title": "쇼핑몰 카탈로그 사용후기",
+  "legacy_form": "adm/shop_admin/itemuseform.php",
+  "legacy_forms": [
+    "adm/shop_admin/itemuseform.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.287643+00:00",
+  "field_count": 11,
+  "section_count": 1,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": null,
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": "g5_shop_item_use",
+    "extractor_version": 5,
+    "source_hash": "7de6b775acdbfefad01bd0984d7a5017dd3093a95bdb4e011f234c83ee25835d"
+  },
+  "sections": [
+    {
+      "key": "shop_catalog_review",
+      "label": "상품 사용후기",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "is_id",
+          "label": "사용후기 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": true,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "it_id",
+          "label": "상품 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "mb_id",
+          "label": "작성자 ID",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "is_name",
+          "label": "작성자명",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "is_password",
+          "label": "비밀번호",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "is_score",
+          "label": "평점",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "is_subject",
+          "label": "제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "is_content",
+          "label": "후기 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "is_time",
+          "label": "작성일시",
+          "input_type": "date",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00 00:00:00"
+        },
+        {
+          "name": "is_ip",
+          "label": "작성 IP",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "is_confirm",
+          "label": "확인",
+          "input_type": "radio",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "1",
+              "label": "예"
+            },
+            {
+              "value": "0",
+              "label": "아니오"
+            }
+          ],
+          "default_value": false
+        }
+      ]
+    }
+  ]
+}

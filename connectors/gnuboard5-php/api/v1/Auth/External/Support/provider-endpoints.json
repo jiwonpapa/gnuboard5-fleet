@@ -1,0 +1,12 @@
+{
+  "google": {
+    "authorize": "https://accounts.google.com/o/oauth2/v2/auth",
+    "token": "https://oauth2.googleapis.com/token",
+    "userinfo": "https://openidconnect.googleapis.com/v1/userinfo"
+  },
+  "kakao": {
+    "authorize": "https://kauth.kakao.com/oauth/authorize",
+    "token": "https://kauth.kakao.com/oauth/token",
+    "userinfo": "https://kapi.kakao.com/v2/user/me"
+  }
+}
