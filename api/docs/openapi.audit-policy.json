@@ -1,0 +1,54 @@
+{
+  "schema": "gnuboard5.php.openapi-provider-audit-policy/v1",
+  "contract": "api/docs/openapi.yaml",
+  "consumer_scope": "api/docs/openapi.phase1-consumer-scope.json",
+  "internal_path_prefixes": [
+    "/admin-inspect/"
+  ],
+  "required_internal_security_scheme": "adminInspectSecret",
+  "generic_success_schema_names": [
+    "MessageResponse"
+  ],
+  "public_mutation_policy": {
+    "allowed_path_prefixes": [
+      "/auth/"
+    ],
+    "allowed_operation_ids": [
+      "pluginBoardRewardPreview",
+      "votePoll"
+    ],
+    "plugin_license_response_status": "402"
+  },
+  "request_contract": {
+    "require_named_component_schema": true,
+    "require_closed_object_schema": true,
+    "require_explicit_required_list": true
+  },
+  "response_contract": {
+    "require_named_component_schema": true,
+    "required_envelope_fields": [
+      "data",
+      "meta"
+    ],
+    "require_server_error_or_default": true,
+    "require_rate_limit_response": true,
+    "require_location_header_for_201": true
+  },
+  "error_contract": {
+    "allowed_media_types": [
+      "application/problem+json",
+      "application/json"
+    ],
+    "forbidden_media_types": [
+      "text/html"
+    ]
+  },
+  "sensitive_property_name_patterns": [
+    "(^|_)(password|passwd|secret)$",
+    "_pw$",
+    "token_key$"
+  ],
+  "sensitive_property_name_exceptions": [
+    "bo_use_secret"
+  ]
+}

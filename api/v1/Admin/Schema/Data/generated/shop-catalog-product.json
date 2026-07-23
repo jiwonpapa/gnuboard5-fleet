@@ -1,0 +1,1288 @@
+{
+  "domain": "shop-catalog-product",
+  "title": "쇼핑몰 카탈로그 상품",
+  "legacy_form": "adm/shop_admin/itemform.php",
+  "legacy_forms": [
+    "adm/shop_admin/itemform.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.286626+00:00",
+  "field_count": 90,
+  "section_count": 14,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": null,
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": "g5_shop_item",
+    "extractor_version": 5,
+    "source_hash": "6028e42a1d52bf79f628fff75a037fced2f5d11ed853f4970d4014c24176364e"
+  },
+  "sections": [
+    {
+      "key": "shop_catalog_product",
+      "label": "상품 관리",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "it_id",
+          "label": "상품 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": true,
+          "readonly_on_update": true,
+          "description": "상품의 코드는 10자리 숫자로 자동생성합니다. 직접 상품코드를 입력할 수도 있습니다. \\n상품코드는 영문자, 숫자, - 만 입력 가능합니다.",
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "it_hit",
+          "label": "조회수",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "it_time",
+          "label": "등록일시",
+          "input_type": "date",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00 00:00:00"
+        },
+        {
+          "name": "it_update_time",
+          "label": "최종수정일시",
+          "input_type": "date",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00 00:00:00"
+        },
+        {
+          "name": "it_ip",
+          "label": "등록 IP",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_sum_qty",
+          "label": "총 판매 수량",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "it_use_cnt",
+          "label": "사용 횟수",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "it_use_avg",
+          "label": "사용 평균",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    },
+    {
+      "key": "anc_sitfrm_cate",
+      "label": "상품분류",
+      "order": 2,
+      "description": null,
+      "fields": [
+        {
+          "name": "ca_id",
+          "label": "기본분류",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "기본분류를 선택하면, 판매/재고/HTML사용/판매자 E-mail 등을, 선택한 분류의 기본값으로 설정합니다.",
+          "options": [
+            {
+              "value": "",
+              "label": "선택하세요"
+            }
+          ],
+          "default_value": ""
+        }
+      ]
+    },
+    {
+      "key": "anc_sitfrm_relation",
+      "label": "관련상품",
+      "order": 3,
+      "description": null,
+      "fields": [
+        {
+          "name": "ca_id2",
+          "label": "관련 상품 ID 2",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "ca_id3",
+          "label": "관련 상품 ID 3",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    },
+    {
+      "key": "anc_sitfrm_skin",
+      "label": "스킨설정",
+      "order": 4,
+      "description": null,
+      "fields": [
+        {
+          "name": "it_skin",
+          "label": "PC용 스킨",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "",
+          "option_source": {
+            "kind": "directory",
+            "name": "skin.shop",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        {
+          "name": "it_mobile_skin",
+          "label": "모바일용 스킨",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "",
+          "option_source": {
+            "kind": "directory",
+            "name": "mobile_skin.shop",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        }
+      ]
+    },
+    {
+      "key": "anc_sitfrm_ini",
+      "label": "기본정보",
+      "order": 5,
+      "description": null,
+      "fields": [
+        {
+          "name": "it_name",
+          "label": "상품명",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "HTML 입력이 불가합니다.",
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_maker",
+          "label": "제조사",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "입력하지 않으면 상품상세페이지에 출력하지 않습니다.",
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "it_origin",
+          "label": "원산지",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "입력하지 않으면 상품상세페이지에 출력하지 않습니다.",
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "it_brand",
+          "label": "브랜드",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "입력하지 않으면 상품상세페이지에 출력하지 않습니다.",
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_model",
+          "label": "모델",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "입력하지 않으면 상품상세페이지에 출력하지 않습니다.",
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_type1",
+          "label": "히트",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "메인화면에 유형별로 출력할때 사용합니다.\\n이곳에 체크하게되면 상품리스트에서 유형별로 정렬할때 체크된 상품이 가장 먼저 출력됩니다.",
+          "options": [],
+          "default_value": false
+        },
+        {
+          "name": "it_type2",
+          "label": "추천",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "메인화면에 유형별로 출력할때 사용합니다.\\n이곳에 체크하게되면 상품리스트에서 유형별로 정렬할때 체크된 상품이 가장 먼저 출력됩니다.",
+          "options": [],
+          "default_value": false
+        },
+        {
+          "name": "it_type3",
+          "label": "신상품",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "메인화면에 유형별로 출력할때 사용합니다.\\n이곳에 체크하게되면 상품리스트에서 유형별로 정렬할때 체크된 상품이 가장 먼저 출력됩니다.",
+          "options": [],
+          "default_value": false
+        },
+        {
+          "name": "it_type4",
+          "label": "인기",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "메인화면에 유형별로 출력할때 사용합니다.\\n이곳에 체크하게되면 상품리스트에서 유형별로 정렬할때 체크된 상품이 가장 먼저 출력됩니다.",
+          "options": [],
+          "default_value": false
+        },
+        {
+          "name": "it_type5",
+          "label": "할인",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "메인화면에 유형별로 출력할때 사용합니다.\\n이곳에 체크하게되면 상품리스트에서 유형별로 정렬할때 체크된 상품이 가장 먼저 출력됩니다.",
+          "options": [],
+          "default_value": false
+        },
+        {
+          "name": "it_basic",
+          "label": "기본설명",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "상품명 하단에 상품에 대한 추가적인 설명이 필요한 경우에 입력합니다. HTML 입력도 가능합니다.",
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_sell_email",
+          "label": "판매자 e-mail",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "운영자와 실제 판매자가 다른 경우 실제 판매자의 e-mail을 입력하면, 상품 주문 시점을 기준으로 실제 판매자에게도 주문서를 발송합니다.",
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_use",
+          "label": "판매가능",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "잠시 판매를 중단하거나 재고가 없을 경우에 체크를 해제해 놓으면 출력되지 않으며, 주문도 받지 않습니다.",
+          "options": [],
+          "default_value": false
+        },
+        {
+          "name": "it_nocoupon",
+          "label": "쿠폰적용안함",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "설정에 체크하시면 쿠폰 생성 때 상품 검색 결과에 노출되지 않습니다.",
+          "options": [],
+          "default_value": false
+        },
+        {
+          "name": "it_order",
+          "label": "출력순서",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "숫자가 작을 수록 상위에 출력됩니다. 음수 입력도 가능하며 입력 가능 범위는 -2147483648 부터 2147483647 까지입니다.\\n 입력하지 않으면 자동으로 출력됩니다.",
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "it_tel_inq",
+          "label": "전화문의",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "상품 금액 대신 전화문의로 표시됩니다.",
+          "options": [],
+          "default_value": false
+        },
+        {
+          "name": "it_shop_memo",
+          "label": "상점메모",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "ec_mall_pid",
+          "label": "네이버쇼핑 상품ID",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "네이버쇼핑에 입점한 경우 네이버쇼핑 상품ID를 입력하시면 네이버페이와 연동됩니다. 일부 쇼핑몰의 경우 네이버쇼핑 상품ID 대신 쇼핑몰 상품ID를 입력해야 하는 경우가 있습니다. 네이버페이 연동과정에서 이 부분에 대한 안내가 이뤄지니 안내받은 대로 값을 입력하시면 됩니다.",
+          "options": [],
+          "default_value": ""
+        }
+      ]
+    },
+    {
+      "key": "anc_sitfrm_basic",
+      "label": "상품 관리",
+      "order": 6,
+      "description": null,
+      "fields": [
+        {
+          "name": "it_seo_title",
+          "label": "SEO 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        }
+      ]
+    },
+    {
+      "key": "anc_sitfrm_option",
+      "label": "상품옵션",
+      "order": 7,
+      "description": null,
+      "fields": [
+        {
+          "name": "it_option_subject",
+          "label": "옵션 항목명",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_supply_subject",
+          "label": "추가옵션 항목명",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        }
+      ]
+    },
+    {
+      "key": "anc_sitfrm_desc",
+      "label": "상품 상세설명",
+      "order": 8,
+      "description": null,
+      "fields": [
+        {
+          "name": "it_explan",
+          "label": "상품 상세설명",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_explan2",
+          "label": "상품 상세설명2",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "it_mobile_explan",
+          "label": "모바일 상세설명",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        }
+      ]
+    },
+    {
+      "key": "anc_sitfrm_cost",
+      "label": "가격 및 재고",
+      "order": 9,
+      "description": null,
+      "fields": [
+        {
+          "name": "it_cust_price",
+          "label": "시중가격",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "입력하지 않으면 상품상세페이지에 출력하지 않습니다.",
+          "options": [],
+          "default_value": "0"
+        },
+        {
+          "name": "it_price",
+          "label": "판매가격",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "0"
+        },
+        {
+          "name": "it_point",
+          "label": "포인트",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "주문완료후 환경설정에서 설정한 주문완료 설정일 후 회원에게 부여하는 포인트입니다.\\n또, 포인트부여를 '아니오'로 설정한 경우 신용카드, 계좌이체로 주문하는 회원께는 부여하지 않습니다.",
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "it_point_type",
+          "label": "포인트 유형",
+          "input_type": "select",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "포인트 유형을 설정할 수 있습니다. 비율로 설정했을 경우 설정 기준금액의 %비율로 포인트가 지급됩니다.",
+          "options": [
+            {
+              "value": "0",
+              "label": "설정금액"
+            },
+            {
+              "value": "1",
+              "label": "판매가기준 설정비율"
+            },
+            {
+              "value": "2",
+              "label": "구매가기준 설정비율"
+            }
+          ],
+          "default_value": 0
+        },
+        {
+          "name": "it_supply_point",
+          "label": "추가옵션상품 포인트",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "상품의 추가옵션상품 구매에 일괄적으로 지급하는 포인트입니다. 0으로 설정하시면 구매포인트를 지급하지 않습니다.\\n주문완료후 환경설정에서 설정한 주문완료 설정일 후 회원에게 부여하는 포인트입니다.\\n또, 포인트부여를 '아니오'로 설정한 경우 신용카드, 계좌이체로 주문하는 회원께는 부여하지 않습니다.",
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "it_notax",
+          "label": "상품과세 유형",
+          "input_type": "select",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "상품의 과세유형(과세, 비과세)을 설정합니다.",
+          "options": [
+            {
+              "value": "0",
+              "label": "과세"
+            },
+            {
+              "value": "1",
+              "label": "비과세"
+            }
+          ],
+          "default_value": 0
+        },
+        {
+          "name": "it_soldout",
+          "label": "상품품절",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "잠시 판매를 중단하거나 재고가 없을 경우에 체크해 놓으면 품절상품으로 표시됩니다.",
+          "options": [],
+          "default_value": false
+        },
+        {
+          "name": "it_stock_qty",
+          "label": "재고수량",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "주문관리에서 상품별 상태 변경에 따라 자동으로 재고를 가감합니다. 재고는 규격/색상별이 아닌, 상품별로만 관리됩니다. 재고수량을 0으로 설정하시면 품절상품으로 표시됩니다.",
+          "options": [],
+          "default_value": "0"
+        },
+        {
+          "name": "it_stock_sms",
+          "label": "재입고SMS 알림",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "상품이 품절인 경우에 체크해 놓으면 상품상세보기에서 고객이 재입고SMS 알림을 신청할 수 있게 됩니다.",
+          "options": [],
+          "default_value": false
+        },
+        {
+          "name": "it_noti_qty",
+          "label": "재고 통보수량",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "상품의 재고가 통보수량보다 작을 때 쇼핑몰관리 메인화면의 재고현황에 재고부족 상품으로 표시됩니다. 옵션이 있는 상품은 개별 옵션의 통보수량이 적용됩니다.",
+          "options": [],
+          "default_value": "0"
+        },
+        {
+          "name": "it_buy_min_qty",
+          "label": "최소구매수량",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "상품 구매시 최소 구매 수량을 설정합니다.",
+          "options": [],
+          "default_value": "0"
+        },
+        {
+          "name": "it_buy_max_qty",
+          "label": "최대구매수량",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "상품 구매시 최대 구매 수량을 설정합니다.",
+          "options": [],
+          "default_value": "0"
+        }
+      ]
+    },
+    {
+      "key": "anc_sitfrm_sendcost",
+      "label": "배송비",
+      "order": 10,
+      "description": null,
+      "fields": [
+        {
+          "name": "it_sc_type",
+          "label": "배송비 유형",
+          "input_type": "select",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "배송비 유형을 선택하면 자동으로 항목이 변환됩니다.",
+          "options": [
+            {
+              "value": "0",
+              "label": "쇼핑몰 기본설정 사용"
+            },
+            {
+              "value": "1",
+              "label": "무료배송"
+            },
+            {
+              "value": "2",
+              "label": "조건부 무료배송"
+            },
+            {
+              "value": "3",
+              "label": "유료배송"
+            },
+            {
+              "value": "4",
+              "label": "수량별 부과"
+            }
+          ],
+          "default_value": 0
+        },
+        {
+          "name": "it_sc_method",
+          "label": "배송비 결제",
+          "input_type": "select",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "0",
+              "label": "선불"
+            },
+            {
+              "value": "1",
+              "label": "착불"
+            },
+            {
+              "value": "2",
+              "label": "사용자선택"
+            }
+          ],
+          "default_value": 0
+        },
+        {
+          "name": "it_sc_price",
+          "label": "기본배송비",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "무료배송 이외의 설정에 적용되는 배송비 금액입니다.",
+          "options": [],
+          "default_value": "0"
+        },
+        {
+          "name": "it_sc_minimum",
+          "label": "배송비 상세조건",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "0"
+        },
+        {
+          "name": "it_sc_qty",
+          "label": "배송비 상세조건",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "상품의 주문 수량에 따라 배송비가 부과됩니다. 예를 들어 기본배송비가 3,000원 수량을 3으로 설정했을 경우 상품의 주문수량이 5개이면 6,000원 배송비가 부과됩니다.",
+          "options": [],
+          "default_value": "0"
+        }
+      ]
+    },
+    {
+      "key": "anc_sitfrm_detail_html",
+      "label": "상세설명 HTML",
+      "order": 11,
+      "description": null,
+      "fields": [
+        {
+          "name": "it_head_html",
+          "label": "상품 상세 상단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_tail_html",
+          "label": "상품 상세 하단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_mobile_head_html",
+          "label": "모바일 상품 상세 상단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_mobile_tail_html",
+          "label": "모바일 상품 상세 하단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        }
+      ]
+    },
+    {
+      "key": "anc_sitfrm_compact",
+      "label": "상품요약정보",
+      "order": 12,
+      "description": null,
+      "fields": [
+        {
+          "name": "it_info_gubun",
+          "label": "상품군",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_info_value",
+          "label": "상품군 상세값",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    },
+    {
+      "key": "anc_sitfrm_img",
+      "label": "상품 이미지",
+      "order": 13,
+      "description": null,
+      "fields": [
+        {
+          "name": "it_img1",
+          "label": "상품 이미지 1",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_img2",
+          "label": "상품 이미지 2",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_img3",
+          "label": "상품 이미지 3",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_img4",
+          "label": "상품 이미지 4",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_img5",
+          "label": "상품 이미지 5",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_img6",
+          "label": "상품 이미지 6",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_img7",
+          "label": "상품 이미지 7",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_img8",
+          "label": "상품 이미지 8",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_img9",
+          "label": "상품 이미지 9",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_img10",
+          "label": "상품 이미지 10",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        }
+      ]
+    },
+    {
+      "key": "anc_sitfrm_extra",
+      "label": "여분필드 설정",
+      "order": 14,
+      "description": null,
+      "fields": [
+        {
+          "name": "it_1_subj",
+          "label": "여분필드 1 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_2_subj",
+          "label": "여분필드 2 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_3_subj",
+          "label": "여분필드 3 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_4_subj",
+          "label": "여분필드 4 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_5_subj",
+          "label": "여분필드 5 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_6_subj",
+          "label": "여분필드 6 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_7_subj",
+          "label": "여분필드 7 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_8_subj",
+          "label": "여분필드 8 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_9_subj",
+          "label": "여분필드 9 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_10_subj",
+          "label": "여분필드 10 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_1",
+          "label": "여분필드 1",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_2",
+          "label": "여분필드 2",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_3",
+          "label": "여분필드 3",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_4",
+          "label": "여분필드 4",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_5",
+          "label": "여분필드 5",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_6",
+          "label": "여분필드 6",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_7",
+          "label": "여분필드 7",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_8",
+          "label": "여분필드 8",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_9",
+          "label": "여분필드 9",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "it_10",
+          "label": "여분필드 10",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        }
+      ]
+    }
+  ]
+}

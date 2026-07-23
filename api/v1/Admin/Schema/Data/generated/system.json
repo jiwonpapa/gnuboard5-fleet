@@ -1,0 +1,146 @@
+{
+  "domain": "system",
+  "title": "SMS 설정",
+  "legacy_form": "adm/config_form.php",
+  "legacy_forms": [
+    "adm/config_form.php",
+    "adm/sms_admin/config.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.256221+00:00",
+  "field_count": 8,
+  "section_count": 1,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": "api/v1/Admin/Sms/Repository/AdminSmsConfigStore.php",
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": null,
+    "extractor_version": 5,
+    "source_hash": "eadd8779f3f1409eb25fb7a0a767ea8c6d259f921c7929f54790e4759cd19d48"
+  },
+  "sections": [
+    {
+      "key": "anc_cf_sms",
+      "label": "SMS",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "cf_sms_use",
+          "label": "SMS 사용",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "",
+              "label": "사용안함"
+            },
+            {
+              "value": "icode",
+              "label": "아이코드"
+            }
+          ],
+          "default_value": ""
+        },
+        {
+          "name": "cf_sms_type",
+          "label": "SMS 전송유형",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "전송유형을 SMS로 선택하시면 최대 80바이트까지 전송하실 수 있으며 LMS로 선택하시면 90바이트 이하는 SMS로, 그 이상은 \".G5_ICODE_LMS_MAX_LENGTH.\"바이트까지 LMS로 전송됩니다. 요금은 건당 SMS는 16원, LMS는 48원입니다.",
+          "options": [
+            {
+              "value": "",
+              "label": "SMS"
+            },
+            {
+              "value": "LMS",
+              "label": "LMS"
+            }
+          ],
+          "default_value": ""
+        },
+        {
+          "name": "cf_icode_id",
+          "label": "아이코드 회원아이디 (구버전)",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "아이코드에서 사용하시는 회원아이디를 입력합니다.",
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "cf_icode_pw",
+          "label": "아이코드 비밀번호 (구버전)",
+          "input_type": "password",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "아이코드에서 사용하시는 비밀번호를 입력합니다.",
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "cf_icode_server_ip",
+          "label": "아이코드 서버 IP",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "211.172.232.124"
+        },
+        {
+          "name": "cf_icode_server_port",
+          "label": "아이코드 서버 포트",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 7295
+        },
+        {
+          "name": "cf_icode_token_key",
+          "label": "아이코드 토큰키 (JSON버전)",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "아이코드 JSON 버전의 경우 아이코드 토큰키를 입력시 실행됩니다. SMS 전송유형을 LMS로 설정시 90바이트 이내는 SMS, 90 ~ 2000 바이트는 LMS 그 이상은 절삭 되어 LMS로 발송됩니다.",
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "cf_phone",
+          "label": "회신번호",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "SMS 발송 시 기본 회신번호입니다.",
+          "options": [],
+          "default_value": null
+        }
+      ]
+    }
+  ]
+}

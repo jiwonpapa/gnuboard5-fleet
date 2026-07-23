@@ -1,0 +1,129 @@
+name: CI
+
+# Hosted runners are an explicit fallback only. The canonical gate is
+# `composer run ci:local`, enforced by the repository pre-push hook.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  runtime-compat:
+    name: Runtime Compat (PHP 8.1)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install runtime dependencies
+        run: composer install --no-dev --no-interaction --no-progress --prefer-dist
+
+  quality:
+    name: Quality Gates (PHP 8.4)
+    runs-on: ubuntu-latest
+    env:
+      SERVICE_COVERAGE_MIN: '80'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Cache composer
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache/files
+            vendor
+          key: ${{ runner.os }}-php-8.4-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-8.4-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Resolve audit diff base
+        id: audit-diff
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "base=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          elif [[ -n "${{ github.event.before }}" && "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]]; then
+            echo "base=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "base=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Detect integrated Rust audit need
+        id: integrated-rust-audit
+        shell: bash
+        run: |
+          base="${{ steps.audit-diff.outputs.base }}"
+          head="${{ github.sha }}"
+
+          if [[ -z "$base" ]] || ! git rev-parse --verify --quiet "$base" >/dev/null; then
+            echo "needed=1" >> "$GITHUB_OUTPUT"
+            echo "reason=missing-diff-base" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          changed_paths="$(git diff --name-only "$base...$head")"
+          integrated_pattern='^(adm/[^/]+\.php|api/docs/openapi\.yaml|api/routes\.php|api/routes/|tests/contract/|api/v1/Auth/|api/v1/Core/Error/|api/v1/Support/|api/v1/[^/]+/Dto/|api/v1/[^/]+/Dtos/|api/v1/[^/]+/Response/|api/v1/[^/]+/Responses/|api/v1/[^/]+/Enum/|api/v1/[^/]+/Enums/|api/v1/[^/]+/Definition/|api/v1/[^/]+/Definitions/)'
+
+          if printf '%s\n' "$changed_paths" | grep -Eq "$integrated_pattern"; then
+            echo "needed=1" >> "$GITHUB_OUTPUT"
+            echo "reason=integrated-path" >> "$GITHUB_OUTPUT"
+          else
+            echo "needed=0" >> "$GITHUB_OUTPUT"
+            echo "reason=php-only" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout Rust
+        if: steps.integrated-rust-audit.outputs.needed == '1'
+        uses: actions/checkout@v4
+        with:
+          repository: jiwonpapa/g5-rust-admin
+          path: rust
+
+      - name: Setup Bun
+        if: steps.integrated-rust-audit.outputs.needed == '1'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+
+      - name: Setup Rust
+        if: steps.integrated-rust-audit.outputs.needed == '1'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Rust frontend dependencies
+        if: steps.integrated-rust-audit.outputs.needed == '1'
+        working-directory: rust/g5-admin
+        run: bun install --frozen-lockfile
+
+      - name: Audit auto
+        env:
+          AUDIT_AUTO_DIFF_BASE: ${{ steps.audit-diff.outputs.base }}
+          AUDIT_AUTO_DIFF_HEAD: ${{ github.sha }}
+          AUDIT_RUST_ROOT: ${{ github.workspace }}/rust
+        run: composer run audit:auto

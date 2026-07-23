@@ -1,0 +1,404 @@
+{
+  "domain": "polls",
+  "title": "투표",
+  "legacy_form": "adm/poll_form.php",
+  "legacy_forms": [
+    "adm/poll_form.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.270684+00:00",
+  "field_count": 27,
+  "section_count": 2,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": "api/v1/Admin/Poll/Repository/AdminPollRepository.php",
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": "g5_poll",
+    "extractor_version": 5,
+    "source_hash": "abc6c9bd62f4297002bed0ad091ac5d760c2949fcfdea1623cf3750a29677ea7"
+  },
+  "sections": [
+    {
+      "key": "poll_general",
+      "label": "투표 정보",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "po_id",
+          "label": "투표 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "po_subject",
+          "label": "투표 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "po_poll1",
+          "label": "항목 1",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "po_poll2",
+          "label": "항목 2",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "po_poll3",
+          "label": "항목 3",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "po_poll4",
+          "label": "항목 4",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "po_poll5",
+          "label": "항목 5",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "po_poll6",
+          "label": "항목 6",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "po_poll7",
+          "label": "항목 7",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "po_poll8",
+          "label": "항목 8",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "po_poll9",
+          "label": "항목 9",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "po_etc",
+          "label": "기타의견",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "기타 의견을 남길 수 있도록 하려면, 간단한 질문을 입력하세요.",
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "po_level",
+          "label": "투표가능 회원레벨",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "레벨을 1로 설정하면 손님도 투표할 수 있습니다.",
+          "options": [
+            {
+              "value": "1",
+              "label": "1"
+            },
+            {
+              "value": "2",
+              "label": "2"
+            },
+            {
+              "value": "3",
+              "label": "3"
+            },
+            {
+              "value": "4",
+              "label": "4"
+            },
+            {
+              "value": "5",
+              "label": "5"
+            },
+            {
+              "value": "6",
+              "label": "6"
+            },
+            {
+              "value": "7",
+              "label": "7"
+            },
+            {
+              "value": "8",
+              "label": "8"
+            },
+            {
+              "value": "9",
+              "label": "9"
+            },
+            {
+              "value": "10",
+              "label": "10"
+            }
+          ],
+          "default_value": null
+        },
+        {
+          "name": "po_point",
+          "label": "포인트",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "투표에 참여한 회원에게 포인트를 부여합니다.",
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "po_use",
+          "label": "투표사용",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": false
+        }
+      ]
+    },
+    {
+      "key": "poll_results",
+      "label": "투표 결과",
+      "order": 2,
+      "description": null,
+      "fields": [
+        {
+          "name": "po_cnt1",
+          "label": "항목 1 투표수",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "po_cnt2",
+          "label": "항목 2 투표수",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "po_cnt3",
+          "label": "항목 3 투표수",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "po_cnt4",
+          "label": "항목 4 투표수",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "po_cnt5",
+          "label": "항목 5 투표수",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "po_cnt6",
+          "label": "항목 6 투표수",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "po_cnt7",
+          "label": "항목 7 투표수",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "po_cnt8",
+          "label": "항목 8 투표수",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "po_cnt9",
+          "label": "항목 9 투표수",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "po_date",
+          "label": "투표등록일",
+          "input_type": "date",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": "0000-00-00"
+        },
+        {
+          "name": "po_ips",
+          "label": "투표참가 IP",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "mb_ids",
+          "label": "투표참가 회원",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    }
+  ]
+}

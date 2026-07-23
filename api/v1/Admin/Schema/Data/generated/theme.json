@@ -1,0 +1,70 @@
+{
+  "domain": "theme",
+  "title": "테마 설정",
+  "legacy_form": "adm/theme.php",
+  "legacy_forms": [
+    "adm/theme.php",
+    "adm/config_form.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.259457+00:00",
+  "field_count": 2,
+  "section_count": 1,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": "api/v1/Admin/System/Repository/AdminSystemConfigRepository.php",
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": null,
+    "extractor_version": 5,
+    "source_hash": "d93c3d64a87082fb5da837ea8cfa0760c125d630496035160b16853fdbb551f2"
+  },
+  "sections": [
+    {
+      "key": "theme_settings",
+      "label": "테마 설정",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "cf_theme",
+          "label": "테마",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "설치된 테마 목록은 /admin/system/themes에서 조회합니다.",
+          "options": [],
+          "default_value": null,
+          "option_source": {
+            "kind": "endpoint",
+            "name": "admin.system.themes",
+            "endpoint": "/admin/system/themes",
+            "value_field": "theme",
+            "label_field": "theme"
+          }
+        },
+        {
+          "name": "cf_mobile_theme",
+          "label": "모바일 테마",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "설치된 테마 목록은 /admin/system/themes에서 조회합니다.",
+          "options": [],
+          "default_value": null,
+          "option_source": {
+            "kind": "endpoint",
+            "name": "admin.system.themes",
+            "endpoint": "/admin/system/themes",
+            "value_field": "theme",
+            "label_field": "theme"
+          }
+        }
+      ]
+    }
+  ]
+}

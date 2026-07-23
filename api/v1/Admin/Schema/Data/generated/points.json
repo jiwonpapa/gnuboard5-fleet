@@ -1,0 +1,128 @@
+{
+  "domain": "points",
+  "title": "포인트관리",
+  "legacy_form": "adm/point_list.php",
+  "legacy_forms": [
+    "adm/point_list.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.266517+00:00",
+  "field_count": 6,
+  "section_count": 3,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": "api/v1/Admin/Point/Repository/AdminPointRepository.php",
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": null,
+    "extractor_version": 5,
+    "source_hash": "77c0adafe6d6087d54d128e49963aa95b4db00990c2781b4dfecc593e83a7b6c"
+  },
+  "sections": [
+    {
+      "key": "point_search",
+      "label": "포인트관리",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "search_field",
+          "label": "검색대상",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "mb_id",
+              "label": "회원아이디"
+            },
+            {
+              "value": "po_content",
+              "label": "내용"
+            }
+          ],
+          "default_value": null
+        },
+        {
+          "name": "search",
+          "label": "검색어",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    },
+    {
+      "key": "point_adjust",
+      "label": "개별회원 포인트 증감 설정",
+      "order": 2,
+      "description": null,
+      "fields": [
+        {
+          "name": "mb_id",
+          "label": "회원아이디",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "po_content",
+          "label": "포인트 내용",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "point",
+          "label": "포인트",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    },
+    {
+      "key": "point_expire",
+      "label": "포인트 만료 실행",
+      "order": 3,
+      "description": null,
+      "fields": [
+        {
+          "name": "base_date",
+          "label": "기준일",
+          "input_type": "date",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    }
+  ]
+}

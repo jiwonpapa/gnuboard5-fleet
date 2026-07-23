@@ -1,0 +1,127 @@
+{
+  "domain": "shop-catalog-option",
+  "title": "쇼핑몰 카탈로그 상품옵션",
+  "legacy_form": "adm/shop_admin/itemoption.php",
+  "legacy_forms": [
+    "adm/shop_admin/itemoption.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.291376+00:00",
+  "field_count": 8,
+  "section_count": 1,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": null,
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": "g5_shop_item_option",
+    "extractor_version": 5,
+    "source_hash": "dd881b7aedd7310c9841cc645623e4a95bddfae963525eca554a5bd888e38907"
+  },
+  "sections": [
+    {
+      "key": "shop_catalog_option",
+      "label": "상품옵션",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "io_no",
+          "label": "옵션 번호",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "io_id",
+          "label": "옵션 ID",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "0"
+        },
+        {
+          "name": "io_type",
+          "label": "옵션 타입",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "it_id",
+          "label": "상품 ID",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "io_price",
+          "label": "옵션 추가금액",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "io_stock_qty",
+          "label": "재고 수량",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "io_noti_qty",
+          "label": "재입고 알림 수량",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "io_use",
+          "label": "옵션 사용",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": false
+        }
+      ]
+    }
+  ]
+}

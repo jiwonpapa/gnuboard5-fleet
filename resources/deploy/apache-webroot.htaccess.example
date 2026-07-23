@@ -1,0 +1,17 @@
+<IfModule mod_authz_core.c>
+    <FilesMatch "^(?:\.env(?:\..*)?|composer\.(?:json|lock)|\.git|\.gitignore|\.deploy_last_staging_backup)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    <FilesMatch "^(?:\.env(?:\..*)?|composer\.(?:json|lock)|\.git|\.gitignore|\.deploy_last_staging_backup)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule "(^|/)\.(?!well-known/)" - [F]
+</IfModule>

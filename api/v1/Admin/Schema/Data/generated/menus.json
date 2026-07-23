@@ -1,0 +1,127 @@
+{
+  "domain": "menus",
+  "title": "메뉴",
+  "legacy_form": "adm/menu_list.php",
+  "legacy_forms": [
+    "adm/menu_list.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.276327+00:00",
+  "field_count": 8,
+  "section_count": 1,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": null,
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": "g5_menu",
+    "extractor_version": 5,
+    "source_hash": "db7e9b0120482fbfadc72b1d5bad8cb1052931920555b793aa904ec26d0318f5"
+  },
+  "sections": [
+    {
+      "key": "menu_settings",
+      "label": "메뉴 설정",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "me_id",
+          "label": "메뉴 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "me_code",
+          "label": "메뉴 코드",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "me_name",
+          "label": "메뉴 이름",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "me_link",
+          "label": "메뉴 링크",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "me_target",
+          "label": "링크 target",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "_self"
+        },
+        {
+          "name": "me_order",
+          "label": "표시 순서",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "me_use",
+          "label": "PC 노출",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": true
+        },
+        {
+          "name": "me_mobile_use",
+          "label": "모바일 노출",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": true
+        }
+      ]
+    }
+  ]
+}

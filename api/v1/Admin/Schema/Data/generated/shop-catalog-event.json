@@ -1,0 +1,244 @@
+{
+  "domain": "shop-catalog-event",
+  "title": "쇼핑몰 카탈로그 이벤트",
+  "legacy_form": "adm/shop_admin/itemeventform.php",
+  "legacy_forms": [
+    "adm/shop_admin/itemeventform.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.290085+00:00",
+  "field_count": 16,
+  "section_count": 1,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": null,
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": "g5_shop_event",
+    "extractor_version": 5,
+    "source_hash": "3531c0dfa770fe30e71a2cd025b8a1bd52aedaa2268ced984dc11aa39861c607"
+  },
+  "sections": [
+    {
+      "key": "shop_catalog_event",
+      "label": "이벤트",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "ev_id",
+          "label": "이벤트 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": true,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "ev_skin",
+          "label": "출력스킨",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "기본으로 제공하는 스킨은 '.str_replace(G5_PATH.'/', '', G5_SHOP_SKIN_PATH).'/list.*.skin.php 입니다.'.PHP_EOL.G5_SHOP_DIR.'/event.php?ev_id=1234567890&skin=userskin.php 처럼 직접 만든 스킨을 사용할 수도 있습니다.",
+          "options": [],
+          "default_value": "",
+          "option_source": {
+            "kind": "directory",
+            "name": "shop.list_skin",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        {
+          "name": "ev_mobile_skin",
+          "label": "모바일 출력스킨",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "기본으로 제공하는 스킨은 '.str_replace(G5_PATH.'/', '', G5_MSHOP_SKIN_PATH).'/list.*.skin.php 입니다.'.PHP_EOL.G5_SHOP_DIR.'/event.php?ev_id=1234567890&skin=userskin.php 처럼 직접 만든 스킨을 사용할 수도 있습니다.",
+          "options": [],
+          "default_value": "",
+          "option_source": {
+            "kind": "directory",
+            "name": "shop.mobile_list_skin",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        {
+          "name": "ev_img_width",
+          "label": "출력이미지 폭",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "ev_img_height",
+          "label": "출력이미지 높이",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "ev_list_mod",
+          "label": "1줄당 이미지 수",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "1행에 설정한 값만큼의 상품을 출력합니다. 스킨 설정에 따라 1행에 하나의 상품만 출력할 수도 있습니다.",
+          "options": [],
+          "default_value": "0"
+        },
+        {
+          "name": "ev_list_row",
+          "label": "이미지 줄 수",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "한 페이지에 출력할 이미지 줄 수를 설정합니다.\\n한 페이지에 표시되는 상품수는 (1줄당 이미지 수 x 줄 수) 입니다.",
+          "options": [],
+          "default_value": "0"
+        },
+        {
+          "name": "ev_mobile_img_width",
+          "label": "모바일 출력이미지 폭",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "ev_mobile_img_height",
+          "label": "모바일 출력이미지 높이",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "ev_mobile_list_mod",
+          "label": "모바일 1줄당 이미지 수",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "1행에 설정한 값만큼의 상품을 출력합니다. 스킨 설정에 따라 1행에 하나의 상품만 출력할 수도 있습니다.",
+          "options": [],
+          "default_value": "0"
+        },
+        {
+          "name": "ev_mobile_list_row",
+          "label": "모바일 이미지 줄 수",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "한 페이지에 출력할 이미지 줄 수를 설정합니다.\\n한 페이지에 표시되는 상품수는 (1줄당 이미지 수 x 줄 수) 입니다.",
+          "options": [],
+          "default_value": "0"
+        },
+        {
+          "name": "ev_subject",
+          "label": "이벤트제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ev_subject_strong",
+          "label": "제목 강조",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": false
+        },
+        {
+          "name": "ev_head_html",
+          "label": "상단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ev_tail_html",
+          "label": "하단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ev_use",
+          "label": "사용 사용",
+          "input_type": "select",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "사용하지 않으면 레이아웃의 이벤트 메뉴 및 이벤트 관련 페이지에 접근할 수 없습니다.",
+          "options": [
+            {
+              "value": "1",
+              "label": "사용"
+            },
+            {
+              "value": "0",
+              "label": "사용안함"
+            }
+          ],
+          "default_value": 1
+        }
+      ]
+    }
+  ]
+}

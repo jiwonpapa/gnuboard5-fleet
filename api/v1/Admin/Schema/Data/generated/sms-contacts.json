@@ -1,0 +1,185 @@
+{
+  "domain": "sms-contacts",
+  "title": "휴대폰번호",
+  "legacy_form": "adm/sms_admin/num_group.php",
+  "legacy_forms": [
+    "adm/sms_admin/num_group.php",
+    "adm/sms_admin/num_book_write.php",
+    "adm/sms_admin/num_book_file.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.261444+00:00",
+  "field_count": 10,
+  "section_count": 3,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": "api/v1/Admin/Sms/Repository/AdminSmsContactStore.php",
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": null,
+    "extractor_version": 5,
+    "source_hash": "42de57c019a0ff0864464c5cb0a426056512292571a2006627dae9e669e64916"
+  },
+  "sections": [
+    {
+      "key": "sms_contact_group",
+      "label": "휴대폰번호 그룹",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "bg_name",
+          "label": "그룹명",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    },
+    {
+      "key": "sms_contact_entry",
+      "label": "휴대폰번호",
+      "order": 2,
+      "description": null,
+      "fields": [
+        {
+          "name": "bg_no",
+          "label": "그룹",
+          "input_type": "select",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": 1,
+          "option_source": {
+            "kind": "endpoint",
+            "name": "admin.sms.contact-groups",
+            "endpoint": "/admin/sms/contact-groups",
+            "value_field": "bg_no",
+            "label_field": "bg_name"
+          }
+        },
+        {
+          "name": "bk_name",
+          "label": "이름",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "bk_hp",
+          "label": "휴대폰번호",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "bk_receipt",
+          "label": "수신여부",
+          "input_type": "radio",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "1",
+              "label": "수신허용"
+            },
+            {
+              "value": "0",
+              "label": "수신거부"
+            }
+          ],
+          "default_value": true
+        },
+        {
+          "name": "bk_memo",
+          "label": "메모",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    },
+    {
+      "key": "sms_contact_file",
+      "label": "휴대폰번호 파일",
+      "order": 3,
+      "description": null,
+      "fields": [
+        {
+          "name": "contacts_text",
+          "label": "텍스트 가져오기",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "dry_run",
+          "label": "드라이런",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "include_no_phone",
+          "label": "휴대폰 번호 없는 회원 포함",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "with_hyphen",
+          "label": "하이픈 '―' 포함",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    }
+  ]
+}

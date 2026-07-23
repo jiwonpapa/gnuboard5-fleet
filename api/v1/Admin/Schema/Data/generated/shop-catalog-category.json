@@ -1,0 +1,693 @@
+{
+  "domain": "shop-catalog-category",
+  "title": "쇼핑몰 카탈로그 분류",
+  "legacy_form": "adm/shop_admin/categoryform.php",
+  "legacy_forms": [
+    "adm/shop_admin/categoryform.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.281011+00:00",
+  "field_count": 49,
+  "section_count": 5,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": null,
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": "g5_shop_category",
+    "extractor_version": 5,
+    "source_hash": "7e6504a9ee91098bc6d20872ad9a6b42450c2250195d0224409421e70e8fdaab"
+  },
+  "sections": [
+    {
+      "key": "shop_catalog_category",
+      "label": "쇼핑몰 분류",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "ca_id",
+          "label": "분류 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": true,
+          "readonly_on_update": true,
+          "description": "자동으로 보여지는 분류코드를 사용하시길 권해드리지만 직접 입력한 값으로도 사용할 수 있습니다.\\n분류코드는 나중에 수정이 되지 않으므로 신중하게 결정하여 사용하십시오.\\n\\n분류코드는 2자리씩 10자리를 사용하여 5단계를 표현할 수 있습니다.\\n0~z까지 입력이 가능하며 한 분류당 최대 1296가지를 표현할 수 있습니다.\\n그러므로 총 3656158440062976가지의 분류를 사용할 수 있습니다.",
+          "options": [],
+          "default_value": 0
+        }
+      ]
+    },
+    {
+      "key": "anc_scatefrm_basic",
+      "label": "입력",
+      "order": 2,
+      "description": null,
+      "fields": [
+        {
+          "name": "ca_name",
+          "label": "분류명",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_order",
+          "label": "출력순서",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "숫자가 작을 수록 상위에 출력됩니다. 음수 입력도 가능하며 입력 가능 범위는 -2147483648 부터 2147483647 까지입니다.\\n 입력하지 않으면 자동으로 출력됩니다.",
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "ca_skin_dir",
+          "label": "PC용 스킨명",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "",
+          "option_source": {
+            "kind": "directory",
+            "name": "skin.shop",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        {
+          "name": "ca_mobile_skin_dir",
+          "label": "모바일용 스킨명",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": "",
+          "option_source": {
+            "kind": "directory",
+            "name": "mobile_skin.shop",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        {
+          "name": "ca_skin",
+          "label": "출력스킨",
+          "input_type": "select",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "기본으로 제공하는 스킨은 '.str_replace(G5_PATH.'/', '', $g5_shop_skin_path).'/list.*.skin.php 입니다.",
+          "options": [],
+          "default_value": "list.10.skin.php",
+          "option_source": {
+            "kind": "directory",
+            "name": "shop.list_skin",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        {
+          "name": "ca_mobile_skin",
+          "label": "모바일 출력스킨",
+          "input_type": "select",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "기본으로 제공하는 스킨은 '.str_replace(G5_PATH.'/', '', $g5_mshop_skin_path).'/list.*.skin.php 입니다.",
+          "options": [],
+          "default_value": "list.10.skin.php",
+          "option_source": {
+            "kind": "directory",
+            "name": "shop.mobile_list_skin",
+            "value_field": "value",
+            "label_field": "label"
+          }
+        },
+        {
+          "name": "ca_img_width",
+          "label": "출력이미지 폭",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "쇼핑몰환경설정 > 이미지(소) 넓이가 기본값으로 설정됩니다.\\n\".G5_SHOP_URL.\"/list.php에서 출력되는 이미지의 폭입니다.",
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "ca_img_height",
+          "label": "출력이미지 높이",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "쇼핑몰환경설정 > 이미지(소) 높이가 기본값으로 설정됩니다.\\n\".G5_SHOP_URL.\"/list.php에서 출력되는 이미지의 높이입니다.",
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "ca_mobile_img_width",
+          "label": "모바일 출력이미지 폭",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "쇼핑몰환경설정 > 이미지(소) 넓이가 기본값으로 설정됩니다.\\n\".G5_SHOP_URL.\"/list.php에서 출력되는 이미지의 폭입니다.",
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "ca_mobile_img_height",
+          "label": "모바일 출력이미지 높이",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "쇼핑몰환경설정 > 이미지(소) 높이가 기본값으로 설정됩니다.\\n\".G5_SHOP_URL.\"/list.php에서 출력되는 이미지의 높이입니다.",
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "ca_sell_email",
+          "label": "판매자 E-mail",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "운영자와 판매자가 다른 경우에 사용합니다.\\n이 분류에 속한 상품을 등록할 경우에 기본값으로 입력됩니다.",
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_use",
+          "label": "판매가능",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "재고가 없거나 일시적으로 판매를 중단하시려면 체크 해제하십시오.\\n체크 해제하시면 상품 출력을 하지 않으며, 주문도 받지 않습니다.",
+          "options": [],
+          "default_value": true
+        },
+        {
+          "name": "ca_stock_qty",
+          "label": "재고수량",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "상품의 기본재고 수량을 설정합니다.\\n재고를 사용하지 않는다면 숫자를 크게 입력하여 주십시오. 예) 999999",
+          "options": [],
+          "default_value": "99999"
+        },
+        {
+          "name": "ca_list_mod",
+          "label": "1줄당 이미지 수",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "한 줄에 설정한 값만큼의 상품을 출력하지만 스킨에 따라 한 줄에 하나의 상품만 출력할 수도 있습니다.",
+          "options": [],
+          "default_value": "3"
+        },
+        {
+          "name": "ca_list_row",
+          "label": "이미지 줄 수",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "한 페이지에 출력할 이미지 줄 수를 설정합니다.\\n한 페이지에서 표시하는 상품수는 (1줄당 이미지 수 x 줄 수) 입니다.",
+          "options": [],
+          "default_value": "5"
+        },
+        {
+          "name": "ca_mobile_list_mod",
+          "label": "모바일 1줄당 이미지 수",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "한 줄에 설정한 값만큼의 상품을 출력하지만 스킨에 따라 한 줄에 하나의 상품만 출력할 수도 있습니다.",
+          "options": [],
+          "default_value": "3"
+        },
+        {
+          "name": "ca_mobile_list_row",
+          "label": "모바일 이미지 줄 수",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "한 페이지에 출력할 이미지 줄 수를 설정합니다.\\n한 페이지에서 표시하는 상품수는 (1줄당 이미지 수 x 줄 수) 입니다.",
+          "options": [],
+          "default_value": "5"
+        },
+        {
+          "name": "ca_mb_id",
+          "label": "관리 회원아이디",
+          "input_type": "hidden",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_cert_use",
+          "label": "본인확인 체크",
+          "input_type": "radio",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "1",
+              "label": "사용함"
+            },
+            {
+              "value": "0",
+              "label": "사용안함"
+            }
+          ],
+          "default_value": false
+        },
+        {
+          "name": "ca_adult_use",
+          "label": "성인인증 체크",
+          "input_type": "radio",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [
+            {
+              "value": "1",
+              "label": "사용함"
+            },
+            {
+              "value": "0",
+              "label": "사용안함"
+            }
+          ],
+          "default_value": false
+        },
+        {
+          "name": "ca_nocoupon",
+          "label": "쿠폰적용안함",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "설정에 체크하시면 쿠폰생성 때 분류 검색 결과에 노출되지 않습니다.",
+          "options": [],
+          "default_value": false
+        }
+      ]
+    },
+    {
+      "key": "anc_scatefrm_view",
+      "label": "분류 상단/하단 설정",
+      "order": 3,
+      "description": null,
+      "fields": [
+        {
+          "name": "ca_explan_html",
+          "label": "상세 설명 사용",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": true
+        },
+        {
+          "name": "ca_head_html",
+          "label": "상단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_tail_html",
+          "label": "하단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_mobile_head_html",
+          "label": "모바일 상단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_mobile_tail_html",
+          "label": "모바일 하단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        }
+      ]
+    },
+    {
+      "key": "anc_scatefrm_optional",
+      "label": "선택 입력",
+      "order": 4,
+      "description": null,
+      "fields": [
+        {
+          "name": "ca_include_head",
+          "label": "상단파일경로",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "입력하지 않으면 기본 상단 파일을 사용합니다. 상단 내용과 달리 PHP 코드를 사용할 수 있습니다.",
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_include_tail",
+          "label": "하단 파일 경로",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "입력하지 않으면 기본 하단 파일을 사용합니다. 하단 내용과 달리 PHP 코드를 사용할 수 있습니다.",
+          "options": [],
+          "default_value": ""
+        }
+      ]
+    },
+    {
+      "key": "anc_scatefrm_extra",
+      "label": "여분필드 설정",
+      "order": 5,
+      "description": null,
+      "fields": [
+        {
+          "name": "ca_1_subj",
+          "label": "여분필드 1 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_2_subj",
+          "label": "여분필드 2 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_3_subj",
+          "label": "여분필드 3 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_4_subj",
+          "label": "여분필드 4 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_5_subj",
+          "label": "여분필드 5 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_6_subj",
+          "label": "여분필드 6 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_7_subj",
+          "label": "여분필드 7 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_8_subj",
+          "label": "여분필드 8 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_9_subj",
+          "label": "여분필드 9 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_10_subj",
+          "label": "여분필드 10 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_1",
+          "label": "여분필드 1",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_2",
+          "label": "여분필드 2",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_3",
+          "label": "여분필드 3",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_4",
+          "label": "여분필드 4",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_5",
+          "label": "여분필드 5",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_6",
+          "label": "여분필드 6",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_7",
+          "label": "여분필드 7",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_8",
+          "label": "여분필드 8",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_9",
+          "label": "여분필드 9",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "ca_10",
+          "label": "여분필드 10",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        }
+      ]
+    }
+  ]
+}

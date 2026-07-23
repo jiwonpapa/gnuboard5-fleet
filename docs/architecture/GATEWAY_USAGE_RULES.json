@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "local_only_compat_contracts": {
+    "Api\\Integration\\Contracts\\CommentGateway": {
+      "domain": "Comment",
+      "allowed": [
+        "/api/v1/Integration/Contracts/CommentGateway.php",
+        "/api/v1/Comment/definitions.php",
+        "/api/v1/Comment/Repository/CommentRepository.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ]
+    },
+    "Api\\Integration\\Contracts\\FileGateway": {
+      "domain": "File",
+      "allowed": [
+        "/api/v1/Integration/Contracts/FileGateway.php",
+        "/api/v1/File/definitions.php",
+        "/api/v1/File/Repository/FileRepository.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ]
+    },
+    "Api\\Integration\\Contracts\\LikeGateway": {
+      "domain": "Like",
+      "allowed": [
+        "/api/v1/Integration/Contracts/LikeGateway.php",
+        "/api/v1/Like/definitions.php",
+        "/api/v1/Like/Repository/LikeRepository.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ]
+    },
+    "Api\\Integration\\Contracts\\MemoGateway": {
+      "domain": "Memo",
+      "allowed": [
+        "/api/v1/Integration/Contracts/MemoGateway.php",
+        "/api/v1/Memo/definitions.php",
+        "/api/v1/Memo/Repository/MemoRepository.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ]
+    },
+    "Api\\Integration\\Contracts\\MenuGateway": {
+      "domain": "Menu",
+      "allowed": [
+        "/api/v1/Integration/Contracts/MenuGateway.php",
+        "/api/v1/Menu/definitions.php",
+        "/api/v1/Menu/Repository/MenuRepository.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ]
+    },
+    "Api\\Integration\\Contracts\\QaGateway": {
+      "domain": "Qa",
+      "allowed": [
+        "/api/v1/Integration/Contracts/QaGateway.php",
+        "/api/v1/Qa/definitions.php",
+        "/api/v1/Qa/Repository/QaRepository.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ]
+    }
+  },
+  "shared_inventory_contracts": {
+    "Api\\Integration\\Contracts\\AuthGateway": {
+      "domain": "Auth",
+      "allowed": [
+        "/api/v1/Integration/Contracts/AuthGateway.php",
+        "/api/v1/Auth/definitions.php",
+        "/api/v1/Auth/Repository/AuthRepository.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ],
+      "prefixes": []
+    },
+    "Api\\Integration\\Contracts\\BoardGateway": {
+      "domain": "Board",
+      "allowed": [
+        "/api/v1/Integration/Contracts/BoardGateway.php",
+        "/tests/Support/BuildsDomainServices.php",
+        "/tests/contract/g5-repository/FailureScenarioContractTest.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ],
+      "prefixes": [
+        "/api/v1/Board/",
+        "/api/v1/Comment/",
+        "/api/v1/File/",
+        "/api/v1/Like/",
+        "/api/v1/Post/",
+        "/api/v1/Core/Plugin/",
+        "/tests/Board/",
+        "/tests/Comment/",
+        "/tests/File/",
+        "/tests/Like/",
+        "/tests/Post/",
+        "/tests/Core/Plugin/"
+      ]
+    },
+    "Api\\Integration\\Contracts\\MemberGateway": {
+      "domain": "Member",
+      "allowed": [
+        "/api/v1/Integration/Contracts/MemberGateway.php",
+        "/tests/Support/BuildsDomainServices.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ],
+      "prefixes": [
+        "/api/v1/Member/",
+        "/api/v1/Core/Plugin/",
+        "/tests/Member/",
+        "/tests/Core/Plugin/"
+      ]
+    },
+    "Api\\Integration\\Contracts\\PointGateway": {
+      "domain": "Point",
+      "allowed": [
+        "/api/v1/Integration/Contracts/PointGateway.php",
+        "/api/v1/Point/definitions.php",
+        "/api/v1/Point/Repository/PointRepository.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ],
+      "prefixes": [
+        "/api/v1/Core/Plugin/",
+        "/tests/Core/Plugin/"
+      ]
+    },
+    "Api\\Integration\\Contracts\\PointQueryGateway": {
+      "domain": "PointQuery",
+      "allowed": [
+        "/api/v1/Integration/Contracts/PointQueryGateway.php",
+        "/api/v1/Integration/Contracts/PointGateway.php",
+        "/api/v1/Point/definitions.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ],
+      "prefixes": [
+        "/api/v1/Admin/Point/Service/AdminPointService.php",
+        "/tests/Admin/AdminValidationServiceTest.php",
+        "/tests/Admin/Point/"
+      ]
+    },
+    "Api\\Integration\\Contracts\\PointRewardGateway": {
+      "domain": "PointReward",
+      "allowed": [
+        "/api/v1/Integration/Contracts/PointRewardGateway.php",
+        "/api/v1/Integration/Contracts/PointGateway.php",
+        "/api/v1/Point/definitions.php",
+        "/tests/Support/BuildsDomainServices.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ],
+      "prefixes": [
+        "/api/v1/Core/Plugin/",
+        "/api/v1/Auth/Service/AuthRegistrationService.php",
+        "/api/v1/Auth/Service/Support/AuthRegistrationPointService.php",
+        "/api/v1/Post/Service/PostPointService.php",
+        "/api/v1/Memo/Service/",
+        "/api/v1/Admin/Point/Service/AdminPointService.php",
+        "/api/v1/Admin/Poll/Service/",
+        "/tests/Admin/AdminValidationServiceTest.php",
+        "/tests/Admin/Point/",
+        "/tests/Auth/",
+        "/tests/Post/",
+        "/tests/Memo/",
+        "/tests/Admin/Poll/",
+        "/tests/Core/Plugin/"
+      ]
+    },
+    "Api\\Integration\\Contracts\\PointMaintenanceGateway": {
+      "domain": "PointMaintenance",
+      "allowed": [
+        "/api/v1/Integration/Contracts/PointMaintenanceGateway.php",
+        "/api/v1/Integration/Contracts/PointGateway.php",
+        "/api/v1/Point/definitions.php",
+        "/tests/Support/BuildsDomainServices.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ],
+      "prefixes": [
+        "/api/v1/Auth/Service/AuthSessionService.php",
+        "/api/v1/Auth/Service/Support/AuthSessionIssuer.php",
+        "/api/v1/Admin/Point/Service/AdminPointService.php",
+        "/tests/Admin/AdminValidationServiceTest.php",
+        "/tests/Admin/Point/",
+        "/tests/Auth/"
+      ]
+    },
+    "Api\\Integration\\Contracts\\PostGateway": {
+      "domain": "Post",
+      "allowed": [
+        "/api/v1/Integration/Contracts/PostGateway.php",
+        "/api/v1/Post/definitions.php",
+        "/api/v1/Post/Repository/PostRepository.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ],
+      "prefixes": [
+        "/api/v1/Core/Plugin/",
+        "/tests/Core/Plugin/"
+      ]
+    },
+    "Api\\Integration\\Contracts\\PostReadGateway": {
+      "domain": "PostRead",
+      "allowed": [
+        "/api/v1/Integration/Contracts/PostReadGateway.php",
+        "/api/v1/Integration/Contracts/PostGateway.php",
+        "/api/v1/Post/definitions.php",
+        "/api/v1/Post/Repository/PostRepository.php",
+        "/tests/Support/BuildsDomainServices.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ],
+      "prefixes": [
+        "/api/v1/Comment/",
+        "/api/v1/Core/Plugin/",
+        "/api/v1/File/",
+        "/tests/Comment/",
+        "/tests/Core/Plugin/",
+        "/tests/File/"
+      ]
+    },
+    "Api\\Integration\\Contracts\\PostWriteGateway": {
+      "domain": "PostWrite",
+      "allowed": [
+        "/api/v1/Integration/Contracts/PostWriteGateway.php",
+        "/api/v1/Integration/Contracts/PostGateway.php",
+        "/api/v1/Post/definitions.php",
+        "/tests/contract/g5-repository/GatewayImplementationContractTest.php"
+      ],
+      "prefixes": [
+        "/api/v1/Core/Plugin/",
+        "/tests/Core/Plugin/"
+      ]
+    }
+  }
+}

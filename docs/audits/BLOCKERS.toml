@@ -1,0 +1,17 @@
+schema_version = 1
+
+[[blockers]]
+id = "AUTH-308"
+owner = "staging_ops"
+scope = "php-only"
+upstream = "AUTH_EXTERNAL_GOOGLE_*"
+summary = "Google staging credential 미주입으로 실제 callback/login smoke를 재개할 수 없습니다."
+next_action = "staging .env에 AUTH_EXTERNAL_GOOGLE_*를 반영한 뒤 /auth/external/providers 노출과 callback/login smoke를 다시 실행합니다."
+
+[[blockers]]
+id = "AUTH-310"
+owner = "staging_ops"
+scope = "php-only"
+upstream = "AUTH_EXTERNAL_KAKAO_*"
+summary = "Kakao staging credential 또는 테스트 계정 부재로 실제 callback/login smoke를 재개할 수 없습니다."
+next_action = "staging .env와 테스트 계정을 준비한 뒤 /auth/external/providers 노출과 callback/login smoke를 다시 실행합니다."

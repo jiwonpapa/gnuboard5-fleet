@@ -1,0 +1,20 @@
+{
+    "name": "board-reward",
+    "vendor": "wolchuck",
+    "version": "1.0.0",
+    "description": "Board lookup and guarded point grant sample plugin",
+    "require_api_version": ">=1.1.0",
+    "license": {
+        "type": "free"
+    },
+    "scopes": [
+        "board.read",
+        "point.write"
+    ],
+    "entry_class": "Plugin",
+    "autoload": {
+        "psr-4": {
+            "Api\\Plugins\\Wolchuck\\BoardReward\\": "src/"
+        }
+    }
+}

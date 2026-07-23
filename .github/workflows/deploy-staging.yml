@@ -1,0 +1,49 @@
+name: Deploy Staging
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy-staging:
+    name: Deploy To Staging
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Configure SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+
+      - name: Trust staging host
+        env:
+          STAGING_SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$STAGING_SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy
+        env:
+          STAGING_HOST: ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}
+          STAGING_ROOT: ${{ secrets.STAGING_ROOT }}
+          STAGING_HEALTH_URL: ${{ secrets.STAGING_HEALTH_URL }}
+          STAGING_DOCS_URL: ${{ secrets.STAGING_DOCS_URL }}
+          REMOTE_RELEASES_BASE: ${{ secrets.STAGING_RELEASES_BASE }}
+        run: ./scripts/deploy_staging.sh

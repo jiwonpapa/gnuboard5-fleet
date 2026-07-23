@@ -1,0 +1,364 @@
+{
+  "domain": "groups",
+  "title": "게시판그룹",
+  "legacy_form": "adm/boardgroup_form.php",
+  "legacy_forms": [
+    "adm/boardgroup_form.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.274889+00:00",
+  "field_count": 26,
+  "section_count": 2,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": "api/v1/Admin/Group/Repository/AdminGroupRepository.php",
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": "g5_group",
+    "extractor_version": 5,
+    "source_hash": "bfd41997ffb3707bd9342576cd9a8e873246339e4d4dd8b3aa7e1b33dcc58628"
+  },
+  "sections": [
+    {
+      "key": "board_group",
+      "label": "게시판그룹 정보",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "gr_id",
+          "label": "그룹 ID",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": true,
+          "readonly_on_update": true,
+          "description": "영문자, 숫자, _ 만 가능합니다.",
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_subject",
+          "label": "그룹 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_device",
+          "label": "접속기기",
+          "input_type": "select",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "PC 와 모바일 사용을 구분합니다.",
+          "options": [
+            {
+              "value": "both",
+              "label": "PC와 모바일에서 모두 사용"
+            },
+            {
+              "value": "pc",
+              "label": "PC 전용"
+            },
+            {
+              "value": "mobile",
+              "label": "모바일 전용"
+            }
+          ],
+          "default_value": "both"
+        },
+        {
+          "name": "gr_admin",
+          "label": "그룹 관리자",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_use_access",
+          "label": "접근회원사용",
+          "input_type": "checkbox",
+          "data_type": "boolean",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "사용에 체크하시면 이 그룹에 속한 게시판은 접근가능한 회원만 접근이 가능합니다.",
+          "options": [],
+          "default_value": false
+        },
+        {
+          "name": "gr_order",
+          "label": "출력 순서",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        }
+      ]
+    },
+    {
+      "key": "board_group_extra",
+      "label": "게시판그룹 여분필드",
+      "order": 2,
+      "description": null,
+      "fields": [
+        {
+          "name": "gr_1_subj",
+          "label": "여분필드 1 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_2_subj",
+          "label": "여분필드 2 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_3_subj",
+          "label": "여분필드 3 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_4_subj",
+          "label": "여분필드 4 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_5_subj",
+          "label": "여분필드 5 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_6_subj",
+          "label": "여분필드 6 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_7_subj",
+          "label": "여분필드 7 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_8_subj",
+          "label": "여분필드 8 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_9_subj",
+          "label": "여분필드 9 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_10_subj",
+          "label": "여분필드 10 제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_1",
+          "label": "여분필드 1",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_2",
+          "label": "여분필드 2",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_3",
+          "label": "여분필드 3",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_4",
+          "label": "여분필드 4",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_5",
+          "label": "여분필드 5",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_6",
+          "label": "여분필드 6",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_7",
+          "label": "여분필드 7",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_8",
+          "label": "여분필드 8",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_9",
+          "label": "여분필드 9",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "gr_10",
+          "label": "여분필드 10",
+          "input_type": "text",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+{
+  "domain": "faq-masters",
+  "title": "FAQ 마스터",
+  "legacy_form": "adm/faqmasterform.php",
+  "legacy_forms": [
+    "adm/faqmasterform.php"
+  ],
+  "layout": null,
+  "generated_at": "2026-07-23T03:44:05.277202+00:00",
+  "field_count": 9,
+  "section_count": 2,
+  "source": {
+    "manifest": "api/v1/Admin/Schema/schema-domains.json",
+    "repo_file": null,
+    "repo_field_file": null,
+    "repo_field_const": "UPDATABLE_FIELDS",
+    "table": "g5_faq_master",
+    "extractor_version": 5,
+    "source_hash": "c76e80530108543f0d3f96fda43278bfd20fdb8013a430ed41f3e2ea0d61ce7f"
+  },
+  "sections": [
+    {
+      "key": "faq_master",
+      "label": "FAQ 마스터",
+      "order": 1,
+      "description": null,
+      "fields": [
+        {
+          "name": "fm_id",
+          "label": "FAQ 마스터 ID",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": true,
+          "description": null,
+          "options": [],
+          "default_value": 0
+        },
+        {
+          "name": "fm_subject",
+          "label": "제목",
+          "input_type": "text",
+          "data_type": "string",
+          "required": true,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "fm_head_html",
+          "label": "상단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "fm_tail_html",
+          "label": "하단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "fm_mobile_head_html",
+          "label": "모바일상단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "fm_mobile_tail_html",
+          "label": "모바일하단 내용",
+          "input_type": "textarea",
+          "data_type": "string",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": ""
+        },
+        {
+          "name": "fm_order",
+          "label": "출력순서",
+          "input_type": "number",
+          "data_type": "integer",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": "숫자가 작을수록 FAQ 분류에서 먼저 출력됩니다.",
+          "options": [],
+          "default_value": null
+        }
+      ]
+    },
+    {
+      "key": "faq_master_assets",
+      "label": "FAQ 이미지",
+      "order": 2,
+      "description": null,
+      "fields": [
+        {
+          "name": "fm_himg",
+          "label": "상단이미지",
+          "input_type": "file",
+          "data_type": "file",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        },
+        {
+          "name": "fm_timg",
+          "label": "하단이미지",
+          "input_type": "file",
+          "data_type": "file",
+          "required": false,
+          "create_only": false,
+          "readonly_on_update": false,
+          "description": null,
+          "options": [],
+          "default_value": null
+        }
+      ]
+    }
+  ]
+}
