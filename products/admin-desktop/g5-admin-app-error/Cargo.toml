@@ -1,0 +1,33 @@
+[package]
+name = "g5-admin-app-error"
+version = "0.1.0"
+edition = "2021"
+license = "LicenseRef-Proprietary"
+
+[features]
+default = []
+desktop-conversions = [
+    "dep:g5-admin-debug-support",
+    "dep:g5-admin-local-store",
+    "dep:g5-admin-runtime-config",
+    "dep:g5-admin-security-core",
+    "dep:g5-admin-session-store",
+    "dep:g5-admin-site-manager",
+    "dep:g5-admin-ssh",
+    "dep:g5-admin-ssh-terminal-bridge",
+    "dep:g5-admin-transport",
+]
+
+[dependencies]
+g5-admin-error-contract = { path = "../g5-admin-error-contract" }
+thiserror = "2"
+
+g5-admin-debug-support = { path = "../g5-admin-debug-support", optional = true }
+g5-admin-local-store = { path = "../g5-admin-local-store", optional = true }
+g5-admin-runtime-config = { path = "../g5-admin-runtime-config", optional = true }
+g5-admin-security-core = { path = "../g5-admin-security-core", optional = true }
+g5-admin-session-store = { path = "../g5-admin-session-store", optional = true }
+g5-admin-site-manager = { path = "../g5-admin-site-manager", optional = true }
+g5-admin-ssh = { path = "../g5-admin-ssh", optional = true }
+g5-admin-ssh-terminal-bridge = { path = "../g5-admin-ssh-terminal-bridge", optional = true }
+g5-admin-transport = { path = "../g5-admin-transport", optional = true }

@@ -1,0 +1,6 @@
+version = 1
+
+# Active structure warning budgets only.
+# Remove the entry as soon as the warning disappears.
+# Required fields:
+# id, audit, rule, path, owner, reason, introduced_on, expires_on, removal_criteria

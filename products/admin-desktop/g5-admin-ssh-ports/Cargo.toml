@@ -1,0 +1,13 @@
+[package]
+name = "g5-admin-ssh-ports"
+version = "0.1.0"
+edition = "2021"
+license = "LicenseRef-Proprietary"
+
+[dependencies]
+async-trait = "0.1"
+g5-admin-app-error = { path = "../g5-admin-app-error" }
+g5-admin-port-types = { path = "../g5-admin-port-types" }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt"] }

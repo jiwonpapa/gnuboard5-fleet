@@ -1,0 +1,52 @@
+name: Structure
+
+on:
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "g5-admin/**"
+      - "g5-admin-*/**"
+      - "scripts/**"
+      - ".agent/Constitution.md"
+      - "specs/audits/**"
+      - "specs/domains/**"
+      - ".github/workflows/structure.yml"
+  push:
+    branches: [main]
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "g5-admin/**"
+      - "g5-admin-*/**"
+      - "scripts/**"
+      - ".agent/Constitution.md"
+      - "specs/audits/**"
+      - "specs/domains/**"
+      - ".github/workflows/structure.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: structure-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  structure-audit:
+    name: Rust Structure Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run structure audit
+        env:
+          BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: |
+          if [[ -n "$BASE_REF" ]] && git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
+            bash scripts/run_structure_audit.sh --base-ref "$BASE_REF"
+          else
+            bash scripts/run_structure_audit.sh
+          fi

@@ -1,0 +1,11 @@
+[package]
+name = "g5-admin-debug-support"
+version = "0.1.0"
+edition = "2021"
+license = "LicenseRef-Proprietary"
+
+[dependencies]
+dirs = "6"
+thiserror = "2"
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }

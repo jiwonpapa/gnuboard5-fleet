@@ -1,0 +1,21 @@
+G5 프로젝트 라이선스 안내 / G5 Project License Notice
+=====================================================
+
+Copyright (c) 2026 jiwonpapa. All rights reserved.
+
+이 저장소의 각 하위 프로젝트는 독립적인 라이선스를 가집니다.
+Each sub-project in this repository has its own independent license.
+
+---------------------------------------------------------------------
+
+g5-admin/ (Rust Tauri Desktop)
+  라이선스: Proprietary (이중 라이선스 / Dual License)
+  런타임: 무료 사용 (LICENSE-RUNTIME 참조)
+           Free to use (see LICENSE-RUNTIME)
+  소스코드: 유료 라이선스 필요 (LICENSE-SOURCE 참조)
+             Paid license required (see LICENSE-SOURCE)
+
+---------------------------------------------------------------------
+
+상세 라이선스 파일은 해당 프로젝트 디렉터리를 참조하십시오.
+See the respective project directory for detailed license files.

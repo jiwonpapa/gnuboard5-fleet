@@ -1,0 +1,113 @@
+# ========================================
+# G5 Admin Tauri + Rust Workspace
+# ========================================
+
+# --- Rust / Cargo ---
+/target/
+**/target/
+**/*.rs.bk
+*.pdb
+# 이 workspace는 Tauri 바이너리를 배포하므로 루트 Cargo.lock을 추적한다.
+
+# --- Tauri ---
+g5-admin/src-tauri/target/
+g5-admin/src-tauri/gen/
+g5-admin/src-tauri/WixTools/
+# Tauri bundle icons are required source assets and must stay tracked.
+g5-admin/src-tauri/src/types/
+
+# --- Node.js / pnpm (React 프론트엔드) ---
+node_modules/
+**/node_modules/
+.pnpm-store/
+.pnpm-debug.log
+
+# --- Vite ---
+g5-admin/dist/
+g5-admin/dist-ssr/
+g5-admin/logs/
+
+# --- Monaco editor generated bundle assets ---
+# node_modules / dist 전체가 이미 무시되지만, 편집기 worker/font chunk는 의도를 명시해 둔다.
+g5-admin/dist/assets/vendor-editor*
+g5-admin/dist/assets/editor.worker-*
+g5-admin/dist/assets/json.worker-*
+g5-admin/dist/assets/codicon-*
+
+# --- TypeScript ---
+*.tsbuildinfo
+
+# --- ts-rs 자동 생성 (재생성 가능) ---
+# g5-admin/src/types/generated/
+
+# --- Tailwind CSS ---
+# output.css는 빌드 산출물이므로 무시 (CI에서 재생성)
+# g5-admin/src/styles/output.css
+
+# --- 환경/시크릿 ---
+.env
+.env.local
+.env.*.local
+*.local
+*.pem
+*.key
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# --- IDE ---
+.idea/
+.vscode/
+*.iml
+.fleet/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# --- 빌드 산출물 ---
+/.cache/
+*.dmg
+*.app
+*.msi
+*.exe
+*.nsis
+*.deb
+*.AppImage
+output/form-metadata-blockers/
+output/api-pipeline-audit/
+output/integrated-audit/
+
+# --- 로그 ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# --- Python helper scripts ---
+__pycache__/
+**/__pycache__/
+*.pyc
+.mypy_cache/
+**/.mypy_cache/
+.ruff_cache/
+**/.ruff_cache/
+.pytest_cache/
+**/.pytest_cache/
+.playwright-cli/
+
+# --- 테스트/커버리지 ---
+coverage/
+g5-admin/coverage-critical/
+*.lcov
+tarpaulin-report.html
+
+# --- Tailwind Standalone CLI 바이너리 (로컬용) ---
+# tools/tailwindcss

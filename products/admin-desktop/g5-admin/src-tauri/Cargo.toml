@@ -1,0 +1,50 @@
+[package]
+name = "g5-admin-desktop"
+version = "0.1.0"
+description = "G5 REST API Admin Desktop App — Tauri v2"
+authors = ["jiwonpapa"]
+edition = "2021"
+license = "LicenseRef-Proprietary"
+
+[lib]
+name = "g5_admin_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["devtools", "image-png"] }
+tauri-plugin-opener = "2"
+async-trait = "0.1"
+serde_json = "1"
+tracing = "0.1"
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1", features = ["v4"] }
+tauri-plugin-clipboard-manager = "2.3.2"
+tauri-plugin-dialog = "2.7.1"
+tauri-plugin-fs = "2"
+g5-admin-models = { path = "../../g5-admin-models" }
+g5-admin-app-error = { path = "../../g5-admin-app-error", features = ["desktop-conversions"] }
+g5-admin-api-client = { path = "../../g5-admin-api-client" }
+g5-admin-api-ports = { path = "../../g5-admin-api-ports" }
+g5-admin-debug-support = { path = "../../g5-admin-debug-support" }
+g5-admin-error-contract = { path = "../../g5-admin-error-contract" }
+g5-admin-health-check = { path = "../../g5-admin-health-check" }
+g5-admin-local-store = { path = "../../g5-admin-local-store" }
+g5-admin-runtime-config = { path = "../../g5-admin-runtime-config" }
+g5-admin-port-types = { path = "../../g5-admin-port-types" }
+g5-admin-security-core = { path = "../../g5-admin-security-core" }
+g5-admin-session-store = { path = "../../g5-admin-session-store" }
+g5-admin-site-manager = { path = "../../g5-admin-site-manager" }
+g5-admin-store-ports = { path = "../../g5-admin-store-ports" }
+g5-admin-ssh = { path = "../../g5-admin-ssh" }
+g5-admin-ssh-ports = { path = "../../g5-admin-ssh-ports" }
+g5-admin-ssh-terminal-bridge = { path = "../../g5-admin-ssh-terminal-bridge" }
+g5-admin-sftp-transfer-queue = { path = "../../g5-admin-sftp-transfer-queue" }
+g5-admin-transport = { path = "../../g5-admin-transport" }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2.4.3"
+tauri-plugin-updater = { version = "2", default-features = false, features = ["native-tls", "zip"] }
+tauri-plugin-biometry = "0.2.8"

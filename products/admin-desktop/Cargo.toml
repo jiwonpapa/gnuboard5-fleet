@@ -1,0 +1,42 @@
+[workspace]
+resolver = "2"
+members = [
+    "g5-admin-api-client",
+    "g5-admin-api-ports",
+    "g5-admin-app-error",
+    "g5-admin-debug-support",
+    "g5-admin-error-contract",
+    "g5-admin-health-check",
+    "g5-admin-local-store",
+    "g5-admin-models",
+    "g5-admin-port-types",
+    "g5-admin-runtime-config",
+    "g5-admin-runtime-types",
+    "g5-admin-security-core",
+    "g5-admin-session-store",
+    "g5-admin-site-manager",
+    "g5-admin-store-ports",
+    "g5-admin-ssh",
+    "g5-admin-ssh-ports",
+    "g5-admin-ssh-terminal-bridge",
+    "g5-admin-sftp-transfer-queue",
+    "g5-admin-transport",
+    "g5-admin/src-tauri",
+]
+
+[workspace.package]
+license = "AGPL-3.0-or-later"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.desktop-fast]
+inherits = "release"
+opt-level = 1
+incremental = true
+codegen-units = 16
+lto = false
+strip = false

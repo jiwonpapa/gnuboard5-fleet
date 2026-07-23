@@ -1,0 +1,5 @@
+{
+  "debugOverlay": true,
+  "dbMasterStorage": "file",
+  "sessionStorage": "file"
+}

@@ -1,0 +1,122 @@
+version = 1
+
+# Domain-boundary enforcement is phase-scoped.
+# Start with monitored domains and expand only after the baseline is green.
+
+[[frontend_feature_rules]]
+id = "DBR-2026-001"
+severity = "failure"
+owner = "rust-admin"
+feature = "mails"
+path = "g5-admin/src/features/mails"
+allowed_targets = ["admin", "layout", "schema", "shared"]
+reason = "mail workspace는 own feature + support namespace만 사용해야 한다"
+remediation = "다른 business feature가 필요하면 contract/helper를 owner feature로 돌리거나 admin/shared·schema·shared support namespace로 추출한다"
+
+[[frontend_feature_rules]]
+id = "DBR-2026-002"
+severity = "failure"
+owner = "rust-admin"
+feature = "sms-contacts"
+path = "g5-admin/src/features/sms-contacts"
+allowed_targets = ["admin", "layout", "schema", "shared"]
+reason = "SMS 연락처 작업면은 own feature + support namespace만 사용해야 한다"
+remediation = "다른 business feature 의존 대신 selection model이나 contract helper를 support namespace로 승격하거나 owning feature로 되돌린다"
+
+[[frontend_feature_rules]]
+id = "DBR-2026-003"
+severity = "failure"
+owner = "rust-admin"
+feature = "points"
+path = "g5-admin/src/features/points"
+allowed_targets = ["admin", "layout", "schema", "shared"]
+reason = "포인트 작업면은 own feature + support namespace만 사용해야 한다"
+remediation = "타 feature 데이터를 직접 import하지 말고 query result contract 또는 app-level orchestration으로 이동한다"
+
+[[frontend_feature_rules]]
+id = "DBR-2026-004"
+severity = "failure"
+owner = "rust-admin"
+feature = "security"
+path = "g5-admin/src/features/security"
+allowed_targets = ["layout", "master", "shared"]
+reason = "로컬 보안 작업면은 master unlock flow와 support namespace 외의 business feature를 직접 참조하면 안 된다"
+remediation = "보안 전용 contract를 추출하거나 orchestration을 local application seam으로 올린다"
+
+[[frontend_feature_rules]]
+id = "DBR-2026-005"
+severity = "failure"
+owner = "rust-admin"
+feature = "sites"
+path = "g5-admin/src/features/sites"
+allowed_targets = ["layout", "master", "security", "shared"]
+reason = "사이트 관리 surface는 local platform flow와 support namespace 외의 business feature를 직접 참조하면 안 된다"
+remediation = "cross-feature 조정이 필요하면 site flow helper 또는 application/service seam으로 승격한다"
+
+[[support_root_rules]]
+id = "DBR-2026-101"
+severity = "failure"
+owner = "rust-admin"
+path = "g5-admin/src/features/shared"
+allowed_targets = ["layout"]
+reason = "shared namespace는 support primitive만 가져야 하며 business feature의 정책/상태를 품으면 안 된다"
+remediation = "business-specific helper는 owning feature로 돌리고 truly generic한 UI primitive만 shared에 남긴다"
+
+[[support_root_rules]]
+id = "DBR-2026-102"
+severity = "failure"
+owner = "rust-admin"
+path = "g5-admin/src/components"
+allowed_targets = []
+reason = "components namespace는 feature domain을 직접 참조하지 않는 순수 presentational layer여야 한다"
+remediation = "feature 의존이 필요하면 해당 component를 owning feature로 내리거나 render prop/slot 계약으로 바꾼다"
+
+[[support_root_rules]]
+id = "DBR-2026-103"
+severity = "failure"
+owner = "rust-admin"
+path = "g5-admin/src/lib"
+allowed_targets = []
+reason = "lib/utils namespace는 framework helper만 가져야 하며 business feature import가 생기면 경계가 무너진다"
+remediation = "business helper는 owner feature 또는 support namespace로 이동하고 lib에는 pure utility만 남긴다"
+
+[[support_root_rules]]
+id = "DBR-2026-104"
+severity = "failure"
+owner = "rust-admin"
+path = "g5-admin/src/api"
+allowed_targets = []
+reason = "api namespace는 transport adapter여야 하며 feature policy를 알면 안 된다"
+remediation = "feature-specific 조정은 workspace/hook/application layer로 이동한다"
+
+[[app_state_service_rules]]
+id = "DBR-2026-201"
+severity = "warning"
+owner = "rust-admin"
+path = "g5-admin/src-tauri/src/app_state/site_catalog_service.rs"
+reason = "site catalog service는 application seam이어야 하며 AppState wrapper 전체를 constructor로 받지 않는 것이 목표다"
+remediation = "session/site catalog/admin api/runtime collaborator를 explicit constructor parameter 또는 port로 주입한다"
+
+[[app_state_service_rules]]
+id = "DBR-2026-202"
+severity = "warning"
+owner = "rust-admin"
+path = "g5-admin/src-tauri/src/app_state/security_settings_service.rs"
+reason = "security settings service는 security/backup/activity collaborator를 분리한 explicit seam이어야 한다"
+remediation = "security store, backup store, activity emitter, totp verifier를 explicit collaborator로 분리한다"
+
+[[app_state_service_rules]]
+id = "DBR-2026-203"
+severity = "warning"
+owner = "rust-admin"
+path = "g5-admin/src-tauri/src/app_state/master_lock_service.rs"
+reason = "master lock service는 unlock state/security/runtime collaborator를 constructor로 받아야 한다"
+remediation = "security store, lock state, site runtime, activity emitter를 explicit collaborator 또는 port로 분리한다"
+
+[[app_state_service_rules]]
+id = "DBR-2026-204"
+severity = "warning"
+owner = "rust-admin"
+path = "g5-admin/src-tauri/src/app_state/session_service.rs"
+reason = "session service는 최소 session/site hint collaborator만 받는 작은 seam이어야 한다"
+remediation = "session store와 site session hint writer만 constructor parameter로 주입하고 AppState wrapper field를 제거한다"

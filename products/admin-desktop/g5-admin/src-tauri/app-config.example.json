@@ -1,0 +1,27 @@
+{
+  "apiBaseUrl": "https://example.com/api/v1",
+  "debugOverlay": true,
+  "dbMasterStorage": "file",
+  "sessionStorage": "file",
+  "devBootstrap": {
+    "masterPassword": "change-me-dev-master",
+    "site": {
+      "name": "개발 사이트",
+      "apiBaseUrl": "https://example.com/api/v1"
+    },
+    "siteAuth": {
+      "mbId": "developer",
+      "mbPassword": "change-me-site-password"
+    },
+    "sshProfiles": [
+      {
+        "name": "개발 SSH",
+        "host": "127.0.0.1",
+        "port": 22,
+        "username": "developer",
+        "authType": "password",
+        "password": "change-me-ssh-password"
+      }
+    ]
+  }
+}

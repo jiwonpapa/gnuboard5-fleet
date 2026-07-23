@@ -1,0 +1,67 @@
+name: Desktop Cross Platform
+
+# Hosted runners are an explicit fallback only. Native Windows release proof
+# is produced on a local Windows host; macOS runs the cross-target type check.
+on:
+  workflow_dispatch:
+
+jobs:
+  desktop-checks:
+    name: Desktop Checks (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - windows-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add Windows target on macOS
+        if: runner.os == 'macOS'
+        run: rustup target add x86_64-pc-windows-msvc
+
+      - name: Install frontend dependencies
+        working-directory: g5-admin
+        run: bun install --frozen-lockfile
+
+      - name: Cargo check
+        run: cargo check --manifest-path g5-admin/src-tauri/Cargo.toml
+
+      - name: Windows target type check from macOS
+        if: runner.os == 'macOS'
+        working-directory: g5-admin
+        run: bun run check:windows-target
+
+      - name: Export TS bindings
+        run: cargo test -p g5-admin-models --features ts-bindings models::tests::export_ts_bindings -- --exact --nocapture
+
+      - name: Verify generated types are committed
+        run: git diff --exit-code -- g5-admin/src/types
+
+      - name: Frontend lint
+        working-directory: g5-admin
+        run: bun run lint
+
+      - name: Frontend test
+        working-directory: g5-admin
+        run: bun run test
+
+      - name: Frontend build
+        working-directory: g5-admin
+        run: bun run build:web:fast

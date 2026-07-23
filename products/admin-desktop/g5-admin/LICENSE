@@ -1,0 +1,20 @@
+G5 Admin Desktop — 라이선스 안내
+G5 Admin Desktop — License Notice
+==================================
+
+본 프로젝트는 이중 라이선스 모델을 사용합니다.
+This project uses a dual licensing model.
+
+런타임 (컴파일된 바이너리) / Runtime (compiled binary):
+  LICENSE-RUNTIME 파일을 참조하십시오.
+  See LICENSE-RUNTIME for the End User License Agreement.
+  런타임은 무료로 사용할 수 있으며, 무보증으로 제공됩니다.
+  The runtime is free to use, with no warranty.
+
+소스 코드 / Source Code:
+  LICENSE-SOURCE 파일을 참조하십시오.
+  See LICENSE-SOURCE for the Commercial Source License.
+  소스 코드 접근에는 유료 라이선스가 필요합니다.
+  Source code access requires a paid license.
+
+Copyright (c) 2026 jiwonpapa. All rights reserved.

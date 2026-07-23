@@ -1,0 +1,18 @@
+{
+  "schema": "gnuboard5.rust.audit-blocker/v1",
+  "id": "T2-285",
+  "status": "blocked",
+  "audit": "consumer",
+  "scope": "public-live-write-certification",
+  "owner": "infrastructure",
+  "reason": "modsecurity_crs_911100_method_policy",
+  "blocked_count": 1,
+  "blocked_features": [
+    {
+      "feature": "public-write-certification",
+      "signal": "PUT, PATCH, and DELETE are rejected by ModSecurity CRS rule 911100"
+    }
+  ],
+  "unblock_signal": "Approved ModSecurity method policy allows PUT, PATCH, and DELETE without weakening the separate VPSGuard boundary.",
+  "required_followup": "Re-run the current-run live domain roundtrip and retain its JSON only after provider revision and OpenAPI SHA match the destination."
+}
