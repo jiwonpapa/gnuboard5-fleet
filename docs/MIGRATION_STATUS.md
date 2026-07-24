@@ -43,6 +43,13 @@
 - PWA install manifest·service worker와 API·health·ready cache 금지 구현
 - canonical Shop 26개 Commerce SDK 계약과 Core import·소비 0 고정
 - Commerce 미설치 plugin slot·서버 부팅 테스트 PASS
+- React와 Axum을 하나로 묶는 non-root·read-only OCI image 구현
+- app+Caddy만 사용하는 최소 Compose와 별도 DB·Redis service 0 고정
+- clean install, health와 image version/revision readback 구현
+- deterministic PHP Connector production package와 CycloneDX SBOM 구현
+- image archive·SPDX·PHP Connector·checksum release manifest 구현
+- SQLite 검증 snapshot과 암호화 master-key recovery archive 구현
+- upgrade 전후 핵심 row 보존과 실패 upgrade 자동 rollback harness 구현
 
 현재 migration profile은 기존 Tauri snapshot의 provenance와 source closure만 이관 증거로 검증합니다. routine `make prepare/check`는 해당 snapshot의 Bun·Cargo·Tauri·네이티브 패키징 의존성을 준비하거나 빌드하지 않습니다. 이는 데스크톱 제품 지원 또는 서버판 구현 완료를 뜻하지 않습니다.
 
@@ -51,7 +58,7 @@
 - 실제 G5 runtime 대상 Core 189개 route 실행·실데이터 field readback
 - 실제 외부 호스트 대상 SSH/SFTP 연결·중단·재접속
 - Telegram/Web Push 실제 발송
-- Compose 설치·업그레이드·rollback
+- 실제 clean host Compose 설치·업그레이드·rollback 실행 증거
 - GnuBoard5 v5.6.32 대상 live 저장/readback/cleanup
 
 따라서 이번 완료 등급의 상한은 `SERVER_STATIC_PASS`입니다. 이는 활성
@@ -59,4 +66,4 @@ workspace·route·transport·outbox fake·PWA cache·Commerce 격리의
 정적/로컬 증거이며 `LOCAL_RUNTIME_PASS`, `PACKAGE_PASS` 또는 실제 외부
 발송 인증이 아닙니다.
 
-다음 구현 배치는 `docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md`의 **B09 패키지·운영**입니다. 실제 PHP Connector·GnuBoard5 Core 189개와 외부 SSH/SFTP 실행은 B10 `LOCAL_RUNTIME_PASS` 전까지 인증하지 않습니다.
+다음 구현 배치는 `docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md`의 **B10 인증 단계**입니다. B09는 package와 복구 harness 구현을 `SERVER_STATIC_PASS`로 닫았지만 실제 실행은 아직 `PACKAGE_PASS`로 승격하지 않습니다. 실제 PHP Connector·GnuBoard5 Core 189개와 외부 SSH/SFTP도 B10 runtime 증거 전까지 인증하지 않습니다.

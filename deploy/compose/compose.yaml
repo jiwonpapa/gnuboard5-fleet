@@ -1,0 +1,77 @@
+name: g5-fleet
+
+services:
+  app:
+    image: "${G5_FLEET_IMAGE:-ghcr.io/jiwonpapa/gnuboard5-fleet}:${G5_FLEET_VERSION:?set G5_FLEET_VERSION}"
+    pull_policy: "${G5_FLEET_PULL_POLICY:-missing}"
+    restart: unless-stopped
+    user: "${G5_FLEET_RUNTIME_UID:-10001}:${G5_FLEET_RUNTIME_GID:-10001}"
+    environment:
+      G5_FLEET_BIND: "0.0.0.0:8080"
+      G5_FLEET_DATA_DIR: "/var/lib/g5-fleet"
+      G5_FLEET_WEB_DIR: "/opt/g5-fleet/web"
+      G5_FLEET_MASTER_KEY_FILE: "/run/secrets/g5-fleet-master-key"
+      G5_FLEET_INSTALLATION_ID_FILE: "/run/secrets/g5-fleet-installation-id"
+    volumes:
+      - type: bind
+        source: "${G5_FLEET_STATE_DIR:?set G5_FLEET_STATE_DIR}/data"
+        target: /var/lib/g5-fleet
+      - type: bind
+        source: "${G5_FLEET_STATE_DIR:?set G5_FLEET_STATE_DIR}/backups"
+        target: /var/backups/g5-fleet
+      - type: bind
+        source: "${G5_FLEET_STATE_DIR:?set G5_FLEET_STATE_DIR}/secrets/master-key"
+        target: /run/secrets/g5-fleet-master-key
+        read_only: true
+      - type: bind
+        source: "${G5_FLEET_STATE_DIR:?set G5_FLEET_STATE_DIR}/secrets/installation-id"
+        target: /run/secrets/g5-fleet-installation-id
+        read_only: true
+    expose:
+      - "8080"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,mode=0700
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/g5-fleet-admin-server", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 6
+    networks:
+      - fleet
+
+  caddy:
+    image: "${G5_FLEET_CADDY_IMAGE:-caddy:2.10.2-alpine}"
+    pull_policy: "${G5_FLEET_PULL_POLICY:-missing}"
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "${G5_FLEET_HTTP_BIND:-127.0.0.1}:${G5_FLEET_HTTP_PORT:-8088}:8080"
+    volumes:
+      - type: bind
+        source: ./Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+      - caddy_data:/data
+      - caddy_config:/config
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - fleet
+
+networks:
+  fleet:
+
+volumes:
+  caddy_data:
+  caddy_config:

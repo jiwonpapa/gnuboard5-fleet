@@ -81,6 +81,8 @@ async fn health_readiness_and_meta_contract_are_live() {
     assert_eq!(meta.api_version, "v1");
     assert_eq!(meta.product_name, "G5 Fleet");
     assert_eq!(meta.database_schema_version, 2);
+    assert!(!meta.build_revision.is_empty());
+    assert!(!meta.image_version.is_empty());
 }
 
 #[tokio::test]

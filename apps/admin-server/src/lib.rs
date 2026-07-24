@@ -1,6 +1,7 @@
 mod api;
 
 use std::{
+    env,
     path::PathBuf,
     sync::Arc,
     time::{Duration, Instant},
@@ -26,7 +27,17 @@ use tower_http::{
 
 pub const SERVICE_NAME: &str = "g5-fleet-admin-server";
 pub const API_VERSION: &str = "v1";
+pub const DEFAULT_BUILD_REVISION: &str = "development";
+pub const DEFAULT_IMAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub use api::{LoginResponse, RequestContext, SessionResponse};
+
+pub fn build_revision() -> String {
+    env::var("G5_FLEET_BUILD_REVISION").unwrap_or_else(|_| DEFAULT_BUILD_REVISION.to_owned())
+}
+
+pub fn image_version() -> String {
+    env::var("G5_FLEET_IMAGE_VERSION").unwrap_or_else(|_| DEFAULT_IMAGE_VERSION.to_owned())
+}
 
 #[derive(Clone)]
 pub struct AppConfig {
@@ -80,6 +91,8 @@ pub struct MetaResponse {
     pub product_name: String,
     pub server_version: String,
     pub database_schema_version: i64,
+    pub build_revision: String,
+    pub image_version: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -167,6 +180,8 @@ async fn meta() -> Json<MetaResponse> {
         product_name: "G5 Fleet".to_owned(),
         server_version: env!("CARGO_PKG_VERSION").to_owned(),
         database_schema_version: EXPECTED_SCHEMA_VERSION,
+        build_revision: build_revision(),
+        image_version: image_version(),
     })
 }
 

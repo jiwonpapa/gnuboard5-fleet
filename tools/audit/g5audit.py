@@ -252,6 +252,7 @@ EXPECTED_PROFILE_CONTRACTS: dict[str, dict[str, object]] = {
             "notification.web_push_contract",
             "web.pwa_cache_safety",
             "commerce.core_isolation",
+            "package.operational_contract",
         ],
     },
     "local": {
@@ -2693,6 +2694,143 @@ def check_commerce_core_isolation(root: Path) -> str:
     return "canonical Shop 26 SDK 계약, Core import·소비 0, Commerce 미설치 서버 부팅 확인"
 
 
+def check_package_operational_contract(root: Path) -> str:
+    paths = {
+        "container": root / "Containerfile",
+        "compose": root / "deploy/compose/compose.yaml",
+        "caddy": root / "deploy/compose/Caddyfile",
+        "entrypoint": root / "deploy/container/entrypoint.sh",
+        "install": root / "deploy/scripts/install.sh",
+        "backup": root / "deploy/scripts/backup.sh",
+        "restore": root / "deploy/scripts/restore.sh",
+        "upgrade": root / "deploy/scripts/upgrade.sh",
+        "release": root / "tools/package/build_release.sh",
+        "connector": root / "tools/package/build_connector_package.py",
+        "smoke": root / "tools/package/package_smoke.sh",
+    }
+    for label, path in paths.items():
+        if not path.is_file() or path.is_symlink():
+            raise ValueError(f"package {label} input is missing or unsafe")
+
+    container = paths["container"].read_text(encoding="utf-8")
+    for token in (
+        "FROM oven/bun:1.3.10-alpine AS web-builder",
+        "FROM rust:1.88-bookworm AS rust-builder",
+        "FROM debian:bookworm-slim AS runtime",
+        "cargo build --release --locked -p g5-fleet-admin-server",
+        "USER 10001:10001",
+        'ENTRYPOINT ["/usr/local/bin/g5-fleet-entrypoint"]',
+        "HEALTHCHECK",
+        "org.opencontainers.image.revision",
+    ):
+        if token not in container:
+            raise ValueError(f"OCI image contract token missing: {token}")
+    if "tauri" in container.lower():
+        raise ValueError("active OCI image must not build Tauri")
+
+    compose = paths["compose"].read_text(encoding="utf-8")
+    try:
+        service_block = compose.split("services:\n", 1)[1].split("\nnetworks:", 1)[0]
+    except IndexError as error:
+        raise ValueError("Compose service block is malformed") from error
+    services = re.findall(r"^  ([a-z0-9_-]+):$", service_block, re.MULTILINE)
+    if services != ["app", "caddy"]:
+        raise ValueError(f"Compose must contain exact app+caddy services: {services}")
+    for forbidden in ("postgres:", "postgresql:", "mysql:", "mariadb:", "redis:"):
+        if forbidden in compose.lower():
+            raise ValueError(f"separate database/cache service is forbidden: {forbidden}")
+    for token in (
+        "G5_FLEET_STATE_DIR",
+        "read_only: true",
+        "no-new-privileges:true",
+        "cap_drop:",
+        "condition: service_healthy",
+    ):
+        if token not in compose:
+            raise ValueError(f"Compose hardening token missing: {token}")
+
+    entrypoint = paths["entrypoint"].read_text(encoding="utf-8")
+    if (
+        "refusing first-run initialization because the data directory is not empty"
+        not in entrypoint
+        or '"$binary" init-store' not in entrypoint
+    ):
+        raise ValueError("first-run-only fail-closed initialization is incomplete")
+
+    install = paths["install"].read_text(encoding="utf-8")
+    backup = paths["backup"].read_text(encoding="utf-8")
+    restore = paths["restore"].read_text(encoding="utf-8")
+    upgrade = paths["upgrade"].read_text(encoding="utf-8")
+    if "existing installation detected; use upgrade.sh" not in install:
+        raise ValueError("clean-install existing-state rejection is missing")
+    for token in (
+        "aes-256-cbc",
+        "pbkdf2",
+        "recovery.manifest",
+        "master_key_sha256",
+    ):
+        if token not in backup or token not in restore:
+            raise ValueError(f"encrypted master-key recovery token missing: {token}")
+    operational_sources = upgrade + (
+        root / "apps/admin-server/src/main.rs"
+    ).read_text(encoding="utf-8")
+    for token in (
+        "before_readback",
+        "after_readback",
+        "rollback",
+        "create_verified_backup",
+    ):
+        if token not in operational_sources:
+            raise ValueError(f"verified upgrade/rollback token missing: {token}")
+
+    release = paths["release"].read_text(encoding="utf-8")
+    connector = paths["connector"].read_text(encoding="utf-8")
+    smoke = paths["smoke"].read_text(encoding="utf-8")
+    for token in ("--sbom=true", "docker scout sbom", "build_connector_package.py"):
+        if token not in release:
+            raise ValueError(f"release artifact token missing: {token}")
+    for token in (
+        "--no-dev",
+        "write_deterministic_tar",
+        "PACKAGE-MANIFEST.json",
+        "SBOM.cdx.json",
+    ):
+        if token not in connector:
+            raise ValueError(f"PHP Connector package token missing: {token}")
+    for token in (
+        "successful upgrade did not preserve critical rows",
+        "missing-image upgrade unexpectedly succeeded",
+        "encrypted master key recovery readback mismatch",
+        "write_package_evidence.py",
+    ):
+        if token not in smoke:
+            raise ValueError(f"package smoke token missing: {token}")
+
+    executable_paths = [
+        paths[label]
+        for label in (
+            "entrypoint",
+            "install",
+            "backup",
+            "restore",
+            "upgrade",
+            "release",
+            "smoke",
+        )
+    ]
+    non_executable = [
+        path.relative_to(root).as_posix()
+        for path in executable_paths
+        if not path.stat().st_mode & stat.S_IXUSR
+    ]
+    if non_executable:
+        raise ValueError(f"package scripts are not executable: {non_executable}")
+    return (
+        "단일 Axum+React OCI, app+Caddy Compose, DB·Redis 0, "
+        "verified backup·암호화 master-key 복구·upgrade rollback harness 확인"
+    )
+
+
 def check_composed_provider(root: Path) -> str:
     verifier = root / "tools/runtime/compose_gnuboard.py"
     if not verifier.is_file():
@@ -2767,6 +2905,7 @@ CHECKS: dict[str, Callable[[Path], str]] = {
     "notification.web_push_contract": check_web_push_contract,
     "web.pwa_cache_safety": check_pwa_cache_safety,
     "commerce.core_isolation": check_commerce_core_isolation,
+    "package.operational_contract": check_package_operational_contract,
 }
 
 

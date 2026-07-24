@@ -1,0 +1,15 @@
+.git
+.cache
+.DS_Store
+target
+output
+products
+connectors
+plugins
+docs
+governance
+tools
+apps/admin-web/node_modules
+apps/admin-web/dist
+**/__pycache__
+**/*.pyc

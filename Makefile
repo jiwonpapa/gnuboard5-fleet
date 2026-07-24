@@ -3,7 +3,7 @@ ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 export PYTHONDONTWRITEBYTECODE := 1
 
 .NOTPARALLEL: bootstrap prepare check
-.PHONY: doctor bootstrap prepare check test-audit test-upstream test-runtime runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-server-scaffold audit-server-static upstream-sync upstream-audit upstream-verify secret-scan
+.PHONY: doctor bootstrap prepare check test-audit test-upstream test-runtime test-package runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-server-scaffold audit-server-static upstream-sync upstream-audit upstream-verify secret-scan package-build package-smoke
 
 doctor:
 	@cd "$(ROOT)" && command -v git >/dev/null
@@ -27,6 +27,9 @@ test-upstream:
 
 test-runtime:
 	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s tools/runtime/tests -p 'test_*.py'
+
+test-package:
+	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s tools/package/tests -p 'test_*.py'
 
 runtime-prepare:
 	cd "$(ROOT)" && $(PYTHON) tools/runtime/compose_gnuboard.py
@@ -94,6 +97,7 @@ check:
 	+$(MAKE) test-audit
 	+$(MAKE) test-upstream
 	+$(MAKE) test-runtime
+	+$(MAKE) test-package
 	+$(MAKE) runtime-verify
 	+$(MAKE) audit-runtime-verify
 	+$(MAKE) active-check
@@ -111,3 +115,9 @@ upstream-audit:
 
 upstream-verify:
 	cd "$(ROOT)" && $(PYTHON) tools/upstream/sync_gnuboard.py --verify-only
+
+package-build:
+	cd "$(ROOT)" && tools/package/build_release.sh "$(VERSION)"
+
+package-smoke:
+	cd "$(ROOT)" && tools/package/package_smoke.sh

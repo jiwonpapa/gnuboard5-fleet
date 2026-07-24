@@ -292,6 +292,12 @@ API·health·ready는 제외합니다. Commerce SDK는 canonical Shop 26개와
 - 실패 upgrade rollback PASS
 - backup·master key 복원과 readback PASS
 
+현재 상태: 구현 완료. Axum+React 단일 image, app+Caddy 최소 Compose,
+별도 DB·Redis service 0, production-only PHP Connector package와 SBOM,
+검증 snapshot·암호화 master-key recovery, 데이터 보존 upgrade와
+실패 rollback harness를 추가했습니다. B09 마감 등급은 구현·정적 gate인
+`SERVER_STATIC_PASS`이며 실제 package 실행 증거는 B10에서 승격합니다.
+
 ### B10 — 인증 단계
 
 순서:
@@ -306,6 +312,7 @@ API·health·ready는 제외합니다. Commerce SDK는 canonical Shop 26개와
 
 ## 4. 현재 바로 시작할 배치
 
-현재 시작점은 **B09 패키지·운영**입니다. 단일 Axum+React image와
-SQLite volume을 기준으로 clean install, verified backup, upgrade 실패
-rollback을 닫습니다.
+현재 시작점은 **B10 인증 단계**입니다. 공식 G5 v5.6.32 local runtime,
+다중 사용자·다중 사이트 browser E2E, 실제 package install·upgrade·
+rollback을 순서대로 증명하며 staging 입력이 없으면 그 사실을
+`STAGING_PASS`로 승격하지 않습니다.
