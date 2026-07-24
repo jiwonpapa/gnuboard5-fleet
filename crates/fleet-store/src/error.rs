@@ -28,6 +28,12 @@ pub enum StoreError {
     BackupInsideDataDirectory(PathBuf),
     #[error("backup manifest mismatch: {0}")]
     BackupManifest(String),
+    #[error("Fleet state conflict: {0}")]
+    Conflict(String),
+    #[error("Fleet record not found")]
+    NotFound,
+    #[error("Fleet record access denied")]
+    AccessDenied,
     #[error("I/O failed while {context}: {source}")]
     Io {
         context: &'static str,

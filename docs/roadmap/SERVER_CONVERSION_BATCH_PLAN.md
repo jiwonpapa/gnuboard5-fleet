@@ -128,6 +128,8 @@ scope 확인
 - 브라우저 응답·로그에 G5 JWT와 SSH secret이 없음
 - 전역 `active_site_id`가 활성 코드에 없음
 
+현재 상태: 완료. Argon2id 최초 관리자·로그인, hash-only opaque session, Secure·HttpOnly·SameSite cookie, CSRF·step-up, 명시적 RequestContext, AES-256-GCM site secret과 SSRF·redirect·DNS rebinding 차단을 구현했습니다. 2사용자×2사이트 교차 접근 테스트가 PASS했습니다.
+
 ### B05 — 최초 수직 흐름
 
 한 번에 전체 화면을 옮기지 않고 다음 최소 흐름을 먼저 닫습니다.
@@ -272,4 +274,4 @@ B06 전체 완료 조건:
 
 ## 4. 현재 바로 시작할 배치
 
-현재 시작점은 **B04 인증·사이트 격리**입니다. SQLite 내구성 게이트를 선행 조건으로 두고 사용자 session, 명시적 `site_id`, secret 암호화와 CSRF·SSRF 경계를 닫습니다.
+현재 시작점은 **B05 최초 수직 흐름**입니다. 인증된 사이트 경계 위에서 browser → Axum → PHP Connector의 로그인·조회·안전한 수정·재조회·원복을 먼저 닫습니다.

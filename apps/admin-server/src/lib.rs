@@ -1,3 +1,5 @@
+mod api;
+
 use std::{path::PathBuf, time::Instant};
 
 use axum::{
@@ -7,7 +9,8 @@ use axum::{
     response::{IntoResponse, Response},
     routing::get,
 };
-use g5_fleet_store::{EXPECTED_SCHEMA_VERSION, FleetStore};
+use g5_fleet_security::AuthService;
+use g5_fleet_store::EXPECTED_SCHEMA_VERSION;
 use serde::{Deserialize, Serialize};
 use tower_http::{
     services::{ServeDir, ServeFile},
@@ -16,15 +19,16 @@ use tower_http::{
 
 pub const SERVICE_NAME: &str = "g5-fleet-admin-server";
 pub const API_VERSION: &str = "v1";
+pub use api::{LoginResponse, RequestContext, SessionResponse};
 
 #[derive(Clone, Debug)]
 pub struct AppConfig {
     pub web_root: PathBuf,
-    pub store: FleetStore,
+    pub auth: AuthService,
 }
 
 #[derive(Clone, Debug)]
-struct AppState {
+pub(crate) struct AppState {
     config: AppConfig,
     started_at: Instant,
 }
@@ -66,6 +70,7 @@ pub fn build_router(config: AppConfig) -> Router {
     };
     let api = Router::new()
         .route("/meta", get(meta))
+        .merge(api::router())
         .fallback(api_not_found);
 
     Router::new()
@@ -94,7 +99,7 @@ async fn readyz(State(state): State<AppState>) -> Response {
             "Admin Web build output is not ready.",
         );
     }
-    if state.config.store.quick_check().await.is_ok() {
+    if state.config.auth.store().quick_check().await.is_ok() {
         return (
             StatusCode::OK,
             Json(HealthResponse {
@@ -131,7 +136,7 @@ async fn api_not_found() -> Response {
     )
 }
 
-fn api_error(status: StatusCode, code: &'static str, message: &'static str) -> Response {
+pub(crate) fn api_error(status: StatusCode, code: &'static str, message: &'static str) -> Response {
     (
         status,
         Json(ErrorEnvelope {

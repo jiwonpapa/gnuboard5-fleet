@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["apps/admin-server", "crates/fleet-store"]
+members = ["apps/admin-server", "crates/fleet-security", "crates/fleet-store"]
 
 [workspace.package]
 edition = "2024"
@@ -10,13 +10,19 @@ version = "0.1.0"
 
 [workspace.dependencies]
 axum = "0.8.9"
+aes-gcm = "0.10.3"
+argon2 = { version = "0.5.3", features = ["std"] }
+async-trait = "0.1.89"
+base64 = "0.22.1"
 fs2 = "0.4.3"
+getrandom = "0.3.4"
 hex = "0.4.3"
 http-body-util = "0.1.4"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sha2 = "0.10.9"
 sqlx = { version = "0.8.6", default-features = false, features = ["macros", "migrate", "runtime-tokio", "sqlite"] }
+subtle = "2.6.1"
 tempfile = "3.27.0"
 thiserror = "2.0.19"
 tokio = { version = "1.53.0", features = ["macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
@@ -24,6 +30,7 @@ tower = { version = "0.5.3", features = ["util"] }
 tower-http = { version = "0.6.11", features = ["fs", "trace"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
+url = "2.5.8"
 
 [profile.release]
 lto = "thin"

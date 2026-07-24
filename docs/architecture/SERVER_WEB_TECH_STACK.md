@@ -103,4 +103,4 @@ PHP Connector의 `connectors/gnuboard5-php/api/docs/openapi.yaml`은 G5 공급�
 
 ## 6. 이관 순서
 
-세부 작업 순서와 배치별 완료 게이트는 [`서버 전환 목표 기반 배치 계획`](../roadmap/SERVER_CONVERSION_BATCH_PLAN.md)을 따릅니다. B01에서 legacy provenance를 분리하고 B02에서 활성 Axum·React workspace를 닫았습니다. 다음 실행 배치는 B03 SQLite 내구성입니다.
+세부 작업 순서와 배치별 완료 게이트는 [`서버 전환 목표 기반 배치 계획`](../roadmap/SERVER_CONVERSION_BATCH_PLAN.md)을 따릅니다. B01 legacy 분리, B02 활성 workspace, B03 SQLite 내구성과 B04 인증·사이트 경계를 닫았습니다. 다음 실행 배치는 B05 최초 수직 흐름입니다.

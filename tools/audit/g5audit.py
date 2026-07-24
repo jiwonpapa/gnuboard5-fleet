@@ -227,6 +227,7 @@ EXPECTED_PROFILE_CONTRACTS: dict[str, dict[str, object]] = {
             "server.scaffold_contract",
             "web.transport_boundary",
             "storage.sqlite_durability",
+            "security.auth_site_boundary",
         ],
     },
     "server_static": {
@@ -1453,6 +1454,20 @@ def check_server_scaffold_contract(root: Path) -> str:
         ("GET", "/healthz", "public", False),
         ("GET", "/readyz", "public", False),
         ("GET", "/api/v1/meta", "public", False),
+        ("POST", "/api/v1/bootstrap", "first_run_only", False),
+        ("POST", "/api/v1/auth/login", "public", False),
+        ("POST", "/api/v1/auth/logout", "session_csrf", False),
+        ("POST", "/api/v1/auth/step-up", "session_csrf", False),
+        ("GET", "/api/v1/session", "session", False),
+        ("GET", "/api/v1/sites", "session", False),
+        ("POST", "/api/v1/sites", "session_csrf", False),
+        ("GET", "/api/v1/sites/{site_id}", "session", True),
+        (
+            "PUT",
+            "/api/v1/sites/{site_id}/secrets",
+            "session_csrf_step_up",
+            True,
+        ),
     ]
     if actual != expected or len(routes) != len(expected):
         raise ValueError(f"active server scaffold route mismatch: {actual}")
@@ -1586,6 +1601,72 @@ def check_sqlite_durability(root: Path) -> str:
     if "FleetStore::open_existing" not in server.read_text(encoding="utf-8"):
         raise ValueError("server startup does not open the existing Fleet store")
     return "SQLite WAL·FULL·FK, fail-closed startup, 장애 4종과 checksum backup·restore readback 확인"
+
+
+def check_auth_site_boundary(root: Path) -> str:
+    api = root / "apps/admin-server/src/api.rs"
+    main = root / "apps/admin-server/src/main.rs"
+    auth = root / "crates/fleet-security/src/auth.rs"
+    ssrf = root / "crates/fleet-security/src/ssrf.rs"
+    tests = root / "crates/fleet-security/tests/security_boundary.rs"
+    for path in (api, main, auth, ssrf, tests):
+        if not path.is_file() or path.is_symlink():
+            raise ValueError(
+                f"auth/site security source missing or unsafe: {path.relative_to(root)}"
+            )
+    api_text = api.read_text(encoding="utf-8")
+    for token in (
+        "HttpOnly; Secure; SameSite=Strict",
+        "CSRF_HEADER",
+        "RequestContext",
+        "require_recent_step_up",
+        'Path(site_id): Path<String>',
+    ):
+        if token not in api_text:
+            raise ValueError(f"auth/site HTTP boundary missing: {token}")
+    auth_text = auth.read_text(encoding="utf-8")
+    for token in (
+        "Argon2::default()",
+        "Aes256Gcm",
+        "ct_eq",
+        "create_initial_user",
+        "decrypt_secret_for_connector",
+        "secret_aad",
+    ):
+        if token not in auth_text:
+            raise ValueError(f"auth/secret boundary missing: {token}")
+    if "G5_FLEET_MASTER_KEY_BASE64" not in main.read_text(encoding="utf-8"):
+        raise ValueError("server master key startup boundary is missing")
+    ssrf_text = ssrf.read_text(encoding="utf-8")
+    for token in (
+        "validate_public_ip",
+        "revalidate_before_connect",
+        "DnsRebinding",
+        "RedirectForbidden",
+        "is_link_local",
+        "is_unique_local",
+    ):
+        if token not in ssrf_text:
+            raise ValueError(f"SSRF boundary missing: {token}")
+    tests_text = tests.read_text(encoding="utf-8")
+    for token in (
+        "two_users_two_sites_sessions_csrf_and_secrets_are_isolated",
+        "ssrf_metadata_redirect_and_dns_rebinding_are_rejected",
+    ):
+        if token not in tests_text:
+            raise ValueError(f"security isolation test missing: {token}")
+    active_site_hits: list[str] = []
+    for base in (root / "apps", root / "crates"):
+        for path in base.rglob("*"):
+            if path.is_file() and path.suffix in {".rs", ".ts", ".tsx"}:
+                if "active_site_id" in path.read_text(encoding="utf-8"):
+                    active_site_hits.append(path.relative_to(root).as_posix())
+    if active_site_hits:
+        raise ValueError(
+            "global active_site_id is forbidden in active code: "
+            + ", ".join(active_site_hits)
+        )
+    return "Argon2id session·CSRF·step-up, AES-GCM site secret, 2-user×2-site 격리와 SSRF/DNS rebinding 차단 확인"
 
 
 def operation_set_sha256(operation_keys: set[str]) -> str:
@@ -1917,6 +1998,7 @@ CHECKS: dict[str, Callable[[Path], str]] = {
     "server.scaffold_contract": check_server_scaffold_contract,
     "web.transport_boundary": check_web_transport_boundary,
     "storage.sqlite_durability": check_sqlite_durability,
+    "security.auth_site_boundary": check_auth_site_boundary,
 }
 
 

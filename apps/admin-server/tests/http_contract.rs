@@ -20,9 +20,13 @@ async fn fixture() -> (TempDir, TempDir, axum::Router) {
     .expect("fixture index");
     let app = build_router(AppConfig {
         web_root: web.path().to_path_buf(),
-        store: g5_fleet_store::FleetStore::initialize(data.path(), "test-installation")
-            .await
-            .expect("test store"),
+        auth: g5_fleet_security::AuthService::new(
+            g5_fleet_store::FleetStore::initialize(data.path(), "test-installation")
+                .await
+                .expect("test store"),
+            &[3_u8; 32],
+        )
+        .expect("test auth"),
     });
     (web, data, app)
 }
@@ -65,7 +69,7 @@ async fn health_readiness_and_meta_contract_are_live() {
     let meta: MetaResponse = json(meta).await;
     assert_eq!(meta.api_version, "v1");
     assert_eq!(meta.product_name, "G5 Fleet");
-    assert_eq!(meta.database_schema_version, 1);
+    assert_eq!(meta.database_schema_version, 2);
 }
 
 #[tokio::test]
@@ -95,9 +99,13 @@ async fn readiness_fails_closed_without_web_build() {
     let data = TempDir::new().expect("data tempdir");
     let app = build_router(AppConfig {
         web_root: web.path().to_path_buf(),
-        store: g5_fleet_store::FleetStore::initialize(data.path(), "test-installation")
-            .await
-            .expect("test store"),
+        auth: g5_fleet_security::AuthService::new(
+            g5_fleet_store::FleetStore::initialize(data.path(), "test-installation")
+                .await
+                .expect("test store"),
+            &[3_u8; 32],
+        )
+        .expect("test auth"),
     });
     let response = app
         .oneshot(Request::get("/readyz").body(Body::empty()).unwrap())
@@ -128,6 +136,112 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("GET", "/healthz"),
             ("GET", "/readyz"),
             ("GET", "/api/v1/meta"),
+            ("POST", "/api/v1/bootstrap"),
+            ("POST", "/api/v1/auth/login"),
+            ("POST", "/api/v1/auth/logout"),
+            ("POST", "/api/v1/auth/step-up"),
+            ("GET", "/api/v1/session"),
+            ("GET", "/api/v1/sites"),
+            ("POST", "/api/v1/sites"),
+            ("GET", "/api/v1/sites/{site_id}"),
+            ("PUT", "/api/v1/sites/{site_id}/secrets"),
         ]
     );
+}
+
+#[tokio::test]
+async fn login_cookie_csrf_and_logout_contract_fail_closed() {
+    let (_web, _data, app) = fixture().await;
+    let password = "correct horse battery staple";
+    let bootstrap = app
+        .clone()
+        .oneshot(
+            Request::post("/api/v1/bootstrap")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({"login_name":"admin","password":password}).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(bootstrap.status(), StatusCode::CREATED);
+    let bootstrap_body = bootstrap.into_body().collect().await.unwrap().to_bytes();
+    assert!(!String::from_utf8_lossy(&bootstrap_body).contains(password));
+
+    let login = app
+        .clone()
+        .oneshot(
+            Request::post("/api/v1/auth/login")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({"login_name":"admin","password":password}).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(login.status(), StatusCode::OK);
+    let set_cookie = login
+        .headers()
+        .get("set-cookie")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_owned();
+    assert!(set_cookie.contains("HttpOnly"));
+    assert!(set_cookie.contains("Secure"));
+    assert!(set_cookie.contains("SameSite=Strict"));
+    let cookie = set_cookie.split(';').next().unwrap().to_owned();
+    let login: g5_fleet_admin_server::LoginResponse = json(login).await;
+
+    let no_csrf = app
+        .clone()
+        .oneshot(
+            Request::post("/api/v1/auth/logout")
+                .header("cookie", &cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(no_csrf.status(), StatusCode::FORBIDDEN);
+    let error: ErrorEnvelope = json(no_csrf).await;
+    assert_eq!(error.error.code, "csrf_failed");
+
+    let session = app
+        .clone()
+        .oneshot(
+            Request::get("/api/v1/session")
+                .header("cookie", &cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(session.status(), StatusCode::OK);
+
+    let logout = app
+        .clone()
+        .oneshot(
+            Request::post("/api/v1/auth/logout")
+                .header("cookie", &cookie)
+                .header("x-csrf-token", login.csrf_token)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(logout.status(), StatusCode::NO_CONTENT);
+
+    let revoked = app
+        .oneshot(
+            Request::get("/api/v1/session")
+                .header("cookie", cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(revoked.status(), StatusCode::UNAUTHORIZED);
 }

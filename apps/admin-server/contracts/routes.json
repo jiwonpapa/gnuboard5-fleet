@@ -21,6 +21,69 @@
       "auth": "public",
       "site_context": false,
       "purpose": "web_bootstrap_metadata"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/bootstrap",
+      "auth": "first_run_only",
+      "site_context": false,
+      "purpose": "initial_administrator"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "auth": "public",
+      "site_context": false,
+      "purpose": "fleet_login"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "auth": "session_csrf",
+      "site_context": false,
+      "purpose": "fleet_logout"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/step-up",
+      "auth": "session_csrf",
+      "site_context": false,
+      "purpose": "high_risk_reauthentication"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/session",
+      "auth": "session",
+      "site_context": false,
+      "purpose": "session_readback"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites",
+      "auth": "session",
+      "site_context": false,
+      "purpose": "owned_site_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites",
+      "auth": "session_csrf",
+      "site_context": false,
+      "purpose": "site_registration"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "owned_site_readback"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/secrets",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "encrypted_site_secret"
     }
   ]
 }

@@ -1,5 +1,6 @@
 mod backup;
 mod error;
+mod records;
 
 use std::{
     fs::{self, File, OpenOptions},
@@ -12,6 +13,7 @@ use std::{
 pub use backup::{BackupArtifact, BackupManifest, BackupReadback};
 use error::io_error;
 pub use error::{StoreError, StoreResult};
+pub use records::{EncryptedSecretRecord, SessionRecord, SiteRecord, UserCredential};
 use serde::{Deserialize, Serialize};
 use sqlx::{
     SqlitePool,
@@ -20,7 +22,7 @@ use sqlx::{
 };
 use tokio::sync::Mutex;
 
-pub const EXPECTED_SCHEMA_VERSION: i64 = 1;
+pub const EXPECTED_SCHEMA_VERSION: i64 = 2;
 pub const APPLICATION_ID: i64 = 1_194_673_740;
 pub const DATABASE_FILENAME: &str = "fleet.sqlite3";
 pub const IDENTITY_FILENAME: &str = "installation.json";

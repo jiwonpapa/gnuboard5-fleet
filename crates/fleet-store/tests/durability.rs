@@ -6,7 +6,7 @@ use std::{
     time::Duration,
 };
 
-use g5_fleet_store::{DATABASE_FILENAME, FleetStore, StoreError};
+use g5_fleet_store::{DATABASE_FILENAME, EXPECTED_SCHEMA_VERSION, FleetStore, StoreError};
 use sqlx::{
     Connection, Executor, SqliteConnection, migrate::Migrator, sqlite::SqliteConnectOptions,
 };
@@ -23,7 +23,7 @@ async fn initialization_is_explicit_locked_and_missing_database_fails_closed() {
     let store = FleetStore::initialize(data.path(), INSTALLATION_ID)
         .await
         .expect("initialize");
-    assert_eq!(store.identity().schema_version, 1);
+    assert_eq!(store.identity().schema_version, EXPECTED_SCHEMA_VERSION);
     assert!(data.path().join("installation.json").is_file());
     assert!(data.path().join(DATABASE_FILENAME).is_file());
 
@@ -140,7 +140,7 @@ async fn failed_migration_rolls_back_without_advancing_schema() {
 
     let migration_dir = TempDir::new().expect("migration tempdir");
     fs::write(
-        migration_dir.path().join("0002_broken.sql"),
+        migration_dir.path().join("0003_broken.sql"),
         "CREATE TABLE migration_probe (id INTEGER PRIMARY KEY) STRICT;\n\
          INSERT INTO table_that_does_not_exist (id) VALUES (1);\n",
     )
@@ -166,7 +166,7 @@ async fn failed_migration_rolls_back_without_advancing_schema() {
     let store = FleetStore::open_existing(data.path())
         .await
         .expect("schema remains openable");
-    assert_eq!(store.identity().schema_version, 1);
+    assert_eq!(store.identity().schema_version, EXPECTED_SCHEMA_VERSION);
 }
 
 #[tokio::test]
