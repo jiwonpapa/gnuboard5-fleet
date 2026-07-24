@@ -253,6 +253,7 @@ EXPECTED_PROFILE_CONTRACTS: dict[str, dict[str, object]] = {
             "web.pwa_cache_safety",
             "commerce.core_isolation",
             "package.operational_contract",
+            "certification.harness_boundary",
         ],
     },
     "local": {
@@ -1469,6 +1470,7 @@ def check_server_scaffold_contract(root: Path) -> str:
         ("POST", "/api/v1/auth/logout", "session_csrf", False),
         ("POST", "/api/v1/auth/step-up", "session_csrf", False),
         ("GET", "/api/v1/session", "session", False),
+        ("POST", "/api/v1/users", "session_csrf_step_up", False),
         ("GET", "/api/v1/plugins", "session", False),
         ("GET", "/api/v1/core/registry", "session", False),
         ("GET", "/api/v1/sites", "session", False),
@@ -2831,6 +2833,430 @@ def check_package_operational_contract(root: Path) -> str:
     )
 
 
+def check_certification_harness_boundary(root: Path) -> str:
+    paths = {
+        "g5_image": root / "tools/certification/G5Containerfile",
+        "g5_compose": root / "tools/certification/local-g5.compose.yaml",
+        "local_stack": root / "tools/certification/local_stack.sh",
+        "local_smoke": root / "tools/certification/local_runtime_smoke.py",
+        "browser": root / "tools/certification/write_browser_evidence.py",
+        "staging": root / "tools/certification/staging_smoke.py",
+        "production_image": root / "Containerfile",
+        "production_compose": root / "deploy/compose/compose.yaml",
+        "server_manifest": root / "apps/admin-server/Cargo.toml",
+        "connector_manifest": root / "crates/fleet-connector/Cargo.toml",
+        "security_manifest": root / "crates/fleet-security/Cargo.toml",
+    }
+    for label, path in paths.items():
+        if not path.is_file() or path.is_symlink():
+            raise ValueError(f"certification {label} input is missing or unsafe")
+    for label in ("server_manifest", "connector_manifest", "security_manifest"):
+        if "local-certification" not in paths[label].read_text(encoding="utf-8"):
+            raise ValueError(f"local certification feature boundary missing: {label}")
+    production_image = paths["production_image"].read_text(encoding="utf-8")
+    production_compose = paths["production_compose"].read_text(encoding="utf-8")
+    if "local-certification" in production_image or "mariadb" in production_compose.lower():
+        raise ValueError("local certification dependency leaked into production package")
+    local_stack = paths["local_stack"].read_text(encoding="utf-8")
+    local_smoke = paths["local_smoke"].read_text(encoding="utf-8")
+    if (
+        "--features local-certification" not in local_stack
+        or "G5_FLEET_CERTIFICATION_MODE=local" not in local_stack
+        or "G5_CERT_G5_IMAGE" not in local_stack
+        or '"version"] != "5.6.32"' not in local_smoke
+        or '"users": 2' not in local_smoke
+        or '"sites": 2' not in local_smoke
+        or '"external_delivery_attempts": 0' not in local_smoke
+    ):
+        raise ValueError("local G5/server certification harness contract incomplete")
+    staging = paths["staging"].read_text(encoding="utf-8")
+    for token in (
+        "credential-free HTTPS origin",
+        "staging deployment receipt identity mismatch",
+        "staging rollback receipt mismatch",
+        '"/readyz"',
+        '"/api/v1/meta"',
+    ):
+        if token not in staging:
+            raise ValueError(f"staging evidence boundary token missing: {token}")
+    return (
+        "test-only G5+MariaDB local feature가 production image/Compose와 분리되고 "
+        "local·browser·package·staging 증거 harness가 fail-closed로 연결됨"
+    )
+
+
+def certification_evidence(root: Path, filename: str, schema: str) -> dict[str, Any]:
+    path = root / ".cache/evidence" / filename
+    if path.is_symlink() or not path.is_file():
+        raise ValueError(f"certification evidence is missing or unsafe: {filename}")
+    payload = load_json(path)
+    if payload.get("schema") != schema or payload.get("status") != "passed":
+        raise ValueError(f"certification evidence identity/status mismatch: {filename}")
+    revision = git("rev-parse", "HEAD", root=root)
+    if payload.get("revision") != revision:
+        raise ValueError(
+            f"certification evidence is stale: {filename} "
+            f"expected={revision} actual={payload.get('revision')}"
+        )
+    openapi = payload.get(
+        "openapi_sha256",
+        payload.get("canonical_openapi_sha256"),
+    )
+    if openapi is not None and openapi != sha256(
+        root / "connectors/gnuboard5-php/api/docs/openapi.yaml"
+    ):
+        raise ValueError(f"certification OpenAPI fingerprint mismatch: {filename}")
+    return payload
+
+
+def check_local_composed_gnuboard(root: Path) -> str:
+    evidence = certification_evidence(
+        root,
+        "local-runtime.json",
+        "g5-fleet.local-runtime/v1",
+    )
+    upstream = evidence.get("upstream")
+    locked = load_json(root / "UPSTREAMS.lock.json")["upstreams"][0]
+    if (
+        not isinstance(upstream, dict)
+        or upstream.get("version") != "5.6.32"
+        or upstream.get("commit") != locked.get("commit")
+        or upstream.get("tree") != locked.get("tree")
+        or not is_hex(upstream.get("runtime_fingerprint_sha256"), SHA256_LENGTH)
+    ):
+        raise ValueError("local G5 v5.6.32 identity/fingerprint mismatch")
+    return (
+        f"official G5 {upstream['version']} commit={upstream['commit']} "
+        "composed PHP runtime 기동 증거 확인"
+    )
+
+
+def check_local_provider_identity(root: Path) -> str:
+    evidence = certification_evidence(
+        root,
+        "local-runtime.json",
+        "g5-fleet.local-runtime/v1",
+    )
+    provider = evidence.get("provider")
+    if (
+        not isinstance(provider, dict)
+        or provider.get("status") != "ok"
+        or not isinstance(provider.get("version"), str)
+        or not provider["version"]
+        or provider.get("shop_installed") is not True
+    ):
+        raise ValueError("local PHP Connector provider identity/Shop runtime mismatch")
+    return (
+        f"PHP Connector health version={provider['version']} 및 "
+        "G5+Shop provider runtime 확인"
+    )
+
+
+def check_local_browser_e2e(root: Path) -> str:
+    runtime_path = root / ".cache/evidence/local-runtime.json"
+    browser = certification_evidence(
+        root,
+        "browser-e2e.json",
+        "g5-fleet.browser-e2e/v1",
+    )
+    if browser.get("parent_local_runtime_sha256") != sha256(runtime_path):
+        raise ValueError("browser E2E parent local-runtime evidence mismatch")
+    sessions = browser.get("sessions")
+    assertions = browser.get("assertions")
+    if (
+        not isinstance(sessions, list)
+        or len(sessions) != 2
+        or not isinstance(assertions, dict)
+        or assertions.get("two_users_two_sites_isolated") is not True
+        or assertions.get("connector_login") != "passed"
+        or assertions.get("browser_received_g5_secret") is not False
+        or assertions.get("browser_received_g5_jwt") is not False
+    ):
+        raise ValueError("2-user×2-site browser isolation assertions are incomplete")
+    expected = [
+        ("fleet-admin", ["owner-a-site"], ["owner-b-site"]),
+        ("fleet-peer", ["owner-b-site"], ["owner-a-site"]),
+    ]
+    actual = [
+        (row.get("name"), row.get("visible_sites"), row.get("hidden_sites"))
+        for row in sessions
+        if isinstance(row, dict)
+    ]
+    if actual != expected:
+        raise ValueError(f"browser session/site visibility mismatch: {actual}")
+    artifacts = browser.get("artifacts")
+    if not isinstance(artifacts, dict):
+        raise ValueError("browser evidence artifacts are missing")
+    for label in ("admin_screenshot", "peer_screenshot", "trace"):
+        row = artifacts.get(label)
+        if not isinstance(row, dict):
+            raise ValueError(f"browser artifact metadata missing: {label}")
+        path_value = row.get("path")
+        if not isinstance(path_value, str):
+            raise ValueError(f"browser artifact path missing: {label}")
+        path = Path(path_value)
+        if (
+            not path.is_absolute()
+            or path.is_symlink()
+            or not path.is_file()
+            or sha256(path) != row.get("sha256")
+            or path.stat().st_size != row.get("bytes")
+        ):
+            raise ValueError(f"browser artifact readback mismatch: {label}")
+    return "Chromium named session 2개에서 사용자별 단일 site 가시성과 타 사용자 site 비노출 확인"
+
+
+def check_local_mutation_cleanup(root: Path) -> str:
+    runtime = certification_evidence(
+        root,
+        "local-runtime.json",
+        "g5-fleet.local-runtime/v1",
+    )
+    browser = certification_evidence(
+        root,
+        "browser-e2e.json",
+        "g5-fleet.browser-e2e/v1",
+    )
+    mutation = runtime.get("mutation")
+    assertions = browser.get("assertions")
+    if (
+        not isinstance(mutation, dict)
+        or mutation.get("field") != "cf_10"
+        or mutation.get("update_readback") != "passed"
+        or mutation.get("cleanup_readback") != "passed"
+        or not isinstance(assertions, dict)
+        or assertions.get("cf_10_update_readback") != "passed"
+        or assertions.get("cf_10_rollback_readback") != "passed"
+    ):
+        raise ValueError("local provider/server/browser mutation cleanup evidence incomplete")
+    return "G5 cf_10 provider→Fleet→browser 수정·재조회·원복 readback 확인"
+
+
+def check_local_fake_notification(root: Path, channel: str) -> str:
+    evidence = certification_evidence(
+        root,
+        "local-runtime.json",
+        "g5-fleet.local-runtime/v1",
+    )
+    notifications = evidence.get("notifications")
+    source = (root / "crates/fleet-notify/src/lib.rs").read_text(encoding="utf-8")
+    required_test = {
+        "telegram": "fake_delivery_retries_then_succeeds_without_external_send",
+        "web_push": "fake_permanent_failure_moves_web_push_to_dead_letter",
+    }[channel]
+    if (
+        not isinstance(notifications, dict)
+        or notifications.get("external_delivery_attempts") != 0
+        or required_test not in source
+        or "FakeProvider" not in source
+    ):
+        raise ValueError(f"{channel} fake-only local delivery evidence mismatch")
+    return f"{channel} fake adapter local test와 외부 delivery attempt 0 확인"
+
+
+def package_release_evidence(root: Path) -> tuple[dict[str, Any], Path]:
+    evidence = certification_evidence(
+        root,
+        "package-release.json",
+        "g5-fleet.package-release/v1",
+    )
+    version = evidence.get("version")
+    if not isinstance(version, str) or not re.fullmatch(r"[0-9A-Za-z._-]{1,64}", version):
+        raise ValueError("package release version is invalid")
+    release_dir = root / "dist/release" / version
+    manifest_path = release_dir / "release-manifest.json"
+    if (
+        manifest_path.is_symlink()
+        or not manifest_path.is_file()
+        or load_json(manifest_path) != evidence
+    ):
+        raise ValueError("package release manifest readback mismatch")
+    return evidence, release_dir
+
+
+def check_package_server_image(root: Path) -> str:
+    evidence, _ = package_release_evidence(root)
+    readback = evidence.get("version_readback")
+    image_id = evidence.get("image_id")
+    if (
+        not isinstance(readback, dict)
+        or readback.get("image_version") != evidence.get("version")
+        or readback.get("build_revision") != evidence.get("revision")
+        or not isinstance(image_id, str)
+        or not image_id.startswith("sha256:")
+    ):
+        raise ValueError("server image ID/version/revision readback mismatch")
+    return (
+        f"Axum+React image {evidence['image']} id={image_id[:19]} "
+        "version/revision readback 확인"
+    )
+
+
+def check_package_php_connector(root: Path) -> str:
+    evidence, _ = package_release_evidence(root)
+    readback = evidence.get("connector_readback")
+    if (
+        not isinstance(readback, dict)
+        or readback.get("schema") != "g5-fleet.php-connector-package/v1"
+        or readback.get("version") != evidence.get("version")
+        or readback.get("revision") != evidence.get("revision")
+        or readback.get("canonical_openapi_sha256")
+        != sha256(root / "connectors/gnuboard5-php/api/docs/openapi.yaml")
+        or not isinstance(readback.get("production_dependencies"), int)
+        or readback["production_dependencies"] <= 0
+    ):
+        raise ValueError("PHP Connector release readback mismatch")
+    return (
+        f"deterministic PHP Connector production dependency "
+        f"{readback['production_dependencies']}개와 canonical OpenAPI 확인"
+    )
+
+
+def check_package_checksums(root: Path) -> str:
+    evidence, release_dir = package_release_evidence(root)
+    artifacts = evidence.get("artifacts")
+    if not isinstance(artifacts, dict) or len(artifacts) != 4:
+        raise ValueError("release artifact inventory must contain exact 4 artifacts")
+    for label, row in artifacts.items():
+        if not isinstance(row, dict):
+            raise ValueError(f"release artifact metadata invalid: {label}")
+        filename = row.get("path")
+        if (
+            not isinstance(filename, str)
+            or Path(filename).name != filename
+            or "/" in filename
+        ):
+            raise ValueError(f"release artifact filename unsafe: {label}")
+        path = release_dir / filename
+        if (
+            path.is_symlink()
+            or not path.is_file()
+            or sha256(path) != row.get("sha256")
+            or path.stat().st_size != row.get("bytes")
+        ):
+            raise ValueError(f"release artifact checksum/size mismatch: {label}")
+    return "image·SPDX·PHP Connector·CycloneDX 4개 artifact SHA-256/size readback 확인"
+
+
+def check_package_sbom(root: Path) -> str:
+    evidence, release_dir = package_release_evidence(root)
+    artifacts = evidence["artifacts"]
+    image_sbom = load_json(release_dir / artifacts["sbom"]["path"])
+    connector_sbom = load_json(release_dir / artifacts["php_connector_sbom"]["path"])
+    if not str(image_sbom.get("spdxVersion", "")).startswith("SPDX-"):
+        raise ValueError("image SPDX SBOM identity mismatch")
+    components = connector_sbom.get("components")
+    if (
+        connector_sbom.get("bomFormat") != "CycloneDX"
+        or not isinstance(components, list)
+        or len(components)
+        != evidence["connector_readback"]["production_dependencies"]
+    ):
+        raise ValueError("PHP Connector CycloneDX component count mismatch")
+    return f"image SPDX와 PHP Connector CycloneDX component {len(components)}개 확인"
+
+
+def check_upgrade_backup_restore(root: Path) -> str:
+    evidence = certification_evidence(
+        root,
+        "package-smoke.json",
+        "g5-fleet.package-smoke/v1",
+    )
+    install = evidence.get("install")
+    upgrade = evidence.get("upgrade")
+    backup = evidence.get("backup_restore")
+    if (
+        not isinstance(install, dict)
+        or install.get("status") != "passed"
+        or not isinstance(upgrade, dict)
+        or upgrade.get("status") != "passed"
+        or upgrade.get("critical_row_readback", {}).get("users") != 1
+        or not isinstance(backup, dict)
+        or backup.get("status") != "passed"
+        or backup.get("master_key_recovered") is not True
+        or not is_hex(backup.get("snapshot_sha256"), SHA256_LENGTH)
+        or not is_hex(backup.get("encrypted_recovery_sha256"), SHA256_LENGTH)
+    ):
+        raise ValueError("clean install/upgrade/backup/master-key restore evidence mismatch")
+    return "clean install, user row 보존 upgrade, DB snapshot·암호화 master-key 복원 확인"
+
+
+def check_upgrade_rollback(root: Path) -> str:
+    evidence = certification_evidence(
+        root,
+        "package-smoke.json",
+        "g5-fleet.package-smoke/v1",
+    )
+    rollback = evidence.get("failed_upgrade_rollback")
+    upgrade = evidence.get("upgrade")
+    if (
+        not isinstance(rollback, dict)
+        or rollback.get("status") != "passed"
+        or not isinstance(upgrade, dict)
+        or rollback.get("restored_image") != upgrade.get("image")
+        or rollback.get("critical_row_readback") != upgrade.get("critical_row_readback")
+    ):
+        raise ValueError("failed upgrade rollback image/readback mismatch")
+    return "존재하지 않는 image upgrade 실패 후 이전 image·검증 snapshot·핵심 row 자동 복원 확인"
+
+
+def staging_evidence(root: Path) -> dict[str, Any]:
+    return certification_evidence(
+        root,
+        "staging.json",
+        "g5-fleet.staging/v1",
+    )
+
+
+def check_staging_provider_identity(root: Path) -> str:
+    evidence = staging_evidence(root)
+    provider = evidence.get("provider")
+    if (
+        not isinstance(provider, dict)
+        or not isinstance(provider.get("id"), str)
+        or len(provider["id"]) < 3
+        or not isinstance(provider.get("base_url"), str)
+        or not provider["base_url"].startswith("https://")
+    ):
+        raise ValueError("staging provider identity/HTTPS origin mismatch")
+    return f"staging provider id={provider['id']} HTTPS identity 확인"
+
+
+def check_staging_deploy_smoke(root: Path) -> str:
+    evidence = staging_evidence(root)
+    deployment = evidence.get("deployment")
+    smoke = evidence.get("smoke")
+    if (
+        not isinstance(deployment, dict)
+        or deployment.get("status") != "passed"
+        or not str(deployment.get("image_id", "")).startswith("sha256:")
+        or not isinstance(smoke, dict)
+        or smoke.get("status") != "passed"
+        or smoke.get("ready", {}).get("status") != "ready"
+        or smoke.get("meta", {}).get("build_revision") != evidence.get("revision")
+        or smoke.get("meta", {}).get("image_version") != deployment.get("version")
+    ):
+        raise ValueError("staging deploy readiness/version/revision evidence mismatch")
+    return (
+        f"staging image={deployment['image_id'][:19]} "
+        "readyz·meta version/revision readback 확인"
+    )
+
+
+def check_staging_rollback(root: Path) -> str:
+    evidence = staging_evidence(root)
+    rollback = evidence.get("rollback")
+    if (
+        not isinstance(rollback, dict)
+        or rollback.get("status") != "passed"
+        or rollback.get("backup_restore_readback") is not True
+        or not is_hex(rollback.get("snapshot_sha256"), SHA256_LENGTH)
+        or not is_hex(rollback.get("receipt_sha256"), SHA256_LENGTH)
+    ):
+        raise ValueError("staging rollback backup/readback receipt mismatch")
+    return "staging 실패 배포 rollback과 verified snapshot readback rehearsal 확인"
+
+
 def check_composed_provider(root: Path) -> str:
     verifier = root / "tools/runtime/compose_gnuboard.py"
     if not verifier.is_file():
@@ -2906,6 +3332,26 @@ CHECKS: dict[str, Callable[[Path], str]] = {
     "web.pwa_cache_safety": check_pwa_cache_safety,
     "commerce.core_isolation": check_commerce_core_isolation,
     "package.operational_contract": check_package_operational_contract,
+    "certification.harness_boundary": check_certification_harness_boundary,
+    "compose.gnuboard_5_6_32": check_local_composed_gnuboard,
+    "runtime.provider_identity": check_local_provider_identity,
+    "runtime.server_browser_e2e": check_local_browser_e2e,
+    "runtime.mutation_readback_cleanup": check_local_mutation_cleanup,
+    "notification.telegram_fake_delivery": lambda root: check_local_fake_notification(
+        root, "telegram"
+    ),
+    "notification.web_push_fake_delivery": lambda root: check_local_fake_notification(
+        root, "web_push"
+    ),
+    "package.server_image": check_package_server_image,
+    "package.php_connector": check_package_php_connector,
+    "package.checksums": check_package_checksums,
+    "package.sbom": check_package_sbom,
+    "upgrade.backup_restore": check_upgrade_backup_restore,
+    "upgrade.rollback": check_upgrade_rollback,
+    "staging.provider_identity": check_staging_provider_identity,
+    "staging.deploy_smoke": check_staging_deploy_smoke,
+    "staging.rollback_rehearsal": check_staging_rollback,
 }
 
 

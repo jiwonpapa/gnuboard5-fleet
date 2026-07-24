@@ -1,0 +1,7 @@
+{
+  "schema": "g5-fleet.staging-input/v1",
+  "base_url": "https://fleet-staging.example.com",
+  "provider_id": "replace-with-provider-instance-id",
+  "deployment_receipt": "/absolute/path/to/deployment-receipt.json",
+  "rollback_receipt": "/absolute/path/to/rollback-receipt.json"
+}

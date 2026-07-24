@@ -5,6 +5,9 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 
+[features]
+local-certification = ["g5-fleet-security/local-certification"]
+
 [dependencies]
 async-trait.workspace = true
 base64.workspace = true

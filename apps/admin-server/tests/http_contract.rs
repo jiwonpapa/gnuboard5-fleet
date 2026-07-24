@@ -156,6 +156,7 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("POST", "/api/v1/auth/logout"),
             ("POST", "/api/v1/auth/step-up"),
             ("GET", "/api/v1/session"),
+            ("POST", "/api/v1/users"),
             ("GET", "/api/v1/plugins"),
             ("GET", "/api/v1/core/registry"),
             ("GET", "/api/v1/sites"),
@@ -365,6 +366,23 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap();
     assert_eq!(step_up.status(), StatusCode::NO_CONTENT);
 
+    let peer_password = "another durable peer password";
+    let create_peer = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/users",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "login_name": "peer",
+                "password": peer_password
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create_peer.status(), StatusCode::CREATED);
+
     let site = app
         .clone()
         .oneshot(json_request(
@@ -381,6 +399,44 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .await
         .unwrap();
     assert_eq!(site.status(), StatusCode::CREATED);
+
+    let peer_login = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/auth/login",
+            None,
+            None,
+            Some(serde_json::json!({
+                "login_name": "peer",
+                "password": peer_password
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(peer_login.status(), StatusCode::OK);
+    let peer_cookie = peer_login
+        .headers()
+        .get("set-cookie")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .split(';')
+        .next()
+        .unwrap()
+        .to_owned();
+    let peer_site = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a",
+            Some(&peer_cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(peer_site.status(), StatusCode::NOT_FOUND);
 
     let plugins = app
         .clone()

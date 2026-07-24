@@ -114,6 +114,9 @@ def main() -> int:
         "image_id": image_id,
         "version": args.version,
         "revision": args.revision,
+        "canonical_openapi_sha256": connector_readback[
+            "canonical_openapi_sha256"
+        ],
         "version_readback": version_readback,
         "connector_readback": {
             "schema": connector_readback["schema"],

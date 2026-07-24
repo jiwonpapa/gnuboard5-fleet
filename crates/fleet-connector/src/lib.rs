@@ -266,6 +266,97 @@ impl ConnectorGateway for ProductionConnectorGateway {
     }
 }
 
+#[cfg(feature = "local-certification")]
+#[derive(Clone, Debug, Default)]
+pub struct LocalCertificationConnectorGateway;
+
+#[cfg(feature = "local-certification")]
+#[async_trait]
+impl ConnectorGateway for LocalCertificationConnectorGateway {
+    async fn health(&self, base_url: &str, request_id: &str) -> ConnectorResult<ConnectorHealth> {
+        G5Client::connect_local_certification(base_url)
+            .await?
+            .health(request_id)
+            .await
+    }
+
+    async fn login(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        input: &ConnectorLogin,
+    ) -> ConnectorResult<ConnectorCredentials> {
+        G5Client::connect_local_certification(base_url)
+            .await?
+            .login(request_id, input)
+            .await
+    }
+
+    async fn refresh(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        refresh_token: &str,
+    ) -> ConnectorResult<ConnectorCredentials> {
+        G5Client::connect_local_certification(base_url)
+            .await?
+            .refresh(request_id, refresh_token)
+            .await
+    }
+
+    async fn logout(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        refresh_token: &str,
+    ) -> ConnectorResult<()> {
+        G5Client::connect_local_certification(base_url)
+            .await?
+            .logout(request_id, access_token, refresh_token)
+            .await
+    }
+
+    async fn basic_config(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<BasicConfig> {
+        G5Client::connect_local_certification(base_url)
+            .await?
+            .basic_config(request_id, access_token)
+            .await
+    }
+
+    async fn update_basic_config(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        cf_10: &str,
+    ) -> ConnectorResult<BasicConfig> {
+        G5Client::connect_local_certification(base_url)
+            .await?
+            .update_basic_config(request_id, access_token, cf_10)
+            .await
+    }
+
+    async fn core_execute(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        operation_id: &str,
+        input: &CoreExecuteRequest,
+    ) -> ConnectorResult<CoreExecuteResponse> {
+        G5Client::connect_local_certification(base_url)
+            .await?
+            .core_execute(request_id, access_token, operation_id, input)
+            .await
+    }
+}
+
 pub fn core_operations() -> &'static [CoreOperationSpec] {
     static REGISTRY: OnceLock<Vec<CoreOperationSpec>> = OnceLock::new();
     REGISTRY
@@ -296,6 +387,32 @@ impl G5Client {
     async fn connect(raw_base_url: &str) -> ConnectorResult<Self> {
         let base_url = normalize_base_url(raw_base_url)?;
         let guard = Arc::new(UrlGuard::new(SystemResolver));
+        let target = guard
+            .resolve_initial(base_url.as_str())
+            .await
+            .map_err(|_| ConnectorError::UrlSecurity)?;
+        let address = target
+            .pinned_addresses
+            .iter()
+            .next()
+            .copied()
+            .ok_or(ConnectorError::UrlSecurity)?;
+        let client = build_client(Some((
+            target.host.clone(),
+            SocketAddr::new(address, target.port),
+        )))?;
+        Ok(Self {
+            base_url,
+            client,
+            guard,
+            target,
+        })
+    }
+
+    #[cfg(feature = "local-certification")]
+    async fn connect_local_certification(raw_base_url: &str) -> ConnectorResult<Self> {
+        let base_url = normalize_base_url(raw_base_url)?;
+        let guard = Arc::new(UrlGuard::local_certification(SystemResolver));
         let target = guard
             .resolve_initial(base_url.as_str())
             .await

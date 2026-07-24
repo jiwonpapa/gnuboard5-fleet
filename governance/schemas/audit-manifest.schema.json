@@ -56,7 +56,7 @@
           "properties": {
             "proof_level": {"const": "SERVER_STATIC_PASS"},
             "inherits": {"const": "server_scaffold"},
-            "required_checks": {"const": ["server.route_registry", "web.transport_registry", "web.field_consumption", "security.site_context", "security.csrf", "security.ssrf", "notification.telegram_contract", "notification.web_push_contract", "web.pwa_cache_safety", "commerce.core_isolation", "package.operational_contract"]}
+            "required_checks": {"const": ["server.route_registry", "web.transport_registry", "web.field_consumption", "security.site_context", "security.csrf", "security.ssrf", "notification.telegram_contract", "notification.web_push_contract", "web.pwa_cache_safety", "commerce.core_isolation", "package.operational_contract", "certification.harness_boundary"]}
           }
         },
         "local": {

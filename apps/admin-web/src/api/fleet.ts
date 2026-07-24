@@ -120,6 +120,22 @@ export function stepUp(password: string, csrfToken: string) {
   });
 }
 
+export function createFleetUser(
+  loginName: string,
+  password: string,
+  csrfToken: string,
+) {
+  return transport.request<{ principal_id: string }, {
+    login_name: string;
+    password: string;
+  }>({
+    method: "POST",
+    path: "/users",
+    csrfToken,
+    body: { login_name: loginName, password },
+  });
+}
+
 export function listSites() {
   return transport.request<Site[]>({ method: "GET", path: "/sites" });
 }

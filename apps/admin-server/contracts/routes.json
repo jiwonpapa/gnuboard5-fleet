@@ -58,6 +58,13 @@
       "purpose": "session_readback"
     },
     {
+      "method": "POST",
+      "path": "/api/v1/users",
+      "auth": "session_csrf_step_up",
+      "site_context": false,
+      "purpose": "fleet_operator_creation"
+    },
+    {
       "method": "GET",
       "path": "/api/v1/plugins",
       "auth": "session",

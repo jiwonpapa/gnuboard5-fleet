@@ -310,6 +310,12 @@ API·health·ready는 제외합니다. Commerce SDK는 canonical Shop 26개와
 
 `LOCAL_RUNTIME_PASS`, `PACKAGE_PASS`, `STAGING_PASS`, `LIVE_CERTIFIED`는 서로 대체하지 않습니다.
 
+현재 상태: 인증 harness 구현 완료, 실행 증거 생성 전. 공식 G5용
+test-only PHP+MariaDB stack, production과 분리된 local-certification
+feature, 2사용자×2사이트 HTTP·Chromium 증거, release/package evaluator와
+명시적 staging receipt 검증을 연결했습니다. 실제 profile 결과가
+생성되기 전에는 B10 완료로 표시하지 않습니다.
+
 ## 4. 현재 바로 시작할 배치
 
 현재 시작점은 **B10 인증 단계**입니다. 공식 G5 v5.6.32 local runtime,

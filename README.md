@@ -35,6 +35,8 @@ make check
 
 서버 설치·백업·업그레이드는 [`서버 패키지 운영 문서`](docs/operations/SERVER_PACKAGE.md)를 따릅니다. 기본 Compose는 Axum+React `app`과 Caddy만 사용하며 별도 PostgreSQL·Redis container를 설치하지 않습니다.
 
+B10 local·package·staging 증거의 실행과 등급 분리는 [`제품 인증 실행 문서`](docs/operations/CERTIFICATION.md)를 따릅니다. local G5 검증용 MariaDB는 관리 대상 G5를 재현하는 test-only service이며 Fleet 서버 패키지의 구성요소가 아닙니다.
+
 과거 데스크톱 snapshot의 의존성 재현이 특별히 필요할 때만 `make legacy-consumer-prepare`와 `make legacy-consumer-verify`를 수동 실행합니다. 이 명령은 routine 제품 gate가 아닙니다.
 
 `migration.secret_history_hygiene`는 필수 로컬 게이트입니다. 현재 tracked 파일과 모든 reachable Git 이력의 blob을 자격 증명·고위험 개인정보 패턴으로 검사하고, 이력에 `output/`, `connectors/gnuboard5-php/output/`, `products/admin-desktop/output/`가 한 번이라도 등장하면 실패합니다. 예외는 [`governance/SECRET_HISTORY_POLICY.json`](governance/SECRET_HISTORY_POLICY.json)의 값 SHA-256, 패턴 ID, 경로 glob이 모두 일치하는 명시적 범위에서만 허용하며 원문 비밀값은 기록하지 않습니다. 설치된 Gitleaks로 추가 전수검사를 할 때는 `make secret-scan`을 실행합니다.

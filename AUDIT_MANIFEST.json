@@ -72,7 +72,8 @@
         "notification.web_push_contract",
         "web.pwa_cache_safety",
         "commerce.core_isolation",
-        "package.operational_contract"
+        "package.operational_contract",
+        "certification.harness_boundary"
       ]
     },
     "local": {

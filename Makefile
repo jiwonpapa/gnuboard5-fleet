@@ -3,7 +3,7 @@ ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 export PYTHONDONTWRITEBYTECODE := 1
 
 .NOTPARALLEL: bootstrap prepare check
-.PHONY: doctor bootstrap prepare check test-audit test-upstream test-runtime test-package runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-server-scaffold audit-server-static upstream-sync upstream-audit upstream-verify secret-scan package-build package-smoke
+.PHONY: doctor bootstrap prepare check test-audit test-upstream test-runtime test-package test-certification runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-server-scaffold audit-server-static audit-local audit-package audit-staging upstream-sync upstream-audit upstream-verify secret-scan package-build package-smoke certification-up certification-down certification-clean certification-local-smoke staging-smoke
 
 doctor:
 	@cd "$(ROOT)" && command -v git >/dev/null
@@ -30,6 +30,9 @@ test-runtime:
 
 test-package:
 	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s tools/package/tests -p 'test_*.py'
+
+test-certification:
+	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s tools/certification/tests -p 'test_*.py'
 
 runtime-prepare:
 	cd "$(ROOT)" && $(PYTHON) tools/runtime/compose_gnuboard.py
@@ -92,12 +95,22 @@ audit-server-static:
 	cd "$(ROOT)" && command -v "$(PYTHON)" >/dev/null
 	cd "$(ROOT)" && CARGO_NET_OFFLINE=true COMPOSER_DISABLE_NETWORK=1 "$(PYTHON)" tools/audit/g5audit.py --profile server_static
 
+audit-local:
+	cd "$(ROOT)" && CARGO_NET_OFFLINE=true COMPOSER_DISABLE_NETWORK=1 "$(PYTHON)" tools/audit/g5audit.py --profile local
+
+audit-package:
+	cd "$(ROOT)" && CARGO_NET_OFFLINE=true COMPOSER_DISABLE_NETWORK=1 "$(PYTHON)" tools/audit/g5audit.py --profile package
+
+audit-staging:
+	cd "$(ROOT)" && CARGO_NET_OFFLINE=true COMPOSER_DISABLE_NETWORK=1 "$(PYTHON)" tools/audit/g5audit.py --profile staging
+
 check:
 	+$(MAKE) doctor
 	+$(MAKE) test-audit
 	+$(MAKE) test-upstream
 	+$(MAKE) test-runtime
 	+$(MAKE) test-package
+	+$(MAKE) test-certification
 	+$(MAKE) runtime-verify
 	+$(MAKE) audit-runtime-verify
 	+$(MAKE) active-check
@@ -121,3 +134,18 @@ package-build:
 
 package-smoke:
 	cd "$(ROOT)" && tools/package/package_smoke.sh
+
+certification-up:
+	cd "$(ROOT)" && tools/certification/local_stack.sh up
+
+certification-down:
+	cd "$(ROOT)" && tools/certification/local_stack.sh down
+
+certification-clean:
+	cd "$(ROOT)" && tools/certification/local_stack.sh clean
+
+certification-local-smoke:
+	cd "$(ROOT)" && $(PYTHON) tools/certification/local_runtime_smoke.py
+
+staging-smoke:
+	cd "$(ROOT)" && $(PYTHON) tools/certification/staging_smoke.py --config "$(CONFIG)"

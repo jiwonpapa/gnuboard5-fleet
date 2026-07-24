@@ -9,6 +9,8 @@ use std::{
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use g5_fleet_admin_server::{AppConfig, build_revision, build_router, image_version};
+#[cfg(feature = "local-certification")]
+use g5_fleet_connector::LocalCertificationConnectorGateway;
 use g5_fleet_connector::ProductionConnectorGateway;
 use g5_fleet_security::AuthService;
 use g5_fleet_store::FleetStore;
@@ -104,12 +106,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         build_router(AppConfig {
             web_root,
             auth,
-            connector: Arc::new(ProductionConnectorGateway),
+            connector: connector_gateway()?,
             notification_worker: None,
         }),
     )
     .await?;
     Ok(())
+}
+
+fn connector_gateway()
+-> Result<Arc<dyn g5_fleet_connector::ConnectorGateway>, Box<dyn std::error::Error>> {
+    #[cfg(feature = "local-certification")]
+    if env::var("G5_FLEET_CERTIFICATION_MODE").as_deref() == Ok("local") {
+        return Ok(Arc::new(LocalCertificationConnectorGateway));
+    }
+    if env::var_os("G5_FLEET_CERTIFICATION_MODE").is_some() {
+        return Err("G5_FLEET_CERTIFICATION_MODE is unavailable in production builds".into());
+    }
+    Ok(Arc::new(ProductionConnectorGateway))
 }
 
 fn required_argument(

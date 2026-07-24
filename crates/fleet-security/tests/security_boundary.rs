@@ -197,6 +197,31 @@ async fn ssrf_metadata_redirect_and_dns_rebinding_are_rejected() {
     assert_eq!(credentials, SsrfError::UserInfoOrFragment);
 }
 
+#[cfg(feature = "local-certification")]
+#[tokio::test]
+async fn local_certification_guard_is_explicit_and_still_dns_pinned() {
+    let guard = UrlGuard::local_certification(FakeResolver::new(vec![
+        vec![IpAddr::V4(Ipv4Addr::LOCALHOST)],
+        vec![IpAddr::V4(Ipv4Addr::LOCALHOST)],
+    ]));
+    let target = guard
+        .resolve_initial("http://local-certification.invalid:8080")
+        .await
+        .expect("test-only private target");
+    guard
+        .revalidate_before_connect(&target)
+        .await
+        .expect("same private address remains pinned");
+
+    let production = UrlGuard::new(FakeResolver::new(vec![vec![IpAddr::V4(
+        Ipv4Addr::LOCALHOST,
+    )]]))
+    .resolve_initial("http://local-certification.invalid:8080")
+    .await
+    .unwrap_err();
+    assert!(matches!(production, SsrfError::NonPublicAddress(_)));
+}
+
 #[derive(Clone, Debug)]
 struct FakeResolver {
     answers: Arc<Mutex<VecDeque<Vec<IpAddr>>>>,

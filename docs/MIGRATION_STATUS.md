@@ -50,6 +50,9 @@
 - image archive·SPDX·PHP Connector·checksum release manifest 구현
 - SQLite 검증 snapshot과 암호화 master-key recovery archive 구현
 - upgrade 전후 핵심 row 보존과 실패 upgrade 자동 rollback harness 구현
+- step-up 기반 Fleet 사용자 추가 API·UI와 사용자별 site 소유 경계 구현
+- test-only local-certification feature와 공식 G5 v5.6.32 기동 harness 구현
+- local·browser·package·staging 증거 evaluator와 stale revision 차단 구현
 
 현재 migration profile은 기존 Tauri snapshot의 provenance와 source closure만 이관 증거로 검증합니다. routine `make prepare/check`는 해당 snapshot의 Bun·Cargo·Tauri·네이티브 패키징 의존성을 준비하거나 빌드하지 않습니다. 이는 데스크톱 제품 지원 또는 서버판 구현 완료를 뜻하지 않습니다.
 

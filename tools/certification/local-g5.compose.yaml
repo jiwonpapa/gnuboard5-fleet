@@ -1,0 +1,70 @@
+name: g5-fleet-local-certification
+
+services:
+  db:
+    image: "${G5_CERT_DB_IMAGE:-mariadb:11.4.7}"
+    environment:
+      MARIADB_DATABASE: "${G5_CERT_DB_NAME:?set G5_CERT_DB_NAME}"
+      MARIADB_USER: "${G5_CERT_DB_USER:?set G5_CERT_DB_USER}"
+      MARIADB_PASSWORD: "${G5_CERT_DB_VALUE:?set G5_CERT_DB_VALUE}"
+      MARIADB_ROOT_PASSWORD: "${G5_CERT_DB_ROOT_VALUE:?set G5_CERT_DB_ROOT_VALUE}"
+    tmpfs:
+      - /var/lib/mysql:rw,nosuid,nodev
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "healthcheck.sh --connect --innodb_initialized",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+    networks:
+      - certification
+
+  g5:
+    image: "${G5_CERT_G5_IMAGE:?set G5_CERT_G5_IMAGE}"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      APP_RUNTIME_MODE: prod
+      API_DEBUG: "false"
+      DEBUG_RESPONSE_INCLUDE_TRACE: "false"
+      LOG_ERROR_PAYLOAD: "false"
+      LOG_LEVEL: warning
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: "${G5_CERT_DB_NAME:?set G5_CERT_DB_NAME}"
+      DB_USER: "${G5_CERT_DB_USER:?set G5_CERT_DB_USER}"
+      DB_PASS: "${G5_CERT_DB_VALUE:?set G5_CERT_DB_VALUE}"
+      DB_CHARSET: utf8
+      DB_TABLE_PREFIX: g5_
+      DATA_PATH: /var/www/html/data
+      JWT_SECRET: "${G5_CERT_JWT_VALUE:?set G5_CERT_JWT_VALUE}"
+      JWT_ACCESS_EXPIRES: "3600"
+      JWT_REFRESH_EXPIRES: "604800"
+      JWT_LEEWAY_SECONDS: "30"
+      AUTH_AUTO_REHASH_ON_LOGIN: "true"
+      AUTH_MAIL_SEND_ENABLED: "false"
+      PASSWORD_MIN_LENGTH: "8"
+      PASSWORD_REQUIRE_COMPLEXITY: "true"
+      API_BASE_URL: "${G5_CERT_G5_URL:?set G5_CERT_G5_URL}/api/v1"
+      CORS_ALLOWED_ORIGINS: "${G5_CERT_FLEET_URL:?set G5_CERT_FLEET_URL}"
+      TRUST_PROXY_HEADERS: "false"
+      TRUSTED_PROXIES: "127.0.0.1,::1"
+      RATE_LIMIT_ENABLED: "false"
+      G5_ENCRYPT_FUNC: create_hash
+      SETUP_ENABLED: "false"
+      ADMIN_SMS_ENABLED: "false"
+      G5_INDEPENDENT: "true"
+    ports:
+      - "127.0.0.1:${G5_CERT_G5_PORT:?set G5_CERT_G5_PORT}:80"
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - certification
+
+networks:
+  certification:

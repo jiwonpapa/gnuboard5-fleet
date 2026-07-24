@@ -68,6 +68,12 @@ struct StepUpRequest {
     password: String,
 }
 
+#[derive(Deserialize)]
+struct CreateUserRequest {
+    login_name: String,
+    password: String,
+}
+
 #[derive(Debug, Deserialize)]
 struct CreateSiteRequest {
     site_id: String,
@@ -123,6 +129,11 @@ struct BootstrapResponse {
     principal_id: String,
 }
 
+#[derive(Debug, Serialize)]
+struct CreateUserResponse {
+    principal_id: String,
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LoginResponse {
     pub csrf_token: String,
@@ -144,6 +155,7 @@ pub(crate) fn router() -> Router<AppState> {
         .route("/auth/logout", post(logout))
         .route("/auth/step-up", post(step_up))
         .route("/session", get(session))
+        .route("/users", post(create_user))
         .route("/plugins", get(plugin_slots))
         .route("/core/registry", get(core_registry))
         .route("/sites", get(list_sites).post(create_site))
@@ -260,6 +272,33 @@ async fn session(State(state): State<AppState>, headers: HeaderMap) -> Response 
     .into_response()
 }
 
+async fn create_user(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<CreateUserRequest>,
+) -> Response {
+    let (_, principal) = match mutation_context(&state, &headers, None).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    match state
+        .config
+        .auth
+        .create_user(&principal, &payload.login_name, &payload.password)
+        .await
+    {
+        Ok(principal_id) => (
+            StatusCode::CREATED,
+            Json(CreateUserResponse { principal_id }),
+        )
+            .into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
 async fn logout(State(state): State<AppState>, headers: HeaderMap) -> Response {
     let (_, principal) = match mutation_context(&state, &headers, None).await {
         Ok(value) => value,
@@ -346,11 +385,7 @@ async fn create_site(
         Ok(value) => value,
         Err(response) => return response,
     };
-    if UrlGuard::new(SystemResolver)
-        .resolve_initial(&payload.base_url)
-        .await
-        .is_err()
-    {
+    if validate_site_url(&payload.base_url).await.is_err() {
         return api_error(
             StatusCode::BAD_REQUEST,
             "site_url_forbidden",
@@ -372,6 +407,20 @@ async fn create_site(
         Ok(()) => StatusCode::CREATED.into_response(),
         Err(error) => store_error(error),
     }
+}
+
+async fn validate_site_url(
+    base_url: &str,
+) -> Result<g5_fleet_security::OutboundTarget, g5_fleet_security::SsrfError> {
+    #[cfg(feature = "local-certification")]
+    if std::env::var("G5_FLEET_CERTIFICATION_MODE").as_deref() == Ok("local") {
+        return UrlGuard::local_certification(SystemResolver)
+            .resolve_initial(base_url)
+            .await;
+    }
+    UrlGuard::new(SystemResolver)
+        .resolve_initial(base_url)
+        .await
 }
 
 async fn get_site(

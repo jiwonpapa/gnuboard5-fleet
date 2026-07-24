@@ -53,5 +53,11 @@ python3 "$root/tools/package/write_release_manifest.py" \
   --connector-archive "$connector_archive" \
   --connector-sbom "$connector_sbom" \
   --output "$manifest"
+evidence="$root/.cache/evidence/package-release.json"
+mkdir -p "$(dirname -- "$evidence")"
+temporary_evidence="$evidence.tmp.$$"
+cp "$manifest" "$temporary_evidence"
+chmod 0600 "$temporary_evidence"
+mv "$temporary_evidence" "$evidence"
 
 echo "release package verified: $manifest"

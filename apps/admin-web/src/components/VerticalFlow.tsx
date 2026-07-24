@@ -10,6 +10,7 @@ import {
   connectorLogin,
   connectorLogout,
   connectorRefresh,
+  createFleetUser,
   createSite,
   getBasicConfig,
   getSiteOverview,
@@ -39,6 +40,7 @@ export function VerticalFlow() {
   const [baseline, setBaseline] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [createdUser, setCreatedUser] = useState("");
 
   async function authenticate(
     loginName: string,
@@ -55,6 +57,13 @@ export function VerticalFlow() {
       const ownedSites = await listSites();
       setSites(ownedSites);
       setSite(ownedSites[0] ?? null);
+    });
+  }
+
+  async function registerFleetUser(loginName: string, password: string) {
+    await run(async () => {
+      await createFleetUser(loginName, password, csrf);
+      setCreatedUser(loginName);
     });
   }
 
@@ -145,6 +154,13 @@ export function VerticalFlow() {
     <section className="vertical-flow" aria-label="최초 사이트 연결 흐름">
       <FlowStep index="01" title="Fleet 로그인" done={Boolean(csrf)}>
         <FleetLoginForm disabled={busy} onSubmit={authenticate} />
+        {csrf && (
+          <FleetUserForm
+            disabled={busy}
+            createdUser={createdUser}
+            onSubmit={registerFleetUser}
+          />
+        )}
       </FlowStep>
 
       <FlowStep index="02" title="사이트 등록" done={Boolean(site)}>
@@ -263,6 +279,51 @@ function FlowStep(props: {
       </header>
       <div className="flow-step-body">{props.children}</div>
     </article>
+  );
+}
+
+function FleetUserForm(props: {
+  disabled: boolean;
+  createdUser: string;
+  onSubmit: (loginName: string, password: string) => Promise<void>;
+}) {
+  const [loginName, setLoginName] = useState("");
+  const [password, setPassword] = useState("");
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    await props.onSubmit(loginName, password);
+    setPassword("");
+  }
+  return (
+    <form className="flow-form" onSubmit={(event) => void submit(event)}>
+      <label>
+        <span>추가 Fleet 사용자</span>
+        <input
+          required
+          minLength={3}
+          autoComplete="off"
+          value={loginName}
+          onChange={(event) => setLoginName(event.target.value)}
+        />
+      </label>
+      <label>
+        <span>초기 비밀번호</span>
+        <input
+          required
+          minLength={12}
+          type="password"
+          autoComplete="new-password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+      </label>
+      <button className="secondary-action" disabled={props.disabled} type="submit">
+        Fleet 사용자 추가
+      </button>
+      {props.createdUser && (
+        <span className="inline-status">{props.createdUser} 생성 완료</span>
+      )}
+    </form>
   );
 }
 

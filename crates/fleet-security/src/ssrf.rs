@@ -53,11 +53,23 @@ impl Resolver for SystemResolver {
 #[derive(Clone, Debug)]
 pub struct UrlGuard<R> {
     resolver: R,
+    allow_private_for_local_certification: bool,
 }
 
 impl<R: Resolver> UrlGuard<R> {
     pub fn new(resolver: R) -> Self {
-        Self { resolver }
+        Self {
+            resolver,
+            allow_private_for_local_certification: false,
+        }
+    }
+
+    #[cfg(feature = "local-certification")]
+    pub fn local_certification(resolver: R) -> Self {
+        Self {
+            resolver,
+            allow_private_for_local_certification: true,
+        }
     }
 
     pub async fn resolve_initial(&self, raw: &str) -> Result<OutboundTarget, SsrfError> {
@@ -73,7 +85,8 @@ impl<R: Resolver> UrlGuard<R> {
             Host::Ipv6(address) => vec![IpAddr::V6(address)],
             Host::Domain(_) => self.resolver.resolve(&host, port).await?,
         };
-        let pinned_addresses = validate_addresses(addresses)?;
+        let pinned_addresses =
+            validate_addresses(addresses, self.allow_private_for_local_certification)?;
         Ok(OutboundTarget {
             url,
             host,
@@ -116,7 +129,9 @@ impl<R: Resolver> UrlGuard<R> {
             Host::Ipv6(address) => vec![IpAddr::V6(address)],
             Host::Domain(_) => self.resolver.resolve(&target.host, target.port).await?,
         };
-        if validate_addresses(current)? != target.pinned_addresses {
+        if validate_addresses(current, self.allow_private_for_local_certification)?
+            != target.pinned_addresses
+        {
             return Err(SsrfError::DnsRebinding);
         }
         Ok(())
@@ -138,13 +153,18 @@ fn parse_url(raw: &str) -> Result<Url, SsrfError> {
     Ok(url)
 }
 
-fn validate_addresses(addresses: Vec<IpAddr>) -> Result<BTreeSet<IpAddr>, SsrfError> {
+fn validate_addresses(
+    addresses: Vec<IpAddr>,
+    allow_private_for_local_certification: bool,
+) -> Result<BTreeSet<IpAddr>, SsrfError> {
     if addresses.is_empty() {
         return Err(SsrfError::ResolutionEmpty);
     }
     let mut validated = BTreeSet::new();
     for address in addresses {
-        validate_public_ip(address)?;
+        if !allow_private_for_local_certification {
+            validate_public_ip(address)?;
+        }
         validated.insert(address);
     }
     Ok(validated)
