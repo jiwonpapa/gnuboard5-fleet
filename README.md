@@ -6,7 +6,7 @@
 
 활성 제품은 Rust Axum 서버와 React PWA로만 배포합니다. 기존 Tauri 코드는 UI와 Rust 소비 구현을 서버 구조로 이관하기 위한 참조 snapshot이며 데스크톱 제품, 네이티브 wrapper, 코드 서명·공증 또는 updater를 제공하지 않습니다. 결정 근거는 [`ADR-0006`](docs/adr/0006-server-only-product-pivot.md), 구현 기준은 [`서버·웹 기술 스택`](docs/architecture/SERVER_WEB_TECH_STACK.md)에 있습니다.
 
-구현은 [`서버 전환 목표 기반 배치 계획`](docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md)의 B00 → B10 순서로 진행합니다. B00 방향 확정, B01 legacy 감사 분리와 B02 활성 서버·웹 골격을 마쳤으며 다음 구현은 B03 SQLite 내구성입니다.
+구현은 [`서버 전환 목표 기반 배치 계획`](docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md)의 B00 → B10 순서로 진행합니다. B00 방향 확정, B01 legacy 감사 분리, B02 활성 서버·웹 골격과 B03 SQLite 내구성을 마쳤으며 다음 구현은 B04 인증·사이트 격리입니다.
 
 ## 제품 구성
 
@@ -31,7 +31,7 @@ make check
 
 따라서 `make check`는 외부 서비스나 GitHub Actions 없이 이관 이력, 필수 legacy 소스 폐쇄, OpenAPI 312개, 활성 분류 189개, 일반 게시판 26개, 관리자 Shop 26개를 검증합니다. 활성 workspace에서는 Axum fmt·Clippy·test와 React typecheck·lint·test·build를 오프라인 실행합니다. 참조 Tauri snapshot은 provenance와 추적 source closure만 확인하며 Bun/Cargo/Tauri 설치·빌드·아이콘 검사를 수행하지 않습니다. 현재 `SERVER_SCAFFOLD_PASS`는 활성 골격 증거이며 서버 기능 전체 인증은 아닙니다. 소스 또는 lock이 바뀌면 먼저 commit한 뒤 `make prepare`로 prepared runtime을 갱신해야 합니다.
 
-개발 서버는 `cargo run -p g5-fleet-admin-server`로 실행하며 기본적으로 `apps/admin-web/dist`를 제공합니다. `/healthz`, `/readyz`, `/api/v1/meta`가 현재 공개 scaffold 계약입니다.
+개발 서버는 최초 한 번 `G5_FLEET_INSTALLATION_ID=local-fleet-01 cargo run -p g5-fleet-admin-server -- init-store`로 저장소를 명시적으로 초기화한 뒤 `cargo run -p g5-fleet-admin-server -- serve`로 실행합니다. 기본 데이터 경로는 `data`, 웹 경로는 `apps/admin-web/dist`입니다. `/healthz`, `/readyz`, `/api/v1/meta`가 현재 공개 scaffold 계약이며 readiness는 DB quick check와 웹 자산을 함께 확인합니다.
 
 과거 데스크톱 snapshot의 의존성 재현이 특별히 필요할 때만 `make legacy-consumer-prepare`와 `make legacy-consumer-verify`를 수동 실행합니다. 이 명령은 routine 제품 gate가 아닙니다.
 

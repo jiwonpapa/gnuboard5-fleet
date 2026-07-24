@@ -7,6 +7,7 @@ use axum::{
     response::{IntoResponse, Response},
     routing::get,
 };
+use g5_fleet_store::{EXPECTED_SCHEMA_VERSION, FleetStore};
 use serde::{Deserialize, Serialize};
 use tower_http::{
     services::{ServeDir, ServeFile},
@@ -19,6 +20,7 @@ pub const API_VERSION: &str = "v1";
 #[derive(Clone, Debug)]
 pub struct AppConfig {
     pub web_root: PathBuf,
+    pub store: FleetStore,
 }
 
 #[derive(Clone, Debug)]
@@ -40,6 +42,7 @@ pub struct MetaResponse {
     pub api_version: String,
     pub product_name: String,
     pub server_version: String,
+    pub database_schema_version: i64,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -84,7 +87,14 @@ async fn healthz(State(state): State<AppState>) -> Json<HealthResponse> {
 }
 
 async fn readyz(State(state): State<AppState>) -> Response {
-    if state.config.web_root.join("index.html").is_file() {
+    if !state.config.web_root.join("index.html").is_file() {
+        return api_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "web_assets_missing",
+            "Admin Web build output is not ready.",
+        );
+    }
+    if state.config.store.quick_check().await.is_ok() {
         return (
             StatusCode::OK,
             Json(HealthResponse {
@@ -99,8 +109,8 @@ async fn readyz(State(state): State<AppState>) -> Response {
 
     api_error(
         StatusCode::SERVICE_UNAVAILABLE,
-        "web_assets_missing",
-        "Admin Web build output is not ready.",
+        "database_not_ready",
+        "Fleet database integrity check did not pass.",
     )
 }
 
@@ -109,6 +119,7 @@ async fn meta() -> Json<MetaResponse> {
         api_version: API_VERSION.to_owned(),
         product_name: "G5 Fleet".to_owned(),
         server_version: env!("CARGO_PKG_VERSION").to_owned(),
+        database_schema_version: EXPECTED_SCHEMA_VERSION,
     })
 }
 

@@ -10,8 +10,9 @@ use serde_json::Value;
 use tempfile::TempDir;
 use tower::ServiceExt;
 
-fn fixture() -> (TempDir, axum::Router) {
+async fn fixture() -> (TempDir, TempDir, axum::Router) {
     let web = TempDir::new().expect("web tempdir");
+    let data = TempDir::new().expect("data tempdir");
     fs::write(
         web.path().join("index.html"),
         "<!doctype html><title>G5 Fleet</title><div id=\"root\"></div>",
@@ -19,8 +20,11 @@ fn fixture() -> (TempDir, axum::Router) {
     .expect("fixture index");
     let app = build_router(AppConfig {
         web_root: web.path().to_path_buf(),
+        store: g5_fleet_store::FleetStore::initialize(data.path(), "test-installation")
+            .await
+            .expect("test store"),
     });
-    (web, app)
+    (web, data, app)
 }
 
 async fn json<T: serde::de::DeserializeOwned>(response: axum::response::Response) -> T {
@@ -35,7 +39,7 @@ async fn json<T: serde::de::DeserializeOwned>(response: axum::response::Response
 
 #[tokio::test]
 async fn health_readiness_and_meta_contract_are_live() {
-    let (_web, app) = fixture();
+    let (_web, _data, app) = fixture().await;
 
     let health = app
         .clone()
@@ -61,11 +65,12 @@ async fn health_readiness_and_meta_contract_are_live() {
     let meta: MetaResponse = json(meta).await;
     assert_eq!(meta.api_version, "v1");
     assert_eq!(meta.product_name, "G5 Fleet");
+    assert_eq!(meta.database_schema_version, 1);
 }
 
 #[tokio::test]
 async fn spa_fallback_and_api_error_envelope_do_not_overlap() {
-    let (_web, app) = fixture();
+    let (_web, _data, app) = fixture().await;
     let spa = app
         .clone()
         .oneshot(Request::get("/sites/example").body(Body::empty()).unwrap())
@@ -87,8 +92,12 @@ async fn spa_fallback_and_api_error_envelope_do_not_overlap() {
 #[tokio::test]
 async fn readiness_fails_closed_without_web_build() {
     let web = TempDir::new().expect("web tempdir");
+    let data = TempDir::new().expect("data tempdir");
     let app = build_router(AppConfig {
         web_root: web.path().to_path_buf(),
+        store: g5_fleet_store::FleetStore::initialize(data.path(), "test-installation")
+            .await
+            .expect("test store"),
     });
     let response = app
         .oneshot(Request::get("/readyz").body(Body::empty()).unwrap())

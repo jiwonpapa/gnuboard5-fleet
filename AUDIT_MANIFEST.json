@@ -45,7 +45,8 @@
       "required_checks": [
         "active.workspace_boundary",
         "server.scaffold_contract",
-        "web.transport_boundary"
+        "web.transport_boundary",
+        "storage.sqlite_durability"
       ]
     },
     "server_static": {

@@ -226,6 +226,7 @@ EXPECTED_PROFILE_CONTRACTS: dict[str, dict[str, object]] = {
             "active.workspace_boundary",
             "server.scaffold_contract",
             "web.transport_boundary",
+            "storage.sqlite_durability",
         ],
     },
     "server_static": {
@@ -1517,6 +1518,76 @@ def check_web_transport_boundary(root: Path) -> str:
     return "typed same-origin HTTP transport와 Tauri invoke·원격 G5 직접 호출 금지 경계 확인"
 
 
+def check_sqlite_durability(root: Path) -> str:
+    migration = root / "crates/fleet-store/migrations/0001_control_plane.sql"
+    source = root / "crates/fleet-store/src/lib.rs"
+    backup = root / "crates/fleet-store/src/backup.rs"
+    failures = root / "crates/fleet-store/tests/durability.rs"
+    server = root / "apps/admin-server/src/main.rs"
+    for path in (migration, source, backup, failures, server):
+        if not path.is_file() or path.is_symlink():
+            raise ValueError(
+                f"SQLite durability source missing or unsafe: {path.relative_to(root)}"
+            )
+    migration_text = migration.read_text(encoding="utf-8")
+    required_tables = (
+        "installation_metadata",
+        "fleet_users",
+        "web_sessions",
+        "sites",
+        "encrypted_secrets",
+        "notification_outbox",
+        "jobs",
+        "audit_log",
+    )
+    missing_tables = [
+        table
+        for table in required_tables
+        if f"CREATE TABLE {table}" not in migration_text
+    ]
+    if missing_tables:
+        raise ValueError(f"SQLite base tables missing: {missing_tables}")
+
+    source_text = source.read_text(encoding="utf-8")
+    for token in (
+        "SqliteJournalMode::Wal",
+        "SqliteSynchronous::Full",
+        ".foreign_keys(true)",
+        "BUSY_TIMEOUT_MILLIS",
+        "connect_database(&database_path, false)",
+        ".create_if_missing(create)",
+        "PRAGMA quick_check",
+        "InstallationLocked",
+    ):
+        if token not in source_text:
+            raise ValueError(f"SQLite fail-closed token missing: {token}")
+
+    backup_text = backup.read_text(encoding="utf-8")
+    for token in (
+        'sqlx::query("VACUUM INTO ?")',
+        "snapshot_sha256",
+        "verify_snapshot",
+        "restore_verified_backup",
+        "readback",
+    ):
+        if token not in backup_text:
+            raise ValueError(f"SQLite backup token missing: {token}")
+
+    failures_text = failures.read_text(encoding="utf-8")
+    for token in (
+        "uncommitted_transaction_is_rolled_back_after_process_kill",
+        "failed_migration_rolls_back_without_advancing_schema",
+        "disk_full_write_rolls_back_and_database_reopens",
+        "corrupted_page_fails_closed_without_replacing_database",
+        "verified_backup_restores_critical_rows_to_separate_directory",
+    ):
+        if token not in failures_text:
+            raise ValueError(f"SQLite failure test missing: {token}")
+    if "FleetStore::open_existing" not in server.read_text(encoding="utf-8"):
+        raise ValueError("server startup does not open the existing Fleet store")
+    return "SQLite WAL·FULL·FK, fail-closed startup, 장애 4종과 checksum backup·restore readback 확인"
+
+
 def operation_set_sha256(operation_keys: set[str]) -> str:
     return hashlib.sha256("\n".join(sorted(operation_keys)).encode("utf-8")).hexdigest()
 
@@ -1845,6 +1916,7 @@ CHECKS: dict[str, Callable[[Path], str]] = {
     "active.workspace_boundary": check_active_workspace_boundary,
     "server.scaffold_contract": check_server_scaffold_contract,
     "web.transport_boundary": check_web_transport_boundary,
+    "storage.sqlite_durability": check_sqlite_durability,
 }
 
 

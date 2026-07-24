@@ -109,6 +109,8 @@ scope 확인
 - 기존 설치 DB 누락 시 빈 DB 자동 생성 차단
 - 별도 경로 backup 복원과 핵심 row readback PASS
 
+현재 상태: 완료. SQLx schema v1, WAL·FULL·FK, 단일 writer, 명시적 초기화와 기존 설치 fail-closed 시작, `VACUUM INTO`+SHA-256 backup·별도 restore를 구현했습니다. 강제종료·migration 실패·용량 부족·page 손상·restore readback 테스트가 PASS했습니다.
+
 ### B04 — 인증·사이트 격리
 
 작업:
@@ -270,4 +272,4 @@ B06 전체 완료 조건:
 
 ## 4. 현재 바로 시작할 배치
 
-현재 시작점은 **B03 SQLite 내구성**입니다. 인증·사이트 연결보다 먼저 DB 시작 정책, migration, backup·restore와 손상 fail-closed를 실제 장애 테스트로 닫습니다.
+현재 시작점은 **B04 인증·사이트 격리**입니다. SQLite 내구성 게이트를 선행 조건으로 두고 사용자 session, 명시적 `site_id`, secret 암호화와 CSRF·SSRF 경계를 닫습니다.

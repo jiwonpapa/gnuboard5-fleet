@@ -84,3 +84,20 @@ PRAGMA busy_timeout = 5000;
 7. 이전 image와 schema 호환 rollback
 
 SQLite 자체나 단일 디스크가 물리적 고장을 절대 일으키지 않는다고 보장할 수는 없습니다. 제품이 보장해야 하는 것은 손상을 조용히 무시하거나 빈 DB로 덮어쓰지 않고, 손상을 감지하며, 검증된 backup으로 복구 가능한 운영 경계입니다.
+
+## 8. 구현 위치와 시작 정책
+
+- schema: `crates/fleet-store/migrations/0001_control_plane.sql`
+- 저장·시작 검증: `crates/fleet-store/src/lib.rs`
+- backup·restore: `crates/fleet-store/src/backup.rs`
+- 장애 증적: `crates/fleet-store/tests/durability.rs`
+
+최초 설치만 다음 명령을 한 번 실행합니다.
+
+```bash
+G5_FLEET_DATA_DIR=/var/lib/g5-fleet \
+G5_FLEET_INSTALLATION_ID=fleet-production-01 \
+cargo run -p g5-fleet-admin-server -- init-store
+```
+
+이후 `serve`는 동일 경로의 `installation.json`과 `fleet.sqlite3`를 기존 상태로 열며 누락되면 종료합니다. Backup·restore 운영 명령과 upgrade orchestration은 B09 패키징 배치에서 이 검증 API에 연결합니다.

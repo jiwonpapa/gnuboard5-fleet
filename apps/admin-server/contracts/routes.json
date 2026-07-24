@@ -13,7 +13,7 @@
       "path": "/readyz",
       "auth": "public",
       "site_context": false,
-      "purpose": "web_asset_readiness"
+      "purpose": "database_and_web_asset_readiness"
     },
     {
       "method": "GET",

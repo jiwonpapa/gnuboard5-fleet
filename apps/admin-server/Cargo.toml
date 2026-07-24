@@ -7,6 +7,7 @@ rust-version.workspace = true
 
 [dependencies]
 axum.workspace = true
+g5-fleet-store = { path = "../../crates/fleet-store" }
 serde.workspace = true
 tokio.workspace = true
 tower-http.workspace = true

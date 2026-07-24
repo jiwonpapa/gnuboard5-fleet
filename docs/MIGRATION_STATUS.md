@@ -14,12 +14,15 @@
 - 루트 활성 Cargo workspace와 `apps/admin-server`, `apps/admin-web` 생성
 - Axum health/readiness/meta, SPA fallback과 JSON error envelope 구현
 - React responsive AppShell, same-origin typed HttpTransport와 브라우저 smoke 구현
+- SQLx SQLite schema v1과 WAL·FULL·foreign key·단일 writer 구현
+- 명시적 최초 초기화, 기존 설치 DB 누락·손상 fail-closed 시작 구현
+- `VACUUM INTO`+SHA-256 backup, 별도 restore·integrity·핵심 row readback 구현
+- 강제종료, migration 실패, 용량 부족, page 손상 장애 테스트 PASS
 
 현재 migration profile은 기존 Tauri snapshot의 provenance와 source closure만 이관 증거로 검증합니다. routine `make prepare/check`는 해당 snapshot의 Bun·Cargo·Tauri·네이티브 패키징 의존성을 준비하거나 빌드하지 않습니다. 이는 데스크톱 제품 지원 또는 서버판 구현 완료를 뜻하지 않습니다.
 
 ## 아직 인증하지 않는 것
 
-- SQLite 영구 상태가 연결된 Axum 서버
 - 189개 Core route와 React field 소비
 - 사용자·사이트 동시 세션 격리
 - Telegram/Web Push 실제 발송
@@ -28,4 +31,4 @@
 
 따라서 이번 완료 등급의 상한은 `SERVER_SCAFFOLD_PASS`입니다. 이는 활성 workspace·route·transport·build 골격의 정적/로컬 smoke 증거이며 `SERVER_STATIC_PASS` 또는 `LOCAL_RUNTIME_PASS`가 아닙니다.
 
-다음 구현 배치는 `docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md`의 **B03 SQLite 내구성**입니다.
+다음 구현 배치는 `docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md`의 **B04 인증·사이트 격리**입니다.
