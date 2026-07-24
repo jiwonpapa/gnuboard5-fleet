@@ -18,7 +18,7 @@
     "profiles": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["scaffold", "migration_static", "server_static", "local", "package", "staging"],
+      "required": ["scaffold", "migration_static", "server_scaffold", "server_static", "local", "package", "staging"],
       "properties": {
         "scaffold": {
           "type": "object",
@@ -39,13 +39,23 @@
             "required_checks": {"const": ["migration.history", "migration.secret_history_hygiene", "migration.source_closure", "migration.legacy_reference_boundary", "runtime.composed_provider", "runtime.audit_dependencies", "php.contract_inventory", "commerce.provider_retention", "product.notification_boundary"]}
           }
         },
+        "server_scaffold": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["proof_level", "inherits", "required_checks"],
+          "properties": {
+            "proof_level": {"const": "SERVER_SCAFFOLD_PASS"},
+            "inherits": {"const": "migration_static"},
+            "required_checks": {"const": ["active.workspace_boundary", "server.scaffold_contract", "web.transport_boundary"]}
+          }
+        },
         "server_static": {
           "type": "object",
           "additionalProperties": false,
           "required": ["proof_level", "inherits", "required_checks"],
           "properties": {
             "proof_level": {"const": "SERVER_STATIC_PASS"},
-            "inherits": {"const": "migration_static"},
+            "inherits": {"const": "server_scaffold"},
             "required_checks": {"const": ["server.route_registry", "web.transport_registry", "web.field_consumption", "security.site_context", "security.csrf", "security.ssrf", "notification.telegram_contract", "notification.web_push_contract", "commerce.core_isolation"]}
           }
         },

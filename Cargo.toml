@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = ["apps/admin-server"]
+
+[workspace.package]
+edition = "2024"
+license = "Apache-2.0"
+rust-version = "1.88"
+version = "0.1.0"
+
+[workspace.dependencies]
+axum = "0.8.9"
+http-body-util = "0.1.4"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+tempfile = "3.27.0"
+tokio = { version = "1.53.0", features = ["macros", "net", "rt-multi-thread", "signal"] }
+tower = { version = "0.5.3", features = ["util"] }
+tower-http = { version = "0.6.11", features = ["fs", "trace"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
+
+[profile.release]
+lto = "thin"
+strip = true

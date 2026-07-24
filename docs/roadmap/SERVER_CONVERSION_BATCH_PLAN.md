@@ -90,6 +90,8 @@ scope 확인
 - React typecheck/lint/test/build PASS
 - 브라우저에서 서버가 제공한 AppShell과 health 상태 확인
 
+현재 상태: 완료. 활성 Cargo/Bun workspace, Axum health·readiness·SPA 제공, same-origin typed transport, 반응형 AppShell과 browser smoke를 닫았습니다. 증거 상한은 `SERVER_SCAFFOLD_PASS`입니다.
+
 ### B03 — SQLite 내구성
 
 작업:
@@ -268,4 +270,4 @@ B06 전체 완료 조건:
 
 ## 4. 현재 바로 시작할 배치
 
-현재 시작점은 **B02 활성 workspace 골격**입니다. React UI 대량 이관이나 Axum route 189개 생성을 바로 시작하지 않고, 먼저 활성 서버·웹 shell과 build·audit 경로를 독립적으로 닫습니다.
+현재 시작점은 **B03 SQLite 내구성**입니다. 인증·사이트 연결보다 먼저 DB 시작 정책, migration, backup·restore와 손상 fail-closed를 실제 장애 테스트로 닫습니다.

@@ -3,7 +3,7 @@ ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 export PYTHONDONTWRITEBYTECODE := 1
 
 .NOTPARALLEL: bootstrap prepare check
-.PHONY: doctor bootstrap prepare check test-audit test-upstream test-runtime runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration upstream-sync upstream-audit upstream-verify secret-scan
+.PHONY: doctor bootstrap prepare check test-audit test-upstream test-runtime runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-server-scaffold upstream-sync upstream-audit upstream-verify secret-scan
 
 doctor:
 	@cd "$(ROOT)" && command -v git >/dev/null
@@ -40,6 +40,24 @@ audit-runtime-prepare:
 audit-runtime-verify:
 	cd "$(ROOT)" && $(PYTHON) tools/runtime/prepare_consumers.py verify-audit --python "$(PYTHON)"
 
+active-prepare:
+	cd "$(ROOT)" && cargo fetch --locked
+	cd "$(ROOT)/apps/admin-web" && bun install --frozen-lockfile --ignore-scripts
+
+active-server-check:
+	cd "$(ROOT)" && cargo fmt --all --check
+	cd "$(ROOT)" && cargo clippy --workspace --all-targets --locked --offline -- -D warnings
+	cd "$(ROOT)" && cargo test --workspace --locked --offline
+
+active-web-check:
+	cd "$(ROOT)/apps/admin-web" && test -d node_modules
+	cd "$(ROOT)/apps/admin-web" && bun run typecheck
+	cd "$(ROOT)/apps/admin-web" && bun run lint
+	cd "$(ROOT)/apps/admin-web" && bun run test
+	cd "$(ROOT)/apps/admin-web" && bun run build
+
+active-check: active-server-check active-web-check
+
 legacy-consumer-prepare:
 	cd "$(ROOT)" && $(PYTHON) tools/runtime/prepare_consumers.py prepare --python "$(PYTHON)"
 
@@ -54,6 +72,7 @@ prepare:
 	+$(MAKE) upstream-verify
 	+$(MAKE) runtime-prepare
 	+$(MAKE) audit-runtime-prepare
+	+$(MAKE) active-prepare
 
 audit-scaffold:
 	cd "$(ROOT)" && $(PYTHON) tools/audit/g5audit.py --profile scaffold
@@ -62,6 +81,10 @@ audit-migration:
 	cd "$(ROOT)" && command -v "$(PYTHON)" >/dev/null
 	cd "$(ROOT)" && CARGO_NET_OFFLINE=true COMPOSER_DISABLE_NETWORK=1 "$(PYTHON)" tools/audit/g5audit.py --profile migration_static
 
+audit-server-scaffold:
+	cd "$(ROOT)" && command -v "$(PYTHON)" >/dev/null
+	cd "$(ROOT)" && CARGO_NET_OFFLINE=true COMPOSER_DISABLE_NETWORK=1 "$(PYTHON)" tools/audit/g5audit.py --profile server_scaffold
+
 check:
 	+$(MAKE) doctor
 	+$(MAKE) test-audit
@@ -69,7 +92,8 @@ check:
 	+$(MAKE) test-runtime
 	+$(MAKE) runtime-verify
 	+$(MAKE) audit-runtime-verify
-	+$(MAKE) audit-migration
+	+$(MAKE) active-check
+	+$(MAKE) audit-server-scaffold
 
 secret-scan:
 	@cd "$(ROOT)" && command -v gitleaks >/dev/null

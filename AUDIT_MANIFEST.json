@@ -39,9 +39,18 @@
         "product.notification_boundary"
       ]
     },
+    "server_scaffold": {
+      "proof_level": "SERVER_SCAFFOLD_PASS",
+      "inherits": "migration_static",
+      "required_checks": [
+        "active.workspace_boundary",
+        "server.scaffold_contract",
+        "web.transport_boundary"
+      ]
+    },
     "server_static": {
       "proof_level": "SERVER_STATIC_PASS",
-      "inherits": "migration_static",
+      "inherits": "server_scaffold",
       "required_checks": [
         "server.route_registry",
         "web.transport_registry",

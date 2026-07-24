@@ -12,6 +12,7 @@ import re
 import stat
 import subprocess
 import sys
+import tomllib
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -218,9 +219,18 @@ EXPECTED_PROFILE_CONTRACTS: dict[str, dict[str, object]] = {
             "product.notification_boundary",
         ],
     },
+    "server_scaffold": {
+        "proof_level": "SERVER_SCAFFOLD_PASS",
+        "inherits": "migration_static",
+        "required_checks": [
+            "active.workspace_boundary",
+            "server.scaffold_contract",
+            "web.transport_boundary",
+        ],
+    },
     "server_static": {
         "proof_level": "SERVER_STATIC_PASS",
-        "inherits": "migration_static",
+        "inherits": "server_scaffold",
         "required_checks": [
             "server.route_registry",
             "web.transport_registry",
@@ -1273,6 +1283,20 @@ def _manifest_dependency_names(path: Path) -> set[str]:
     return names
 
 
+def active_manifest_paths(root: Path) -> list[Path]:
+    ignored_parts = {"node_modules", "target", "dist", "coverage", ".cache"}
+    manifests: list[Path] = []
+    for base in (root / "apps", root / "crates"):
+        if not base.is_dir():
+            continue
+        for pattern in ("Cargo.toml", "package.json"):
+            for path in base.rglob(pattern):
+                relative_parts = path.relative_to(base).parts
+                if not ignored_parts.intersection(relative_parts):
+                    manifests.append(path)
+    return sorted(set(manifests))
+
+
 def check_legacy_reference_boundary(root: Path) -> str:
     provenance = load_json(root / "MIGRATION_PROVENANCE.json")
     sources = provenance.get("sources")
@@ -1300,13 +1324,7 @@ def check_legacy_reference_boundary(root: Path) -> str:
     ):
         raise ValueError("product manifest re-enabled a native desktop/wrapper")
 
-    active_manifests = [
-        path
-        for base in (root / "apps", root / "crates")
-        if base.is_dir()
-        for pattern in ("Cargo.toml", "package.json")
-        for path in base.rglob(pattern)
-    ]
+    active_manifests = active_manifest_paths(root)
     forbidden: list[str] = []
     for manifest in active_manifests:
         dependencies = _manifest_dependency_names(manifest)
@@ -1328,6 +1346,175 @@ def check_legacy_reference_boundary(root: Path) -> str:
         "legacy Rust/Tauri provenance는 reference-only이며 "
         f"활성 manifest {len(active_manifests)}개 Tauri 의존성 0"
     )
+
+
+def check_active_workspace_boundary(root: Path) -> str:
+    cargo_path = root / "Cargo.toml"
+    cargo_lock = root / "Cargo.lock"
+    web_package_path = root / "apps/admin-web/package.json"
+    web_lock = root / "apps/admin-web/bun.lock"
+    for path in (cargo_path, cargo_lock, web_package_path, web_lock):
+        if not path.is_file() or path.is_symlink():
+            raise ValueError(f"active workspace input missing or unsafe: {path.relative_to(root)}")
+
+    cargo = tomllib.loads(cargo_path.read_text(encoding="utf-8"))
+    workspace = cargo.get("workspace")
+    members = workspace.get("members") if isinstance(workspace, dict) else None
+    if not isinstance(members, list) or "apps/admin-server" not in members:
+        raise ValueError("active Cargo workspace must include apps/admin-server")
+    invalid_members = [
+        member
+        for member in members
+        if not isinstance(member, str)
+        or not member
+        or member.startswith("products/")
+        or not member.startswith(("apps/", "crates/"))
+    ]
+    if invalid_members:
+        raise ValueError(f"active Cargo workspace has invalid members: {invalid_members}")
+    workspace_package = cargo.get("workspace", {}).get("package")
+    if not isinstance(workspace_package, dict) or workspace_package.get("license") != "Apache-2.0":
+        raise ValueError("active Cargo workspace license must be Apache-2.0")
+
+    web_package = load_json(web_package_path)
+    if (
+        web_package.get("name") != "@g5-fleet/admin-web"
+        or web_package.get("license") != "Apache-2.0"
+        or web_package.get("packageManager") != "bun@1.3.10"
+    ):
+        raise ValueError("active Admin Web package identity/toolchain mismatch")
+    scripts = web_package.get("scripts")
+    required_scripts = {"build", "lint", "test", "typecheck"}
+    if not isinstance(scripts, dict) or not required_scripts.issubset(scripts):
+        raise ValueError("active Admin Web quality scripts are incomplete")
+
+    active_manifests = active_manifest_paths(root)
+    forbidden_dependencies: list[str] = []
+    for manifest in active_manifests:
+        dependencies = _manifest_dependency_names(manifest)
+        tauri = sorted(
+            name
+            for name in dependencies
+            if name == "tauri"
+            or name.startswith("tauri-")
+            or name.startswith("@tauri-apps/")
+        )
+        if tauri:
+            forbidden_dependencies.append(
+                f"{manifest.relative_to(root)}:{','.join(tauri)}"
+            )
+    if forbidden_dependencies:
+        raise ValueError(
+            "active workspace contains Tauri dependencies: "
+            + "; ".join(forbidden_dependencies)
+        )
+
+    tauri_source_hits: list[str] = []
+    for base in (root / "apps", root / "crates"):
+        if not base.is_dir():
+            continue
+        for path in base.rglob("*.rs"):
+            text = path.read_text(encoding="utf-8")
+            if "tauri::" in text or "#[tauri" in text:
+                tauri_source_hits.append(path.relative_to(root).as_posix())
+    if tauri_source_hits:
+        raise ValueError(
+            "active Rust source contains Tauri APIs: " + ", ".join(tauri_source_hits)
+        )
+    return (
+        f"active Cargo member {len(members)}개, manifest {len(active_manifests)}개, "
+        "Tauri dependency/API 0"
+    )
+
+
+def check_server_scaffold_contract(root: Path) -> str:
+    registry_path = root / "apps/admin-server/contracts/routes.json"
+    source_path = root / "apps/admin-server/src/lib.rs"
+    if not registry_path.is_file() or not source_path.is_file():
+        raise ValueError("active server scaffold contract/source is missing")
+    registry = load_json(registry_path)
+    if registry.get("schema") != "g5-fleet.server-routes/v1":
+        raise ValueError("active server route registry schema mismatch")
+    routes = registry.get("routes")
+    if not isinstance(routes, list):
+        raise ValueError("active server route registry is missing")
+    actual = [
+        (
+            row.get("method"),
+            row.get("path"),
+            row.get("auth"),
+            row.get("site_context"),
+        )
+        for row in routes
+        if isinstance(row, dict)
+    ]
+    expected = [
+        ("GET", "/healthz", "public", False),
+        ("GET", "/readyz", "public", False),
+        ("GET", "/api/v1/meta", "public", False),
+    ]
+    if actual != expected or len(routes) != len(expected):
+        raise ValueError(f"active server scaffold route mismatch: {actual}")
+
+    source = source_path.read_text(encoding="utf-8")
+    required_tokens = (
+        'route("/healthz"',
+        'route("/readyz"',
+        'nest("/api/v1"',
+        'route("/meta"',
+        "ServeDir::new",
+        "ErrorEnvelope",
+    )
+    missing = [token for token in required_tokens if token not in source]
+    if missing:
+        raise ValueError(f"active server scaffold source tokens missing: {missing}")
+    return "Axum healthz·readyz·meta, JSON error envelope, React SPA static fallback 확인"
+
+
+def check_web_transport_boundary(root: Path) -> str:
+    transport_path = root / "apps/admin-web/src/transport/browserHttpTransport.ts"
+    contract_path = root / "apps/admin-web/src/transport/contracts.ts"
+    system_path = root / "apps/admin-web/src/api/system.ts"
+    for path in (transport_path, contract_path, system_path):
+        if not path.is_file() or path.is_symlink():
+            raise ValueError(f"Admin Web transport source missing or unsafe: {path}")
+    transport = transport_path.read_text(encoding="utf-8")
+    contract = contract_path.read_text(encoding="utf-8")
+    system = system_path.read_text(encoding="utf-8")
+    required_transport_tokens = (
+        'credentials: "same-origin"',
+        'redirect: "error"',
+        "cross_origin_forbidden",
+        "endpoint.origin !== this.browserOrigin",
+    )
+    missing = [token for token in required_transport_tokens if token not in transport]
+    if missing:
+        raise ValueError(f"Admin Web same-origin transport guards missing: {missing}")
+    if "interface HttpTransport" not in contract or "interface ErrorEnvelope" not in contract:
+        raise ValueError("Admin Web typed transport/error envelope contract is incomplete")
+    if (
+        'new BrowserHttpTransport("/api/v1")' not in system
+        or 'path: "/healthz"' not in system
+    ):
+        raise ValueError("Admin Web system API is not bound to the Fleet server")
+
+    forbidden_hits: list[str] = []
+    web_source = root / "apps/admin-web/src"
+    for path in web_source.rglob("*"):
+        if (
+            not path.is_file()
+            or path.name.endswith((".test.ts", ".test.tsx"))
+            or path.suffix not in {".ts", ".tsx"}
+        ):
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "@tauri-apps/" in text or "invoke(" in text:
+            forbidden_hits.append(path.relative_to(root).as_posix())
+    if forbidden_hits:
+        raise ValueError(
+            "Admin Web source contains desktop bridge calls: " + ", ".join(forbidden_hits)
+        )
+    return "typed same-origin HTTP transport와 Tauri invoke·원격 G5 직접 호출 금지 경계 확인"
 
 
 def operation_set_sha256(operation_keys: set[str]) -> str:
@@ -1655,6 +1842,9 @@ CHECKS: dict[str, Callable[[Path], str]] = {
     "php.contract_inventory": check_contract_inventory,
     "commerce.provider_retention": check_commerce_retention,
     "product.notification_boundary": check_notification_boundary,
+    "active.workspace_boundary": check_active_workspace_boundary,
+    "server.scaffold_contract": check_server_scaffold_contract,
+    "web.transport_boundary": check_web_transport_boundary,
 }
 
 

@@ -1,0 +1,10 @@
+{
+  "name": "G5 Fleet",
+  "short_name": "G5 Fleet",
+  "description": "그누보드5 멀티사이트 통합 관리자",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f4f2",
+  "theme_color": "#f3f4f2",
+  "lang": "ko"
+}

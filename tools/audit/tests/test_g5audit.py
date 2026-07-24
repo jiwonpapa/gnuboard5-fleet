@@ -121,6 +121,30 @@ class G5AuditTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "depend on Tauri"):
                 MODULE.check_legacy_reference_boundary(root)
 
+    def test_active_server_web_scaffold_contracts_are_closed(self) -> None:
+        self.assertEqual(
+            [
+                "apps/admin-server/Cargo.toml",
+                "apps/admin-web/package.json",
+            ],
+            [
+                path.relative_to(MODULE.ROOT).as_posix()
+                for path in MODULE.active_manifest_paths(MODULE.ROOT)
+            ],
+        )
+        self.assertIn(
+            "Tauri dependency/API 0",
+            MODULE.check_active_workspace_boundary(MODULE.ROOT),
+        )
+        self.assertIn(
+            "Axum healthz",
+            MODULE.check_server_scaffold_contract(MODULE.ROOT),
+        )
+        self.assertIn(
+            "same-origin HTTP transport",
+            MODULE.check_web_transport_boundary(MODULE.ROOT),
+        )
+
     def test_upstream_lock_requires_full_commit_tree_and_file_hashes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -72,7 +72,7 @@ G5 legacy source
 → live 저장/readback/cleanup
 ```
 
-증명 단계는 `SCAFFOLD_PASS`, `MIGRATION_STATIC_PASS`, `SERVER_STATIC_PASS`, `LOCAL_RUNTIME_PASS`, `PACKAGE_PASS`, `STAGING_PASS`, `LIVE_CERTIFIED`로 구분합니다. blocked, skipped, stale, scanner-zero를 PASS로 승격하지 않습니다. 모든 child artifact는 부모 run ID에 귀속하고 자체 run ID와 hash를 기록하며, 같은 Git SHA, OpenAPI SHA, upstream G5 commit, image digest를 사용합니다.
+증명 단계는 `SCAFFOLD_PASS`, `MIGRATION_STATIC_PASS`, `SERVER_SCAFFOLD_PASS`, `SERVER_STATIC_PASS`, `LOCAL_RUNTIME_PASS`, `PACKAGE_PASS`, `STAGING_PASS`, `LIVE_CERTIFIED`로 구분합니다. `SERVER_SCAFFOLD_PASS`는 활성 Axum/React 골격과 build·route·transport 경계만 증명하며 189개 Core 소비나 보안 완성을 뜻하지 않습니다. blocked, skipped, stale, scanner-zero를 PASS로 승격하지 않습니다. 모든 child artifact는 부모 run ID에 귀속하고 자체 run ID와 hash를 기록하며, 같은 Git SHA, OpenAPI SHA, upstream G5 commit, image digest를 사용합니다.
 
 감사 결과는 `output/audit/runs/<run_id>/result.json`에 불변 증적으로 저장하고 `output/audit/latest.json`은 탐색용 포인터로만 사용합니다.
 

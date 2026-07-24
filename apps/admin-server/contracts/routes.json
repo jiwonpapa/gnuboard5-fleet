@@ -1,0 +1,26 @@
+{
+  "schema": "g5-fleet.server-routes/v1",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/healthz",
+      "auth": "public",
+      "site_context": false,
+      "purpose": "process_liveness"
+    },
+    {
+      "method": "GET",
+      "path": "/readyz",
+      "auth": "public",
+      "site_context": false,
+      "purpose": "web_asset_readiness"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meta",
+      "auth": "public",
+      "site_context": false,
+      "purpose": "web_bootstrap_metadata"
+    }
+  ]
+}
