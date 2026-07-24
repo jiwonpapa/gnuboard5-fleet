@@ -7,6 +7,7 @@ rust-version.workspace = true
 
 [dependencies]
 async-trait.workspace = true
+base64.workspace = true
 g5-fleet-security = { path = "../fleet-security" }
 reqwest.workspace = true
 serde.workspace = true

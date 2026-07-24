@@ -216,6 +216,14 @@ B06 전체 완료 조건:
 - 17개 schema domain field parity 확인
 - Shop 26개 Core 소비 0
 
+현재 상태: 완료. canonical OpenAPI와 phase1 scope에서 Core registry를
+재현 생성하며 active 189, 비쇼핑 관리자 184, bootstrap 5, Shop 0을 exact
+set으로 고정했습니다. Rust allowlist·site-bound Axum proxy와 React domain
+console이 동일 registry를 소비하고, 연결 schema 287개와 17-domain field
+목록을 보존합니다. DELETE 명시 확인, write step-up, 외부 메일·SMS·Push 9개
+routine 차단, mock Connector config 수정·재조회·원복을 검증했습니다.
+실제 G5 189개 operation runtime PASS로는 승격하지 않습니다.
+
 ### B07 — SSH/SFTP
 
 작업:

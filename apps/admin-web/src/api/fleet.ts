@@ -1,4 +1,5 @@
 import { BrowserHttpTransport } from "../transport/browserHttpTransport";
+import type { CoreOperation } from "../generated/coreOperations";
 
 export interface LoginResponse {
   csrf_token: string;
@@ -30,6 +31,21 @@ export interface SiteOverview {
   connector_version: string;
   site_title: string | null;
   administrator_id: string | null;
+}
+
+export interface CoreExecuteInput {
+  path: Record<string, string>;
+  query: Record<string, unknown>;
+  body: Record<string, unknown> | null;
+  confirm_destructive: boolean;
+}
+
+export interface CoreExecuteResponse {
+  operation_id: string;
+  upstream_status: number;
+  content_type: string | null;
+  data: unknown | null;
+  body_base64: string | null;
 }
 
 const transport = new BrowserHttpTransport("/api/v1");
@@ -102,6 +118,22 @@ export function connectorLogin(
     });
 }
 
+export function connectorRefresh(siteId: string, csrfToken: string) {
+  return transport.request<{ connected: boolean; expires_in: number }>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/connector/refresh`,
+    csrfToken,
+  });
+}
+
+export function connectorLogout(siteId: string, csrfToken: string) {
+  return transport.request<null>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/connector/logout`,
+    csrfToken,
+  });
+}
+
 export function getSiteOverview(siteId: string) {
   return transport.request<SiteOverview>({
     method: "GET",
@@ -126,5 +158,28 @@ export function updateBasicConfig(
     path: `/sites/${encodeURIComponent(siteId)}/config/basic`,
     csrfToken,
     body: { cf_10: cf10 },
+  });
+}
+
+export function getCoreRegistry() {
+  return transport.request<CoreOperation[]>({
+    method: "GET",
+    path: "/core/registry",
+  });
+}
+
+export function executeCoreOperation(
+  siteId: string,
+  operationId: string,
+  input: CoreExecuteInput,
+  csrfToken: string,
+) {
+  return transport.request<CoreExecuteResponse, CoreExecuteInput>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/core/${
+      encodeURIComponent(operationId)
+    }`,
+    csrfToken,
+    body: input,
   });
 }

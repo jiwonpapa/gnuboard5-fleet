@@ -59,6 +59,13 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/core/registry",
+      "auth": "session",
+      "site_context": false,
+      "purpose": "canonical_core_operation_metadata"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites",
       "auth": "session",
       "site_context": false,
@@ -100,6 +107,20 @@
       "purpose": "connector_login_and_encrypted_token_store"
     },
     {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/connector/refresh",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "connector_token_refresh_and_encrypted_rotation"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/connector/logout",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "connector_logout_and_local_token_invalidation"
+    },
+    {
       "method": "GET",
       "path": "/api/v1/sites/{site_id}/overview",
       "auth": "session",
@@ -119,6 +140,13 @@
       "auth": "session_csrf_step_up",
       "site_context": true,
       "purpose": "safe_cf_10_update"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/core/{operation_id}",
+      "auth": "session_csrf_risk_step_up",
+      "site_context": true,
+      "purpose": "canonical_core_operation_proxy"
     }
   ]
 }

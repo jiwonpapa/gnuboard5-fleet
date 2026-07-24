@@ -48,7 +48,13 @@
         "web.transport_boundary",
         "storage.sqlite_durability",
         "security.auth_site_boundary",
-        "server.vertical_flow"
+        "server.vertical_flow",
+        "server.route_registry",
+        "web.transport_registry",
+        "web.field_consumption",
+        "security.site_context",
+        "security.csrf",
+        "security.ssrf"
       ]
     },
     "server_static": {

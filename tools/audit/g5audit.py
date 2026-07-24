@@ -229,6 +229,12 @@ EXPECTED_PROFILE_CONTRACTS: dict[str, dict[str, object]] = {
             "storage.sqlite_durability",
             "security.auth_site_boundary",
             "server.vertical_flow",
+            "server.route_registry",
+            "web.transport_registry",
+            "web.field_consumption",
+            "security.site_context",
+            "security.csrf",
+            "security.ssrf",
         ],
     },
     "server_static": {
@@ -1460,6 +1466,7 @@ def check_server_scaffold_contract(root: Path) -> str:
         ("POST", "/api/v1/auth/logout", "session_csrf", False),
         ("POST", "/api/v1/auth/step-up", "session_csrf", False),
         ("GET", "/api/v1/session", "session", False),
+        ("GET", "/api/v1/core/registry", "session", False),
         ("GET", "/api/v1/sites", "session", False),
         ("POST", "/api/v1/sites", "session_csrf", False),
         ("GET", "/api/v1/sites/{site_id}", "session", True),
@@ -1481,6 +1488,18 @@ def check_server_scaffold_contract(root: Path) -> str:
             "session_csrf_step_up",
             True,
         ),
+        (
+            "POST",
+            "/api/v1/sites/{site_id}/connector/refresh",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "POST",
+            "/api/v1/sites/{site_id}/connector/logout",
+            "session_csrf_step_up",
+            True,
+        ),
         ("GET", "/api/v1/sites/{site_id}/overview", "session", True),
         (
             "GET",
@@ -1492,6 +1511,12 @@ def check_server_scaffold_contract(root: Path) -> str:
             "PUT",
             "/api/v1/sites/{site_id}/config/basic",
             "session_csrf_step_up",
+            True,
+        ),
+        (
+            "POST",
+            "/api/v1/sites/{site_id}/core/{operation_id}",
+            "session_csrf_risk_step_up",
             True,
         ),
     ]
@@ -1595,6 +1620,296 @@ def check_server_vertical_flow(root: Path) -> str:
         "canonical health·login·config 4연산, site-bound Axum, encrypted Connector token, "
         "same-origin React 수정·재조회·원복 흐름 확인"
     )
+
+
+def _core_registry(root: Path) -> dict[str, Any]:
+    contract = root / "contracts/core-operations.json"
+    web_contract = root / "apps/admin-web/src/generated/core-operations.json"
+    generator = root / "tools/codegen/generate_core_contract.py"
+    for path in (contract, web_contract, generator):
+        if not path.is_file() or path.is_symlink():
+            raise ValueError(f"Core registry input missing or unsafe: {path.relative_to(root)}")
+    run_checked(
+        sys.executable,
+        str(generator),
+        "--check",
+        root=root,
+        timeout_seconds=60,
+    )
+    if contract.read_bytes() != web_contract.read_bytes():
+        raise ValueError("Rust/server and Admin Web Core registry bytes differ")
+    payload = load_json(contract)
+    if payload.get("schema") != "g5-fleet.core-operations/v1":
+        raise ValueError("Core registry schema mismatch")
+    source = payload.get("source")
+    if not isinstance(source, dict):
+        raise ValueError("Core registry source binding missing")
+    expected_sources = {
+        "openapi_sha256": sha256(root / "connectors/gnuboard5-php/api/docs/openapi.yaml"),
+        "scope_sha256": sha256(
+            root / "connectors/gnuboard5-php/api/docs/openapi.phase1-consumer-scope.json"
+        ),
+    }
+    for key, expected in expected_sources.items():
+        if source.get(key) != expected:
+            raise ValueError(f"Core registry source fingerprint mismatch: {key}")
+    return payload
+
+
+def check_server_route_registry(root: Path) -> str:
+    payload = _core_registry(root)
+    counts = payload.get("counts")
+    expected_counts = {
+        "active": 189,
+        "admin_non_shop": 184,
+        "bootstrap": 5,
+        "shop": 0,
+        "schema_domains": 17,
+    }
+    if not isinstance(counts, dict) or any(
+        counts.get(key) != value for key, value in expected_counts.items()
+    ):
+        raise ValueError(f"Core registry counts mismatch: {counts}")
+    operations = payload.get("operations")
+    if not isinstance(operations, list) or len(operations) != 189:
+        raise ValueError("Core operation registry must contain exact 189 rows")
+    active_key_hash = operation_set_sha256(
+        {f"{row['method']} {row['path']}" for row in operations}
+    )
+    if payload["source"].get("active_operation_keys_sha256") != active_key_hash:
+        raise ValueError("Core active operation key fingerprint mismatch")
+    actual = {
+        (
+            row.get("method"),
+            row.get("path"),
+            row.get("operation_id"),
+        )
+        for row in operations
+        if isinstance(row, dict)
+    }
+    manifest = load_json(
+        root / "connectors/gnuboard5-php/api/docs/openapi.contract-manifest.json"
+    )
+    scope = load_json(
+        root / "connectors/gnuboard5-php/api/docs/openapi.phase1-consumer-scope.json"
+    )
+    bootstrap = {
+        (row["method"].upper(), row["path"])
+        for row in scope["active_scope"]["include_operations"]
+    }
+    expected = {
+        (row["method"], row["path"], row["operation_id"])
+        for row in manifest["operations"]
+        if (
+            row["path"].startswith("/admin/")
+            and not row["path"].startswith("/admin/shop/")
+        )
+        or (row["method"], row["path"]) in bootstrap
+    }
+    if actual != expected or len(actual) != 189:
+        raise ValueError("Core operation registry drifted from canonical active 189 set")
+    specialized = {
+        row["operation_id"]
+        for row in operations
+        if row.get("transport") == "specialized"
+    }
+    if specialized != {"getHealth", "login", "logout", "refreshToken"}:
+        raise ValueError(f"Core specialized operation boundary mismatch: {specialized}")
+    external = {
+        row["operation_id"]
+        for row in operations
+        if row.get("risk") == "external_effect"
+    }
+    expected_external = {
+        "adminCreateMailTest",
+        "adminSendMail",
+        "adminSendTestMail",
+        "adminSendPush",
+        "adminCreateSmsMessage",
+        "adminResendAllSmsBatch",
+        "adminResendSmsFailures",
+        "adminSystemSendMemberMail",
+        "adminSystemSendMailTest",
+    }
+    if external != expected_external:
+        raise ValueError(f"Core external-effect boundary mismatch: {external}")
+    connector = (root / "crates/fleet-connector/src/lib.rs").read_text(encoding="utf-8")
+    api = (root / "apps/admin-server/src/api.rs").read_text(encoding="utf-8")
+    tests = (root / "apps/admin-server/tests/http_contract.rs").read_text(
+        encoding="utf-8"
+    )
+    connector_tokens = (
+        "CORE_REGISTRY_JSON",
+        "pub fn core_operations",
+        "pub fn core_operation",
+        "validate_core_request",
+        "revalidate_before_connect",
+        "multipart_form",
+        "ExternalEffectBlocked",
+        "req-core-config-readback",
+        "req-core-config-rollback",
+    )
+    api_tokens = (
+        '"/core/registry"',
+        '"/sites/{site_id}/core/{operation_id}"',
+        '"/sites/{site_id}/connector/refresh"',
+        '"/sites/{site_id}/connector/logout"',
+        "owned_site_context",
+        "require_recent_step_up",
+        "external_effect_blocked",
+    )
+    if any(token not in connector for token in connector_tokens):
+        raise ValueError("Core Rust connector registry/execution boundary incomplete")
+    if any(token not in api for token in api_tokens):
+        raise ValueError("Core Axum site-bound registry/execution route incomplete")
+    if (
+        "registry.as_array().map(Vec::len), Some(189)" not in tests
+        or "adminListMembers" not in tests
+        or "external_effect_blocked" not in tests
+    ):
+        raise ValueError("Core Axum registry/proxy policy tests incomplete")
+    return (
+        "canonical active 189 = admin 184 + bootstrap 5, Shop 0; "
+        "site-bound Rust registry/proxy와 외부효과 9개 routine 차단 확인"
+    )
+
+
+def check_web_transport_registry(root: Path) -> str:
+    payload = _core_registry(root)
+    module = (root / "apps/admin-web/src/generated/coreOperations.ts").read_text(
+        encoding="utf-8"
+    )
+    api = (root / "apps/admin-web/src/api/fleet.ts").read_text(encoding="utf-8")
+    console = (root / "apps/admin-web/src/components/CoreDomainConsole.tsx").read_text(
+        encoding="utf-8"
+    )
+    flow = (root / "apps/admin-web/src/components/VerticalFlow.tsx").read_text(
+        encoding="utf-8"
+    )
+    required_module = (
+        "CoreOperation",
+        "CoreSchema",
+        "CoreSchemaDomain",
+        "coreRegistry",
+        "coreOperationById",
+    )
+    required_api = (
+        "getCoreRegistry",
+        "executeCoreOperation",
+        "connectorRefresh",
+        "connectorLogout",
+        "csrfToken",
+    )
+    required_console = (
+        "coreRegistry.operations",
+        "serverOperations",
+        "executeCoreOperation",
+        "confirm_destructive",
+        "operation.transport",
+        'operation.risk === "external_effect"',
+    )
+    if any(token not in module for token in required_module):
+        raise ValueError("Admin Web generated Core registry types incomplete")
+    if any(token not in api for token in required_api):
+        raise ValueError("Admin Web Core same-origin transport incomplete")
+    if any(token not in console for token in required_console):
+        raise ValueError("Admin Web Core operation consumer incomplete")
+    if "CoreDomainConsole" not in flow:
+        raise ValueError("Admin Web Core console is not connected to the site flow")
+    if payload["counts"]["active"] != 189:
+        raise ValueError("Admin Web Core registry active count mismatch")
+    for forbidden in ("localStorage", "sessionStorage", "invoke(", "https://g5"):
+        if forbidden in module or forbidden in api or forbidden in console:
+            raise ValueError(f"Admin Web Core consumer contains forbidden token: {forbidden}")
+    return "React generated registry 189개와 same-origin site-bound 실행 transport 연결 확인"
+
+
+def check_web_field_consumption(root: Path) -> str:
+    payload = _core_registry(root)
+    schemas = payload.get("schemas")
+    domains = payload.get("schema_domains")
+    if not isinstance(schemas, list) or not schemas:
+        raise ValueError("Core schema registry is empty")
+    if not isinstance(domains, list) or len(domains) != 17:
+        raise ValueError("Core schema domain registry must contain exact 17 domains")
+    actual_domains = {
+        row.get("domain") for row in domains if isinstance(row, dict)
+    }
+    if actual_domains != EXPECTED_RUST_SCHEMA_DOMAINS:
+        raise ValueError(f"Core schema domain set mismatch: {actual_domains}")
+    for row in domains:
+        if (
+            not isinstance(row, dict)
+            or not row.get("operation_ids")
+            or not row.get("schema_refs")
+            or not row.get("fields")
+            or row.get("field_count") != len(row["fields"])
+        ):
+            raise ValueError(f"Core schema domain field parity is incomplete: {row}")
+    console = (root / "apps/admin-web/src/components/CoreDomainConsole.tsx").read_text(
+        encoding="utf-8"
+    )
+    for token in (
+        "operation.request_fields",
+        "operation.response_fields",
+        "schemaDomain.fields",
+        "schemaDomain.field_count",
+        "parseObject",
+    ):
+        if token not in console:
+            raise ValueError(f"Admin Web field consumer token missing: {token}")
+    return (
+        f"OpenAPI 연결 schema {len(schemas)}개와 17-domain generated field parity·"
+        "React request/response 소비 확인"
+    )
+
+
+def check_security_site_context(root: Path) -> str:
+    api = (root / "apps/admin-server/src/api.rs").read_text(encoding="utf-8")
+    connector = (root / "crates/fleet-connector/src/lib.rs").read_text(encoding="utf-8")
+    if "Path((site_id, operation_id))" not in api:
+        raise ValueError("Core proxy route does not extract explicit site_id")
+    core_handler = api[api.index("async fn core_execute(") : api.index("async fn owned_site_context(")]
+    for token in (
+        "owned_site_context",
+        "&site.base_url",
+        "&context.request_id",
+        "&credentials.access_token",
+    ):
+        if token not in core_handler:
+            raise ValueError(f"Core proxy site context token missing: {token}")
+    if "active_site_id" in api or "active_site_id" in connector:
+        raise ValueError("global active_site_id is forbidden")
+    return "Core 189 proxy가 명시적 principal·site_id·request_id·site-owned secret에 귀속"
+
+
+def check_security_csrf(root: Path) -> str:
+    api = (root / "apps/admin-server/src/api.rs").read_text(encoding="utf-8")
+    web = (root / "apps/admin-web/src/api/fleet.ts").read_text(encoding="utf-8")
+    handler = api[api.index("async fn core_execute(") : api.index("async fn owned_site_context(")]
+    if "owned_site_context(&state, &headers, site_id, true)" not in handler:
+        raise ValueError("Core proxy must use mutation CSRF context")
+    if "operation.requires_step_up" not in handler or "require_recent_step_up" not in handler:
+        raise ValueError("Core proxy risk-based step-up is missing")
+    if "csrfToken" not in web or "executeCoreOperation" not in web:
+        raise ValueError("Core web transport does not attach CSRF")
+    return "Core proxy POST 전 구간 CSRF, write·delete risk 기반 step-up 확인"
+
+
+def check_security_ssrf(root: Path) -> str:
+    connector = (root / "crates/fleet-connector/src/lib.rs").read_text(encoding="utf-8")
+    required = (
+        "UrlGuard<SystemResolver>",
+        "resolve_initial",
+        "revalidate_before_connect",
+        "Policy::none()",
+        "builder.resolve",
+        "core_url",
+    )
+    missing = [token for token in required if token not in connector]
+    if missing:
+        raise ValueError(f"Core connector SSRF/DNS/redirect guard missing: {missing}")
+    return "Core 189 outbound가 public-IP DNS pin·직전 재검증·redirect 차단을 공통 적용"
 
 
 def check_web_transport_boundary(root: Path) -> str:
@@ -2110,6 +2425,12 @@ CHECKS: dict[str, Callable[[Path], str]] = {
     "storage.sqlite_durability": check_sqlite_durability,
     "security.auth_site_boundary": check_auth_site_boundary,
     "server.vertical_flow": check_server_vertical_flow,
+    "server.route_registry": check_server_route_registry,
+    "web.transport_registry": check_web_transport_registry,
+    "web.field_consumption": check_web_field_consumption,
+    "security.site_context": check_security_site_context,
+    "security.csrf": check_security_csrf,
+    "security.ssrf": check_security_ssrf,
 }
 
 

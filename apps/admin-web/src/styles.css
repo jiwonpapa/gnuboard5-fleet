@@ -12,6 +12,11 @@
   --surface: #f9faf8;
   --accent: #147d78;
   --accent-soft: #dceceb;
+  --danger: #9c4133;
+  --line-strong: #b9c2bd;
+  --paper: #fff;
+  --soft: #eef2ef;
+  --display: "Avenir Next", "Apple SD Gothic Neo", sans-serif;
 }
 
 * {
@@ -594,6 +599,186 @@ input {
   }
 }
 
+.core-console {
+  margin-top: 20px;
+  padding: clamp(16px, 2.5vw, 26px);
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(135deg, rgb(20 125 120 / 8%), transparent 42%),
+    var(--paper);
+}
+
+.registry-state {
+  max-width: 288px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.core-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 16px 0;
+  border: 1px solid var(--line);
+}
+
+.core-metrics span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.core-metrics span + span {
+  border-left: 1px solid var(--line);
+}
+
+.core-metrics strong {
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 1.25rem;
+}
+
+.core-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.core-form > label:not(.check-label) {
+  display: grid;
+  gap: 6px;
+}
+
+.core-form label > span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.core-form input,
+.core-form select,
+.core-form textarea {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
+.core-form input,
+.core-form select {
+  min-height: 44px;
+  padding: 10px 11px;
+}
+
+.core-form textarea {
+  min-height: 160px;
+  padding: 12px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.operation-contract,
+.core-body,
+.core-form > .check-label,
+.policy-block,
+.core-form > button {
+  grid-column: 1 / -1;
+}
+
+.operation-contract {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px 13px;
+  align-items: center;
+  padding: 12px;
+  border-left: 3px solid var(--accent);
+  background: var(--soft);
+}
+
+.operation-contract code {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 0.78rem;
+}
+
+.operation-contract > span {
+  padding: 4px 7px;
+  border: 1px solid currentcolor;
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.operation-contract > span[data-risk="destructive"],
+.operation-contract > span[data-risk="external_effect"] {
+  color: var(--danger);
+}
+
+.operation-contract small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+}
+
+.core-body small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.policy-block {
+  margin: 0;
+  padding: 11px;
+  border: 1px solid rgb(156 65 51 / 35%);
+  background: rgb(156 65 51 / 6%);
+  color: var(--danger);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.schema-parity {
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+
+.schema-parity summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.schema-parity p {
+  max-height: 160px;
+  overflow: auto;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  line-height: 1.6;
+}
+
+.core-result {
+  max-height: 384px;
+  overflow: auto;
+  margin: 16px 0 0;
+  padding: 14px;
+  background: #18221f;
+  color: #d9e6df;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 @media (max-width: 820px) {
   .mobile-header {
     position: sticky;
@@ -688,6 +873,32 @@ input {
   .button-row {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .core-metrics,
+  .core-form {
+    grid-template-columns: 1fr;
+  }
+
+  .core-metrics span + span {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .operation-contract,
+  .core-body,
+  .core-form > .check-label,
+  .policy-block,
+  .core-form > button {
+    grid-column: auto;
+  }
+
+  .operation-contract {
+    grid-template-columns: 1fr;
+  }
+
+  .operation-contract small {
+    grid-column: auto;
   }
 }
 

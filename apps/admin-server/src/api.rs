@@ -15,7 +15,8 @@ use axum::{
 };
 use g5_fleet_connector::{
     BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin,
-    SiteOverview,
+    CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, SiteOverview, core_operation,
+    core_operations,
 };
 use g5_fleet_security::{AuthError, PrincipalSession, SecretPurpose, SystemResolver, UrlGuard};
 use g5_fleet_store::{SiteRecord, StoreError};
@@ -108,16 +109,23 @@ pub(crate) fn router() -> Router<AppState> {
         .route("/auth/logout", post(logout))
         .route("/auth/step-up", post(step_up))
         .route("/session", get(session))
+        .route("/core/registry", get(core_registry))
         .route("/sites", get(list_sites).post(create_site))
         .route("/sites/{site_id}", get(get_site))
         .route("/sites/{site_id}/secrets", put(put_secret))
         .route("/sites/{site_id}/connector/health", get(connector_health))
         .route("/sites/{site_id}/connector/login", post(connector_login))
+        .route(
+            "/sites/{site_id}/connector/refresh",
+            post(connector_refresh),
+        )
+        .route("/sites/{site_id}/connector/logout", post(connector_logout))
         .route("/sites/{site_id}/overview", get(site_overview))
         .route(
             "/sites/{site_id}/config/basic",
             get(basic_config_get).put(basic_config_update),
         )
+        .route("/sites/{site_id}/core/{operation_id}", post(core_execute))
 }
 
 async fn bootstrap(
@@ -242,6 +250,13 @@ async fn list_sites(State(state): State<AppState>, headers: HeaderMap) -> Respon
         Ok(sites) => Json(sites).into_response(),
         Err(error) => store_error(error),
     }
+}
+
+async fn core_registry(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    if let Err(response) = context(&state, &headers, None).await {
+        return response;
+    }
+    Json::<&[CoreOperationSpec]>(core_operations()).into_response()
 }
 
 async fn create_site(
@@ -430,6 +445,118 @@ async fn connector_login(
     .into_response()
 }
 
+async fn connector_refresh(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let refreshed = match state
+        .config
+        .connector
+        .refresh(
+            &site.base_url,
+            &context.request_id,
+            &credentials.refresh_token,
+        )
+        .await
+    {
+        Ok(value) => value,
+        Err(error) => return connector_error(error),
+    };
+    match store_connector_credentials(&state, &context, &site.site_id, &refreshed).await {
+        Ok(()) => Json(ConnectorLoginResponse {
+            connected: true,
+            expires_in: refreshed.expires_in,
+        })
+        .into_response(),
+        Err(response) => response,
+    }
+}
+
+async fn connector_logout(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state
+        .config
+        .connector
+        .logout(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &credentials.refresh_token,
+        )
+        .await
+    {
+        return connector_error(error);
+    }
+    match state
+        .config
+        .auth
+        .put_secret(
+            &context.principal_id,
+            &site.site_id,
+            SecretPurpose::G5Api,
+            b"{}",
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn store_connector_credentials(
+    state: &AppState,
+    context: &RequestContext,
+    site_id: &str,
+    credentials: &ConnectorCredentials,
+) -> Result<(), Response> {
+    let encrypted_payload = serde_json::to_vec(credentials).map_err(|_| {
+        api_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "connector_credential_failed",
+            "Connector credentials could not be stored.",
+        )
+    })?;
+    state
+        .config
+        .auth
+        .put_secret(
+            &context.principal_id,
+            site_id,
+            SecretPurpose::G5Api,
+            &encrypted_payload,
+        )
+        .await
+        .map_err(auth_error)
+}
+
 async fn site_overview(
     State(state): State<AppState>,
     Path(site_id): Path<String>,
@@ -532,6 +659,62 @@ async fn basic_config_update(
         .await
     {
         Ok(config) => Json::<BasicConfig>(config).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn core_execute(
+    State(state): State<AppState>,
+    Path((site_id, operation_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(payload): Json<CoreExecuteRequest>,
+) -> Response {
+    let operation = match core_operation(&operation_id) {
+        Some(value) => value,
+        None => {
+            return api_error(
+                StatusCode::NOT_FOUND,
+                "core_operation_not_found",
+                "Core operation was not found.",
+            );
+        }
+    };
+    if operation.transport != "core_proxy" {
+        return connector_error(ConnectorError::SpecializedOperation);
+    }
+    if operation.risk == "external_effect" {
+        return connector_error(ConnectorError::ExternalEffectBlocked);
+    }
+    if operation.risk == "destructive" && !payload.confirm_destructive {
+        return connector_error(ConnectorError::InvalidCoreRequest);
+    }
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if operation.requires_step_up
+        && let Err(error) = state.config.auth.require_recent_step_up(&principal)
+    {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .core_execute(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &operation_id,
+            &payload,
+        )
+        .await
+    {
+        Ok(response) => Json::<CoreExecuteResponse>(response).into_response(),
         Err(error) => connector_error(error),
     }
 }
@@ -724,6 +907,31 @@ fn connector_error(error: ConnectorError) -> Response {
             StatusCode::BAD_GATEWAY,
             "connector_url_forbidden",
             "Connector URL failed security validation.",
+        ),
+        ConnectorError::UnknownOperation => (
+            StatusCode::NOT_FOUND,
+            "core_operation_not_found",
+            "Core operation was not found.",
+        ),
+        ConnectorError::SpecializedOperation => (
+            StatusCode::CONFLICT,
+            "core_operation_specialized",
+            "Use the specialized Fleet endpoint for this operation.",
+        ),
+        ConnectorError::ExternalEffectBlocked => (
+            StatusCode::CONFLICT,
+            "external_effect_blocked",
+            "Routine Core execution blocks external delivery operations.",
+        ),
+        ConnectorError::InvalidCoreRequest => (
+            StatusCode::BAD_REQUEST,
+            "core_request_invalid",
+            "Core operation request does not match the canonical contract.",
+        ),
+        ConnectorError::ResponseTooLarge => (
+            StatusCode::BAD_GATEWAY,
+            "core_response_too_large",
+            "Connector response exceeded the Fleet response limit.",
         ),
         _ => (
             StatusCode::BAD_GATEWAY,

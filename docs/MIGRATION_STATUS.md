@@ -26,16 +26,22 @@
 - site-bound Axum route와 React 사이트 등록·Connector 로그인·설정 원복 UI 구현
 - G5 비밀번호 비저장, G5 JWT의 서버 암호화 저장과 브라우저 비노출 검증
 - mock Connector 기반 설정 수정·재조회·원복 통합 테스트 PASS
+- canonical OpenAPI 기반 Core registry 189개 exact 생성
+- 비쇼핑 관리자 184 + bootstrap 5, Shop Core 소비 0 고정
+- Rust site-bound Core proxy와 React lazy-loaded domain console 연결
+- 연결 OpenAPI schema 287개와 17-domain generated field parity 고정
+- risk-based step-up, DELETE 명시 확인, 외부 메일·SMS·Push 9개 routine 차단
+- G5 token refresh·logout의 서버 전용 암호화 수명주기 구현
 
 현재 migration profile은 기존 Tauri snapshot의 provenance와 source closure만 이관 증거로 검증합니다. routine `make prepare/check`는 해당 snapshot의 Bun·Cargo·Tauri·네이티브 패키징 의존성을 준비하거나 빌드하지 않습니다. 이는 데스크톱 제품 지원 또는 서버판 구현 완료를 뜻하지 않습니다.
 
 ## 아직 인증하지 않는 것
 
-- 189개 Core route와 React field 소비
+- 실제 G5 runtime 대상 Core 189개 route 실행·실데이터 field readback
 - Telegram/Web Push 실제 발송
 - Compose 설치·업그레이드·rollback
 - GnuBoard5 v5.6.32 대상 live 저장/readback/cleanup
 
 따라서 이번 완료 등급의 상한은 `SERVER_SCAFFOLD_PASS`입니다. 이는 활성 workspace·route·transport·build 골격의 정적/로컬 smoke 증거이며 `SERVER_STATIC_PASS` 또는 `LOCAL_RUNTIME_PASS`가 아닙니다.
 
-다음 구현 배치는 `docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md`의 **B06 관리자 Core 도메인 전환**입니다. 실제 PHP Connector·GnuBoard5 저장·원복은 B10 `LOCAL_RUNTIME_PASS` 전까지 인증하지 않습니다.
+다음 구현 배치는 `docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md`의 **B07 SSH/SFTP**입니다. 실제 PHP Connector·GnuBoard5 Core 189개 실행은 B10 `LOCAL_RUNTIME_PASS` 전까지 인증하지 않습니다.

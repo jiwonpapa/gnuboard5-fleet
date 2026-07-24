@@ -150,6 +150,12 @@ class G5AuditTest(unittest.TestCase):
         self.assertIn("SQLite WAL", MODULE.check_sqlite_durability(MODULE.ROOT))
         self.assertIn("2-user", MODULE.check_auth_site_boundary(MODULE.ROOT))
         self.assertIn("4연산", MODULE.check_server_vertical_flow(MODULE.ROOT))
+        self.assertIn("active 189", MODULE.check_server_route_registry(MODULE.ROOT))
+        self.assertIn("registry 189", MODULE.check_web_transport_registry(MODULE.ROOT))
+        self.assertIn("17-domain", MODULE.check_web_field_consumption(MODULE.ROOT))
+        self.assertIn("site_id", MODULE.check_security_site_context(MODULE.ROOT))
+        self.assertIn("CSRF", MODULE.check_security_csrf(MODULE.ROOT))
+        self.assertIn("DNS pin", MODULE.check_security_ssrf(MODULE.ROOT))
 
     def test_upstream_lock_requires_full_commit_tree_and_file_hashes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -729,7 +735,8 @@ class G5AuditTest(unittest.TestCase):
             self.assertEqual(1, exit_code)
             self.assertEqual("failed", payload["status"])
             statuses = {row["id"]: row["status"] for row in payload["checks"]}
-            self.assertEqual("missing", statuses["server.route_registry"])
+            self.assertEqual("failed", statuses["server.route_registry"])
+            self.assertEqual("missing", statuses["notification.telegram_contract"])
             self.assertIsNone(payload["proof_level"])
 
 

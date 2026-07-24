@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, lazy, Suspense, useState } from "react";
 
 import {
   type BasicConfig,
@@ -8,6 +8,8 @@ import {
   bootstrapAdmin,
   connectorHealth,
   connectorLogin,
+  connectorLogout,
+  connectorRefresh,
   createSite,
   getBasicConfig,
   getSiteOverview,
@@ -16,6 +18,11 @@ import {
   stepUp,
   updateBasicConfig,
 } from "../api/fleet";
+
+const CoreDomainConsole = lazy(async () => {
+  const module = await import("./CoreDomainConsole");
+  return { default: module.CoreDomainConsole };
+});
 
 export function VerticalFlow() {
   const [csrf, setCsrf] = useState("");
@@ -90,6 +97,25 @@ export function VerticalFlow() {
     });
   }
 
+  async function refreshConnector() {
+    if (!site) return;
+    await run(async () => {
+      await connectorRefresh(site.site_id, csrf);
+      setConfig(await getBasicConfig(site.site_id));
+    });
+  }
+
+  async function logoutConnector() {
+    if (!site) return;
+    await run(async () => {
+      await connectorLogout(site.site_id, csrf);
+      setHealth(null);
+      setOverview(null);
+      setConfig(null);
+      setBaseline(null);
+    });
+  }
+
   async function rollbackCf10() {
     if (!site || baseline === null) return;
     await run(async () => {
@@ -161,6 +187,26 @@ export function VerticalFlow() {
                 disabled={busy}
                 onSubmit={loginConnector}
               />
+              {config && (
+                <div className="button-row">
+                  <button
+                    className="secondary-action"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void refreshConnector()}
+                  >
+                    토큰 갱신
+                  </button>
+                  <button
+                    className="secondary-action"
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void logoutConnector()}
+                  >
+                    Connector 로그아웃
+                  </button>
+                </div>
+              )}
             </div>
           )
           : <StepHint>관리할 사이트를 등록하거나 선택하십시오.</StepHint>}
@@ -183,6 +229,11 @@ export function VerticalFlow() {
       </FlowStep>
 
       {error && <p className="flow-error" role="alert">{error}</p>}
+      {site && config && (
+        <Suspense fallback={<StepHint>Core registry를 여는 중입니다.</StepHint>}>
+          <CoreDomainConsole siteId={site.site_id} csrfToken={csrf} />
+        </Suspense>
+      )}
     </section>
   );
 }

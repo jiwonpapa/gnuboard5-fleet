@@ -11,7 +11,7 @@ use axum::{
 use g5_fleet_admin_server::{AppConfig, ErrorEnvelope, HealthResponse, MetaResponse, build_router};
 use g5_fleet_connector::{
     BasicConfig, ConnectorCredentials, ConnectorGateway, ConnectorHealth, ConnectorLogin,
-    ConnectorResult,
+    ConnectorResult, CoreExecuteRequest, CoreExecuteResponse,
 };
 use http_body_util::BodyExt;
 use serde_json::Value;
@@ -151,15 +151,19 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("POST", "/api/v1/auth/logout"),
             ("POST", "/api/v1/auth/step-up"),
             ("GET", "/api/v1/session"),
+            ("GET", "/api/v1/core/registry"),
             ("GET", "/api/v1/sites"),
             ("POST", "/api/v1/sites"),
             ("GET", "/api/v1/sites/{site_id}"),
             ("PUT", "/api/v1/sites/{site_id}/secrets"),
             ("GET", "/api/v1/sites/{site_id}/connector/health"),
             ("POST", "/api/v1/sites/{site_id}/connector/login"),
+            ("POST", "/api/v1/sites/{site_id}/connector/refresh"),
+            ("POST", "/api/v1/sites/{site_id}/connector/logout"),
             ("GET", "/api/v1/sites/{site_id}/overview"),
             ("GET", "/api/v1/sites/{site_id}/config/basic"),
             ("PUT", "/api/v1/sites/{site_id}/config/basic"),
+            ("POST", "/api/v1/sites/{site_id}/core/{operation_id}",),
         ]
     );
 }
@@ -472,7 +476,70 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         Some("baseline")
     );
 
+    let registry = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/core/registry",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    let registry: Value = json(registry).await;
+    assert_eq!(registry.as_array().map(Vec::len), Some(189));
+    assert!(
+        registry
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|row| !row["path"].as_str().unwrap().starts_with("/admin/shop/"))
+    );
+
+    let core_read = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/core/adminListMembers",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "path": {},
+                "query": {"page": "1"},
+                "body": null,
+                "confirm_destructive": false
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(core_read.status(), StatusCode::OK);
+    let core_read: CoreExecuteResponse = json(core_read).await;
+    assert_eq!(core_read.operation_id, "adminListMembers");
+    assert_eq!(core_read.data.unwrap()["query"]["page"], "1");
+
+    let external_effect = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/core/adminSendPush",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "path": {},
+                "query": {},
+                "body": {},
+                "confirm_destructive": false
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(external_effect.status(), StatusCode::CONFLICT);
+    let external_effect: ErrorEnvelope = json(external_effect).await;
+    assert_eq!(external_effect.error.code, "external_effect_blocked");
+
     let overview = app
+        .clone()
         .oneshot(json_request(
             Method::GET,
             "/api/v1/sites/site-a/overview",
@@ -483,6 +550,47 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .await
         .unwrap();
     assert_eq!(overview.status(), StatusCode::OK);
+
+    let refresh = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/connector/refresh",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(refresh.status(), StatusCode::OK);
+    let refresh_body = refresh.into_body().collect().await.unwrap().to_bytes();
+    let refresh_text = String::from_utf8_lossy(&refresh_body);
+    assert!(!refresh_text.contains("g5-access-token-refreshed"));
+    assert!(!refresh_text.contains("g5-refresh-token-refreshed"));
+
+    let connector_logout = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/connector/logout",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(connector_logout.status(), StatusCode::NO_CONTENT);
+    let after_logout = app
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/config/basic",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(after_logout.status(), StatusCode::SERVICE_UNAVAILABLE);
     assert_eq!(mock.cf_10.lock().unwrap().as_str(), "baseline");
 }
 
@@ -539,6 +647,32 @@ impl ConnectorGateway for MockConnector {
         })
     }
 
+    async fn refresh(
+        &self,
+        _base_url: &str,
+        _request_id: &str,
+        refresh_token: &str,
+    ) -> ConnectorResult<ConnectorCredentials> {
+        assert_eq!(refresh_token, "g5-refresh-token");
+        Ok(ConnectorCredentials {
+            access_token: "g5-access-token-refreshed".to_owned(),
+            refresh_token: "g5-refresh-token-refreshed".to_owned(),
+            expires_in: 3600,
+        })
+    }
+
+    async fn logout(
+        &self,
+        _base_url: &str,
+        _request_id: &str,
+        access_token: &str,
+        refresh_token: &str,
+    ) -> ConnectorResult<()> {
+        assert_eq!(access_token, "g5-access-token-refreshed");
+        assert_eq!(refresh_token, "g5-refresh-token-refreshed");
+        Ok(())
+    }
+
     async fn basic_config(
         &self,
         _base_url: &str,
@@ -563,5 +697,27 @@ impl ConnectorGateway for MockConnector {
         assert_eq!(access_token, "g5-access-token");
         *self.cf_10.lock().unwrap() = cf_10.to_owned();
         self.basic_config("", "", access_token).await
+    }
+
+    async fn core_execute(
+        &self,
+        _base_url: &str,
+        _request_id: &str,
+        access_token: &str,
+        operation_id: &str,
+        input: &CoreExecuteRequest,
+    ) -> ConnectorResult<CoreExecuteResponse> {
+        assert_eq!(access_token, "g5-access-token");
+        Ok(CoreExecuteResponse {
+            operation_id: operation_id.to_owned(),
+            upstream_status: 200,
+            content_type: Some("application/json".to_owned()),
+            data: Some(serde_json::json!({
+                "path": input.path,
+                "query": input.query,
+                "body": input.body,
+            })),
+            body_base64: None,
+        })
     }
 }
