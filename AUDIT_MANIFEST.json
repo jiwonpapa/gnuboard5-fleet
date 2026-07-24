@@ -70,6 +70,7 @@
         "security.ssrf",
         "notification.telegram_contract",
         "notification.web_push_contract",
+        "web.pwa_cache_safety",
         "commerce.core_isolation"
       ]
     },

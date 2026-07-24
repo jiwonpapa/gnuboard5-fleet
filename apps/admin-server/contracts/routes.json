@@ -59,6 +59,13 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/plugins",
+      "auth": "session",
+      "site_context": false,
+      "purpose": "optional_plugin_slots"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/core/registry",
       "auth": "session",
       "site_context": false,
@@ -217,6 +224,20 @@
       "auth": "session_csrf_step_up",
       "site_context": true,
       "purpose": "owned_transfer_retry"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/notifications",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "deduplicated_notification_enqueue"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/notifications/{outbox_id}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "owned_notification_status"
     }
   ]
 }

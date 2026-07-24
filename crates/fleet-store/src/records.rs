@@ -51,6 +51,22 @@ pub struct JobRecord {
     pub updated_at: String,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub struct NotificationOutboxRecord {
+    pub outbox_id: String,
+    pub event_id: String,
+    pub owner_user_id: String,
+    pub site_id: Option<String>,
+    pub channel: String,
+    pub payload: serde_json::Value,
+    pub state: String,
+    pub attempts: i64,
+    pub available_at: String,
+    pub delivered_at: Option<String>,
+    pub last_error_code: Option<String>,
+    pub created_at: String,
+}
+
 impl FleetStore {
     pub async fn create_initial_user(
         &self,
@@ -461,4 +477,283 @@ impl FleetStore {
         }
         Ok(())
     }
+
+    pub async fn enqueue_notification_deduplicated(
+        &self,
+        outbox_id: &str,
+        event_id: &str,
+        owner_user_id: &str,
+        site_id: &str,
+        channel: &str,
+        payload: &serde_json::Value,
+    ) -> StoreResult<(NotificationOutboxRecord, bool)> {
+        if self.owned_site(owner_user_id, site_id).await?.is_none() {
+            return Err(StoreError::AccessDenied);
+        }
+        if !matches!(channel, "telegram" | "web_push") {
+            return Err(StoreError::Conflict(
+                "invalid notification channel".to_owned(),
+            ));
+        }
+        let _writer = self.inner.writer.lock().await;
+        let mut transaction = self.inner.pool.begin().await?;
+        let inserted = sqlx::query(
+            "INSERT INTO notification_outbox \
+             (outbox_id, event_id, owner_user_id, site_id, channel, payload_json) \
+             VALUES (?, ?, ?, ?, ?, ?) \
+             ON CONFLICT(event_id, channel) DO NOTHING",
+        )
+        .bind(outbox_id)
+        .bind(event_id)
+        .bind(owner_user_id)
+        .bind(site_id)
+        .bind(channel)
+        .bind(serde_json::to_string(payload)?)
+        .execute(&mut *transaction)
+        .await?
+        .rows_affected()
+            == 1;
+        let row = fetch_outbox_by_event(&mut transaction, event_id, channel)
+            .await?
+            .ok_or(StoreError::NotFound)?;
+        if row.owner_user_id != owner_user_id || row.site_id.as_deref() != Some(site_id) {
+            return Err(StoreError::AccessDenied);
+        }
+        transaction.commit().await?;
+        Ok((row, inserted))
+    }
+
+    pub async fn owned_notification(
+        &self,
+        owner_user_id: &str,
+        site_id: &str,
+        outbox_id: &str,
+    ) -> StoreResult<Option<NotificationOutboxRecord>> {
+        let row = fetch_outbox(
+            &self.inner.pool,
+            "WHERE owner_user_id = ? AND site_id = ? AND outbox_id = ?",
+            &[owner_user_id, site_id, outbox_id],
+        )
+        .await?;
+        row.map(outbox_from_row).transpose()
+    }
+
+    pub async fn claim_due_notification(
+        &self,
+        lease_seconds: u64,
+    ) -> StoreResult<Option<NotificationOutboxRecord>> {
+        let lease_modifier = format!("+{} seconds", lease_seconds.clamp(1, 3600));
+        let _writer = self.inner.writer.lock().await;
+        let mut transaction = self.inner.pool.begin().await?;
+        let outbox_id: Option<String> = sqlx::query_scalar(
+            "SELECT outbox_id FROM notification_outbox \
+             WHERE state IN ('pending', 'leased') \
+               AND unixepoch(available_at) <= unixepoch('now') \
+             ORDER BY available_at, created_at, outbox_id LIMIT 1",
+        )
+        .fetch_optional(&mut *transaction)
+        .await?;
+        let Some(outbox_id) = outbox_id else {
+            transaction.commit().await?;
+            return Ok(None);
+        };
+        let changed = sqlx::query(
+            "UPDATE notification_outbox \
+             SET state = 'leased', attempts = attempts + 1, \
+                 available_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now', ?) \
+             WHERE outbox_id = ? AND state IN ('pending', 'leased') \
+               AND unixepoch(available_at) <= unixepoch('now')",
+        )
+        .bind(lease_modifier)
+        .bind(&outbox_id)
+        .execute(&mut *transaction)
+        .await?
+        .rows_affected();
+        if changed != 1 {
+            return Err(StoreError::Conflict(
+                "notification lease changed".to_owned(),
+            ));
+        }
+        let row = fetch_outbox(
+            &mut *transaction,
+            "WHERE outbox_id = ?",
+            &[outbox_id.as_str()],
+        )
+        .await?
+        .map(outbox_from_row)
+        .transpose()?;
+        transaction.commit().await?;
+        Ok(row)
+    }
+
+    pub async fn deliver_notification(&self, outbox_id: &str) -> StoreResult<()> {
+        self.transition_notification(outbox_id, "delivered", None, 0, 0)
+            .await
+    }
+
+    pub async fn retry_notification(
+        &self,
+        outbox_id: &str,
+        error_code: &str,
+        retry_seconds: u64,
+        max_attempts: i64,
+    ) -> StoreResult<()> {
+        self.transition_notification(
+            outbox_id,
+            "pending",
+            Some(error_code),
+            retry_seconds,
+            max_attempts,
+        )
+        .await
+    }
+
+    pub async fn dead_letter_notification(
+        &self,
+        outbox_id: &str,
+        error_code: &str,
+    ) -> StoreResult<()> {
+        self.transition_notification(outbox_id, "dead_letter", Some(error_code), 0, 0)
+            .await
+    }
+
+    async fn transition_notification(
+        &self,
+        outbox_id: &str,
+        requested_state: &str,
+        error_code: Option<&str>,
+        retry_seconds: u64,
+        max_attempts: i64,
+    ) -> StoreResult<()> {
+        if !matches!(requested_state, "pending" | "delivered" | "dead_letter") {
+            return Err(StoreError::Conflict(
+                "invalid notification state transition".to_owned(),
+            ));
+        }
+        let _writer = self.inner.writer.lock().await;
+        let mut transaction = self.inner.pool.begin().await?;
+        let attempts: Option<i64> = sqlx::query_scalar(
+            "SELECT attempts FROM notification_outbox \
+             WHERE outbox_id = ? AND state = 'leased'",
+        )
+        .bind(outbox_id)
+        .fetch_optional(&mut *transaction)
+        .await?;
+        let attempts = attempts
+            .ok_or_else(|| StoreError::Conflict("notification is not leased".to_owned()))?;
+        let final_state =
+            if requested_state == "pending" && max_attempts > 0 && attempts >= max_attempts {
+                "dead_letter"
+            } else {
+                requested_state
+            };
+        let modifier = format!("+{} seconds", retry_seconds.min(86_400));
+        let changed = sqlx::query(
+            "UPDATE notification_outbox SET state = ?, last_error_code = ?, \
+             available_at = CASE WHEN ? = 'pending' \
+               THEN strftime('%Y-%m-%dT%H:%M:%fZ', 'now', ?) ELSE available_at END, \
+             delivered_at = CASE WHEN ? = 'delivered' \
+               THEN strftime('%Y-%m-%dT%H:%M:%fZ', 'now') ELSE NULL END \
+             WHERE outbox_id = ? AND state = 'leased'",
+        )
+        .bind(final_state)
+        .bind(error_code)
+        .bind(final_state)
+        .bind(modifier)
+        .bind(final_state)
+        .bind(outbox_id)
+        .execute(&mut *transaction)
+        .await?
+        .rows_affected();
+        if changed != 1 {
+            return Err(StoreError::Conflict(
+                "notification state changed".to_owned(),
+            ));
+        }
+        transaction.commit().await?;
+        Ok(())
+    }
+}
+
+type OutboxRow = (
+    String,
+    String,
+    String,
+    Option<String>,
+    String,
+    String,
+    String,
+    i64,
+    String,
+    Option<String>,
+    Option<String>,
+    String,
+);
+
+async fn fetch_outbox_by_event(
+    transaction: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    event_id: &str,
+    channel: &str,
+) -> StoreResult<Option<NotificationOutboxRecord>> {
+    let row: Option<OutboxRow> = sqlx::query_as(
+        "SELECT outbox_id, event_id, owner_user_id, site_id, channel, payload_json, \
+         state, attempts, available_at, delivered_at, last_error_code, created_at \
+         FROM notification_outbox WHERE event_id = ? AND channel = ?",
+    )
+    .bind(event_id)
+    .bind(channel)
+    .fetch_optional(&mut **transaction)
+    .await?;
+    row.map(outbox_from_row).transpose()
+}
+
+async fn fetch_outbox<'e, E>(
+    executor: E,
+    clause: &str,
+    values: &[&str],
+) -> StoreResult<Option<OutboxRow>>
+where
+    E: sqlx::Executor<'e, Database = sqlx::Sqlite>,
+{
+    let sql = format!(
+        "SELECT outbox_id, event_id, owner_user_id, site_id, channel, payload_json, \
+         state, attempts, available_at, delivered_at, last_error_code, created_at \
+         FROM notification_outbox {clause}"
+    );
+    let mut query = sqlx::query_as(&sql);
+    for value in values {
+        query = query.bind(*value);
+    }
+    Ok(query.fetch_optional(executor).await?)
+}
+
+fn outbox_from_row(row: OutboxRow) -> StoreResult<NotificationOutboxRecord> {
+    let (
+        outbox_id,
+        event_id,
+        owner_user_id,
+        site_id,
+        channel,
+        payload_json,
+        state,
+        attempts,
+        available_at,
+        delivered_at,
+        last_error_code,
+        created_at,
+    ) = row;
+    Ok(NotificationOutboxRecord {
+        outbox_id,
+        event_id,
+        owner_user_id,
+        site_id,
+        channel,
+        payload: serde_json::from_str(&payload_json)?,
+        state,
+        attempts,
+        available_at,
+        delivered_at,
+        last_error_code,
+        created_at,
+    })
 }

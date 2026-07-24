@@ -3,7 +3,7 @@ ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 export PYTHONDONTWRITEBYTECODE := 1
 
 .NOTPARALLEL: bootstrap prepare check
-.PHONY: doctor bootstrap prepare check test-audit test-upstream test-runtime runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-server-scaffold upstream-sync upstream-audit upstream-verify secret-scan
+.PHONY: doctor bootstrap prepare check test-audit test-upstream test-runtime runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-server-scaffold audit-server-static upstream-sync upstream-audit upstream-verify secret-scan
 
 doctor:
 	@cd "$(ROOT)" && command -v git >/dev/null
@@ -85,6 +85,10 @@ audit-server-scaffold:
 	cd "$(ROOT)" && command -v "$(PYTHON)" >/dev/null
 	cd "$(ROOT)" && CARGO_NET_OFFLINE=true COMPOSER_DISABLE_NETWORK=1 "$(PYTHON)" tools/audit/g5audit.py --profile server_scaffold
 
+audit-server-static:
+	cd "$(ROOT)" && command -v "$(PYTHON)" >/dev/null
+	cd "$(ROOT)" && CARGO_NET_OFFLINE=true COMPOSER_DISABLE_NETWORK=1 "$(PYTHON)" tools/audit/g5audit.py --profile server_static
+
 check:
 	+$(MAKE) doctor
 	+$(MAKE) test-audit
@@ -93,7 +97,7 @@ check:
 	+$(MAKE) runtime-verify
 	+$(MAKE) audit-runtime-verify
 	+$(MAKE) active-check
-	+$(MAKE) audit-server-scaffold
+	+$(MAKE) audit-server-static
 
 secret-scan:
 	@cd "$(ROOT)" && command -v gitleaks >/dev/null

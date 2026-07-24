@@ -250,6 +250,7 @@ EXPECTED_PROFILE_CONTRACTS: dict[str, dict[str, object]] = {
             "security.ssrf",
             "notification.telegram_contract",
             "notification.web_push_contract",
+            "web.pwa_cache_safety",
             "commerce.core_isolation",
         ],
     },
@@ -1467,6 +1468,7 @@ def check_server_scaffold_contract(root: Path) -> str:
         ("POST", "/api/v1/auth/logout", "session_csrf", False),
         ("POST", "/api/v1/auth/step-up", "session_csrf", False),
         ("GET", "/api/v1/session", "session", False),
+        ("GET", "/api/v1/plugins", "session", False),
         ("GET", "/api/v1/core/registry", "session", False),
         ("GET", "/api/v1/sites", "session", False),
         ("POST", "/api/v1/sites", "session_csrf", False),
@@ -1573,6 +1575,18 @@ def check_server_scaffold_contract(root: Path) -> str:
             "POST",
             "/api/v1/sites/{site_id}/transfers/{job_id}/retry",
             "session_csrf_step_up",
+            True,
+        ),
+        (
+            "POST",
+            "/api/v1/sites/{site_id}/notifications",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "GET",
+            "/api/v1/sites/{site_id}/notifications/{outbox_id}",
+            "session",
             True,
         ),
     ]
@@ -2514,6 +2528,171 @@ def check_notification_boundary(root: Path) -> str:
     return "Telegram·Web Push 기본 경계와 외부 발송 금지 확인"
 
 
+def _notification_contract_source(root: Path) -> tuple[str, str, str]:
+    crate_path = root / "crates/fleet-notify/src/lib.rs"
+    cargo_path = root / "crates/fleet-notify/Cargo.toml"
+    store_path = root / "crates/fleet-store/src/records.rs"
+    for path in (crate_path, cargo_path, store_path):
+        if not path.is_file() or path.is_symlink():
+            raise ValueError(f"notification source missing or unsafe: {path.relative_to(root)}")
+    return (
+        crate_path.read_text(encoding="utf-8"),
+        cargo_path.read_text(encoding="utf-8"),
+        store_path.read_text(encoding="utf-8"),
+    )
+
+
+def check_telegram_contract(root: Path) -> str:
+    source, cargo, store = _notification_contract_source(root)
+    required = (
+        "NotificationWorker",
+        "TelegramAdapter",
+        "TelegramTransport",
+        "FakeProvider",
+        "enqueue_notification_deduplicated",
+        "scoped_event_id",
+        "fake_delivery_retries_then_succeeds_without_external_send",
+        "redact_sensitive_text",
+    )
+    missing = [token for token in required if token not in source and token not in store]
+    if missing:
+        raise ValueError(f"Telegram outbox contract missing: {missing}")
+    if "reqwest" in cargo or "TcpStream" in source:
+        raise ValueError("routine notification crate contains direct external network transport")
+    if (
+        "claim_due_notification" not in store
+        or "dead_letter_notification" not in store
+        or "retry_notification" not in store
+        or "attempts = attempts + 1" not in store
+    ):
+        raise ValueError("notification lease/retry/dead-letter persistence is incomplete")
+    return "Telegram injected adapter와 SQLite lease·retry·dedupe·dead-letter, fake-only routine delivery 확인"
+
+
+def check_web_push_contract(root: Path) -> str:
+    source, cargo, store = _notification_contract_source(root)
+    required = (
+        "WebPushAdapter",
+        "WebPushTransport",
+        "WebPushDelivery",
+        "fake_permanent_failure_moves_web_push_to_dead_letter",
+        "provider_not_configured",
+    )
+    missing = [token for token in required if token not in source]
+    if missing:
+        raise ValueError(f"Web Push outbox contract missing: {missing}")
+    if "reqwest" in cargo or "TcpStream" in source:
+        raise ValueError("routine Web Push tests could perform external delivery")
+    if "UNIQUE(event_id, channel)" not in (
+        root / "crates/fleet-store/migrations/0001_control_plane.sql"
+    ).read_text(encoding="utf-8"):
+        raise ValueError("notification event/channel dedupe constraint missing")
+    if "owned_notification" not in store:
+        raise ValueError("notification owner/site readback boundary missing")
+    return "Web Push injected adapter와 영구실패 dead-letter·owner/site 격리 fake delivery 확인"
+
+
+def check_pwa_cache_safety(root: Path) -> str:
+    manifest = load_json(root / "apps/admin-web/public/manifest.webmanifest")
+    service_worker_path = root / "apps/admin-web/public/sw.js"
+    registration_path = root / "apps/admin-web/src/pwa.ts"
+    test_path = root / "apps/admin-web/src/pwa.test.ts"
+    for path in (service_worker_path, registration_path, test_path):
+        if not path.is_file() or path.is_symlink():
+            raise ValueError(f"PWA input missing or unsafe: {path.relative_to(root)}")
+    if (
+        manifest.get("display") != "standalone"
+        or manifest.get("scope") != "/"
+        or not manifest.get("icons")
+    ):
+        raise ValueError("PWA manifest install contract is incomplete")
+    worker = service_worker_path.read_text(encoding="utf-8")
+    required = (
+        'pathname.startsWith("/api/")',
+        'pathname === "/healthz"',
+        'pathname === "/readyz"',
+        "request.method !== \"GET\"",
+        "url.origin !== self.location.origin",
+        "CACHEABLE_DESTINATIONS",
+        "networkFirstAppShell",
+        "cacheFirstStatic",
+        "safeActionPath",
+    )
+    missing = [token for token in required if token not in worker]
+    if missing:
+        raise ValueError(f"PWA cache safety tokens missing: {missing}")
+    sensitive_check = worker.index("isSensitivePath(url.pathname)")
+    response_interception = worker.index("event.respondWith")
+    if sensitive_check > response_interception:
+        raise ValueError("PWA sensitive API exclusion must precede cache interception")
+    registration = registration_path.read_text(encoding="utf-8")
+    test = test_path.read_text(encoding="utf-8")
+    if (
+        'register("/sw.js", { scope: "/" })' not in registration
+        or 'toHaveBeenCalledWith("/sw.js", { scope: "/" })' not in test
+    ):
+        raise ValueError("PWA same-origin registration contract/test missing")
+    return "PWA install shell·static cache와 /api·health·ready 사용자 데이터 cache 금지 확인"
+
+
+def check_commerce_core_isolation(root: Path) -> str:
+    contract = load_json(
+        root / "plugins/commerce-sdk/contracts/commerce-plugin-v1.json"
+    )
+    if (
+        contract.get("schema") != "g5-fleet.commerce-plugin/v1"
+        or contract.get("license_boundary", {}).get("required_by_core") is not False
+        or contract.get("transport", {}).get("browser_to_plugin") is not False
+        or contract.get("transport", {}).get("server_to_plugin") is not True
+    ):
+        raise ValueError("Commerce plugin contract/license/transport boundary mismatch")
+    manifest = load_json(
+        root / "connectors/gnuboard5-php/api/docs/openapi.contract-manifest.json"
+    )
+    expected_operations = {
+        row["operation_id"]
+        for row in manifest["operations"]
+        if row["path"].startswith("/admin/shop/")
+    }
+    actual_operations = set(contract.get("operations", []))
+    if len(expected_operations) != 26 or actual_operations != expected_operations:
+        raise ValueError("Commerce SDK operation set drifted from canonical Shop 26")
+
+    forbidden_hits: list[str] = []
+    for base in (root / "apps", root / "crates"):
+        for pattern in ("*.rs", "Cargo.toml"):
+            for path in base.rglob(pattern):
+                source = path.read_text(encoding="utf-8")
+                if any(
+                    token in source
+                    for token in (
+                        "g5_fleet_commerce",
+                        "g5-fleet-commerce",
+                        "commerce_sdk",
+                    )
+                ):
+                    forbidden_hits.append(path.relative_to(root).as_posix())
+    if forbidden_hits:
+        raise ValueError(
+            "Fleet Core imports/consumes Commerce implementation: "
+            + ", ".join(sorted(set(forbidden_hits)))
+        )
+    registry = _core_registry(root)
+    if registry.get("counts", {}).get("shop") != 0:
+        raise ValueError("Fleet Core registry consumes Shop operations")
+    api = (root / "apps/admin-server/src/api.rs").read_text(encoding="utf-8")
+    tests = (root / "apps/admin-server/tests/http_contract.rs").read_text(
+        encoding="utf-8"
+    )
+    if (
+        'plugin_id: "commerce"' not in api
+        or "installed: false" not in api
+        or 'assert_eq!(plugins[0]["installed"], false)' not in tests
+    ):
+        raise ValueError("Commerce absent Core boot/plugin slot proof missing")
+    return "canonical Shop 26 SDK 계약, Core import·소비 0, Commerce 미설치 서버 부팅 확인"
+
+
 def check_composed_provider(root: Path) -> str:
     verifier = root / "tools/runtime/compose_gnuboard.py"
     if not verifier.is_file():
@@ -2584,6 +2763,10 @@ CHECKS: dict[str, Callable[[Path], str]] = {
     "security.site_context": check_security_site_context,
     "security.csrf": check_security_csrf,
     "security.ssrf": check_security_ssrf,
+    "notification.telegram_contract": check_telegram_contract,
+    "notification.web_push_contract": check_web_push_contract,
+    "web.pwa_cache_safety": check_pwa_cache_safety,
+    "commerce.core_isolation": check_commerce_core_isolation,
 }
 
 

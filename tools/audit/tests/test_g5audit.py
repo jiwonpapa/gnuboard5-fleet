@@ -127,6 +127,7 @@ class G5AuditTest(unittest.TestCase):
                 "apps/admin-server/Cargo.toml",
                 "apps/admin-web/package.json",
                 "crates/fleet-connector/Cargo.toml",
+                "crates/fleet-notify/Cargo.toml",
                 "crates/fleet-remote/Cargo.toml",
                 "crates/fleet-security/Cargo.toml",
                 "crates/fleet-store/Cargo.toml",
@@ -161,6 +162,19 @@ class G5AuditTest(unittest.TestCase):
         self.assertIn("site_id", MODULE.check_security_site_context(MODULE.ROOT))
         self.assertIn("CSRF", MODULE.check_security_csrf(MODULE.ROOT))
         self.assertIn("DNS pin", MODULE.check_security_ssrf(MODULE.ROOT))
+        self.assertIn(
+            "Telegram injected adapter",
+            MODULE.check_telegram_contract(MODULE.ROOT),
+        )
+        self.assertIn(
+            "Web Push injected adapter",
+            MODULE.check_web_push_contract(MODULE.ROOT),
+        )
+        self.assertIn("cache 금지", MODULE.check_pwa_cache_safety(MODULE.ROOT))
+        self.assertIn(
+            "Core import·소비 0",
+            MODULE.check_commerce_core_isolation(MODULE.ROOT),
+        )
 
     def test_upstream_lock_requires_full_commit_tree_and_file_hashes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -731,7 +745,7 @@ class G5AuditTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "const mismatch"):
                 MODULE.check_schema_validation(root)
 
-    def test_server_profile_missing_evaluator_is_a_hard_failure(self) -> None:
+    def test_server_profile_missing_inputs_are_a_hard_failure(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             shutil.copy2(MODULE.ROOT / "AUDIT_MANIFEST.json", root / "AUDIT_MANIFEST.json")
@@ -741,7 +755,7 @@ class G5AuditTest(unittest.TestCase):
             self.assertEqual("failed", payload["status"])
             statuses = {row["id"]: row["status"] for row in payload["checks"]}
             self.assertEqual("failed", statuses["server.route_registry"])
-            self.assertEqual("missing", statuses["notification.telegram_contract"])
+            self.assertEqual("failed", statuses["notification.telegram_contract"])
             self.assertIsNone(payload["proof_level"])
 
 

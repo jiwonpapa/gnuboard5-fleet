@@ -37,6 +37,12 @@
 - hash-only 60초 일회성 ticket 기반 terminal WebSocket 중계 구현
 - 구조화된 SFTP 명령, bounded upload/download stream과 SQLite 전송 상태 구현
 - 터미널 ticket 교차 사용자·사이트 차단과 전송 실패·재시도·취소 상태 테스트 PASS
+- SQLite notification lease·retry·dedupe·dead-letter worker 구현
+- Telegram·Web Push injected adapter와 외부 네트워크 없는 fake delivery PASS
+- 알림 payload 기본 민감정보 마스킹과 사용자·사이트 상태 격리 구현
+- PWA install manifest·service worker와 API·health·ready cache 금지 구현
+- canonical Shop 26개 Commerce SDK 계약과 Core import·소비 0 고정
+- Commerce 미설치 plugin slot·서버 부팅 테스트 PASS
 
 현재 migration profile은 기존 Tauri snapshot의 provenance와 source closure만 이관 증거로 검증합니다. routine `make prepare/check`는 해당 snapshot의 Bun·Cargo·Tauri·네이티브 패키징 의존성을 준비하거나 빌드하지 않습니다. 이는 데스크톱 제품 지원 또는 서버판 구현 완료를 뜻하지 않습니다.
 
@@ -48,6 +54,9 @@
 - Compose 설치·업그레이드·rollback
 - GnuBoard5 v5.6.32 대상 live 저장/readback/cleanup
 
-따라서 이번 완료 등급의 상한은 `SERVER_SCAFFOLD_PASS`입니다. 이는 활성 workspace·route·transport·build 골격의 정적/로컬 smoke 증거이며 `SERVER_STATIC_PASS` 또는 `LOCAL_RUNTIME_PASS`가 아닙니다.
+따라서 이번 완료 등급의 상한은 `SERVER_STATIC_PASS`입니다. 이는 활성
+workspace·route·transport·outbox fake·PWA cache·Commerce 격리의
+정적/로컬 증거이며 `LOCAL_RUNTIME_PASS`, `PACKAGE_PASS` 또는 실제 외부
+발송 인증이 아닙니다.
 
-다음 구현 배치는 `docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md`의 **B08 알림·PWA·플러그인 경계**입니다. 실제 PHP Connector·GnuBoard5 Core 189개와 외부 SSH/SFTP 실행은 B10 `LOCAL_RUNTIME_PASS` 전까지 인증하지 않습니다.
+다음 구현 배치는 `docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md`의 **B09 패키지·운영**입니다. 실제 PHP Connector·GnuBoard5 Core 189개와 외부 SSH/SFTP 실행은 B10 `LOCAL_RUNTIME_PASS` 전까지 인증하지 않습니다.

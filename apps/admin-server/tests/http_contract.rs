@@ -37,6 +37,7 @@ async fn fixture() -> (TempDir, TempDir, axum::Router) {
         )
         .expect("test auth"),
         connector: Arc::new(g5_fleet_connector::ProductionConnectorGateway),
+        notification_worker: None,
     });
     (web, data, app)
 }
@@ -117,6 +118,7 @@ async fn readiness_fails_closed_without_web_build() {
         )
         .expect("test auth"),
         connector: Arc::new(g5_fleet_connector::ProductionConnectorGateway),
+        notification_worker: None,
     });
     let response = app
         .oneshot(Request::get("/readyz").body(Body::empty()).unwrap())
@@ -152,6 +154,7 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("POST", "/api/v1/auth/logout"),
             ("POST", "/api/v1/auth/step-up"),
             ("GET", "/api/v1/session"),
+            ("GET", "/api/v1/plugins"),
             ("GET", "/api/v1/core/registry"),
             ("GET", "/api/v1/sites"),
             ("POST", "/api/v1/sites"),
@@ -175,6 +178,8 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("GET", "/api/v1/sites/{site_id}/transfers/{job_id}"),
             ("POST", "/api/v1/sites/{site_id}/transfers/{job_id}/cancel",),
             ("POST", "/api/v1/sites/{site_id}/transfers/{job_id}/retry",),
+            ("POST", "/api/v1/sites/{site_id}/notifications"),
+            ("GET", "/api/v1/sites/{site_id}/notifications/{outbox_id}",),
         ]
     );
 }
@@ -298,6 +303,7 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         )
         .unwrap(),
         connector: Arc::new(mock.clone()),
+        notification_worker: None,
     });
     let fleet_password = "correct horse battery staple";
     let bootstrap = app
@@ -373,6 +379,71 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .await
         .unwrap();
     assert_eq!(site.status(), StatusCode::CREATED);
+
+    let plugins = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/plugins",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(plugins.status(), StatusCode::OK);
+    let plugins: Value = json(plugins).await;
+    assert_eq!(plugins[0]["plugin_id"], "commerce");
+    assert_eq!(plugins[0]["installed"], false);
+    assert_eq!(plugins[0]["required"], false);
+
+    let notification_payload = serde_json::json!({
+        "event_id": "event-fixture-a",
+        "channel": "telegram",
+        "payload": {
+            "title": "회원 알림",
+            "body": "person@example.invalid 010-1234-5678 가입",
+            "action_path": "/sites/site-a/members"
+        }
+    });
+    let notification = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/notifications",
+            Some(&cookie),
+            Some(&csrf),
+            Some(notification_payload.clone()),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(notification.status(), StatusCode::CREATED);
+    let notification: Value = json(notification).await;
+    assert_eq!(notification["inserted"], true);
+    assert_eq!(notification["notification"]["state"], "pending");
+    assert_eq!(
+        notification["notification"]["payload"]["body"],
+        "[redacted] [redacted] 가입"
+    );
+    let first_outbox_id = notification["notification"]["outbox_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let duplicate = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/notifications",
+            Some(&cookie),
+            Some(&csrf),
+            Some(notification_payload),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(duplicate.status(), StatusCode::OK);
+    let duplicate: Value = json(duplicate).await;
+    assert_eq!(duplicate["inserted"], false);
+    assert_eq!(duplicate["notification"]["outbox_id"], first_outbox_id);
 
     let private_key = [
         "-----BEGIN OPENSSH ",

@@ -267,6 +267,14 @@ binary를 강제했습니다. 60초 hash-only 일회성 ticket WebSocket,
 - fake provider 장애·재시도·중복 제거 PASS
 - Commerce 미설치 Core 부팅·전체 무료 기능 PASS
 
+현재 상태: 완료. SQLite outbox에 만료 lease, attempts, bounded retry,
+event/channel dedupe와 dead-letter 상태를 구현했습니다. Telegram·Web
+Push는 injected adapter로 두고 routine 테스트는 네트워크 client가 없는
+fake provider만 사용합니다. PWA는 app shell·정적 asset만 cache하며
+API·health·ready는 제외합니다. Commerce SDK는 canonical Shop 26개와
+서버 context를 고정하고 Core registry 소비와 구현 import를 0으로
+검증했습니다. 실제 외부 발송은 인증하지 않습니다.
+
 ### B09 — 패키지·운영
 
 작업:
@@ -298,6 +306,6 @@ binary를 강제했습니다. 60초 hash-only 일회성 ticket WebSocket,
 
 ## 4. 현재 바로 시작할 배치
 
-현재 시작점은 **B08 알림·PWA·플러그인 경계**입니다. 외부 발송 없는
-outbox 상태 전이와 안전한 PWA cache, Commerce 미설치 Core 부팅을 먼저
-닫습니다.
+현재 시작점은 **B09 패키지·운영**입니다. 단일 Axum+React image와
+SQLite volume을 기준으로 clean install, verified backup, upgrade 실패
+rollback을 닫습니다.

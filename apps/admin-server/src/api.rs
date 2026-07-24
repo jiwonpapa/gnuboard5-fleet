@@ -23,6 +23,7 @@ use g5_fleet_connector::{
     CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, SiteOverview, core_operation,
     core_operations,
 };
+use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
     RemoteError, SftpCommand, SftpResult, SshProfile, SshProfileSummary, TerminalProcess,
     TerminalTicket,
@@ -96,6 +97,21 @@ struct RemotePathRequest {
     path: String,
 }
 
+#[derive(Debug, Deserialize)]
+struct EnqueueNotificationRequest {
+    event_id: String,
+    channel: NotificationChannel,
+    payload: NotificationPayload,
+}
+
+#[derive(Debug, Serialize)]
+struct PluginSlot {
+    plugin_id: &'static str,
+    contract_version: &'static str,
+    installed: bool,
+    required: bool,
+}
+
 #[derive(Debug, Serialize)]
 struct ConnectorLoginResponse {
     connected: bool,
@@ -128,6 +144,7 @@ pub(crate) fn router() -> Router<AppState> {
         .route("/auth/logout", post(logout))
         .route("/auth/step-up", post(step_up))
         .route("/session", get(session))
+        .route("/plugins", get(plugin_slots))
         .route("/core/registry", get(core_registry))
         .route("/sites", get(list_sites).post(create_site))
         .route("/sites/{site_id}", get(get_site))
@@ -168,6 +185,11 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/transfers/{job_id}/retry",
             post(retry_transfer),
+        )
+        .route("/sites/{site_id}/notifications", post(enqueue_notification))
+        .route(
+            "/sites/{site_id}/notifications/{outbox_id}",
+            get(get_notification),
         )
 }
 
@@ -300,6 +322,19 @@ async fn core_registry(State(state): State<AppState>, headers: HeaderMap) -> Res
         return response;
     }
     Json::<&[CoreOperationSpec]>(core_operations()).into_response()
+}
+
+async fn plugin_slots(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    if let Err(response) = context(&state, &headers, None).await {
+        return response;
+    }
+    Json(vec![PluginSlot {
+        plugin_id: "commerce",
+        contract_version: "g5-fleet.commerce-plugin/v1",
+        installed: false,
+        required: false,
+    }])
+    .into_response()
 }
 
 async fn create_site(
@@ -1249,6 +1284,68 @@ async fn retry_transfer(
     transfer_transition(&state, &headers, site_id, job_id, false).await
 }
 
+async fn enqueue_notification(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(payload): Json<EnqueueNotificationRequest>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    match state
+        .notifications
+        .enqueue(
+            &context.principal_id,
+            &site.site_id,
+            &payload.event_id,
+            payload.channel,
+            payload.payload,
+        )
+        .await
+    {
+        Ok(result) => (
+            if result.inserted {
+                StatusCode::CREATED
+            } else {
+                StatusCode::OK
+            },
+            Json(result),
+        )
+            .into_response(),
+        Err(error) => notify_error(error),
+    }
+}
+
+async fn get_notification(
+    State(state): State<AppState>,
+    Path((site_id, outbox_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .notifications
+        .get(&context.principal_id, &site.site_id, &outbox_id)
+        .await
+    {
+        Ok(Some(notification)) => Json(notification).into_response(),
+        Ok(None) => api_error(
+            StatusCode::NOT_FOUND,
+            "notification_not_found",
+            "Notification was not found.",
+        ),
+        Err(error) => notify_error(error),
+    }
+}
+
 async fn transfer_transition(
     state: &AppState,
     headers: &HeaderMap,
@@ -1595,4 +1692,24 @@ fn remote_error(error: RemoteError) -> Response {
         ),
     };
     api_error(status, code, message)
+}
+
+fn notify_error(error: NotifyError) -> Response {
+    match error {
+        NotifyError::InvalidInput => api_error(
+            StatusCode::BAD_REQUEST,
+            "notification_invalid",
+            "Notification input is invalid.",
+        ),
+        NotifyError::Store => api_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "notification_store_failed",
+            "Notification state is unavailable.",
+        ),
+        NotifyError::Permanent(_) | NotifyError::Transient(_) => api_error(
+            StatusCode::BAD_GATEWAY,
+            "notification_delivery_failed",
+            "Notification delivery failed.",
+        ),
+    }
 }

@@ -58,6 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             web_root,
             auth,
             connector: Arc::new(ProductionConnectorGateway),
+            notification_worker: None,
         }),
     )
     .await?;

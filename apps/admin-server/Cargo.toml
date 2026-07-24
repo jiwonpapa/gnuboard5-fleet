@@ -9,6 +9,7 @@ rust-version.workspace = true
 axum.workspace = true
 base64.workspace = true
 g5-fleet-connector = { path = "../../crates/fleet-connector" }
+g5-fleet-notify = { path = "../../crates/fleet-notify" }
 g5-fleet-remote = { path = "../../crates/fleet-remote" }
 g5-fleet-security = { path = "../../crates/fleet-security" }
 g5-fleet-store = { path = "../../crates/fleet-store" }

@@ -1,6 +1,10 @@
 mod api;
 
-use std::{path::PathBuf, sync::Arc, time::Instant};
+use std::{
+    path::PathBuf,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use axum::{
     Json, Router,
@@ -10,6 +14,7 @@ use axum::{
     routing::get,
 };
 use g5_fleet_connector::ConnectorGateway;
+use g5_fleet_notify::{NotificationService, NotificationWorker};
 use g5_fleet_remote::{OpenSshExecutor, TerminalTicketStore, TransferCoordinator};
 use g5_fleet_security::AuthService;
 use g5_fleet_store::EXPECTED_SCHEMA_VERSION;
@@ -28,6 +33,7 @@ pub struct AppConfig {
     pub web_root: PathBuf,
     pub auth: AuthService,
     pub connector: Arc<dyn ConnectorGateway>,
+    pub notification_worker: Option<NotificationWorker>,
 }
 
 impl std::fmt::Debug for AppConfig {
@@ -37,6 +43,10 @@ impl std::fmt::Debug for AppConfig {
             .field("web_root", &self.web_root)
             .field("auth", &self.auth)
             .field("connector", &"<connector gateway>")
+            .field(
+                "notification_worker",
+                &self.notification_worker.as_ref().map(|_| "<configured>"),
+            )
             .finish()
     }
 }
@@ -44,6 +54,7 @@ impl std::fmt::Debug for AppConfig {
 #[derive(Clone)]
 pub(crate) struct AppState {
     config: AppConfig,
+    notifications: NotificationService,
     remote: RemoteRuntime,
     started_at: Instant,
 }
@@ -84,9 +95,13 @@ pub struct ErrorBody {
 }
 
 pub fn build_router(config: AppConfig) -> Router {
+    if let Some(worker) = config.notification_worker.clone() {
+        tokio::spawn(worker.run(Duration::from_secs(1)));
+    }
     let index = config.web_root.join("index.html");
     let static_files = ServeDir::new(&config.web_root).fallback(ServeFile::new(index));
     let state = AppState {
+        notifications: NotificationService::new(config.auth.store().clone()),
         remote: RemoteRuntime {
             tickets: TerminalTicketStore::default(),
             executor: OpenSshExecutor,

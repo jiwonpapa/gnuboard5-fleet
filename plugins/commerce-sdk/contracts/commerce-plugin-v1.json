@@ -1,0 +1,51 @@
+{
+  "schema": "g5-fleet.commerce-plugin/v1",
+  "license_boundary": {
+    "sdk": "Apache-2.0",
+    "implementation": "independent",
+    "required_by_core": false
+  },
+  "transport": {
+    "browser_to_plugin": false,
+    "server_to_plugin": true,
+    "required_context": [
+      "principal_id",
+      "web_session_id",
+      "site_id",
+      "request_id"
+    ],
+    "browser_secret_access": false
+  },
+  "provider": {
+    "canonical_openapi": "connectors/gnuboard5-php/api/docs/openapi.yaml",
+    "shop_operations": 26
+  },
+  "operations": [
+    "adminListShopCatalogCategories",
+    "adminCreateShopCatalogCategory",
+    "adminGetShopCatalogCategory",
+    "adminUpdateShopCatalogCategory",
+    "adminDeleteShopCatalogCategory",
+    "adminListShopCatalogEvents",
+    "adminCreateShopCatalogEvent",
+    "adminGetShopCatalogEvent",
+    "adminUpdateShopCatalogEvent",
+    "adminDeleteShopCatalogEvent",
+    "adminListShopCatalogInquiries",
+    "adminAnswerShopCatalogInquiry",
+    "adminListShopCatalogProducts",
+    "adminCreateShopCatalogProduct",
+    "adminGetShopCatalogProduct",
+    "adminUpdateShopCatalogProduct",
+    "adminDeleteShopCatalogProduct",
+    "adminGetShopCatalogProductOptions",
+    "adminUpdateShopCatalogProductOptions",
+    "adminUpdateShopCatalogProductStock",
+    "adminListShopCatalogReviews",
+    "adminAnswerShopCatalogReview",
+    "adminListShopCatalogStockSms",
+    "adminUpdateShopCatalogStockSms",
+    "adminDeleteShopCatalogStockSms",
+    "adminSendShopCatalogStockSms"
+  ]
+}

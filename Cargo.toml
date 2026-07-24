@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["apps/admin-server", "crates/fleet-connector", "crates/fleet-remote", "crates/fleet-security", "crates/fleet-store"]
+members = ["apps/admin-server", "crates/fleet-connector", "crates/fleet-notify", "crates/fleet-remote", "crates/fleet-security", "crates/fleet-store"]
 
 [workspace.package]
 edition = "2024"

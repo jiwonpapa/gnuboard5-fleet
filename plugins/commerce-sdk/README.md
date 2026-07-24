@@ -6,4 +6,10 @@
 
 Commerce 기능은 PHP Connector의 Shop 공급자 계약, 서버 application·route·권한, 반응형 웹 UI, 알림 event source를 함께 제공해야 합니다. 브라우저 UI만 숨기는 방식은 허용하지 않습니다.
 
+[`contracts/commerce-plugin-v1.json`](contracts/commerce-plugin-v1.json)은
+현재 26개 Shop operation과 서버 전용 호출 context를 고정합니다. Fleet
+Core는 `/api/v1/plugins`에서 설치 가능 slot만 공개하며 Commerce 구현을
+import하거나 미설치 상태의 부팅을 막지 않습니다. 플러그인은 브라우저에
+G5·결제·라이선스 secret을 전달할 수 없습니다.
+
 초기 구현 우선순위는 주문·결제·취소요청 알림, 주문 목록/상세, 배송·송장, 저재고, 문의·리뷰 답변, 상품 빠른 수정, 매출 요약입니다. 실제 결제 취소·환불은 step-up 인증과 감사 로그가 갖춰진 뒤 별도 활성화합니다.

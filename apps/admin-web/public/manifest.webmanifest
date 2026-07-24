@@ -1,10 +1,20 @@
 {
   "name": "G5 Fleet",
   "short_name": "G5 Fleet",
+  "id": "/",
   "description": "그누보드5 멀티사이트 통합 관리자",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f3f4f2",
   "theme_color": "#f3f4f2",
-  "lang": "ko"
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "/g5-fleet-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }
