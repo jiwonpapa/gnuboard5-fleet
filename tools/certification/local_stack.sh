@@ -168,15 +168,16 @@ rm -f "$install_result"
 G5_FLEET_DATA_DIR="$state_root/fleet-data" \
 G5_FLEET_INSTALLATION_ID="local-certification-$revision" \
   "$root/target/debug/g5-fleet-admin-server" init-store >/dev/null
-(
-  export G5_FLEET_DATA_DIR="$state_root/fleet-data"
-  export G5_FLEET_MASTER_KEY_BASE64="$master_value"
-  export G5_FLEET_BIND="127.0.0.1:$fleet_port"
-  export G5_FLEET_WEB_DIR="$root/apps/admin-web/dist"
-  export G5_FLEET_CERTIFICATION_MODE=local
-  exec "$root/target/debug/g5-fleet-admin-server" serve
-) > "$state_root/fleet.log" 2>&1 &
+export G5_FLEET_DATA_DIR="$state_root/fleet-data"
+export G5_FLEET_MASTER_KEY_BASE64="$master_value"
+export G5_FLEET_BIND="127.0.0.1:$fleet_port"
+export G5_FLEET_WEB_DIR="$root/apps/admin-web/dist"
+export G5_FLEET_CERTIFICATION_MODE=local
+nohup "$root/target/debug/g5-fleet-admin-server" serve \
+  > "$state_root/fleet.log" 2>&1 </dev/null &
 fleet_pid=$!
+unset G5_FLEET_DATA_DIR G5_FLEET_MASTER_KEY_BASE64 G5_FLEET_BIND
+unset G5_FLEET_WEB_DIR G5_FLEET_CERTIFICATION_MODE
 printf '%s\n' "G5_CERT_FLEET_PID=$fleet_pid" >> "$session_file"
 
 count=0
