@@ -6,7 +6,7 @@
 
 활성 제품은 Rust Axum 서버와 React PWA로만 배포합니다. 기존 Tauri 코드는 UI와 Rust 소비 구현을 서버 구조로 이관하기 위한 참조 snapshot이며 데스크톱 제품, 네이티브 wrapper, 코드 서명·공증 또는 updater를 제공하지 않습니다. 결정 근거는 [`ADR-0006`](docs/adr/0006-server-only-product-pivot.md), 구현 기준은 [`서버·웹 기술 스택`](docs/architecture/SERVER_WEB_TECH_STACK.md)에 있습니다.
 
-구현은 [`서버 전환 목표 기반 배치 계획`](docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md)의 B00 → B10 순서로 진행합니다. B00 방향 확정부터 B09 구현을 마쳤고 B10의 공식 G5 local runtime·Chromium·package 인증까지 통과했습니다. 외부 staging target과 배포·rollback receipt가 없어 `STAGING_PASS`는 보류합니다.
+구현은 [`서버 전환 목표 기반 배치 계획`](docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md)의 B00 → B10 순서로 진행합니다. B00 방향 확정부터 B09 구현을 마쳤고 B10의 공식 G5 local runtime·Chromium·package 인증까지 통과했습니다. staging은 기존 PHP 서버와 분리한 libvirt VM에서 HTTPS·release platform·배포·rollback receipt를 같은 revision에 결속해 인증합니다.
 
 ## 제품 구성
 

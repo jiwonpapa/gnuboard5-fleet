@@ -5,6 +5,7 @@
 - Docker Engine과 Docker Compose plugin
 - `curl`, `openssl`, `awk`, `tar`
 - 공개 HTTPS 운영에서는 Caddy 주소와 도메인을 운영 환경에 맞게 설정
+- 기본 서버 release platform은 `linux/amd64`
 
 기본 Compose에는 `app`, `caddy`만 있습니다. PostgreSQL·Redis 설치는
 필요하지 않습니다. data, backup, secret은 지정한 state directory 아래
@@ -80,5 +81,16 @@ tools/package/package_smoke.sh
 archive, CycloneDX와 SHA-256 manifest를 만듭니다. 두 번째 명령은 임시
 state에서 clean install, 사용자 row 보존 upgrade, 암호화 master-key
 복원과 존재하지 않는 image로의 실패 upgrade rollback을 실행합니다.
+두 명령은 기본적으로 `linux/amd64` image를 만들고 실행합니다. ARM64
+서버용 release가 필요할 때만 두 gate에 동일한 platform을 명시합니다.
+
+```bash
+G5_FLEET_RELEASE_PLATFORM=linux/arm64 tools/package/build_release.sh VERSION
+G5_FLEET_PACKAGE_PLATFORM=linux/arm64 tools/package/package_smoke.sh
+```
+
+release manifest의 `platform`은 실제 OCI image의 OS/architecture
+readback과 일치해야 하며 staging rehearsal도 실행 중 container의 image
+ID와 platform을 같은 manifest에 대조합니다.
 
 이 로컬 package 증거는 staging 또는 live 인증을 대신하지 않습니다.

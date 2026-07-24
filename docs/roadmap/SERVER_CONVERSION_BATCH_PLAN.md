@@ -314,16 +314,16 @@ API·health·ready는 제외합니다. Commerce SDK는 canonical Shop 26개와
 로그인·설정 수정·재조회·원복과 2사용자×2사이트 HTTP·Chromium 격리로
 `LOCAL_RUNTIME_PASS`를 확보했습니다. OCI clean install, 데이터 보존
 upgrade, 검증 backup·암호화 master-key 복원과 실패 upgrade rollback으로
-`PACKAGE_PASS`도 확보했습니다. staging host에서 현재 runtime
-version/revision을 결속하고 실패 upgrade·검증 snapshot 복원·핵심 row
-readback으로 배포/rollback receipt를 생성하는 rehearsal을 추가했습니다.
-외부 staging target·provider ID가 없어 `STAGING_PASS`와 B10 전체 완료는
-보류합니다.
+`PACKAGE_PASS`도 확보했습니다. staging host에서 현재 runtime image
+ID·platform·version/revision을 결속하고 실패 upgrade·검증 snapshot
+복원·핵심 row readback으로 배포/rollback receipt를 생성하는 rehearsal을
+추가했습니다. target은 기존 PHP staging과 분리된 libvirt VM이며 사설
+HTTPS origin은 내부 CA로 검증합니다.
 
 ## 4. 현재 바로 시작할 배치
 
-현재 시작점은 **B10 staging 인증**입니다. credential-free HTTPS origin,
-provider ID와 staging host 접근 정보를 입력받아 현재 release를 배포한
-뒤 `make staging-rehearsal`로 배포 receipt와 검증 snapshot 기반 rollback
-receipt를 생성하고 `STAGING_PASS`를 확인합니다. 입력이 없으면 B10 전체
-완료로 승격하지 않습니다.
+현재 시작점은 **B10 staging 인증**입니다. 분리된 libvirt VM의
+credential-free HTTPS origin과 provider ID에 현재 `linux/amd64` release를
+배포한 뒤 `make staging-rehearsal`로 배포 receipt와 검증 snapshot 기반
+rollback receipt를 생성하고 `STAGING_PASS`를 확인합니다. evidence와
+Git revision이 다르면 B10 전체 완료로 승격하지 않습니다.

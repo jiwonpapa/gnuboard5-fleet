@@ -2788,7 +2788,13 @@ def check_package_operational_contract(root: Path) -> str:
     release = paths["release"].read_text(encoding="utf-8")
     connector = paths["connector"].read_text(encoding="utf-8")
     smoke = paths["smoke"].read_text(encoding="utf-8")
-    for token in ("--sbom=true", "docker scout sbom", "build_connector_package.py"):
+    for token in (
+        "--sbom=true",
+        "docker scout sbom",
+        "build_connector_package.py",
+        "G5_FLEET_RELEASE_PLATFORM",
+        '--platform "$platform"',
+    ):
         if token not in release:
             raise ValueError(f"release artifact token missing: {token}")
     for token in (
@@ -2884,7 +2890,7 @@ def check_certification_harness_boundary(root: Path) -> str:
     receipt = paths["staging_receipt"].read_text(encoding="utf-8")
     rehearsal = paths["staging_rehearsal"].read_text(encoding="utf-8")
     for token in (
-        "staging deployment version/revision readback mismatch",
+        "staging deployment image/platform/version/revision readback mismatch",
         "staging rollback snapshot/readback mismatch",
         "rollback_from_failed_upgrade",
     ):
@@ -2895,6 +2901,8 @@ def check_certification_harness_boundary(root: Path) -> str:
         "upgrade.sh",
         "staging_receipt.py",
         "restored_readback",
+        "runtime_image_id",
+        "runtime_platform",
     ):
         if token not in rehearsal:
             raise ValueError(f"staging rehearsal token missing: {token}")
@@ -3099,16 +3107,18 @@ def check_package_server_image(root: Path) -> str:
     evidence, _ = package_release_evidence(root)
     readback = evidence.get("version_readback")
     image_id = evidence.get("image_id")
+    platform = evidence.get("platform")
     if (
         not isinstance(readback, dict)
         or readback.get("image_version") != evidence.get("version")
         or readback.get("build_revision") != evidence.get("revision")
         or not isinstance(image_id, str)
         or not image_id.startswith("sha256:")
+        or platform not in {"linux/amd64", "linux/arm64"}
     ):
         raise ValueError("server image ID/version/revision readback mismatch")
     return (
-        f"Axum+React image {evidence['image']} id={image_id[:19]} "
+        f"Axum+React image {evidence['image']} id={image_id[:19]} platform={platform} "
         "version/revision readback 확인"
     )
 
@@ -3251,6 +3261,7 @@ def check_staging_deploy_smoke(root: Path) -> str:
         not isinstance(deployment, dict)
         or deployment.get("status") != "passed"
         or not str(deployment.get("image_id", "")).startswith("sha256:")
+        or deployment.get("platform") not in {"linux/amd64", "linux/arm64"}
         or not isinstance(smoke, dict)
         or smoke.get("status") != "passed"
         or smoke.get("ready", {}).get("status") != "ready"
@@ -3259,7 +3270,7 @@ def check_staging_deploy_smoke(root: Path) -> str:
     ):
         raise ValueError("staging deploy readiness/version/revision evidence mismatch")
     return (
-        f"staging image={deployment['image_id'][:19]} "
+        f"staging image={deployment['image_id'][:19]} platform={deployment['platform']} "
         "readyz·meta version/revision readback 확인"
     )
 

@@ -9,6 +9,8 @@ import subprocess
 import tarfile
 from pathlib import Path, PurePosixPath
 
+PLATFORM_PATTERN = re.compile(r"linux/(amd64|arm64)")
+
 
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -16,6 +18,12 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def validated_platform(value: str) -> str:
+    if not PLATFORM_PATTERN.fullmatch(value):
+        raise SystemExit(f"unsupported release platform: {value}")
+    return value
 
 
 def verify_connector(
@@ -62,6 +70,7 @@ def verify_connector(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", required=True)
+    parser.add_argument("--platform", required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--revision", required=True)
     parser.add_argument("--archive", type=Path, required=True)
@@ -70,6 +79,7 @@ def main() -> int:
     parser.add_argument("--connector-sbom", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    platform = validated_platform(args.platform)
 
     if not re.fullmatch(r"[0-9A-Za-z._-]{1,64}", args.version):
         raise SystemExit("invalid release version")
@@ -89,9 +99,36 @@ def main() -> int:
         text=True,
         stdout=subprocess.PIPE,
     ).stdout.strip()
+    image_platform = subprocess.run(
+        (
+            "docker",
+            "image",
+            "inspect",
+            "--format",
+            "{{.Os}}/{{.Architecture}}",
+            args.image,
+        ),
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+    ).stdout.strip()
+    if image_platform != platform:
+        raise SystemExit(
+            f"container platform mismatch: expected {platform}, got {image_platform}"
+        )
     version_readback = json.loads(
         subprocess.run(
-            ("docker", "run", "--rm", "--entrypoint", "/usr/local/bin/g5-fleet-admin-server", args.image, "version"),
+            (
+                "docker",
+                "run",
+                "--rm",
+                "--platform",
+                platform,
+                "--entrypoint",
+                "/usr/local/bin/g5-fleet-admin-server",
+                args.image,
+                "version",
+            ),
             check=True,
             text=True,
             stdout=subprocess.PIPE,
@@ -113,6 +150,7 @@ def main() -> int:
         "status": "passed",
         "image": args.image,
         "image_id": image_id,
+        "platform": platform,
         "version": args.version,
         "revision": args.revision,
         "canonical_openapi_sha256": connector_readback[

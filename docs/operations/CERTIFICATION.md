@@ -77,12 +77,19 @@ make staging-rehearsal \
 ignored 경로에 복사하고 실제 HTTPS origin, 동일 provider ID, 두 receipt의
 절대경로를 입력합니다.
 
+공개 DNS를 사용하지 않는 사설 staging VM은 IP SAN이 들어간 내부 CA
+server certificate를 사용할 수 있습니다. CA private key는 VM·Git에
+복사하지 않고, 인증 실행 호스트의 CA certificate만 `SSL_CERT_FILE`로
+명시합니다.
+
 ```bash
-make staging-smoke CONFIG=/absolute/staging.json
+SSL_CERT_FILE=/absolute/staging-ca.crt \
+  make staging-smoke CONFIG=/absolute/staging.json
 make audit-staging
 ```
 
-배포 receipt는 현재 revision·release image ID·version을 포함해야 합니다.
+배포 receipt는 현재 revision·release image ID·platform·version을
+포함해야 합니다.
 rollback receipt는 검증 snapshot SHA-256과 backup/restore 핵심 row
 readback 및 실패 upgrade 자동 복원 결과를 포함해야 합니다. target이나 receipt가 없으면
 `STAGING_PASS`를 주장하지 않습니다.

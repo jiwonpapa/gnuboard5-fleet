@@ -106,6 +106,7 @@ def main() -> int:
         or deployment.get("provider_id") != provider_id
         or deployment.get("revision") != revision
         or deployment.get("image_id") != release.get("image_id")
+        or deployment.get("platform") != release.get("platform")
         or deployment.get("version") != release.get("version")
     ):
         raise RuntimeError("staging deployment receipt identity mismatch")
@@ -142,6 +143,7 @@ def main() -> int:
         "deployment": {
             "status": "passed",
             "image_id": release["image_id"],
+            "platform": release["platform"],
             "version": release["version"],
             "receipt_sha256": sha256(deployment_path),
         },

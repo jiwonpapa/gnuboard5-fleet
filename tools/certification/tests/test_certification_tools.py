@@ -65,18 +65,34 @@ class CertificationToolTests(unittest.TestCase):
             "version": "b10-test",
             "revision": "a" * 40,
             "image_id": f"sha256:{'b' * 64}",
+            "platform": "linux/amd64",
         }
         readback = {
             "schema": "g5-fleet.version/v1",
             "image_version": "b10-test",
             "build_revision": "a" * 40,
         }
-        payload = receipt.deployment_receipt("provider:test", release, readback)
+        payload = receipt.deployment_receipt(
+            "provider:test",
+            release,
+            readback,
+            release["image_id"],
+            release["platform"],
+        )
         self.assertEqual("passed", payload["status"])
         self.assertEqual(release["image_id"], payload["image_id"])
+        self.assertEqual("linux/amd64", payload["platform"])
         readback["build_revision"] = "c" * 40
-        with self.assertRaisesRegex(RuntimeError, "version/revision readback mismatch"):
-            receipt.deployment_receipt("provider:test", release, readback)
+        with self.assertRaisesRegex(
+            RuntimeError, "image/platform/version/revision readback mismatch"
+        ):
+            receipt.deployment_receipt(
+                "provider:test",
+                release,
+                readback,
+                release["image_id"],
+                release["platform"],
+            )
 
     def test_staging_rollback_receipt_requires_snapshot_and_exact_readback(self) -> None:
         release = {
@@ -85,6 +101,7 @@ class CertificationToolTests(unittest.TestCase):
             "version": "b10-test",
             "revision": "a" * 40,
             "image_id": f"sha256:{'b' * 64}",
+            "platform": "linux/amd64",
         }
         readback = {"users": 1, "sites": 2, "outbox": 0, "jobs": 0, "audit_entries": 4}
         with tempfile.TemporaryDirectory() as directory:

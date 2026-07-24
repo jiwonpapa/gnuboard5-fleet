@@ -64,16 +64,17 @@
 - 실제 G5 runtime 대상 Core 189개 route 실행·실데이터 field readback
 - 실제 외부 호스트 대상 SSH/SFTP 연결·중단·재접속
 - Telegram/Web Push 실제 발송
-- 외부 clean host와 staging HTTPS origin의 설치·배포·rollback
-- staging provider identity와 배포·rollback receipt
 
 현재 revision은 routine `SERVER_STATIC_PASS`와 별도로 공식 G5·Chromium
 `LOCAL_RUNTIME_PASS`, OCI 설치·upgrade·backup·restore·rollback
 `PACKAGE_PASS`를 확보했습니다. 이 두 등급은 외부 staging이나 실제 알림
 발송 증거를 대신하지 않습니다.
 
-남은 B10 입력은 실제 staging HTTPS origin, provider ID, 현재 revision의
-staging host 접근 정보입니다. 배포 후 `make staging-rehearsal`이 runtime
-version/revision, 실패 upgrade, 검증 backup 복원과 핵심 row readback을
-확인해 배포·rollback receipt를 생성합니다. 외부 target 입력이 없으므로
-`STAGING_PASS`와 B10 전체 완료는 주장하지 않습니다.
+B10 staging target은 기존 PHP staging과 분리된 libvirt VM입니다.
+provider ID는 VM identity에 고정하고, 사설 HTTPS origin은 IP SAN과 내부
+CA로 검증합니다. 기본 server release는 `linux/amd64`이며 release
+manifest의 image ID·platform·version·revision을 실행 중 container와
+대조합니다. `make staging-rehearsal`은 실패 upgrade, 검증 backup 복원과
+핵심 row readback을 확인해 배포·rollback receipt를 생성합니다.
+CA private key와 receipt, `staging.json`은 Git에 넣지 않으며 동일
+revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장합니다.

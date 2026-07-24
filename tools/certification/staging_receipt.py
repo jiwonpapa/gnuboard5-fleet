@@ -14,6 +14,7 @@ VERSION_PATTERN = re.compile(r"[0-9A-Za-z._-]{1,64}")
 PROVIDER_PATTERN = re.compile(r"[A-Za-z0-9._:-]{3,200}")
 REVISION_PATTERN = re.compile(r"[0-9a-f]{40}")
 SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
+PLATFORM_PATTERN = re.compile(r"linux/(amd64|arm64)")
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -52,6 +53,7 @@ def validate_release(release: dict[str, Any]) -> None:
         or not VERSION_PATTERN.fullmatch(str(release.get("version", "")))
         or not REVISION_PATTERN.fullmatch(str(release.get("revision", "")))
         or not str(release.get("image_id", "")).startswith("sha256:")
+        or not PLATFORM_PATTERN.fullmatch(str(release.get("platform", "")))
     ):
         raise RuntimeError("staging release evidence is invalid")
 
@@ -60,6 +62,8 @@ def deployment_receipt(
     provider_id: str,
     release: dict[str, Any],
     version_readback: dict[str, Any],
+    runtime_image_id: str,
+    runtime_platform: str,
 ) -> dict[str, Any]:
     validate_provider(provider_id)
     validate_release(release)
@@ -67,14 +71,19 @@ def deployment_receipt(
         version_readback.get("schema") != "g5-fleet.version/v1"
         or version_readback.get("image_version") != release["version"]
         or version_readback.get("build_revision") != release["revision"]
+        or runtime_image_id != release["image_id"]
+        or runtime_platform != release["platform"]
     ):
-        raise RuntimeError("staging deployment version/revision readback mismatch")
+        raise RuntimeError(
+            "staging deployment image/platform/version/revision readback mismatch"
+        )
     return {
         "schema": "g5-fleet.staging-deployment/v1",
         "status": "passed",
         "provider_id": provider_id,
         "revision": release["revision"],
         "image_id": release["image_id"],
+        "platform": release["platform"],
         "version": release["version"],
         "runtime_readback": version_readback,
     }
@@ -142,6 +151,8 @@ def main() -> int:
         default=ROOT / ".cache/evidence/package-release.json",
     )
     deployment.add_argument("--version-readback-json", required=True)
+    deployment.add_argument("--runtime-image-id", required=True)
+    deployment.add_argument("--runtime-platform", required=True)
     deployment.add_argument("--output", type=Path, required=True)
 
     rollback = subparsers.add_parser("rollback")
@@ -164,6 +175,8 @@ def main() -> int:
             args.provider_id,
             release,
             parse_json(args.version_readback_json, "version readback"),
+            args.runtime_image_id,
+            args.runtime_platform,
         )
     else:
         payload = rollback_receipt(

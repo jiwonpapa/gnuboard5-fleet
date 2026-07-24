@@ -10,6 +10,12 @@ image_repository=${3:-"g5-fleet/package-smoke"}
 image_a="$image_repository:$version_a"
 image_b="$image_repository:$version_b"
 caddy_image=${G5_FLEET_CADDY_IMAGE:-caddy:2.10.2-alpine}
+platform=${G5_FLEET_PACKAGE_PLATFORM:-linux/amd64}
+
+case "$platform" in
+  linux/amd64|linux/arm64) ;;
+  *) echo "unsupported package smoke platform: $platform" >&2; exit 1 ;;
+esac
 
 for command in docker git curl openssl python3; do
   command -v "$command" >/dev/null 2>&1 || {
@@ -21,6 +27,7 @@ test "$(git -C "$root" status --porcelain --untracked-files=no)" = ""
 docker compose version >/dev/null
 
 docker buildx build \
+  --platform "$platform" \
   --file "$root/Containerfile" \
   --build-arg "G5_FLEET_VERSION=$version_a" \
   --build-arg "G5_FLEET_REVISION=$revision" \
@@ -29,6 +36,7 @@ docker buildx build \
   --tag "$image_a" \
   "$root"
 docker buildx build \
+  --platform "$platform" \
   --file "$root/Containerfile" \
   --build-arg "G5_FLEET_VERSION=$version_b" \
   --build-arg "G5_FLEET_REVISION=$revision" \

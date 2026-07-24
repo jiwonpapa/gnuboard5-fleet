@@ -4,9 +4,14 @@ set -eu
 root=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd -P)
 version=${1:-}
 image_repository=${2:-ghcr.io/jiwonpapa/gnuboard5-fleet}
+platform=${G5_FLEET_RELEASE_PLATFORM:-linux/amd64}
 
 case "$version" in
   ""|*[!0-9A-Za-z._-]*) echo "usage: build_release.sh VERSION [IMAGE_REPOSITORY]" >&2; exit 1 ;;
+esac
+case "$platform" in
+  linux/amd64|linux/arm64) ;;
+  *) echo "unsupported release platform: $platform" >&2; exit 1 ;;
 esac
 for command in docker git python3; do
   command -v "$command" >/dev/null 2>&1 || {
@@ -23,6 +28,7 @@ output="$root/dist/release/$version"
 mkdir -p "$output"
 
 docker buildx build \
+  --platform "$platform" \
   --file "$root/Containerfile" \
   --build-arg "G5_FLEET_VERSION=$version" \
   --build-arg "G5_FLEET_REVISION=$revision" \
@@ -46,6 +52,7 @@ python3 "$root/tools/package/build_connector_package.py" \
   --output-dir "$output"
 python3 "$root/tools/package/write_release_manifest.py" \
   --image "$image" \
+  --platform "$platform" \
   --version "$version" \
   --revision "$revision" \
   --archive "$archive" \
@@ -60,4 +67,4 @@ cp "$manifest" "$temporary_evidence"
 chmod 0600 "$temporary_evidence"
 mv "$temporary_evidence" "$evidence"
 
-echo "release package verified: $manifest"
+echo "release package verified: $manifest platform=$platform"

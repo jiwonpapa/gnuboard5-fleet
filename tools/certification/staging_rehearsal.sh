@@ -34,10 +34,11 @@ done
   echo "output directory cannot be /" >&2
   exit 1
 }
-[ ! -L "$output_dir" ] && { [ ! -e "$output_dir" ] || [ -d "$output_dir" ]; } || {
+if [ -L "$output_dir" ] \
+  || { [ -e "$output_dir" ] && [ ! -d "$output_dir" ]; }; then
   echo "output directory is unsafe" >&2
   exit 1
-}
+fi
 [ -f "$env_file" ] && [ ! -L "$env_file" ] || {
   echo "deployment env file is missing or unsafe" >&2
   exit 1
@@ -98,6 +99,25 @@ deployment_receipt="$output_dir/deployment-receipt.json"
 rollback_receipt="$output_dir/rollback-receipt.json"
 
 version_readback=$(compose exec -T app /usr/local/bin/g5-fleet-admin-server version)
+container_id=$(compose ps -q app)
+[ -n "$container_id" ] || {
+  echo "staging app container is not running" >&2
+  exit 1
+}
+runtime_image_id=$(docker inspect --format '{{.Image}}' "$container_id")
+runtime_platform=$(docker image inspect \
+  --format '{{.Os}}/{{.Architecture}}' "$runtime_image_id")
+release_image_id=$(python3 -c \
+  'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["image_id"])' \
+  "$release_manifest")
+release_platform=$(python3 -c \
+  'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["platform"])' \
+  "$release_manifest")
+[ "$runtime_image_id" = "$release_image_id" ] \
+  && [ "$runtime_platform" = "$release_platform" ] || {
+  echo "staging runtime image/platform does not match release manifest" >&2
+  exit 1
+}
 runtime_version=$(python3 -c \
   'import json,sys; print(json.loads(sys.argv[1])["image_version"])' \
   "$version_readback")
@@ -109,6 +129,8 @@ python3 "$root/tools/certification/staging_receipt.py" deployment \
   --provider-id "$provider_id" \
   --release "$release_manifest" \
   --version-readback-json "$version_readback" \
+  --runtime-image-id "$runtime_image_id" \
+  --runtime-platform "$runtime_platform" \
   --output "$deployment_receipt"
 
 revision=$(python3 -c \

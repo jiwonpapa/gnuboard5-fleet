@@ -15,8 +15,23 @@ package = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = package
 SPEC.loader.exec_module(package)
 
+RELEASE_MODULE_PATH = Path(__file__).resolve().parents[1] / "write_release_manifest.py"
+RELEASE_SPEC = importlib.util.spec_from_file_location(
+    "write_release_manifest", RELEASE_MODULE_PATH
+)
+assert RELEASE_SPEC and RELEASE_SPEC.loader
+release = importlib.util.module_from_spec(RELEASE_SPEC)
+sys.modules[RELEASE_SPEC.name] = release
+RELEASE_SPEC.loader.exec_module(release)
+
 
 class PackageToolTests(unittest.TestCase):
+    def test_release_platform_is_explicit_and_server_safe(self) -> None:
+        self.assertEqual("linux/amd64", release.validated_platform("linux/amd64"))
+        self.assertEqual("linux/arm64", release.validated_platform("linux/arm64"))
+        with self.assertRaisesRegex(SystemExit, "unsupported release platform"):
+            release.validated_platform("darwin/arm64")
+
     def test_production_package_inventory_rejects_plugins_and_ignores_dev(self) -> None:
         lock = {
             "packages": [

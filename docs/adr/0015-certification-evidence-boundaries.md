@@ -41,9 +41,14 @@ package identity, 4개 artifact checksum과 두 SBOM을 재검증합니다. 별�
 ## staging 증거
 
 staging은 명시적 HTTPS origin, provider instance ID, 현재 release image
-deployment receipt와 backup/restore rollback receipt가 모두 있어야
-실행합니다. `/readyz`와 `/api/v1/meta`가 현재 Git revision과 image
-version을 되돌려야 `STAGING_PASS`가 됩니다.
+ID·platform·deployment receipt와 backup/restore rollback receipt가 모두
+있어야 실행합니다. `/readyz`와 `/api/v1/meta`가 현재 Git revision과
+image version을 되돌려야 `STAGING_PASS`가 됩니다.
+
+공개 DNS가 없는 사설 staging은 IP SAN이 포함된 내부 CA certificate를
+사용할 수 있습니다. CA private key는 staging VM과 Git에 두지 않으며
+인증 실행 호스트가 명시적으로 신뢰한 CA certificate로만 HTTPS를
+검증합니다.
 
 staging target 또는 receipt가 없으면 local/package PASS를 staging으로
 승격하지 않습니다. Telegram·Web Push 실제 발송은 별도 요청이 있을 때만
