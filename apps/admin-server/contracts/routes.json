@@ -147,6 +147,76 @@
       "auth": "session_csrf_risk_step_up",
       "site_context": true,
       "purpose": "canonical_core_operation_proxy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/ssh/profile",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "ssh_profile_summary"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/ssh/profile",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "encrypted_ssh_profile"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/terminal/ticket",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "one_time_terminal_ticket"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/terminal",
+      "auth": "session_one_time_ticket",
+      "site_context": true,
+      "purpose": "terminal_websocket_relay"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/sftp",
+      "auth": "session_csrf_risk_step_up",
+      "site_context": true,
+      "purpose": "sftp_file_operation"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/transfers/upload",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "streaming_sftp_upload"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/transfers/download",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "streaming_sftp_download"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/transfers/{job_id}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "owned_transfer_progress"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/transfers/{job_id}/cancel",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "owned_transfer_cancel"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/transfers/{job_id}/retry",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "owned_transfer_retry"
     }
   ]
 }

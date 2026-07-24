@@ -13,6 +13,7 @@ use g5_fleet_connector::{
     BasicConfig, ConnectorCredentials, ConnectorGateway, ConnectorHealth, ConnectorLogin,
     ConnectorResult, CoreExecuteRequest, CoreExecuteResponse,
 };
+use g5_fleet_remote::{SshProfileSummary, TerminalTicket};
 use http_body_util::BodyExt;
 use serde_json::Value;
 use tempfile::TempDir;
@@ -164,6 +165,16 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("GET", "/api/v1/sites/{site_id}/config/basic"),
             ("PUT", "/api/v1/sites/{site_id}/config/basic"),
             ("POST", "/api/v1/sites/{site_id}/core/{operation_id}",),
+            ("GET", "/api/v1/sites/{site_id}/ssh/profile"),
+            ("PUT", "/api/v1/sites/{site_id}/ssh/profile"),
+            ("POST", "/api/v1/sites/{site_id}/terminal/ticket"),
+            ("GET", "/api/v1/sites/{site_id}/terminal"),
+            ("POST", "/api/v1/sites/{site_id}/sftp"),
+            ("POST", "/api/v1/sites/{site_id}/transfers/upload"),
+            ("POST", "/api/v1/sites/{site_id}/transfers/download"),
+            ("GET", "/api/v1/sites/{site_id}/transfers/{job_id}"),
+            ("POST", "/api/v1/sites/{site_id}/transfers/{job_id}/cancel",),
+            ("POST", "/api/v1/sites/{site_id}/transfers/{job_id}/retry",),
         ]
     );
 }
@@ -362,6 +373,52 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .await
         .unwrap();
     assert_eq!(site.status(), StatusCode::CREATED);
+
+    let private_key = [
+        "-----BEGIN OPENSSH ",
+        "PRIVATE KEY-----\nfixture\n-----END OPENSSH ",
+        "PRIVATE KEY-----",
+    ]
+    .concat();
+    let ssh_profile = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/ssh/profile",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "username": "deploy",
+                "host": "93.184.216.34",
+                "port": 22,
+                "private_key": private_key,
+                "known_hosts": "93.184.216.34 ssh-ed25519 AAAAC3NzaFixture"
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(ssh_profile.status(), StatusCode::OK);
+    let ssh_profile_body = ssh_profile.into_body().collect().await.unwrap().to_bytes();
+    let ssh_profile_text = String::from_utf8_lossy(&ssh_profile_body);
+    assert!(!ssh_profile_text.contains("PRIVATE KEY"));
+    assert!(!ssh_profile_text.contains("AAAAC3NzaFixture"));
+    let summary: SshProfileSummary = serde_json::from_slice(&ssh_profile_body).unwrap();
+    assert_eq!(summary.host_key_verification, "strict_known_hosts");
+
+    let ticket = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/terminal/ticket",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(ticket.status(), StatusCode::OK);
+    let ticket: TerminalTicket = json(ticket).await;
+    assert!(ticket.ticket.len() >= 40);
 
     let health = app
         .clone()

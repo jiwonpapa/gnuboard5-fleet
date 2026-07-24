@@ -24,6 +24,11 @@ const CoreDomainConsole = lazy(async () => {
   return { default: module.CoreDomainConsole };
 });
 
+const RemoteWorkspace = lazy(async () => {
+  const module = await import("./RemoteWorkspace");
+  return { default: module.RemoteWorkspace };
+});
+
 export function VerticalFlow() {
   const [csrf, setCsrf] = useState("");
   const [sites, setSites] = useState<Site[]>([]);
@@ -230,9 +235,14 @@ export function VerticalFlow() {
 
       {error && <p className="flow-error" role="alert">{error}</p>}
       {site && config && (
-        <Suspense fallback={<StepHint>Core registry를 여는 중입니다.</StepHint>}>
-          <CoreDomainConsole siteId={site.site_id} csrfToken={csrf} />
-        </Suspense>
+        <>
+          <Suspense fallback={<StepHint>Core registry를 여는 중입니다.</StepHint>}>
+            <CoreDomainConsole siteId={site.site_id} csrfToken={csrf} />
+          </Suspense>
+          <Suspense fallback={<StepHint>원격 관리 도구를 여는 중입니다.</StepHint>}>
+            <RemoteWorkspace siteId={site.site_id} csrfToken={csrf} />
+          </Suspense>
+        </>
       )}
     </section>
   );

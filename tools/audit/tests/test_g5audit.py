@@ -127,6 +127,7 @@ class G5AuditTest(unittest.TestCase):
                 "apps/admin-server/Cargo.toml",
                 "apps/admin-web/package.json",
                 "crates/fleet-connector/Cargo.toml",
+                "crates/fleet-remote/Cargo.toml",
                 "crates/fleet-security/Cargo.toml",
                 "crates/fleet-store/Cargo.toml",
             ],
@@ -150,6 +151,10 @@ class G5AuditTest(unittest.TestCase):
         self.assertIn("SQLite WAL", MODULE.check_sqlite_durability(MODULE.ROOT))
         self.assertIn("2-user", MODULE.check_auth_site_boundary(MODULE.ROOT))
         self.assertIn("4연산", MODULE.check_server_vertical_flow(MODULE.ROOT))
+        self.assertIn(
+            "server-owned SSH/SFTP",
+            MODULE.check_remote_ssh_sftp_boundary(MODULE.ROOT),
+        )
         self.assertIn("active 189", MODULE.check_server_route_registry(MODULE.ROOT))
         self.assertIn("registry 189", MODULE.check_web_transport_registry(MODULE.ROOT))
         self.assertIn("17-domain", MODULE.check_web_field_consumption(MODULE.ROOT))

@@ -1,0 +1,21 @@
+[package]
+name = "g5-fleet-remote"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+base64.workspace = true
+g5-fleet-security = { path = "../fleet-security" }
+g5-fleet-store = { path = "../fleet-store" }
+getrandom.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tempfile.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

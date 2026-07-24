@@ -241,6 +241,15 @@ routine 차단, mock Connector config 수정·재조회·원복을 검증했습�
 - disconnect, 재접속, 취소와 부분 실패 검증
 - 다른 사용자 terminal·transfer event 수신 차단
 
+현재 상태: 완료. SSH profile을 사용자·사이트별 암호화 secret으로
+저장하고 strict known_hosts, public IP DNS pin·재검증, 고정 OpenSSH
+binary를 강제했습니다. 60초 hash-only 일회성 ticket WebSocket,
+구조화된 SFTP 명령, bounded upload/download stream과 SQLite transfer
+상태를 Axum·React에 연결하고 disconnect 시 process 종료 경계를
+구현했습니다. 교차 사용자·사이트 ticket·job 차단과
+실패·재시도·취소 상태는 내부 테스트로 검증했으며 실제 외부 SSH/SFTP
+접속은 B10 전까지 인증하지 않습니다.
+
 ### B08 — 알림·PWA·플러그인 경계
 
 작업:
@@ -289,4 +298,6 @@ routine 차단, mock Connector config 수정·재조회·원복을 검증했습�
 
 ## 4. 현재 바로 시작할 배치
 
-현재 시작점은 **B05 최초 수직 흐름**입니다. 인증된 사이트 경계 위에서 browser → Axum → PHP Connector의 로그인·조회·안전한 수정·재조회·원복을 먼저 닫습니다.
+현재 시작점은 **B08 알림·PWA·플러그인 경계**입니다. 외부 발송 없는
+outbox 상태 전이와 안전한 PWA cache, Commerce 미설치 Core 부팅을 먼저
+닫습니다.

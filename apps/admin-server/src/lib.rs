@@ -10,6 +10,7 @@ use axum::{
     routing::get,
 };
 use g5_fleet_connector::ConnectorGateway;
+use g5_fleet_remote::{OpenSshExecutor, TerminalTicketStore, TransferCoordinator};
 use g5_fleet_security::AuthService;
 use g5_fleet_store::EXPECTED_SCHEMA_VERSION;
 use serde::{Deserialize, Serialize};
@@ -40,10 +41,18 @@ impl std::fmt::Debug for AppConfig {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct AppState {
     config: AppConfig,
+    remote: RemoteRuntime,
     started_at: Instant,
+}
+
+#[derive(Clone)]
+pub(crate) struct RemoteRuntime {
+    tickets: TerminalTicketStore,
+    executor: OpenSshExecutor,
+    transfers: TransferCoordinator,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -78,6 +87,11 @@ pub fn build_router(config: AppConfig) -> Router {
     let index = config.web_root.join("index.html");
     let static_files = ServeDir::new(&config.web_root).fallback(ServeFile::new(index));
     let state = AppState {
+        remote: RemoteRuntime {
+            tickets: TerminalTicketStore::default(),
+            executor: OpenSshExecutor,
+            transfers: TransferCoordinator::new(config.auth.store().clone()),
+        },
         config,
         started_at: Instant::now(),
     };

@@ -49,6 +49,7 @@
         "storage.sqlite_durability",
         "security.auth_site_boundary",
         "server.vertical_flow",
+        "remote.ssh_sftp_boundary",
         "server.route_registry",
         "web.transport_registry",
         "web.field_consumption",

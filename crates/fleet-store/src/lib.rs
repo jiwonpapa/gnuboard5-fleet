@@ -13,7 +13,7 @@ use std::{
 pub use backup::{BackupArtifact, BackupManifest, BackupReadback};
 use error::io_error;
 pub use error::{StoreError, StoreResult};
-pub use records::{EncryptedSecretRecord, SessionRecord, SiteRecord, UserCredential};
+pub use records::{EncryptedSecretRecord, JobRecord, SessionRecord, SiteRecord, UserCredential};
 use serde::{Deserialize, Serialize};
 use sqlx::{
     SqlitePool,

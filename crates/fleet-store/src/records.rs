@@ -38,6 +38,19 @@ pub struct EncryptedSecretRecord {
     pub ciphertext: Vec<u8>,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub struct JobRecord {
+    pub job_id: String,
+    pub owner_user_id: String,
+    pub site_id: Option<String>,
+    pub kind: String,
+    pub state: String,
+    pub input: serde_json::Value,
+    pub result: Option<serde_json::Value>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
 impl FleetStore {
     pub async fn create_initial_user(
         &self,
@@ -318,5 +331,134 @@ impl FleetStore {
                 ciphertext,
             },
         ))
+    }
+
+    pub async fn create_job(
+        &self,
+        job_id: &str,
+        owner_user_id: &str,
+        site_id: Option<&str>,
+        kind: &str,
+        input: &serde_json::Value,
+    ) -> StoreResult<()> {
+        if let Some(site_id) = site_id
+            && self.owned_site(owner_user_id, site_id).await?.is_none()
+        {
+            return Err(StoreError::AccessDenied);
+        }
+        let _writer = self.inner.writer.lock().await;
+        sqlx::query(
+            "INSERT INTO jobs \
+             (job_id, owner_user_id, site_id, kind, input_json) \
+             VALUES (?, ?, ?, ?, ?)",
+        )
+        .bind(job_id)
+        .bind(owner_user_id)
+        .bind(site_id)
+        .bind(kind)
+        .bind(serde_json::to_string(input)?)
+        .execute(&self.inner.pool)
+        .await?;
+        Ok(())
+    }
+
+    pub async fn owned_job(
+        &self,
+        owner_user_id: &str,
+        job_id: &str,
+    ) -> StoreResult<Option<JobRecord>> {
+        type JobRow = (
+            String,
+            String,
+            Option<String>,
+            String,
+            String,
+            String,
+            Option<String>,
+            String,
+            String,
+        );
+        let row: Option<JobRow> = sqlx::query_as(
+            "SELECT job_id, owner_user_id, site_id, kind, state, input_json, \
+             result_json, created_at, updated_at \
+             FROM jobs WHERE owner_user_id = ? AND job_id = ?",
+        )
+        .bind(owner_user_id)
+        .bind(job_id)
+        .fetch_optional(&self.inner.pool)
+        .await?;
+        row.map(
+            |(
+                job_id,
+                owner_user_id,
+                site_id,
+                kind,
+                state,
+                input_json,
+                result_json,
+                created_at,
+                updated_at,
+            )| {
+                Ok(JobRecord {
+                    job_id,
+                    owner_user_id,
+                    site_id,
+                    kind,
+                    state,
+                    input: serde_json::from_str(&input_json)?,
+                    result: result_json
+                        .map(|value| serde_json::from_str(&value))
+                        .transpose()?,
+                    created_at,
+                    updated_at,
+                })
+            },
+        )
+        .transpose()
+    }
+
+    pub async fn transition_job(
+        &self,
+        owner_user_id: &str,
+        job_id: &str,
+        from_states: &[&str],
+        to_state: &str,
+        result: Option<&serde_json::Value>,
+    ) -> StoreResult<()> {
+        let allowed_states = ["queued", "running", "succeeded", "failed", "cancelled"];
+        if !allowed_states.contains(&to_state)
+            || from_states.is_empty()
+            || from_states
+                .iter()
+                .any(|state| !allowed_states.contains(state))
+        {
+            return Err(StoreError::Conflict(
+                "invalid job state transition".to_owned(),
+            ));
+        }
+        let placeholders = std::iter::repeat_n("?", from_states.len())
+            .collect::<Vec<_>>()
+            .join(",");
+        let sql = format!(
+            "UPDATE jobs SET state = ?, result_json = ?, \
+             updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') \
+             WHERE owner_user_id = ? AND job_id = ? AND state IN ({placeholders})"
+        );
+        let _writer = self.inner.writer.lock().await;
+        let mut query = sqlx::query(&sql)
+            .bind(to_state)
+            .bind(result.map(serde_json::to_string).transpose()?)
+            .bind(owner_user_id)
+            .bind(job_id);
+        for state in from_states {
+            query = query.bind(state);
+        }
+        let changed = query.execute(&self.inner.pool).await?.rows_affected();
+        if changed != 1 {
+            return Err(StoreError::Conflict(
+                "job state changed or job is not owned".to_owned(),
+            ));
+        }
+        Ok(())
     }
 }

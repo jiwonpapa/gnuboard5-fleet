@@ -229,6 +229,7 @@ EXPECTED_PROFILE_CONTRACTS: dict[str, dict[str, object]] = {
             "storage.sqlite_durability",
             "security.auth_site_boundary",
             "server.vertical_flow",
+            "remote.ssh_sftp_boundary",
             "server.route_registry",
             "web.transport_registry",
             "web.field_consumption",
@@ -1519,6 +1520,61 @@ def check_server_scaffold_contract(root: Path) -> str:
             "session_csrf_risk_step_up",
             True,
         ),
+        ("GET", "/api/v1/sites/{site_id}/ssh/profile", "session", True),
+        (
+            "PUT",
+            "/api/v1/sites/{site_id}/ssh/profile",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "POST",
+            "/api/v1/sites/{site_id}/terminal/ticket",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "GET",
+            "/api/v1/sites/{site_id}/terminal",
+            "session_one_time_ticket",
+            True,
+        ),
+        (
+            "POST",
+            "/api/v1/sites/{site_id}/sftp",
+            "session_csrf_risk_step_up",
+            True,
+        ),
+        (
+            "POST",
+            "/api/v1/sites/{site_id}/transfers/upload",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "POST",
+            "/api/v1/sites/{site_id}/transfers/download",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "GET",
+            "/api/v1/sites/{site_id}/transfers/{job_id}",
+            "session",
+            True,
+        ),
+        (
+            "POST",
+            "/api/v1/sites/{site_id}/transfers/{job_id}/cancel",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "POST",
+            "/api/v1/sites/{site_id}/transfers/{job_id}/retry",
+            "session_csrf_step_up",
+            True,
+        ),
     ]
     if actual != expected or len(routes) != len(expected):
         raise ValueError(f"active server scaffold route mismatch: {actual}")
@@ -1619,6 +1675,102 @@ def check_server_vertical_flow(root: Path) -> str:
     return (
         "canonical health·login·config 4연산, site-bound Axum, encrypted Connector token, "
         "same-origin React 수정·재조회·원복 흐름 확인"
+    )
+
+
+def check_remote_ssh_sftp_boundary(root: Path) -> str:
+    paths = {
+        "remote": root / "crates/fleet-remote/src/lib.rs",
+        "api": root / "apps/admin-server/src/api.rs",
+        "server_test": root / "apps/admin-server/tests/http_contract.rs",
+        "web_api": root / "apps/admin-web/src/api/fleet.ts",
+        "web_component": root / "apps/admin-web/src/components/RemoteWorkspace.tsx",
+        "web_test": root / "apps/admin-web/src/api/fleet.test.ts",
+    }
+    for label, path in paths.items():
+        if not path.is_file() or path.is_symlink():
+            raise ValueError(f"remote {label} input is missing or unsafe")
+
+    remote = paths["remote"].read_text(encoding="utf-8")
+    remote_tokens = (
+        'const SSH_BINARY: &str = "/usr/bin/ssh"',
+        'const SFTP_BINARY: &str = "/usr/bin/sftp"',
+        "StrictHostKeyChecking=yes",
+        "UserKnownHostsFile=",
+        "GlobalKnownHostsFile=/dev/null",
+        "HostKeyAlias=",
+        "resolve_host_port",
+        "revalidate_before_connect",
+        "kill_on_drop(true)",
+        "token_hash(&ticket)",
+        ".remove(&token_hash(ticket))",
+        "validate_remote_path",
+        "transfer_jobs_are_persistent_owned_and_retryable",
+        "terminal_ticket_is_single_use_and_owner_site_bound",
+    )
+    missing_remote = [token for token in remote_tokens if token not in remote]
+    if missing_remote:
+        raise ValueError(f"remote OpenSSH boundary missing: {missing_remote}")
+    if 'Command::new("' in remote or '.arg("-c")' in remote:
+        raise ValueError("remote process execution must use fixed binaries without a shell")
+
+    api = paths["api"].read_text(encoding="utf-8")
+    api_tokens = (
+        '"/sites/{site_id}/ssh/profile"',
+        '"/sites/{site_id}/terminal/ticket"',
+        '"/sites/{site_id}/terminal"',
+        '"/sites/{site_id}/sftp"',
+        '"/sites/{site_id}/transfers/upload"',
+        '"/sites/{site_id}/transfers/download"',
+        "SecretPurpose::Ssh",
+        "terminal_ticket_protocol",
+        "relay_terminal",
+        "body.into_data_stream()",
+        "Body::from_stream",
+        "owned_site_context",
+        "require_recent_step_up",
+    )
+    missing_api = [token for token in api_tokens if token not in api]
+    if missing_api:
+        raise ValueError(f"remote Axum boundary missing: {missing_api}")
+
+    web_api = paths["web_api"].read_text(encoding="utf-8")
+    web_component = paths["web_component"].read_text(encoding="utf-8")
+    web_test = paths["web_test"].read_text(encoding="utf-8")
+    web_tokens = (
+        "openTerminalSocket",
+        "g5-fleet-terminal",
+        "ticket.${ticket}",
+        "credentials: \"same-origin\"",
+        "uploadSftpFile",
+        "downloadSftpFile",
+    )
+    if any(token not in web_api for token in web_tokens):
+        raise ValueError("remote Admin Web transport boundary is incomplete")
+    if (
+        "RemoteWorkspace" not in web_component
+        or "setPrivateKey(\"\")" not in web_component
+        or "setKnownHosts(\"\")" not in web_component
+    ):
+        raise ValueError("remote Admin Web secret-clearing workflow is incomplete")
+    if (
+        "not.toContain(\"one-time-secret\")" not in web_test
+        or "ticket.one-time-secret" not in web_test
+    ):
+        raise ValueError("terminal ticket URL-exclusion test is missing")
+    for forbidden in ("localStorage", "sessionStorage", "file://", "invoke("):
+        if forbidden in web_api or forbidden in web_component:
+            raise ValueError(f"remote web consumer contains forbidden token: {forbidden}")
+
+    server_test = paths["server_test"].read_text(encoding="utf-8")
+    if (
+        "strict_known_hosts" not in server_test
+        or 'assert!(!ssh_profile_text.contains("PRIVATE KEY"))' not in server_test
+    ):
+        raise ValueError("remote server secret redaction test is missing")
+    return (
+        "server-owned SSH/SFTP, strict host key·DNS pin, hash-only one-time WebSocket ticket, "
+        "site-bound streaming·persistent transfer state 확인"
     )
 
 
@@ -2425,6 +2577,7 @@ CHECKS: dict[str, Callable[[Path], str]] = {
     "storage.sqlite_durability": check_sqlite_durability,
     "security.auth_site_boundary": check_auth_site_boundary,
     "server.vertical_flow": check_server_vertical_flow,
+    "remote.ssh_sftp_boundary": check_remote_ssh_sftp_boundary,
     "server.route_registry": check_server_route_registry,
     "web.transport_registry": check_web_transport_registry,
     "web.field_consumption": check_web_field_consumption,

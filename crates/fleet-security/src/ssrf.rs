@@ -82,6 +82,31 @@ impl<R: Resolver> UrlGuard<R> {
         })
     }
 
+    pub async fn resolve_host_port(
+        &self,
+        host: &str,
+        port: u16,
+    ) -> Result<OutboundTarget, SsrfError> {
+        let ipv6 = host.parse::<std::net::Ipv6Addr>().is_ok();
+        if host.is_empty()
+            || host.len() > 253
+            || port == 0
+            || host.chars().any(|character| {
+                character.is_ascii_control()
+                    || matches!(character, '/' | '\\' | '@' | '#' | '?')
+                    || (character == ':' && !ipv6)
+            })
+        {
+            return Err(SsrfError::InvalidUrl);
+        }
+        let raw = if ipv6 {
+            format!("https://[{host}]:{port}/")
+        } else {
+            format!("https://{host}:{port}/")
+        };
+        self.resolve_initial(&raw).await
+    }
+
     pub async fn revalidate_before_connect(
         &self,
         target: &OutboundTarget,

@@ -5,27 +5,41 @@ use std::{
 
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    body::{Body, Bytes},
+    extract::{
+        Path, State,
+        ws::{Message, WebSocket, WebSocketUpgrade},
+    },
     http::{
         HeaderMap, HeaderValue, StatusCode,
-        header::{COOKIE, SET_COOKIE},
+        header::{CONTENT_TYPE, COOKIE, SET_COOKIE},
     },
     response::{IntoResponse, Response},
     routing::{get, post, put},
 };
+use futures_util::{SinkExt, StreamExt, stream};
 use g5_fleet_connector::{
     BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin,
     CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, SiteOverview, core_operation,
     core_operations,
 };
+use g5_fleet_remote::{
+    RemoteError, SftpCommand, SftpResult, SshProfile, SshProfileSummary, TerminalProcess,
+    TerminalTicket,
+};
 use g5_fleet_security::{AuthError, PrincipalSession, SecretPurpose, SystemResolver, UrlGuard};
-use g5_fleet_store::{SiteRecord, StoreError};
+use g5_fleet_store::{JobRecord, SiteRecord, StoreError};
 use serde::{Deserialize, Serialize};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::{AppState, api_error};
 
 const SESSION_COOKIE: &str = "g5_fleet_session";
 const CSRF_HEADER: &str = "x-csrf-token";
+const REMOTE_PATH_HEADER: &str = "x-g5-remote-path";
+const TERMINAL_PROTOCOL: &str = "g5-fleet-terminal";
+const TERMINAL_TICKET_PROTOCOL_PREFIX: &str = "ticket.";
+const MAX_TRANSFER_BYTES: u64 = 64 * 1024 * 1024;
 static REQUEST_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -77,6 +91,11 @@ struct BasicConfigUpdateRequest {
     cf_10: String,
 }
 
+#[derive(Debug, Deserialize)]
+struct RemotePathRequest {
+    path: String,
+}
+
 #[derive(Debug, Serialize)]
 struct ConnectorLoginResponse {
     connected: bool,
@@ -126,6 +145,30 @@ pub(crate) fn router() -> Router<AppState> {
             get(basic_config_get).put(basic_config_update),
         )
         .route("/sites/{site_id}/core/{operation_id}", post(core_execute))
+        .route(
+            "/sites/{site_id}/ssh/profile",
+            get(get_ssh_profile).put(put_ssh_profile),
+        )
+        .route(
+            "/sites/{site_id}/terminal/ticket",
+            post(issue_terminal_ticket),
+        )
+        .route("/sites/{site_id}/terminal", get(terminal_socket))
+        .route("/sites/{site_id}/sftp", post(sftp_operation))
+        .route("/sites/{site_id}/transfers/upload", post(upload_transfer))
+        .route(
+            "/sites/{site_id}/transfers/download",
+            post(download_transfer),
+        )
+        .route("/sites/{site_id}/transfers/{job_id}", get(get_transfer))
+        .route(
+            "/sites/{site_id}/transfers/{job_id}/cancel",
+            post(cancel_transfer),
+        )
+        .route(
+            "/sites/{site_id}/transfers/{job_id}/retry",
+            post(retry_transfer),
+        )
 }
 
 async fn bootstrap(
@@ -719,6 +762,572 @@ async fn core_execute(
     }
 }
 
+async fn put_ssh_profile(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(profile): Json<SshProfile>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    if let Err(error) = state.remote.executor.validate_target(&profile).await {
+        return remote_error(error);
+    }
+    let encoded = match serde_json::to_vec(&profile) {
+        Ok(value) => value,
+        Err(_) => return remote_error(RemoteError::InvalidProfile),
+    };
+    match state
+        .config
+        .auth
+        .put_secret(
+            &context.principal_id,
+            &site.site_id,
+            SecretPurpose::Ssh,
+            &encoded,
+        )
+        .await
+    {
+        Ok(()) => Json::<SshProfileSummary>(profile.summary()).into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn get_ssh_profile(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match load_ssh_profile(&state, &context, &site.site_id).await {
+        Ok(profile) => Json::<SshProfileSummary>(profile.summary()).into_response(),
+        Err(response) => response,
+    }
+}
+
+async fn issue_terminal_ticket(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    if let Err(response) = load_ssh_profile(&state, &context, &site.site_id).await {
+        return response;
+    }
+    match state
+        .remote
+        .tickets
+        .issue(&context.principal_id, &site.site_id)
+        .await
+    {
+        Ok(ticket) => Json::<TerminalTicket>(ticket).into_response(),
+        Err(error) => remote_error(error),
+    }
+}
+
+async fn terminal_socket(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    ws: WebSocketUpgrade,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let ticket = match terminal_ticket_protocol(&headers) {
+        Some(value) => value,
+        None => return remote_error(RemoteError::InvalidTicket),
+    };
+    if let Err(error) = state
+        .remote
+        .tickets
+        .consume(&ticket, &context.principal_id, &site.site_id)
+        .await
+    {
+        return remote_error(error);
+    }
+    let profile = match load_ssh_profile(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let process = match state.remote.executor.spawn_terminal(&profile).await {
+        Ok(value) => value,
+        Err(error) => return remote_error(error),
+    };
+    ws.protocols([TERMINAL_PROTOCOL])
+        .on_upgrade(move |socket| relay_terminal(socket, process))
+}
+
+async fn relay_terminal(socket: WebSocket, mut process: TerminalProcess) {
+    let mut stdin = match process.take_stdin() {
+        Ok(value) => value,
+        Err(_) => return,
+    };
+    let mut stdout = match process.take_stdout() {
+        Ok(value) => value,
+        Err(_) => return,
+    };
+    let mut stderr = match process.take_stderr() {
+        Ok(value) => value,
+        Err(_) => return,
+    };
+    let (mut sender, mut receiver) = socket.split();
+    let mut stdout_buffer = vec![0_u8; 16 * 1024];
+    let mut stderr_buffer = vec![0_u8; 8 * 1024];
+    let mut stdout_closed = false;
+    let mut stderr_closed = false;
+    loop {
+        if stdout_closed && stderr_closed {
+            break;
+        }
+        tokio::select! {
+            inbound = receiver.next() => {
+                match inbound {
+                    Some(Ok(Message::Text(value))) if value.len() <= 64 * 1024 => {
+                        if stdin.write_all(value.as_str().as_bytes()).await.is_err() {
+                            break;
+                        }
+                    }
+                    Some(Ok(Message::Binary(value))) if value.len() <= 64 * 1024 => {
+                        if stdin.write_all(&value).await.is_err() {
+                            break;
+                        }
+                    }
+                    Some(Ok(Message::Ping(value))) => {
+                        if sender.send(Message::Pong(value)).await.is_err() {
+                            break;
+                        }
+                    }
+                    Some(Ok(Message::Pong(_))) => {}
+                    Some(Ok(Message::Close(_))) | Some(Err(_)) | None => break,
+                    _ => break,
+                }
+            }
+            read = stdout.read(&mut stdout_buffer), if !stdout_closed => {
+                match read {
+                    Ok(0) => stdout_closed = true,
+                    Ok(size) => {
+                        if sender.send(Message::Binary(Bytes::copy_from_slice(&stdout_buffer[..size]))).await.is_err() {
+                            break;
+                        }
+                    }
+                    Err(_) => break,
+                }
+            }
+            read = stderr.read(&mut stderr_buffer), if !stderr_closed => {
+                match read {
+                    Ok(0) => stderr_closed = true,
+                    Ok(size) => {
+                        if sender.send(Message::Binary(Bytes::copy_from_slice(&stderr_buffer[..size]))).await.is_err() {
+                            break;
+                        }
+                    }
+                    Err(_) => break,
+                }
+            }
+        }
+    }
+    process.terminate().await;
+}
+
+async fn sftp_operation(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(operation): Json<SftpCommand>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if !matches!(operation, SftpCommand::List { .. })
+        && let Err(error) = state.config.auth.require_recent_step_up(&principal)
+    {
+        return auth_error(error);
+    }
+    let profile = match load_ssh_profile(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state.remote.executor.sftp(&profile, &operation).await {
+        Ok(result) => Json::<SftpResult>(result).into_response(),
+        Err(error) => remote_error(error),
+    }
+}
+
+async fn upload_transfer(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    body: Body,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let remote_path = match headers
+        .get(REMOTE_PATH_HEADER)
+        .and_then(|value| value.to_str().ok())
+    {
+        Some(value) => value.to_owned(),
+        None => return remote_error(RemoteError::InvalidPath),
+    };
+    let profile = match load_ssh_profile(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let job = match state
+        .remote
+        .transfers
+        .queue(
+            &context.principal_id,
+            &site.site_id,
+            "sftp_upload",
+            &serde_json::json!({"remote_path":remote_path}),
+        )
+        .await
+    {
+        Ok(value) => value,
+        Err(error) => return remote_error(error),
+    };
+    if let Err(error) = state
+        .remote
+        .transfers
+        .start(&context.principal_id, &job.job_id)
+        .await
+    {
+        return remote_error(error);
+    }
+    let staging = match tempfile::Builder::new()
+        .prefix("g5-fleet-upload-")
+        .tempdir()
+    {
+        Ok(value) => value,
+        Err(_) => return remote_error(RemoteError::CredentialStaging),
+    };
+    let local_path = staging.path().join("payload");
+    let mut file = match tokio::fs::File::create(&local_path).await {
+        Ok(value) => value,
+        Err(_) => return remote_error(RemoteError::CredentialStaging),
+    };
+    let mut stream = body.into_data_stream();
+    let mut transferred = 0_u64;
+    while let Some(chunk) = stream.next().await {
+        let chunk = match chunk {
+            Ok(value) => value,
+            Err(_) => {
+                let _ = state
+                    .remote
+                    .transfers
+                    .fail(&context.principal_id, &job.job_id)
+                    .await;
+                return remote_error(RemoteError::Process);
+            }
+        };
+        transferred = transferred.saturating_add(chunk.len() as u64);
+        if transferred > MAX_TRANSFER_BYTES || file.write_all(&chunk).await.is_err() {
+            let _ = state
+                .remote
+                .transfers
+                .fail(&context.principal_id, &job.job_id)
+                .await;
+            return remote_error(RemoteError::InvalidPath);
+        }
+    }
+    if file.sync_all().await.is_err() {
+        let _ = state
+            .remote
+            .transfers
+            .fail(&context.principal_id, &job.job_id)
+            .await;
+        return remote_error(RemoteError::CredentialStaging);
+    }
+    drop(file);
+    if let Err(error) = state
+        .remote
+        .executor
+        .upload(&profile, &local_path, &remote_path)
+        .await
+    {
+        let _ = state
+            .remote
+            .transfers
+            .fail(&context.principal_id, &job.job_id)
+            .await;
+        return remote_error(error);
+    }
+    if let Err(error) = state
+        .remote
+        .transfers
+        .succeed(&context.principal_id, &job.job_id, transferred)
+        .await
+    {
+        return remote_error(error);
+    }
+    match state
+        .remote
+        .transfers
+        .get(&context.principal_id, &job.job_id)
+        .await
+    {
+        Ok(value) => Json::<JobRecord>(value).into_response(),
+        Err(error) => remote_error(error),
+    }
+}
+
+async fn download_transfer(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(payload): Json<RemotePathRequest>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let profile = match load_ssh_profile(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let job = match state
+        .remote
+        .transfers
+        .queue(
+            &context.principal_id,
+            &site.site_id,
+            "sftp_download",
+            &serde_json::json!({"remote_path":payload.path}),
+        )
+        .await
+    {
+        Ok(value) => value,
+        Err(error) => return remote_error(error),
+    };
+    if let Err(error) = state
+        .remote
+        .transfers
+        .start(&context.principal_id, &job.job_id)
+        .await
+    {
+        return remote_error(error);
+    }
+    let staging = match tempfile::Builder::new()
+        .prefix("g5-fleet-download-")
+        .tempdir()
+    {
+        Ok(value) => value,
+        Err(_) => return remote_error(RemoteError::CredentialStaging),
+    };
+    let local_path = staging.path().join("payload");
+    if let Err(error) = state
+        .remote
+        .executor
+        .download(&profile, &payload.path, &local_path)
+        .await
+    {
+        let _ = state
+            .remote
+            .transfers
+            .fail(&context.principal_id, &job.job_id)
+            .await;
+        return remote_error(error);
+    }
+    let size = match tokio::fs::metadata(&local_path).await {
+        Ok(value) if value.len() <= MAX_TRANSFER_BYTES => value.len(),
+        _ => {
+            let _ = state
+                .remote
+                .transfers
+                .fail(&context.principal_id, &job.job_id)
+                .await;
+            return remote_error(RemoteError::InvalidPath);
+        }
+    };
+    if let Err(error) = state
+        .remote
+        .transfers
+        .succeed(&context.principal_id, &job.job_id, size)
+        .await
+    {
+        return remote_error(error);
+    }
+    let file = match tokio::fs::File::open(&local_path).await {
+        Ok(value) => value,
+        Err(_) => return remote_error(RemoteError::Process),
+    };
+    let body_stream = stream::unfold((file, staging), |(mut file, staging)| async move {
+        let mut buffer = vec![0_u8; 32 * 1024];
+        match file.read(&mut buffer).await {
+            Ok(0) => None,
+            Ok(size) => {
+                buffer.truncate(size);
+                Some((
+                    Ok::<Bytes, std::io::Error>(Bytes::from(buffer)),
+                    (file, staging),
+                ))
+            }
+            Err(error) => Some((Err(error), (file, staging))),
+        }
+    });
+    let mut response = Response::new(Body::from_stream(body_stream));
+    response.headers_mut().insert(
+        CONTENT_TYPE,
+        HeaderValue::from_static("application/octet-stream"),
+    );
+    if let Ok(value) = HeaderValue::from_str(&job.job_id) {
+        response.headers_mut().insert("x-g5-fleet-job-id", value);
+    }
+    response
+}
+
+async fn get_transfer(
+    State(state): State<AppState>,
+    Path((site_id, job_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .remote
+        .transfers
+        .get(&context.principal_id, &job_id)
+        .await
+    {
+        Ok(job) if job.site_id.as_deref() == Some(site.site_id.as_str()) => {
+            Json::<JobRecord>(job).into_response()
+        }
+        Ok(_) => api_error(
+            StatusCode::NOT_FOUND,
+            "transfer_not_found",
+            "Transfer was not found.",
+        ),
+        Err(error) => remote_error(error),
+    }
+}
+
+async fn cancel_transfer(
+    State(state): State<AppState>,
+    Path((site_id, job_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    transfer_transition(&state, &headers, site_id, job_id, true).await
+}
+
+async fn retry_transfer(
+    State(state): State<AppState>,
+    Path((site_id, job_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    transfer_transition(&state, &headers, site_id, job_id, false).await
+}
+
+async fn transfer_transition(
+    state: &AppState,
+    headers: &HeaderMap,
+    site_id: String,
+    job_id: String,
+    cancel: bool,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(state, headers, site_id, true).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let job = match state
+        .remote
+        .transfers
+        .get(&context.principal_id, &job_id)
+        .await
+    {
+        Ok(value) if value.site_id.as_deref() == Some(site.site_id.as_str()) => value,
+        _ => {
+            return api_error(
+                StatusCode::NOT_FOUND,
+                "transfer_not_found",
+                "Transfer was not found.",
+            );
+        }
+    };
+    let result = if cancel {
+        state
+            .remote
+            .transfers
+            .cancel(&context.principal_id, &job.job_id)
+            .await
+    } else {
+        state
+            .remote
+            .transfers
+            .retry(&context.principal_id, &job.job_id)
+            .await
+    };
+    match result {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => remote_error(error),
+    }
+}
+
+async fn load_ssh_profile(
+    state: &AppState,
+    context: &RequestContext,
+    site_id: &str,
+) -> Result<SshProfile, Response> {
+    let encrypted = state
+        .config
+        .auth
+        .decrypt_secret_for_connector(&context.principal_id, site_id, SecretPurpose::Ssh)
+        .await
+        .map_err(auth_error)?;
+    let profile: SshProfile = serde_json::from_slice(&encrypted)
+        .map_err(|_| remote_error(RemoteError::InvalidProfile))?;
+    profile.validate().map_err(remote_error).map(|()| profile)
+}
+
+fn terminal_ticket_protocol(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get("sec-websocket-protocol")?
+        .to_str()
+        .ok()?
+        .split(',')
+        .map(str::trim)
+        .find_map(|protocol| {
+            protocol
+                .strip_prefix(TERMINAL_TICKET_PROTOCOL_PREFIX)
+                .filter(|value| !value.is_empty() && value.len() <= 128)
+                .map(str::to_owned)
+        })
+}
+
 async fn owned_site_context(
     state: &AppState,
     headers: &HeaderMap,
@@ -937,6 +1546,52 @@ fn connector_error(error: ConnectorError) -> Response {
             StatusCode::BAD_GATEWAY,
             "connector_failed",
             "Connector request failed.",
+        ),
+    };
+    api_error(status, code, message)
+}
+
+fn remote_error(error: RemoteError) -> Response {
+    let (status, code, message) = match error {
+        RemoteError::InvalidProfile => (
+            StatusCode::BAD_REQUEST,
+            "ssh_profile_invalid",
+            "SSH profile is invalid.",
+        ),
+        RemoteError::InvalidPath => (
+            StatusCode::BAD_REQUEST,
+            "remote_path_invalid",
+            "Remote path or transfer size is invalid.",
+        ),
+        RemoteError::AddressForbidden => (
+            StatusCode::BAD_REQUEST,
+            "ssh_address_forbidden",
+            "SSH address is invalid or non-public.",
+        ),
+        RemoteError::InvalidTicket => (
+            StatusCode::UNAUTHORIZED,
+            "terminal_ticket_invalid",
+            "Terminal ticket is invalid or expired.",
+        ),
+        RemoteError::TicketCapacity => (
+            StatusCode::TOO_MANY_REQUESTS,
+            "terminal_ticket_capacity",
+            "Terminal ticket capacity is exhausted.",
+        ),
+        RemoteError::Job => (
+            StatusCode::CONFLICT,
+            "transfer_state_conflict",
+            "Transfer state changed or is not owned.",
+        ),
+        RemoteError::Timeout => (
+            StatusCode::GATEWAY_TIMEOUT,
+            "remote_timeout",
+            "Remote operation timed out.",
+        ),
+        _ => (
+            StatusCode::BAD_GATEWAY,
+            "remote_operation_failed",
+            "Remote operation failed.",
         ),
     };
     api_error(status, code, message)
