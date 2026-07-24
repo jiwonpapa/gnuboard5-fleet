@@ -57,10 +57,20 @@ if ! start_and_verify; then
   exit 1
 fi
 
-after_readback=$(compose exec -T app /usr/local/bin/g5-fleet-admin-server readback)
+compose stop caddy app
+if ! after_readback=$(compose run --rm --no-deps app readback); then
+  rollback
+  echo "upgraded data could not be read back offline" >&2
+  exit 1
+fi
 if [ "$after_readback" != "$before_readback" ]; then
   rollback
   echo "upgrade critical-row readback mismatch" >&2
+  exit 1
+fi
+if ! start_and_verify; then
+  rollback
+  echo "upgraded runtime did not restart after offline readback" >&2
   exit 1
 fi
 readback=$(compose exec -T app /usr/local/bin/g5-fleet-admin-server version)

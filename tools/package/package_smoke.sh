@@ -57,6 +57,34 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
+compose_smoke() {
+  docker compose --env-file "$env_file" \
+    -f "$root/deploy/compose/compose.yaml" "$@"
+}
+
+wait_smoke_ready() {
+  count=0
+  while [ "$count" -lt 30 ]; do
+    if curl --fail --silent --show-error \
+      "http://127.0.0.1:$http_port/readyz" >/dev/null; then
+      return 0
+    fi
+    count=$((count + 1))
+    sleep 1
+  done
+  compose_smoke ps >&2 || true
+  compose_smoke logs --no-color --tail 100 caddy app >&2 || true
+  return 1
+}
+
+offline_readback() {
+  compose_smoke stop caddy app >/dev/null
+  value=$(compose_smoke run --rm --no-deps app readback)
+  compose_smoke up -d >/dev/null
+  wait_smoke_ready
+  printf '%s\n' "$value"
+}
+
 G5_FLEET_IMAGE="$image_repository" \
 G5_FLEET_PULL_POLICY=never \
 G5_FLEET_HTTP_PORT="$http_port" \
@@ -68,18 +96,14 @@ curl --fail --silent --show-error \
   -H 'content-type: application/json' \
   --data "$(printf '{"login_name":"admin","password":"%s"}' "$bootstrap_value")" \
   "http://127.0.0.1:$http_port/api/v1/bootstrap" >/dev/null
-before_readback=$(docker compose --env-file "$env_file" \
-  -f "$root/deploy/compose/compose.yaml" exec -T app \
-  /usr/local/bin/g5-fleet-admin-server readback)
+before_readback=$(offline_readback)
 case "$before_readback" in
   *'"users":1'*) ;;
   *) echo "clean-install bootstrap readback mismatch: $before_readback" >&2; exit 1 ;;
 esac
 
 "$root/deploy/scripts/upgrade.sh" "$version_b" "$env_file"
-after_upgrade=$(docker compose --env-file "$env_file" \
-  -f "$root/deploy/compose/compose.yaml" exec -T app \
-  /usr/local/bin/g5-fleet-admin-server readback)
+after_upgrade=$(offline_readback)
 [ "$after_upgrade" = "$before_readback" ] || {
   echo "successful upgrade did not preserve critical rows" >&2
   exit 1
@@ -109,9 +133,7 @@ fi
   echo "failed upgrade did not restore the previous version" >&2
   exit 1
 }
-after_rollback=$(docker compose --env-file "$env_file" \
-  -f "$root/deploy/compose/compose.yaml" exec -T app \
-  /usr/local/bin/g5-fleet-admin-server readback)
+after_rollback=$(offline_readback)
 [ "$after_rollback" = "$before_readback" ] || {
   echo "failed-upgrade rollback did not restore critical rows" >&2
   exit 1
