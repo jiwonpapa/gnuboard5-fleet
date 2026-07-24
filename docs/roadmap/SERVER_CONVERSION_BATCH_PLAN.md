@@ -310,15 +310,16 @@ API·health·ready는 제외합니다. Commerce SDK는 canonical Shop 26개와
 
 `LOCAL_RUNTIME_PASS`, `PACKAGE_PASS`, `STAGING_PASS`, `LIVE_CERTIFIED`는 서로 대체하지 않습니다.
 
-현재 상태: 인증 harness 구현 완료, 실행 증거 생성 전. 공식 G5용
-test-only PHP+MariaDB stack, production과 분리된 local-certification
-feature, 2사용자×2사이트 HTTP·Chromium 증거, release/package evaluator와
-명시적 staging receipt 검증을 연결했습니다. 실제 profile 결과가
-생성되기 전에는 B10 완료로 표시하지 않습니다.
+현재 상태: 부분 인증 완료. 공식 G5 v5.6.32+Shop의 Connector
+로그인·설정 수정·재조회·원복과 2사용자×2사이트 HTTP·Chromium 격리로
+`LOCAL_RUNTIME_PASS`를 확보했습니다. OCI clean install, 데이터 보존
+upgrade, 검증 backup·암호화 master-key 복원과 실패 upgrade rollback으로
+`PACKAGE_PASS`도 확보했습니다. 외부 staging target·provider ID·배포 및
+rollback receipt가 없어 `STAGING_PASS`와 B10 전체 완료는 보류합니다.
 
 ## 4. 현재 바로 시작할 배치
 
-현재 시작점은 **B10 인증 단계**입니다. 공식 G5 v5.6.32 local runtime,
-다중 사용자·다중 사이트 browser E2E, 실제 package install·upgrade·
-rollback을 순서대로 증명하며 staging 입력이 없으면 그 사실을
-`STAGING_PASS`로 승격하지 않습니다.
+현재 시작점은 **B10 staging 인증**입니다. credential-free HTTPS origin,
+provider ID, 현재 release의 배포 receipt와 검증 snapshot 기반 rollback
+receipt를 입력받아 `STAGING_PASS`를 확인합니다. 입력이 없으면 B10 전체
+완료로 승격하지 않습니다.

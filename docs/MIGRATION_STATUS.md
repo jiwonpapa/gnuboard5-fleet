@@ -53,6 +53,9 @@
 - step-up 기반 Fleet 사용자 추가 API·UI와 사용자별 site 소유 경계 구현
 - test-only local-certification feature와 공식 G5 v5.6.32 기동 harness 구현
 - local·browser·package·staging 증거 evaluator와 stale revision 차단 구현
+- 공식 G5 v5.6.32+Shop에서 Connector 로그인·설정 수정·재조회·원복 PASS
+- Chromium 2사용자×2사이트 가시성 격리와 동일 출처 Fleet transport PASS
+- OCI clean install·데이터 보존 upgrade·검증 backup·master key 복원·실패 rollback PASS
 
 현재 migration profile은 기존 Tauri snapshot의 provenance와 source closure만 이관 증거로 검증합니다. routine `make prepare/check`는 해당 snapshot의 Bun·Cargo·Tauri·네이티브 패키징 의존성을 준비하거나 빌드하지 않습니다. 이는 데스크톱 제품 지원 또는 서버판 구현 완료를 뜻하지 않습니다.
 
@@ -61,12 +64,14 @@
 - 실제 G5 runtime 대상 Core 189개 route 실행·실데이터 field readback
 - 실제 외부 호스트 대상 SSH/SFTP 연결·중단·재접속
 - Telegram/Web Push 실제 발송
-- 실제 clean host Compose 설치·업그레이드·rollback 실행 증거
-- GnuBoard5 v5.6.32 대상 live 저장/readback/cleanup
+- 외부 clean host와 staging HTTPS origin의 설치·배포·rollback
+- staging provider identity와 배포·rollback receipt
 
-따라서 이번 완료 등급의 상한은 `SERVER_STATIC_PASS`입니다. 이는 활성
-workspace·route·transport·outbox fake·PWA cache·Commerce 격리의
-정적/로컬 증거이며 `LOCAL_RUNTIME_PASS`, `PACKAGE_PASS` 또는 실제 외부
-발송 인증이 아닙니다.
+현재 revision은 routine `SERVER_STATIC_PASS`와 별도로 공식 G5·Chromium
+`LOCAL_RUNTIME_PASS`, OCI 설치·upgrade·backup·restore·rollback
+`PACKAGE_PASS`를 확보했습니다. 이 두 등급은 외부 staging이나 실제 알림
+발송 증거를 대신하지 않습니다.
 
-다음 구현 배치는 `docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md`의 **B10 인증 단계**입니다. B09는 package와 복구 harness 구현을 `SERVER_STATIC_PASS`로 닫았지만 실제 실행은 아직 `PACKAGE_PASS`로 승격하지 않습니다. 실제 PHP Connector·GnuBoard5 Core 189개와 외부 SSH/SFTP도 B10 runtime 증거 전까지 인증하지 않습니다.
+남은 B10 입력은 실제 staging HTTPS origin, provider ID, 현재 revision의
+배포 receipt와 검증 backup을 사용한 rollback receipt입니다. 이 입력이
+없으므로 `STAGING_PASS`와 B10 전체 완료는 주장하지 않습니다.
