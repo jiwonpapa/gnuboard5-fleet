@@ -110,6 +110,7 @@ def main() -> int:
     )
     payload = {
         "schema": "g5-fleet.package-release/v1",
+        "status": "passed",
         "image": args.image,
         "image_id": image_id,
         "version": args.version,
