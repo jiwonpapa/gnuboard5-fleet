@@ -10,6 +10,7 @@ export interface HttpRequest<TBody = unknown> {
   method: "DELETE" | "GET" | "PATCH" | "POST" | "PUT";
   path: `/${string}`;
   body?: TBody;
+  csrfToken?: string;
   signal?: AbortSignal;
 }
 

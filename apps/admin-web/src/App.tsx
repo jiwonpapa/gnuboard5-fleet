@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 
 import { getHealth, getMeta, type MetaResponse } from "./api/system";
+import { VerticalFlow } from "./components/VerticalFlow";
 
 type ServerState =
   | { status: "checking"; meta: null }
@@ -192,11 +193,19 @@ function Metric(props: { label: string; value: string; note: string }) {
 
 function Sites() {
   return (
-    <PlaceholderPage
-      eyebrow="Sites"
-      title="사이트 관리"
-      description="각 사이트의 연결 정보와 명시적인 site_id 경계를 관리합니다."
-    />
+    <section className="page" aria-labelledby="sites-title">
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">Sites / First vertical flow</span>
+          <h2 id="sites-title">사이트 연결</h2>
+          <p>
+            Fleet 로그인부터 G5 설정 저장·재조회·원복까지 한 사이트 경계에서
+            진행합니다.
+          </p>
+        </div>
+      </div>
+      <VerticalFlow />
+    </section>
   );
 }
 

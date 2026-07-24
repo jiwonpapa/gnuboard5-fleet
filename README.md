@@ -6,7 +6,7 @@
 
 활성 제품은 Rust Axum 서버와 React PWA로만 배포합니다. 기존 Tauri 코드는 UI와 Rust 소비 구현을 서버 구조로 이관하기 위한 참조 snapshot이며 데스크톱 제품, 네이티브 wrapper, 코드 서명·공증 또는 updater를 제공하지 않습니다. 결정 근거는 [`ADR-0006`](docs/adr/0006-server-only-product-pivot.md), 구현 기준은 [`서버·웹 기술 스택`](docs/architecture/SERVER_WEB_TECH_STACK.md)에 있습니다.
 
-구현은 [`서버 전환 목표 기반 배치 계획`](docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md)의 B00 → B10 순서로 진행합니다. B00 방향 확정부터 B04 인증·사이트 격리까지 마쳤으며 다음 구현은 B05 최초 G5 수직 흐름입니다.
+구현은 [`서버 전환 목표 기반 배치 계획`](docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md)의 B00 → B10 순서로 진행합니다. B00 방향 확정부터 B05 최초 site-bound Connector 수직 흐름까지 마쳤으며 다음 구현은 B06 관리자 Core 189개 소비 전환입니다.
 
 ## 제품 구성
 

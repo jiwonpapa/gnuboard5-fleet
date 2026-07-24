@@ -47,7 +47,8 @@
         "server.scaffold_contract",
         "web.transport_boundary",
         "storage.sqlite_durability",
-        "security.auth_site_boundary"
+        "security.auth_site_boundary",
+        "server.vertical_flow"
       ]
     },
     "server_static": {

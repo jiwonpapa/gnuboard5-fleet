@@ -34,6 +34,10 @@ a {
   cursor: pointer;
 }
 
+input {
+  font: inherit;
+}
+
 .app-shell {
   min-height: 100vh;
 }
@@ -263,6 +267,199 @@ a {
   background: var(--accent);
 }
 
+.secondary-action {
+  padding: 11px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: transparent;
+}
+
+.vertical-flow {
+  display: grid;
+  gap: 12px;
+  padding-bottom: 48px;
+}
+
+.flow-step {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.flow-step > header {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  align-items: center;
+  min-height: 58px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.flow-step > header > span {
+  color: var(--accent);
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+}
+
+.flow-step > header h3 {
+  margin: 0;
+  font-size: 0.93rem;
+}
+
+.flow-step > header strong {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.flow-step[data-done="true"] > header strong {
+  color: var(--accent);
+}
+
+.flow-step-body {
+  padding: 20px 18px;
+}
+
+.flow-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.flow-form.three {
+  grid-template-columns: 0.8fr 1fr 1.5fr auto;
+}
+
+.flow-form label,
+.config-roundtrip > label {
+  display: grid;
+  gap: 7px;
+}
+
+.flow-form label > span,
+.config-roundtrip > label > span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.flow-form input:not([type="checkbox"]),
+.config-roundtrip input {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  outline: none;
+  color: var(--ink);
+  background: #fff;
+}
+
+.flow-form input:focus,
+.config-roundtrip input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.flow-form .check-label {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  gap: 7px;
+}
+
+.site-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 16px;
+}
+
+.site-pills button {
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: transparent;
+}
+
+.site-pills button[data-active="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.connector-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.connector-grid > .secondary-action {
+  justify-self: start;
+}
+
+.inline-status,
+.step-hint {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.step-hint {
+  margin: 0;
+}
+
+.config-roundtrip {
+  display: grid;
+  gap: 18px;
+}
+
+.config-roundtrip dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--line);
+}
+
+.config-roundtrip dl div {
+  padding: 12px;
+  background: #fff;
+}
+
+.config-roundtrip dt {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.config-roundtrip dd {
+  margin: 5px 0 0;
+  font-size: 0.85rem;
+}
+
+.config-roundtrip p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.button-row {
+  display: flex;
+  gap: 8px;
+}
+
+.flow-error {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid #bd5b52;
+  color: #8d312a;
+  background: #f8e7e4;
+}
+
 .primary-action:disabled {
   cursor: not-allowed;
   opacity: 0.48;
@@ -469,6 +666,28 @@ a {
     padding-left: 0;
     border-top: 1px solid var(--line);
     border-left: 0;
+  }
+
+  .flow-form,
+  .flow-form.three {
+    grid-template-columns: 1fr;
+  }
+
+  .flow-form .check-label {
+    justify-self: start;
+  }
+
+  .flow-form .primary-action {
+    width: 100%;
+  }
+
+  .config-roundtrip dl {
+    grid-template-columns: 1fr;
+  }
+
+  .button-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 

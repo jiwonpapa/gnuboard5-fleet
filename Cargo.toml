@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["apps/admin-server", "crates/fleet-security", "crates/fleet-store"]
+members = ["apps/admin-server", "crates/fleet-connector", "crates/fleet-security", "crates/fleet-store"]
 
 [workspace.package]
 edition = "2024"
@@ -18,6 +18,7 @@ fs2 = "0.4.3"
 getrandom = "0.3.4"
 hex = "0.4.3"
 http-body-util = "0.1.4"
+reqwest = { version = "0.12.28", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sha2 = "0.10.9"

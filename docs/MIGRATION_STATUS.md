@@ -22,6 +22,10 @@
 - mutation CSRF, 고위험 step-up과 명시적 사용자·사이트 RequestContext 구현
 - AES-256-GCM site secret, SSRF·redirect·DNS rebinding 방어 구현
 - 2사용자×2사이트 session·site·secret 교차 접근 차단 테스트 PASS
+- canonical Connector health·login·config 조회·수정 4연산 Rust client 구현
+- site-bound Axum route와 React 사이트 등록·Connector 로그인·설정 원복 UI 구현
+- G5 비밀번호 비저장, G5 JWT의 서버 암호화 저장과 브라우저 비노출 검증
+- mock Connector 기반 설정 수정·재조회·원복 통합 테스트 PASS
 
 현재 migration profile은 기존 Tauri snapshot의 provenance와 source closure만 이관 증거로 검증합니다. routine `make prepare/check`는 해당 snapshot의 Bun·Cargo·Tauri·네이티브 패키징 의존성을 준비하거나 빌드하지 않습니다. 이는 데스크톱 제품 지원 또는 서버판 구현 완료를 뜻하지 않습니다.
 
@@ -34,4 +38,4 @@
 
 따라서 이번 완료 등급의 상한은 `SERVER_SCAFFOLD_PASS`입니다. 이는 활성 workspace·route·transport·build 골격의 정적/로컬 smoke 증거이며 `SERVER_STATIC_PASS` 또는 `LOCAL_RUNTIME_PASS`가 아닙니다.
 
-다음 구현 배치는 `docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md`의 **B05 최초 수직 흐름**입니다.
+다음 구현 배치는 `docs/roadmap/SERVER_CONVERSION_BATCH_PLAN.md`의 **B06 관리자 Core 도메인 전환**입니다. 실제 PHP Connector·GnuBoard5 저장·원복은 B10 `LOCAL_RUNTIME_PASS` 전까지 인증하지 않습니다.

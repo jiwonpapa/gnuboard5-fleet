@@ -35,7 +35,7 @@ scope 확인
 | B02 | Rust 서버·React 웹 활성 workspace 골격 | B01 | Axum health + React shell + active build PASS |
 | B03 | SQLite 저장·backup·복구 기반 | B02 | 장애·migration·restore readback PASS |
 | B04 | 사용자 인증·세션·사이트 보안 경계 | B03 | 2사용자×2사이트 격리, CSRF·SSRF PASS |
-| B05 | 최초 end-to-end 수직 흐름 | B04 | 사이트 등록→G5 로그인→조회→수정→재조회 PASS |
+| B05 | 최초 end-to-end 수직 흐름 | B04 | 사이트 등록→mock Connector 로그인→조회→수정→재조회·원복 PASS |
 | B06 | 관리자 189개 Core 소비 전환 | B05 | 17 schema domain + non-schema 기능 소비 PASS |
 | B07 | SSH/SFTP·터미널·파일 전환 | B04, B05 | WebSocket·streaming·격리·중단복구 PASS |
 | B08 | 알림 outbox·PWA·Commerce 경계 | B06, B07 | fake delivery·cache safety·Core isolation PASS |
@@ -156,9 +156,16 @@ Fleet 로그인
 
 완료 조건:
 
-- browser → Axum → PHP Connector → G5 저장·재조회·원복 PASS
+- browser contract → Axum → Rust mock Connector 저장·재조회·원복 PASS
 - 다른 사용자·사이트에 상태가 섞이지 않음
 - Tauri `invoke()` 없이 동작
+- 실제 PHP Connector → G5 저장·재조회·원복은 B10 `LOCAL_RUNTIME_PASS`에서 재검증
+
+현재 상태: 완료. canonical health·login·config 4연산을 Rust Connector client,
+site-bound Axum route와 React 4단계 UI로 연결했습니다. G5 비밀번호는 저장하지
+않고 JWT는 site-bound 암호화 secret으로만 보관합니다. mock Connector 기반
+수정·재조회·원복과 브라우저 transport 계약은 PASS했으며 실제 PHP·G5 런타임
+PASS로 승격하지 않습니다.
 
 ### B06 — 관리자 Core 도메인 전환
 

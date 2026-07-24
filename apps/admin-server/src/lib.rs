@@ -1,6 +1,6 @@
 mod api;
 
-use std::{path::PathBuf, time::Instant};
+use std::{path::PathBuf, sync::Arc, time::Instant};
 
 use axum::{
     Json, Router,
@@ -9,6 +9,7 @@ use axum::{
     response::{IntoResponse, Response},
     routing::get,
 };
+use g5_fleet_connector::ConnectorGateway;
 use g5_fleet_security::AuthService;
 use g5_fleet_store::EXPECTED_SCHEMA_VERSION;
 use serde::{Deserialize, Serialize};
@@ -21,10 +22,22 @@ pub const SERVICE_NAME: &str = "g5-fleet-admin-server";
 pub const API_VERSION: &str = "v1";
 pub use api::{LoginResponse, RequestContext, SessionResponse};
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct AppConfig {
     pub web_root: PathBuf,
     pub auth: AuthService,
+    pub connector: Arc<dyn ConnectorGateway>,
+}
+
+impl std::fmt::Debug for AppConfig {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("AppConfig")
+            .field("web_root", &self.web_root)
+            .field("auth", &self.auth)
+            .field("connector", &"<connector gateway>")
+            .finish()
+    }
 }
 
 #[derive(Clone, Debug)]

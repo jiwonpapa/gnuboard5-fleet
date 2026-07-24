@@ -13,6 +13,10 @@ use axum::{
     response::{IntoResponse, Response},
     routing::{get, post, put},
 };
+use g5_fleet_connector::{
+    BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin,
+    SiteOverview,
+};
 use g5_fleet_security::{AuthError, PrincipalSession, SecretPurpose, SystemResolver, UrlGuard};
 use g5_fleet_store::{SiteRecord, StoreError};
 use serde::{Deserialize, Serialize};
@@ -31,19 +35,19 @@ pub struct RequestContext {
     pub request_id: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct BootstrapRequest {
     login_name: String,
     password: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct LoginRequest {
     login_name: String,
     password: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct StepUpRequest {
     password: String,
 }
@@ -55,10 +59,27 @@ struct CreateSiteRequest {
     base_url: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct PutSecretRequest {
     purpose: String,
     secret: String,
+}
+
+#[derive(Deserialize)]
+struct ConnectorLoginRequest {
+    mb_id: String,
+    mb_password: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct BasicConfigUpdateRequest {
+    cf_10: String,
+}
+
+#[derive(Debug, Serialize)]
+struct ConnectorLoginResponse {
+    connected: bool,
+    expires_in: i64,
 }
 
 #[derive(Debug, Serialize)]
@@ -90,6 +111,13 @@ pub(crate) fn router() -> Router<AppState> {
         .route("/sites", get(list_sites).post(create_site))
         .route("/sites/{site_id}", get(get_site))
         .route("/sites/{site_id}/secrets", put(put_secret))
+        .route("/sites/{site_id}/connector/health", get(connector_health))
+        .route("/sites/{site_id}/connector/login", post(connector_login))
+        .route("/sites/{site_id}/overview", get(site_overview))
+        .route(
+            "/sites/{site_id}/config/basic",
+            get(basic_config_get).put(basic_config_update),
+        )
 }
 
 async fn bootstrap(
@@ -322,6 +350,240 @@ async fn put_secret(
     }
 }
 
+async fn connector_health(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .health(&site.base_url, &context.request_id)
+        .await
+    {
+        Ok(health) => Json::<ConnectorHealth>(health).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn connector_login(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(payload): Json<ConnectorLoginRequest>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match state
+        .config
+        .connector
+        .login(
+            &site.base_url,
+            &context.request_id,
+            &ConnectorLogin {
+                mb_id: payload.mb_id,
+                mb_password: payload.mb_password,
+            },
+        )
+        .await
+    {
+        Ok(value) => value,
+        Err(error) => return connector_error(error),
+    };
+    let encrypted_payload = match serde_json::to_vec(&credentials) {
+        Ok(value) => value,
+        Err(_) => {
+            return api_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "connector_credential_failed",
+                "Connector credentials could not be stored.",
+            );
+        }
+    };
+    if let Err(error) = state
+        .config
+        .auth
+        .put_secret(
+            &context.principal_id,
+            &site.site_id,
+            SecretPurpose::G5Api,
+            &encrypted_payload,
+        )
+        .await
+    {
+        return auth_error(error);
+    }
+    Json(ConnectorLoginResponse {
+        connected: true,
+        expires_in: credentials.expires_in,
+    })
+    .into_response()
+}
+
+async fn site_overview(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let health = match state
+        .config
+        .connector
+        .health(&site.base_url, &context.request_id)
+        .await
+    {
+        Ok(value) => value,
+        Err(error) => return connector_error(error),
+    };
+    let config = match state
+        .config
+        .connector
+        .basic_config(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(value) => value,
+        Err(error) => return connector_error(error),
+    };
+    Json(SiteOverview {
+        connector_status: health.status,
+        connector_version: health.version,
+        site_title: config.cf_title,
+        administrator_id: config.cf_admin,
+    })
+    .into_response()
+}
+
+async fn basic_config_get(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .basic_config(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(config) => Json::<BasicConfig>(config).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn basic_config_update(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(payload): Json<BasicConfigUpdateRequest>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .update_basic_config(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &payload.cf_10,
+        )
+        .await
+    {
+        Ok(config) => Json::<BasicConfig>(config).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn owned_site_context(
+    state: &AppState,
+    headers: &HeaderMap,
+    site_id: String,
+    mutation: bool,
+) -> Result<(RequestContext, PrincipalSession, SiteRecord), Response> {
+    let (context, principal) = if mutation {
+        mutation_context(state, headers, Some(site_id.clone())).await?
+    } else {
+        context(state, headers, Some(site_id.clone())).await?
+    };
+    let site = state
+        .config
+        .auth
+        .store()
+        .owned_site(&context.principal_id, &site_id)
+        .await
+        .map_err(store_error)?
+        .ok_or_else(|| {
+            api_error(
+                StatusCode::NOT_FOUND,
+                "site_not_found",
+                "Site was not found.",
+            )
+        })?;
+    Ok((context, principal, site))
+}
+
+async fn connector_credentials(
+    state: &AppState,
+    context: &RequestContext,
+    site_id: &str,
+) -> Result<ConnectorCredentials, Response> {
+    let encrypted = state
+        .config
+        .auth
+        .decrypt_secret_for_connector(&context.principal_id, site_id, SecretPurpose::G5Api)
+        .await
+        .map_err(auth_error)?;
+    serde_json::from_slice(&encrypted).map_err(|_| {
+        api_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "connector_login_required",
+            "Connector login is required.",
+        )
+    })
+}
+
 async fn mutation_context(
     state: &AppState,
     headers: &HeaderMap,
@@ -444,4 +706,30 @@ fn store_error(error: StoreError) -> Response {
             "Storage operation failed.",
         ),
     }
+}
+
+fn connector_error(error: ConnectorError) -> Response {
+    let (status, code, message) = match error {
+        ConnectorError::Http(401 | 403) => (
+            StatusCode::BAD_GATEWAY,
+            "connector_auth_failed",
+            "Connector authentication failed.",
+        ),
+        ConnectorError::InvalidConfigValue => (
+            StatusCode::BAD_REQUEST,
+            "invalid_config_value",
+            "Basic config value is invalid.",
+        ),
+        ConnectorError::UrlSecurity => (
+            StatusCode::BAD_GATEWAY,
+            "connector_url_forbidden",
+            "Connector URL failed security validation.",
+        ),
+        _ => (
+            StatusCode::BAD_GATEWAY,
+            "connector_failed",
+            "Connector request failed.",
+        ),
+    };
+    api_error(status, code, message)
 }

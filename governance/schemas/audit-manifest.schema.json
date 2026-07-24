@@ -46,7 +46,7 @@
           "properties": {
             "proof_level": {"const": "SERVER_SCAFFOLD_PASS"},
             "inherits": {"const": "migration_static"},
-            "required_checks": {"const": ["active.workspace_boundary", "server.scaffold_contract", "web.transport_boundary", "storage.sqlite_durability", "security.auth_site_boundary"]}
+            "required_checks": {"const": ["active.workspace_boundary", "server.scaffold_contract", "web.transport_boundary", "storage.sqlite_durability", "security.auth_site_boundary", "server.vertical_flow"]}
           }
         },
         "server_static": {

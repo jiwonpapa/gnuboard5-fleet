@@ -62,4 +62,29 @@ describe("BrowserHttpTransport", () => {
       remote.request({ method: "GET", path: "/health" }),
     ).rejects.toBeInstanceOf(TransportError);
   });
+
+  it("adds CSRF only when the caller supplies the in-memory token", async () => {
+    const fetcher = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        void input;
+        void init;
+        return new Response(null, { status: 204 });
+      },
+    );
+    const transport = new BrowserHttpTransport(
+      "/api/v1",
+      fetcher,
+      "https://fleet.example",
+    );
+    await transport.request({
+      method: "POST",
+      path: "/sites",
+      csrfToken: "csrf-in-memory",
+      body: { site_id: "site-a" },
+    });
+    const init = fetcher.mock.calls[0]?.[1] as RequestInit;
+    expect(new Headers(init.headers).get("x-csrf-token")).toBe(
+      "csrf-in-memory",
+    );
+  });
 });

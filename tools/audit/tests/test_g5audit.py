@@ -126,6 +126,7 @@ class G5AuditTest(unittest.TestCase):
             [
                 "apps/admin-server/Cargo.toml",
                 "apps/admin-web/package.json",
+                "crates/fleet-connector/Cargo.toml",
                 "crates/fleet-security/Cargo.toml",
                 "crates/fleet-store/Cargo.toml",
             ],
@@ -148,6 +149,7 @@ class G5AuditTest(unittest.TestCase):
         )
         self.assertIn("SQLite WAL", MODULE.check_sqlite_durability(MODULE.ROOT))
         self.assertIn("2-user", MODULE.check_auth_site_boundary(MODULE.ROOT))
+        self.assertIn("4연산", MODULE.check_server_vertical_flow(MODULE.ROOT))
 
     def test_upstream_lock_requires_full_commit_tree_and_file_hashes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

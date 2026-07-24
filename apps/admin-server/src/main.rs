@@ -1,7 +1,8 @@
-use std::{env, net::SocketAddr, path::PathBuf};
+use std::{env, net::SocketAddr, path::PathBuf, sync::Arc};
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use g5_fleet_admin_server::{AppConfig, build_router};
+use g5_fleet_connector::ProductionConnectorGateway;
 use g5_fleet_security::AuthService;
 use g5_fleet_store::FleetStore;
 use tokio::net::TcpListener;
@@ -51,6 +52,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_else(|| PathBuf::from("apps/admin-web/dist"));
     let listener = TcpListener::bind(address).await?;
     info!(address = %listener.local_addr()?, web_root = %web_root.display(), "G5 Fleet server ready");
-    axum::serve(listener, build_router(AppConfig { web_root, auth })).await?;
+    axum::serve(
+        listener,
+        build_router(AppConfig {
+            web_root,
+            auth,
+            connector: Arc::new(ProductionConnectorGateway),
+        }),
+    )
+    .await?;
     Ok(())
 }

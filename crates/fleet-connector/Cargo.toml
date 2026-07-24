@@ -1,0 +1,19 @@
+[package]
+name = "g5-fleet-connector"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+g5-fleet-security = { path = "../fleet-security" }
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+axum.workspace = true
+tokio.workspace = true

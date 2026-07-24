@@ -84,6 +84,41 @@
       "auth": "session_csrf_step_up",
       "site_context": true,
       "purpose": "encrypted_site_secret"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/connector/health",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "connector_health"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/connector/login",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "connector_login_and_encrypted_token_store"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/overview",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "site_overview"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/config/basic",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "basic_config_readback"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/config/basic",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "safe_cf_10_update"
     }
   ]
 }

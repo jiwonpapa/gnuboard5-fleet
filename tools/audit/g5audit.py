@@ -228,6 +228,7 @@ EXPECTED_PROFILE_CONTRACTS: dict[str, dict[str, object]] = {
             "web.transport_boundary",
             "storage.sqlite_durability",
             "security.auth_site_boundary",
+            "server.vertical_flow",
         ],
     },
     "server_static": {
@@ -1468,6 +1469,31 @@ def check_server_scaffold_contract(root: Path) -> str:
             "session_csrf_step_up",
             True,
         ),
+        (
+            "GET",
+            "/api/v1/sites/{site_id}/connector/health",
+            "session",
+            True,
+        ),
+        (
+            "POST",
+            "/api/v1/sites/{site_id}/connector/login",
+            "session_csrf_step_up",
+            True,
+        ),
+        ("GET", "/api/v1/sites/{site_id}/overview", "session", True),
+        (
+            "GET",
+            "/api/v1/sites/{site_id}/config/basic",
+            "session",
+            True,
+        ),
+        (
+            "PUT",
+            "/api/v1/sites/{site_id}/config/basic",
+            "session_csrf_step_up",
+            True,
+        ),
     ]
     if actual != expected or len(routes) != len(expected):
         raise ValueError(f"active server scaffold route mismatch: {actual}")
@@ -1485,6 +1511,90 @@ def check_server_scaffold_contract(root: Path) -> str:
     if missing:
         raise ValueError(f"active server scaffold source tokens missing: {missing}")
     return "Axum healthz·readyz·meta, JSON error envelope, React SPA static fallback 확인"
+
+
+def check_server_vertical_flow(root: Path) -> str:
+    paths = {
+        "openapi": root / "connectors/gnuboard5-php/api/docs/openapi.yaml",
+        "connector": root / "crates/fleet-connector/src/lib.rs",
+        "api": root / "apps/admin-server/src/api.rs",
+        "server_test": root / "apps/admin-server/tests/http_contract.rs",
+        "web_api": root / "apps/admin-web/src/api/fleet.ts",
+        "web_flow": root / "apps/admin-web/src/components/VerticalFlow.tsx",
+        "web_transport": root / "apps/admin-web/src/transport/browserHttpTransport.ts",
+    }
+    for label, path in paths.items():
+        if not path.is_file() or path.is_symlink():
+            raise ValueError(f"vertical flow {label} input is missing or unsafe")
+
+    openapi = paths["openapi"].read_text(encoding="utf-8")
+    operation_ids = (
+        "operationId: getHealth",
+        "operationId: login",
+        "operationId: adminGetConfig",
+        "operationId: adminUpdateConfig",
+    )
+    missing_operations = [token for token in operation_ids if token not in openapi]
+    if missing_operations:
+        raise ValueError(
+            f"vertical flow canonical OpenAPI operations missing: {missing_operations}"
+        )
+
+    connector = paths["connector"].read_text(encoding="utf-8")
+    connector_tokens = (
+        "ConnectorGateway",
+        "UrlGuard<SystemResolver>",
+        "revalidate_before_connect",
+        "Policy::none()",
+        '"auth/login"',
+        '"admin/config"',
+        "canonical_health_login_config_update_readback_and_rollback",
+    )
+    missing_connector = [token for token in connector_tokens if token not in connector]
+    if missing_connector:
+        raise ValueError(f"vertical flow connector boundary missing: {missing_connector}")
+
+    api = paths["api"].read_text(encoding="utf-8")
+    api_tokens = (
+        '"/sites/{site_id}/connector/health"',
+        '"/sites/{site_id}/connector/login"',
+        '"/sites/{site_id}/overview"',
+        '"/sites/{site_id}/config/basic"',
+        "SecretPurpose::G5Api",
+        "decrypt_secret_for_connector",
+        "require_recent_step_up",
+    )
+    missing_api = [token for token in api_tokens if token not in api]
+    if missing_api:
+        raise ValueError(f"vertical flow server boundary missing: {missing_api}")
+
+    server_test = paths["server_test"].read_text(encoding="utf-8")
+    if "authenticated_site_connector_config_roundtrip_and_rollback" not in server_test:
+        raise ValueError("vertical flow server roundtrip/rollback test is missing")
+
+    web_api = paths["web_api"].read_text(encoding="utf-8")
+    web_flow = paths["web_flow"].read_text(encoding="utf-8")
+    web_transport = paths["web_transport"].read_text(encoding="utf-8")
+    web_tokens = (
+        "connectorHealth",
+        "connectorLogin",
+        "getSiteOverview",
+        "getBasicConfig",
+        "updateBasicConfig",
+    )
+    missing_web = [token for token in web_tokens if token not in web_api or token not in web_flow]
+    if missing_web:
+        raise ValueError(f"vertical flow web consumer missing: {missing_web}")
+    if 'headers.set("x-csrf-token"' not in web_transport or 'credentials: "same-origin"' not in web_transport:
+        raise ValueError("vertical flow web transport must keep CSRF and same-origin credentials")
+    for forbidden in ("localStorage", "sessionStorage", "invoke("):
+        if forbidden in web_api or forbidden in web_flow or forbidden in web_transport:
+            raise ValueError(f"vertical flow web consumer contains forbidden token: {forbidden}")
+
+    return (
+        "canonical health·login·config 4연산, site-bound Axum, encrypted Connector token, "
+        "same-origin React 수정·재조회·원복 흐름 확인"
+    )
 
 
 def check_web_transport_boundary(root: Path) -> str:
@@ -1999,6 +2109,7 @@ CHECKS: dict[str, Callable[[Path], str]] = {
     "web.transport_boundary": check_web_transport_boundary,
     "storage.sqlite_durability": check_sqlite_durability,
     "security.auth_site_boundary": check_auth_site_boundary,
+    "server.vertical_flow": check_server_vertical_flow,
 }
 
 
