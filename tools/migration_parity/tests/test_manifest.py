@@ -1,0 +1,47 @@
+from __future__ import annotations
+
+import copy
+import json
+import unittest
+from pathlib import Path
+
+from tools.migration_parity.manifest import ManifestError, load_manifest, validate_manifest_shape
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+class ManifestTest(unittest.TestCase):
+    def test_repository_manifest_has_required_contract(self) -> None:
+        manifest = load_manifest(ROOT / "governance/MIGRATION_PARITY.json")
+        self.assertEqual("g5-fleet.migration-parity/v1", manifest["schema"])
+        self.assertEqual(
+            {
+                "tauri_commands",
+                "react_pages",
+                "rust_workspace_members",
+                "frontend_tests",
+                "rust_tests",
+            },
+            set(manifest["mappings"]),
+        )
+
+    def test_missing_legacy_category_is_harness_error(self) -> None:
+        manifest = json.loads(
+            (ROOT / "governance/MIGRATION_PARITY.json").read_text(encoding="utf-8")
+        )
+        broken = copy.deepcopy(manifest)
+        del broken["legacy_baseline"]["react_pages"]
+        with self.assertRaises(ManifestError):
+            validate_manifest_shape(broken)
+
+    def test_duplicate_capability_is_harness_error(self) -> None:
+        manifest = json.loads(
+            (ROOT / "governance/MIGRATION_PARITY.json").read_text(encoding="utf-8")
+        )
+        broken = copy.deepcopy(manifest)
+        broken["required_capabilities"].append(
+            copy.deepcopy(broken["required_capabilities"][0])
+        )
+        with self.assertRaisesRegex(ManifestError, "duplicate"):
+            validate_manifest_shape(broken)

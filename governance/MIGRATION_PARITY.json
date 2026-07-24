@@ -1,0 +1,158 @@
+{
+  "$schema": "schemas/migration-parity.schema.json",
+  "schema": "g5-fleet.migration-parity/v1",
+  "policy": {
+    "allowed_target_roots": [
+      "apps/admin-server",
+      "apps/admin-web",
+      "crates",
+      "plugins",
+      "tools/certification",
+      "tools/migration_parity"
+    ],
+    "runtime_evidence_max_age_hours": 24
+  },
+  "legacy_baseline": {
+    "tauri_commands": {
+      "count": 253,
+      "fingerprint": "5f6369f8da2a99106ccf5df60208921f0ee94e1a0768299e160bf872c511d2c5"
+    },
+    "react_pages": {
+      "count": 43,
+      "fingerprint": "758b583c5a5f63757bcef55afb47fec69ff142b63920ca7cbb456016e4ec02ba"
+    },
+    "rust_workspace_members": {
+      "count": 21,
+      "fingerprint": "51ea8c6ca6c2c029a2eca12c573aacc48b862b5ac9a57d0f3c52b10517d6951e"
+    },
+    "frontend_tests": {
+      "count": 100,
+      "fingerprint": "dd5689b71e4d804cea37936f0fe0377cfd04c15035b1ab97d520bc5139226893"
+    },
+    "rust_tests": {
+      "count": 93,
+      "fingerprint": "e6409e457e7c68cb63773d062e39ea81bb87c7fcbb64a5ee78dcce9a687eaeb5"
+    }
+  },
+  "active_expectations": {
+    "server_routes": {
+      "minimum": 1
+    },
+    "core_operations": {
+      "exact": 189
+    },
+    "active_workspace_members": {
+      "minimum": 6
+    },
+    "web_tests": {
+      "minimum": 1
+    },
+    "rust_tests": {
+      "minimum": 1
+    }
+  },
+  "mappings": {
+    "tauri_commands": [],
+    "react_pages": [],
+    "rust_workspace_members": [],
+    "frontend_tests": [],
+    "rust_tests": []
+  },
+  "required_capabilities": [
+    {
+      "id": "first_run_setup_state",
+      "state": "pending",
+      "description": "설치 전용 상태 조회와 bootstrap 종료의 원자적 보존"
+    },
+    {
+      "id": "browser_install_wizard",
+      "state": "pending",
+      "description": "웹주소 접속 후 환경 점검, 마스터 계정, TOTP까지 완료하는 설치 UI"
+    },
+    {
+      "id": "totp_enrollment_and_login",
+      "state": "pending",
+      "description": "TOTP 등록, 복구, 로그인 challenge와 고위험 step-up"
+    },
+    {
+      "id": "recovery_codes",
+      "state": "pending",
+      "description": "일회성 복구 코드 생성, hash 저장, 폐기와 재발급"
+    },
+    {
+      "id": "auth_rate_limit_and_lockout",
+      "state": "pending",
+      "description": "로그인과 TOTP brute-force rate limit 및 lockout"
+    },
+    {
+      "id": "audit_log_write_path",
+      "state": "pending",
+      "description": "모든 보안·mutation 요청의 append-only 감사 기록"
+    },
+    {
+      "id": "audit_log_query_api",
+      "state": "pending",
+      "description": "권한·사용자·사이트 범위가 적용된 감사 로그 조회 API"
+    },
+    {
+      "id": "audit_log_web_ui",
+      "state": "pending",
+      "description": "필터·상세·추적 ID를 제공하는 감사 로그 웹 UI"
+    },
+    {
+      "id": "typed_core_domain_consumers",
+      "state": "pending",
+      "description": "189개 operation의 도메인별 typed service, DTO, UI 소비"
+    },
+    {
+      "id": "legacy_ui_workflow_parity",
+      "state": "pending",
+      "description": "43개 legacy page의 업무 흐름별 서버·반응형 웹 이관"
+    },
+    {
+      "id": "production_notification_transports",
+      "state": "pending",
+      "description": "fake adapter가 아닌 Telegram과 Web Push 실제 transport"
+    },
+    {
+      "id": "web_push_subscription_management",
+      "state": "pending",
+      "description": "브라우저 push 구독 생성, 회전, 폐기 UI와 API"
+    },
+    {
+      "id": "remote_ssh_sftp_runtime_certification",
+      "state": "pending",
+      "description": "실제 원격 호스트 SSH/SFTP/terminal 중단·재접속 인증"
+    }
+  ],
+  "evidence_registry": {},
+  "profile_evidence": {
+    "static": [],
+    "runtime": [],
+    "staging": []
+  },
+  "staging": {
+    "base_url_env": "G5_FLEET_AUDIT_BASE_URL",
+    "ca_file_env": "G5_FLEET_AUDIT_CA_FILE",
+    "timeout_seconds": 10,
+    "probes": [
+      {
+        "id": "readiness",
+        "path": "/readyz",
+        "method": "GET",
+        "status": 200,
+        "json": true
+      },
+      {
+        "id": "revision",
+        "path": "/api/v1/meta",
+        "method": "GET",
+        "status": 200,
+        "json": true,
+        "expect": {
+          "build_revision": "$GIT_REVISION"
+        }
+      }
+    ]
+  }
+}

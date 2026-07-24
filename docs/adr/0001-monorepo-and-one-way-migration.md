@@ -9,4 +9,7 @@
 
 초기 경로는 기존 빌드를 깨지 않도록 `connectors/gnuboard5-php`와 `products/admin-desktop`으로 보존합니다. 서버용 `apps/`와 공통 `crates/` 추출은 별도 검증 커밋으로 진행합니다.
 
-기존 감사 PASS는 새 경로의 실행 증거가 아니며, 루트 migration audit 통과 후에만 `MIGRATION_STATIC_PASS`를 부여합니다.
+기존 감사 PASS는 새 경로의 실행 증거가 아닙니다. 루트 source closure
+audit은 `MIGRATION_SOURCE_CLOSURE_PASS`까지만 부여하며, legacy 전체
+inventory의 서버·웹 이관을 별도 동등성 하네스로 폐쇄한 뒤에만
+`MIGRATION_STATIC_PASS`를 부여합니다.

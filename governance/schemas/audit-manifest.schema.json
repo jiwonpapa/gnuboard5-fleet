@@ -34,7 +34,7 @@
           "additionalProperties": false,
           "required": ["proof_level", "inherits", "required_checks"],
           "properties": {
-            "proof_level": {"const": "MIGRATION_STATIC_PASS"},
+            "proof_level": {"const": "MIGRATION_SOURCE_CLOSURE_PASS"},
             "inherits": {"const": "scaffold"},
             "required_checks": {"const": ["migration.history", "migration.secret_history_hygiene", "migration.source_closure", "migration.legacy_reference_boundary", "runtime.composed_provider", "runtime.audit_dependencies", "php.contract_inventory", "commerce.provider_retention", "product.notification_boundary"]}
           }

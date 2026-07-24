@@ -2,6 +2,25 @@
 
 이 문서는 Tauri 참조 snapshot을 Rust self-hosted 서버와 React PWA로 전환하는 실행 순서의 정본입니다. 제품 경계는 [ADR-0006](../adr/0006-server-only-product-pivot.md), 기술 선택은 [서버·웹 기술 스택](../architecture/SERVER_WEB_TECH_STACK.md)을 따릅니다.
 
+## 0. 2026-07-24 완료 판정 정정
+
+전체 이관 동등성 하네스를 새로 적용한 결과 `MIGRATION_STATIC`은
+`FAIL`입니다.
+
+- Tauri command 253개: 유효 매핑 0
+- legacy React page 43개: 유효 매핑 0
+- legacy Rust workspace member 21개: 유효 매핑 0
+- legacy frontend test 100개: 유효 매핑 0
+- legacy Rust test 93개: 유효 매핑 0
+- 서버 전환 필수 capability 13개: 구현 증명 0
+
+따라서 아래 배치별 `현재 상태` 문구는 당시의 좁은 구현·정적 gate 기록일
+뿐 현재의 전체 전환 완료 판정이 아닙니다. B00 방향 결정과 B01 참조
+분리는 유지되지만, B02부터 B10까지는
+[`서버 전환 동등성 감사`](../audits/MIGRATION_PARITY_HARNESS.md)의 1:1
+매핑과 증거를 채워 순서대로 재감사해야 합니다. 선행 배치가 PASS하기
+전에는 후속 배치를 완료로 승격하지 않습니다.
+
 ## 1. 배치 운영 원칙
 
 - 한 배치는 하나의 검증 가능한 목표만 가집니다.
@@ -322,8 +341,10 @@ HTTPS origin은 내부 CA로 검증합니다.
 
 ## 4. 현재 바로 시작할 배치
 
-현재 시작점은 **B10 staging 인증**입니다. 분리된 libvirt VM의
-credential-free HTTPS origin과 provider ID에 현재 `linux/amd64` release를
-배포한 뒤 `make staging-rehearsal`로 배포 receipt와 검증 snapshot 기반
-rollback receipt를 생성하고 `STAGING_PASS`를 확인합니다. evidence와
-Git revision이 다르면 B10 전체 완료로 승격하지 않습니다.
+현재 시작점은 **B02 전체 이관 재감사**입니다. 510개 legacy inventory의
+매핑을 실제 target·회귀 test·symbol check로 닫고, 13개 필수 capability를
+구현 증명한 뒤 B02부터 순서대로 완료 게이트를 재판정합니다.
+
+staging VM은 유지하되 정적 이관 동등성이 PASS하기 전에는 staging
+readiness·배포 receipt만으로 B10 또는 전체 전환 완료를 주장하지
+않습니다.

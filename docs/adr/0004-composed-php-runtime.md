@@ -33,4 +33,4 @@ PHP docs-check의 실행 `php-root`는 composed runtime입니다. 감사 결과�
 
 - 원본 G5와 `vendor/` 중복을 저장소에서 제거한 상태로 clean clone 재현성을 확보합니다.
 - 네트워크 준비와 오프라인 검증 경계를 분리합니다.
-- prepared runtime이 없거나 source·lock·vendor가 drift하면 `MIGRATION_STATIC_PASS`를 발급하지 않습니다.
+- prepared runtime이 없거나 source·lock·vendor가 drift하면 `MIGRATION_SOURCE_CLOSURE_PASS`를 발급하지 않습니다. 전체 이관의 `MIGRATION_STATIC_PASS`는 별도 동등성 하네스가 담당합니다.

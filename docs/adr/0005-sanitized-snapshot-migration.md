@@ -19,12 +19,16 @@
 
 ## 강제 규칙
 
-`MIGRATION_STATIC_PASS`는 다음 조건을 모두 만족해야 합니다.
+`MIGRATION_SOURCE_CLOSURE_PASS`는 다음 조건을 모두 만족해야 합니다.
 
 1. 모든 reachable commit에 금지된 `output/` 경로가 없습니다.
 2. current tree와 reachable history의 비밀·개인정보 정적 검사가 통과합니다.
 3. 원본 private commit은 공개 저장소에서 reachable하지 않습니다.
 4. import commit의 subtree tree가 기록된 sanitized source tree와 정확히 같습니다.
+
+이 등급은 source closure만 증명합니다. legacy command·page·crate·test의 활성
+서버·웹 이관을 모두 폐쇄한 `MIGRATION_STATIC_PASS`는 별도 동등성 하네스가
+부여합니다.
 
 ## 결과
 

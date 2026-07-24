@@ -1,5 +1,25 @@
 # Migration Status
 
+## 현재 판정
+
+2026-07-24 전체 이관 동등성 하네스 적용 결과는
+`MIGRATION_STATIC FAIL`입니다.
+
+- legacy inventory 510개 중 유효 매핑 0
+  - Tauri command 253
+  - React page 43
+  - Rust workspace member 21
+  - frontend regression test 100
+  - Rust regression test 93
+- 서버 전환 필수 capability 13개 중 구현 증명 0
+- 활성 server route 35개와 Core registry 189개는 존재하지만 전체 이관
+  증거로 승격하지 않음
+
+아래 구현 목록은 현재 소스에 존재하는 기반 기능 inventory입니다. 전체
+legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B02부터 B10은
+[`MIGRATION_PARITY_HARNESS.md`](audits/MIGRATION_PARITY_HARNESS.md)에 따라
+재감사 중입니다.
+
 ## 이번 기준선
 
 - 기존 PHP REST API와 Rust/Tauri의 clean revision을 공개용 sanitized snapshot으로 이관

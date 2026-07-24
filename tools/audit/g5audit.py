@@ -205,7 +205,7 @@ EXPECTED_PROFILE_CONTRACTS: dict[str, dict[str, object]] = {
         ],
     },
     "migration_static": {
-        "proof_level": "MIGRATION_STATIC_PASS",
+        "proof_level": "MIGRATION_SOURCE_CLOSURE_PASS",
         "inherits": "scaffold",
         "required_checks": [
             "migration.history",

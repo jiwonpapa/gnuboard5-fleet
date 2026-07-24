@@ -3,7 +3,7 @@ ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 export PYTHONDONTWRITEBYTECODE := 1
 
 .NOTPARALLEL: bootstrap prepare check
-.PHONY: doctor bootstrap prepare check test-audit test-upstream test-runtime test-package test-certification runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-server-scaffold audit-server-static audit-local audit-package audit-staging upstream-sync upstream-audit upstream-verify secret-scan package-build package-smoke certification-up certification-down certification-clean certification-local-smoke staging-rehearsal staging-smoke
+.PHONY: doctor bootstrap prepare check test-audit test-migration-parity test-upstream test-runtime test-package test-certification runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-migration-parity audit-migration-runtime audit-migration-staging audit-server-scaffold audit-server-static audit-local audit-package audit-staging upstream-sync upstream-audit upstream-verify secret-scan package-build package-smoke certification-up certification-down certification-clean certification-local-smoke staging-rehearsal staging-smoke
 
 doctor:
 	@cd "$(ROOT)" && command -v git >/dev/null
@@ -21,6 +21,9 @@ doctor:
 
 test-audit:
 	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s tools/audit/tests -p 'test_*.py'
+
+test-migration-parity:
+	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s tools/migration_parity/tests -p 'test_*.py'
 
 test-upstream:
 	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s tools/upstream/tests -p 'test_*.py'
@@ -87,6 +90,15 @@ audit-migration:
 	cd "$(ROOT)" && command -v "$(PYTHON)" >/dev/null
 	cd "$(ROOT)" && CARGO_NET_OFFLINE=true COMPOSER_DISABLE_NETWORK=1 "$(PYTHON)" tools/audit/g5audit.py --profile migration_static
 
+audit-migration-parity:
+	cd "$(ROOT)" && "$(PYTHON)" -m tools.migration_parity.cli --profile static
+
+audit-migration-runtime:
+	cd "$(ROOT)" && "$(PYTHON)" -m tools.migration_parity.cli --profile runtime
+
+audit-migration-staging:
+	cd "$(ROOT)" && "$(PYTHON)" -m tools.migration_parity.cli --profile staging
+
 audit-server-scaffold:
 	cd "$(ROOT)" && command -v "$(PYTHON)" >/dev/null
 	cd "$(ROOT)" && CARGO_NET_OFFLINE=true COMPOSER_DISABLE_NETWORK=1 "$(PYTHON)" tools/audit/g5audit.py --profile server_scaffold
@@ -107,6 +119,7 @@ audit-staging:
 check:
 	+$(MAKE) doctor
 	+$(MAKE) test-audit
+	+$(MAKE) test-migration-parity
 	+$(MAKE) test-upstream
 	+$(MAKE) test-runtime
 	+$(MAKE) test-package
@@ -115,6 +128,7 @@ check:
 	+$(MAKE) audit-runtime-verify
 	+$(MAKE) active-check
 	+$(MAKE) audit-server-static
+	+$(MAKE) audit-migration-parity
 
 secret-scan:
 	@cd "$(ROOT)" && command -v gitleaks >/dev/null
