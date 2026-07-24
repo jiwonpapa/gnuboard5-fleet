@@ -3,7 +3,7 @@ ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 export PYTHONDONTWRITEBYTECODE := 1
 
 .NOTPARALLEL: bootstrap prepare check
-.PHONY: doctor bootstrap prepare check test-audit test-upstream test-runtime test-package test-certification runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-server-scaffold audit-server-static audit-local audit-package audit-staging upstream-sync upstream-audit upstream-verify secret-scan package-build package-smoke certification-up certification-down certification-clean certification-local-smoke staging-smoke
+.PHONY: doctor bootstrap prepare check test-audit test-upstream test-runtime test-package test-certification runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-server-scaffold audit-server-static audit-local audit-package audit-staging upstream-sync upstream-audit upstream-verify secret-scan package-build package-smoke certification-up certification-down certification-clean certification-local-smoke staging-rehearsal staging-smoke
 
 doctor:
 	@cd "$(ROOT)" && command -v git >/dev/null
@@ -146,6 +146,10 @@ certification-clean:
 
 certification-local-smoke:
 	cd "$(ROOT)" && $(PYTHON) tools/certification/local_runtime_smoke.py
+
+staging-rehearsal:
+	cd "$(ROOT)" && tools/certification/staging_rehearsal.sh \
+		"$(PROVIDER_ID)" "$(VERSION)" "$(ENV_FILE)" "$(RELEASE_MANIFEST)" "$(OUTPUT_DIR)"
 
 staging-smoke:
 	cd "$(ROOT)" && $(PYTHON) tools/certification/staging_smoke.py --config "$(CONFIG)"

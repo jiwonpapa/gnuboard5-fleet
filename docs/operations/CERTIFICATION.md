@@ -56,9 +56,26 @@ make audit-package
 
 ## 4. staging
 
+현재 release를 staging host에 설치한 뒤 release manifest를 host의
+접근 제한 경로에 복사합니다. 다음 rehearsal은 실행 중인 image의
+version/revision을 release manifest와 대조하고, 존재하지 않는 image
+upgrade를 의도적으로 실행해 검증 snapshot 자동 복원과 핵심 row
+readback을 확인합니다. receipt는 수동으로 작성하지 않습니다.
+
+```bash
+make staging-rehearsal \
+  PROVIDER_ID=provider-instance-id \
+  VERSION=b10-release-version \
+  ENV_FILE=/absolute/deploy/compose/.env \
+  RELEASE_MANIFEST=/absolute/release-manifest.json \
+  OUTPUT_DIR=/absolute/staging-receipts
+```
+
+생성된 `deployment-receipt.json`, `rollback-receipt.json`을 인증 실행
+호스트의 접근 제한 경로로 가져옵니다. 그 다음
 [`staging.example.json`](../../tools/certification/staging.example.json)을
-ignored 경로에 복사하고 실제 HTTPS origin, provider ID, 배포 receipt와
-rollback receipt의 절대경로를 입력합니다.
+ignored 경로에 복사하고 실제 HTTPS origin, 동일 provider ID, 두 receipt의
+절대경로를 입력합니다.
 
 ```bash
 make staging-smoke CONFIG=/absolute/staging.json
@@ -67,5 +84,5 @@ make audit-staging
 
 배포 receipt는 현재 revision·release image ID·version을 포함해야 합니다.
 rollback receipt는 검증 snapshot SHA-256과 backup/restore 핵심 row
-readback 결과를 포함해야 합니다. target이나 receipt가 없으면
+readback 및 실패 upgrade 자동 복원 결과를 포함해야 합니다. target이나 receipt가 없으면
 `STAGING_PASS`를 주장하지 않습니다.

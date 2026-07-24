@@ -73,5 +73,7 @@
 발송 증거를 대신하지 않습니다.
 
 남은 B10 입력은 실제 staging HTTPS origin, provider ID, 현재 revision의
-배포 receipt와 검증 backup을 사용한 rollback receipt입니다. 이 입력이
-없으므로 `STAGING_PASS`와 B10 전체 완료는 주장하지 않습니다.
+staging host 접근 정보입니다. 배포 후 `make staging-rehearsal`이 runtime
+version/revision, 실패 upgrade, 검증 backup 복원과 핵심 row readback을
+확인해 배포·rollback receipt를 생성합니다. 외부 target 입력이 없으므로
+`STAGING_PASS`와 B10 전체 완료는 주장하지 않습니다.

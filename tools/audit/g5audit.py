@@ -2840,6 +2840,8 @@ def check_certification_harness_boundary(root: Path) -> str:
         "local_stack": root / "tools/certification/local_stack.sh",
         "local_smoke": root / "tools/certification/local_runtime_smoke.py",
         "browser": root / "tools/certification/write_browser_evidence.py",
+        "staging_receipt": root / "tools/certification/staging_receipt.py",
+        "staging_rehearsal": root / "tools/certification/staging_rehearsal.sh",
         "staging": root / "tools/certification/staging_smoke.py",
         "production_image": root / "Containerfile",
         "production_compose": root / "deploy/compose/compose.yaml",
@@ -2879,9 +2881,28 @@ def check_certification_harness_boundary(root: Path) -> str:
     ):
         if token not in staging:
             raise ValueError(f"staging evidence boundary token missing: {token}")
+    receipt = paths["staging_receipt"].read_text(encoding="utf-8")
+    rehearsal = paths["staging_rehearsal"].read_text(encoding="utf-8")
+    for token in (
+        "staging deployment version/revision readback mismatch",
+        "staging rollback snapshot/readback mismatch",
+        "rollback_from_failed_upgrade",
+    ):
+        if token not in receipt:
+            raise ValueError(f"staging receipt token missing: {token}")
+    for token in (
+        "staging failed-upgrade rehearsal unexpectedly succeeded",
+        "upgrade.sh",
+        "staging_receipt.py",
+        "restored_readback",
+    ):
+        if token not in rehearsal:
+            raise ValueError(f"staging rehearsal token missing: {token}")
+    if not paths["staging_rehearsal"].stat().st_mode & stat.S_IXUSR:
+        raise ValueError("staging rehearsal script is not executable")
     return (
         "test-only G5+MariaDB local feature가 production image/Compose와 분리되고 "
-        "local·browser·package·staging 증거 harness가 fail-closed로 연결됨"
+        "local·browser·package·실패 upgrade staging receipt harness가 fail-closed로 연결됨"
     )
 
 
