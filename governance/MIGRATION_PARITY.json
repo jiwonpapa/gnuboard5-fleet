@@ -53,10 +53,729 @@
   },
   "mappings": {
     "tauri_commands": [],
-    "react_pages": [],
-    "rust_workspace_members": [],
-    "frontend_tests": [],
-    "rust_tests": []
+    "react_pages": [
+      {
+        "legacy_id": "status/AdminMenuStatusPage.tsx",
+        "disposition": "adapted",
+        "target_paths": ["apps/admin-web/src/status/AdminMenuStatusPage.tsx"],
+        "test_paths": ["apps/admin-web/src/status/AdminMenuStatusPage.test.tsx"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/status/AdminMenuStatusPage.tsx",
+            "contains": "export function AdminMenuStatusPage"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "기존 메뉴 상태 화면을 서버 제공 상태와 단계별 전환 현황을 표시하는 반응형 웹 화면으로 이관했습니다."
+      }
+    ],
+    "rust_workspace_members": [
+      {
+        "legacy_id": "g5-admin-api-client",
+        "disposition": "adapted",
+        "target_paths": ["crates/fleet-connector/src/lib.rs"],
+        "test_paths": ["crates/fleet-connector/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-connector/src/lib.rs",
+            "contains": "struct G5Client"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "데스크톱 API client의 URL 해석과 typed 요청 책임을 서버용 connector로 이관했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-api-ports",
+        "disposition": "redesigned",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "pub trait AdminApiPort"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "API port를 전역 활성 사이트가 아닌 principal과 site_id가 명시된 서버 계약으로 재설계했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-app-error",
+        "disposition": "adapted",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "pub enum AppError"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "애플리케이션 오류 분류와 안내 정보를 서버 공통 코어로 이관했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-error-contract",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "pub struct AppErrorPayload"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "추적 ID, 소유자, 재시도 가능성을 포함한 오류 payload 계약을 공통 코어에서 보존했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-models",
+        "disposition": "adapted",
+        "target_paths": [
+          "crates/fleet-core/src/lib.rs",
+          "crates/fleet-connector/src/lib.rs"
+        ],
+        "test_paths": [
+          "crates/fleet-core/src/lib.rs",
+          "crates/fleet-connector/src/lib.rs"
+        ],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "pub struct ProblemDetails"
+          },
+          {
+            "path": "crates/fleet-connector/src/lib.rs",
+            "contains": "fn validate_core_request"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "공유 모델과 OpenAPI wire 검증 책임을 서버 공통 DTO와 connector 경계로 분리 이관했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-port-types",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "pub struct SshShellReadResult"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "SSH와 SFTP 공통 값 형식을 native wrapper 없이 재사용했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-runtime-types",
+        "disposition": "redesigned",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "pub enum RuntimeSecretStorage"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "데스크톱 runtime 타입을 서버 비밀 저장소 선택 계약으로 축소 재설계했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-store-ports",
+        "disposition": "redesigned",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "pub trait SiteScopedSessionPort"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "전역 active_site_id 저장을 폐기하고 principal과 site_id 복합 범위 저장 계약으로 재설계했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-transport",
+        "disposition": "adapted",
+        "target_paths": [
+          "crates/fleet-connector/src/lib.rs",
+          "apps/admin-web/src/transport/browserHttpTransport.ts"
+        ],
+        "test_paths": [
+          "crates/fleet-connector/src/lib.rs",
+          "apps/admin-web/src/transport/browserHttpTransport.test.ts"
+        ],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/transport/browserHttpTransport.ts",
+            "contains": "Fleet Web may only call its same-origin server."
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "원격 G5 transport는 Rust connector가 소유하고 브라우저 transport는 same-origin Fleet 서버만 호출하도록 분리했습니다."
+      },
+      {
+        "legacy_id": "g5-admin/src-tauri",
+        "disposition": "redesigned",
+        "target_paths": [
+          "apps/admin-server/src/api.rs",
+          "apps/admin-web/src/layout/AppShell.tsx"
+        ],
+        "test_paths": [
+          "apps/admin-server/tests/http_contract.rs",
+          "apps/admin-web/src/layout/AppShell.test.tsx"
+        ],
+        "checks": [
+          {
+            "path": "apps/admin-server/src/api.rs",
+            "contains": "pub struct RequestContext"
+          },
+          {
+            "path": "apps/admin-web/src/layout/AppShell.tsx",
+            "contains": "export function AppShell"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "Tauri shell과 command host를 인증된 Axum 서버 및 브라우저 AppShell 경계로 재설계했습니다."
+      }
+    ],
+    "frontend_tests": [
+      {
+        "legacy_id": "api/client/core/command-context.test.ts",
+        "disposition": "redesigned",
+        "target_paths": ["apps/admin-web/src/transport/requestScope.ts"],
+        "test_paths": ["apps/admin-web/src/transport/requestScope.test.ts"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/transport/requestScope.ts",
+            "contains": "export function buildSitePath"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "Tauri command context 레지스트리 검증을 명시적 site_id 서버 요청 범위 검증으로 재설계했습니다."
+      },
+      {
+        "legacy_id": "app/adminRouteRegistry.test.tsx",
+        "disposition": "adapted",
+        "target_paths": ["apps/admin-web/src/app/adminRouteRegistry.ts"],
+        "test_paths": ["apps/admin-web/src/app/adminRouteRegistry.test.tsx"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/app/adminRouteRegistry.ts",
+            "contains": "export const adminRoutes"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "기존 관리자 경로 목록과 배치 제공 상태를 active 웹 registry 회귀 테스트로 이관했습니다."
+      },
+      {
+        "legacy_id": "features/admin/shared/AdminDataTable.test.tsx",
+        "disposition": "adapted",
+        "target_paths": ["apps/admin-web/src/admin/AdminDataTable.tsx"],
+        "test_paths": ["apps/admin-web/src/admin/AdminPrimitives.test.tsx"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/admin/AdminDataTable.tsx",
+            "contains": "export function AdminDataTable"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "기존 typed 표의 선택, 빈 상태, 행 동작을 서버 웹용 의존성 경량 컴포넌트로 이관했습니다."
+      },
+      {
+        "legacy_id": "features/admin/shared/AdminFormFields.test.tsx",
+        "disposition": "adapted",
+        "target_paths": ["apps/admin-web/src/admin/AdminFormFields.tsx"],
+        "test_paths": ["apps/admin-web/src/admin/AdminPrimitives.test.tsx"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/admin/AdminFormFields.tsx",
+            "contains": "export function TextInputField"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "기존 관리자 입력 필드 동작을 controlled React 필드로 이관했습니다."
+      },
+      {
+        "legacy_id": "features/admin/shared/ConfirmActionDialog.test.tsx",
+        "disposition": "adapted",
+        "target_paths": ["apps/admin-web/src/admin/ConfirmActionDialog.tsx"],
+        "test_paths": ["apps/admin-web/src/admin/AdminPrimitives.test.tsx"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/admin/ConfirmActionDialog.tsx",
+            "contains": "export function ConfirmActionDialog"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "파괴적 동작 전 명시 확인 흐름을 브라우저 dialog로 이관했습니다."
+      },
+      {
+        "legacy_id": "features/layout/AppShell.test.tsx",
+        "disposition": "adapted",
+        "target_paths": ["apps/admin-web/src/layout/AppShell.tsx"],
+        "test_paths": ["apps/admin-web/src/layout/AppShell.test.tsx"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/layout/AppShell.tsx",
+            "contains": "export function AppShell"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "데스크톱 AppShell의 정보 구조를 responsive server web shell로 이관했습니다."
+      },
+      {
+        "legacy_id": "features/layout/AppShellHeader.test.tsx",
+        "disposition": "adapted",
+        "target_paths": ["apps/admin-web/src/layout/AppShell.tsx"],
+        "test_paths": ["apps/admin-web/src/layout/AppShell.test.tsx"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/layout/AppShell.tsx",
+            "contains": "export function AppShellHeader"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "모바일 헤더와 메뉴 토글 동작을 responsive shell에 이관했습니다."
+      },
+      {
+        "legacy_id": "features/layout/AppShellSidebar.test.tsx",
+        "disposition": "adapted",
+        "target_paths": ["apps/admin-web/src/layout/AppShell.tsx"],
+        "test_paths": ["apps/admin-web/src/layout/AppShell.test.tsx"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/layout/AppShell.tsx",
+            "contains": "export function AppShellSidebar"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "그룹 메뉴와 서버 상태가 있는 sidebar 동작을 active 웹으로 이관했습니다."
+      },
+      {
+        "legacy_id": "features/layout/DisplayToolbar.test.tsx",
+        "disposition": "reused",
+        "target_paths": ["apps/admin-web/src/layout/DisplayToolbar.tsx"],
+        "test_paths": ["apps/admin-web/src/layout/AppShell.test.tsx"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/layout/DisplayToolbar.tsx",
+            "contains": "export function DisplayToolbar"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "표시 밀도 선택 동작을 웹 표시 도구로 재사용했습니다."
+      },
+      {
+        "legacy_id": "features/layout/PageIntro.test.tsx",
+        "disposition": "reused",
+        "target_paths": ["apps/admin-web/src/layout/PageIntro.tsx"],
+        "test_paths": ["apps/admin-web/src/layout/AppShell.test.tsx"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/layout/PageIntro.tsx",
+            "contains": "export function PageIntro"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "페이지 제목, 설명, 지표 구조를 responsive 웹 공통 컴포넌트로 재사용했습니다."
+      },
+      {
+        "legacy_id": "features/layout/ProtectedLayout.test.tsx",
+        "disposition": "redesigned",
+        "target_paths": ["apps/admin-web/src/layout/ProtectedLayout.tsx"],
+        "test_paths": ["apps/admin-web/src/layout/AppShell.test.tsx"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/layout/ProtectedLayout.tsx",
+            "contains": "export function ProtectedLayout"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "Tauri local session 전제를 서버 세션의 authorization 결과를 받는 route 경계로 재설계했습니다."
+      },
+      {
+        "legacy_id": "features/layout/app-shell-context-menu.test.ts",
+        "disposition": "adapted",
+        "target_paths": ["apps/admin-web/src/layout/appShellContextMenu.ts"],
+        "test_paths": ["apps/admin-web/src/layout/navigation.test.ts"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/layout/appShellContextMenu.ts",
+            "contains": "export function shellContextActions"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "native 메뉴를 쓰지 않는 새로고침과 경로 복사 안전 동작만 웹 shell에 이관했습니다."
+      },
+      {
+        "legacy_id": "features/layout/navigation.test.ts",
+        "disposition": "adapted",
+        "target_paths": ["apps/admin-web/src/layout/navigation.ts"],
+        "test_paths": ["apps/admin-web/src/layout/navigation.test.ts"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/layout/navigation.ts",
+            "contains": "export function deliveryLabel"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "경로 중복과 실제 제공 상태 표기를 검증하는 웹 navigation 계약으로 이관했습니다."
+      },
+      {
+        "legacy_id": "features/layout/theme-color-regression.test.ts",
+        "disposition": "reused",
+        "target_paths": ["apps/admin-web/src/styles.css"],
+        "test_paths": ["apps/admin-web/src/layout/themeColor.test.ts"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/styles.css",
+            "contains": "--accent: #147d78"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "기존 Fleet 의미 색상 토큰의 회귀 검증을 active 웹 스타일에 재사용했습니다."
+      },
+      {
+        "legacy_id": "features/layout/useHeaderVisibility.test.tsx",
+        "disposition": "adapted",
+        "target_paths": ["apps/admin-web/src/layout/useHeaderVisibility.ts"],
+        "test_paths": ["apps/admin-web/src/layout/useHeaderVisibility.test.tsx"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/layout/useHeaderVisibility.ts",
+            "contains": "export function useHeaderVisibility"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "스크롤 방향 기반 헤더 표시 동작을 브라우저 hook으로 이관했습니다."
+      },
+      {
+        "legacy_id": "features/shared/SharedComponents.test.tsx",
+        "disposition": "adapted",
+        "target_paths": ["apps/admin-web/src/shared/SharedComponents.tsx"],
+        "test_paths": ["apps/admin-web/src/shared/SharedComponents.test.tsx"],
+        "checks": [
+          {
+            "path": "apps/admin-web/src/shared/SharedComponents.tsx",
+            "contains": "export function ErrorBanner"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "오류 추적, 페이지 이동, 선택 안내 공통 컴포넌트를 server transport 오류 계약에 맞게 이관했습니다."
+      }
+    ],
+    "rust_tests": [
+      {
+        "legacy_id": "g5-admin-api-client/src/lib.rs::resolve_constructor_rejects_invalid_url",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-connector/src/lib.rs"],
+        "test_paths": ["crates/fleet-connector/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-connector/src/lib.rs",
+            "contains": "fn resolve_constructor_rejects_invalid_url"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "잘못된 URL을 거부하는 client 보안 회귀를 서버 connector에 재사용했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-api-client/src/lib.rs::resolve_constructor_rejects_url_without_host",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-connector/src/lib.rs"],
+        "test_paths": ["crates/fleet-connector/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-connector/src/lib.rs",
+            "contains": "fn resolve_constructor_rejects_url_without_host"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "host 없는 URL을 거부하는 client 보안 회귀를 서버 connector에 재사용했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-api-client/src/lib.rs::resolve_constructor_routes_hostname_to_supplied_socket",
+        "disposition": "adapted",
+        "target_paths": ["crates/fleet-connector/src/lib.rs"],
+        "test_paths": ["crates/fleet-connector/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-connector/src/lib.rs",
+            "contains": "async fn resolve_constructor_routes_hostname_to_supplied_socket"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "hostname을 검증된 socket으로 고정해 요청하는 동작을 서버 connector에 이관했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-api-ports/src/tests/mod.rs::admin_api_port_tracks_current_base_url",
+        "disposition": "redesigned",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "async fn admin_api_port_requires_explicit_principal_and_site_target"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "변경 가능한 current base URL 검증을 요청마다 principal, site_id, base URL을 명시하는 계약 검증으로 재설계했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-app-error/src/tests/mod.rs::api_error_into_payload_uses_server_trace_and_status_fallback",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "fn api_error_into_payload_uses_server_trace_and_status_fallback"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "서버 추적 ID와 상태 fallback 오류 변환 회귀를 공통 코어에서 보존했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-app-error/src/tests/mod.rs::config_error_into_payload_keeps_local_trace_and_user_actionability",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "fn config_error_into_payload_keeps_local_trace_and_user_actionability"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "설정 오류의 local trace와 사용자 조치 가능성 회귀를 공통 코어에서 보존했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-app-error/src/tests/mod.rs::host_verification_error_into_payload_uses_ssh_specific_guide",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "fn host_verification_error_into_payload_uses_ssh_specific_guide"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "SSH host 검증 오류의 보안 안내 회귀를 공통 코어에서 보존했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-error-contract/src/tests/mod.rs::api_classification_uses_503_retryable_fallback",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "fn api_classification_uses_503_retryable_fallback"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "503 오류의 infra 소유와 retryable fallback 분류를 공통 코어에서 보존했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-error-contract/src/tests/mod.rs::config_classification_builds_user_actionable_payload",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "fn config_classification_builds_user_actionable_payload"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "설정 오류 분류와 user_actionable 계약을 공통 코어에서 보존했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-models/src/models/tests/mod.rs::export_ts_bindings",
+        "disposition": "redesigned",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "fn web_contract_serializes_without_desktop_runtime_types"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "Tauri TypeScript binding 생성을 데스크톱 타입이 없는 JSON 직렬화 웹 계약 검증으로 재설계했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-models/src/openapi_wire/validator/tests.rs::request_validator_accepts_exact_system_mail_payload",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-connector/src/lib.rs"],
+        "test_paths": ["crates/fleet-connector/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-connector/src/lib.rs",
+            "contains": "fn request_validator_accepts_exact_system_mail_payload"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "시스템 메일 payload의 정확한 OpenAPI 요청 검증을 connector에 재사용했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-models/src/openapi_wire/validator/tests.rs::request_validator_rejects_missing_required_board_fields",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-connector/src/lib.rs"],
+        "test_paths": ["crates/fleet-connector/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-connector/src/lib.rs",
+            "contains": "fn request_validator_rejects_missing_required_board_fields"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "게시판 필수 필드 누락을 거부하는 OpenAPI 요청 검증을 connector에 재사용했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-models/src/openapi_wire/validator/tests.rs::request_validator_treats_optional_null_query_as_omitted",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-connector/src/lib.rs"],
+        "test_paths": ["crates/fleet-connector/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-connector/src/lib.rs",
+            "contains": "fn request_validator_treats_optional_null_query_as_omitted"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "선택 query의 null을 생략으로 처리하는 OpenAPI 요청 검증을 connector에 재사용했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-models/src/openapi_wire/validator/tests.rs::response_validator_accepts_runtime_mysql_mail_datetime",
+        "disposition": "adapted",
+        "target_paths": ["crates/fleet-connector/src/lib.rs"],
+        "test_paths": ["crates/fleet-connector/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-connector/src/lib.rs",
+            "contains": "fn response_validator_accepts_runtime_mysql_mail_datetime"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "G5 MySQL datetime wire 형식 수용 회귀를 connector 검증에 이관했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-models/src/openapi_wire/validator/tests.rs::response_validator_rejects_malformed_rfc7807_error",
+        "disposition": "adapted",
+        "target_paths": [
+          "crates/fleet-core/src/lib.rs",
+          "crates/fleet-connector/src/lib.rs"
+        ],
+        "test_paths": ["crates/fleet-connector/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-connector/src/lib.rs",
+            "contains": "fn response_validator_rejects_malformed_rfc7807_error"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "불완전한 RFC7807 오류 응답을 거부하는 검증을 공통 ProblemDetails와 connector로 이관했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-models/src/openapi_wire/validator/tests.rs::response_validator_rejects_wrong_required_field_type",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-connector/src/lib.rs"],
+        "test_paths": ["crates/fleet-connector/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-connector/src/lib.rs",
+            "contains": "fn response_validator_rejects_wrong_required_field_type"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "필수 응답 필드의 잘못된 타입을 거부하는 wire 검증을 connector에 재사용했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-port-types/src/tests/mod.rs::sftp_metadata_kind_is_value_comparable",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "fn sftp_metadata_kind_is_value_comparable"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "SFTP metadata 종류 값 비교 계약을 공통 코어에서 보존했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-port-types/src/tests/mod.rs::shell_read_result_defaults_to_open_empty_output",
+        "disposition": "reused",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "fn shell_read_result_defaults_to_open_empty_output"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "SSH shell read 기본 상태 계약을 공통 코어에서 보존했습니다."
+      },
+      {
+        "legacy_id": "g5-admin-store-ports/src/tests/mod.rs::session_store_contract_tracks_active_site",
+        "disposition": "redesigned",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "async fn session_store_contract_is_principal_and_site_scoped"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "전역 활성 사이트 추적 회귀를 사용자와 사이트가 격리된 세션 저장 계약으로 재설계했습니다."
+      },
+      {
+        "legacy_id": "g5-admin/src-tauri/src/error/tests.rs::api_error_into_payload_uses_server_trace_and_status_fallback",
+        "disposition": "redesigned",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "fn api_error_into_payload_uses_server_trace_and_status_fallback"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "Tauri shell의 중복 오류 회귀를 native 의존성이 없는 서버 공통 오류 회귀로 통합했습니다."
+      },
+      {
+        "legacy_id": "g5-admin/src-tauri/src/error/tests.rs::config_error_into_payload_keeps_local_trace_and_user_actionability",
+        "disposition": "redesigned",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "fn config_error_into_payload_keeps_local_trace_and_user_actionability"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "Tauri shell의 중복 설정 오류 회귀를 서버 공통 오류 회귀로 통합했습니다."
+      },
+      {
+        "legacy_id": "g5-admin/src-tauri/src/error/tests.rs::host_verification_error_into_payload_uses_ssh_specific_guide",
+        "disposition": "redesigned",
+        "target_paths": ["crates/fleet-core/src/lib.rs"],
+        "test_paths": ["crates/fleet-core/src/lib.rs"],
+        "checks": [
+          {
+            "path": "crates/fleet-core/src/lib.rs",
+            "contains": "fn host_verification_error_into_payload_uses_ssh_specific_guide"
+          }
+        ],
+        "evidence_ids": [],
+        "rationale": "Tauri shell의 중복 SSH 검증 오류 회귀를 서버 공통 오류 회귀로 통합했습니다."
+      }
+    ]
   },
   "core_operation_mappings": [],
   "required_capabilities": [

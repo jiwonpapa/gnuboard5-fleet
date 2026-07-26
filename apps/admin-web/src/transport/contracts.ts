@@ -11,6 +11,7 @@ export interface HttpRequest<TBody = unknown> {
   path: `/${string}`;
   body?: TBody;
   csrfToken?: string;
+  requestId?: string;
   signal?: AbortSignal;
 }
 

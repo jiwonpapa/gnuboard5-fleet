@@ -457,6 +457,29 @@ impl G5Client {
         })
     }
 
+    #[cfg(test)]
+    fn for_test_resolved(raw_base_url: &str, address: SocketAddr) -> ConnectorResult<Self> {
+        let base_url = normalize_base_url(raw_base_url)?;
+        let host = base_url
+            .host_str()
+            .ok_or(ConnectorError::UrlSecurity)?
+            .to_owned();
+        let target = g5_fleet_security::OutboundTarget {
+            url: base_url.clone(),
+            host: host.clone(),
+            port: base_url
+                .port_or_known_default()
+                .ok_or(ConnectorError::UrlSecurity)?,
+            pinned_addresses: Default::default(),
+        };
+        Ok(Self {
+            base_url,
+            client: build_client(Some((host, address)))?,
+            guard: Arc::new(UrlGuard::new(SystemResolver)),
+            target,
+        })
+    }
+
     async fn health(&self, request_id: &str) -> ConnectorResult<ConnectorHealth> {
         let envelope: HealthEnvelope = self
             .request(Method::GET, "health", request_id, None, None)
@@ -847,6 +870,21 @@ fn validate_core_request(
     Ok(())
 }
 
+#[cfg(test)]
+fn is_mysql_datetime(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    bytes.len() == 19
+        && bytes[4] == b'-'
+        && bytes[7] == b'-'
+        && bytes[10] == b' '
+        && bytes[13] == b':'
+        && bytes[16] == b':'
+        && bytes
+            .iter()
+            .enumerate()
+            .all(|(index, value)| matches!(index, 4 | 7 | 10 | 13 | 16) || value.is_ascii_digit())
+}
+
 fn core_url(
     base_url: &Url,
     operation: &CoreOperationSpec,
@@ -940,6 +978,7 @@ fn multipart_form(body: &Value) -> ConnectorResult<Form> {
 mod tests {
     use std::{
         collections::BTreeMap,
+        net::{IpAddr, Ipv4Addr, SocketAddr},
         sync::{Arc, Mutex},
     };
 
@@ -950,9 +989,143 @@ mod tests {
         routing::{get, post},
     };
     use serde_json::{Value, json};
-    use tokio::net::TcpListener;
+    use tokio::{
+        io::{AsyncReadExt, AsyncWriteExt},
+        net::TcpListener,
+    };
 
-    use super::{ConnectorError, ConnectorLogin, CoreExecuteRequest, G5Client, core_operations};
+    use super::{
+        ConnectorError, ConnectorLogin, CoreExecuteRequest, G5Client, HealthEnvelope,
+        core_operation, core_operations, is_mysql_datetime, normalize_base_url,
+        validate_core_request,
+    };
+
+    #[test]
+    fn resolve_constructor_rejects_invalid_url() {
+        assert!(matches!(
+            normalize_base_url("://invalid"),
+            Err(ConnectorError::UrlSecurity)
+        ));
+    }
+
+    #[test]
+    fn resolve_constructor_rejects_url_without_host() {
+        assert!(matches!(
+            normalize_base_url("file:///tmp/gnuboard5"),
+            Err(ConnectorError::UrlSecurity)
+        ));
+    }
+
+    #[tokio::test]
+    async fn resolve_constructor_routes_hostname_to_supplied_socket() {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
+            .await
+            .expect("bind");
+        let address = listener.local_addr().expect("address");
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.expect("accept");
+            let mut request = Vec::new();
+            let mut buffer = [0_u8; 1024];
+            loop {
+                let read = stream.read(&mut buffer).await.expect("read");
+                if read == 0 {
+                    break;
+                }
+                request.extend_from_slice(&buffer[..read]);
+                if request.windows(4).any(|window| window == b"\r\n\r\n") {
+                    break;
+                }
+            }
+            assert!(request.starts_with(b"GET /api/v1/health HTTP/1.1\r\n"));
+            let body = r#"{"status":"ok","version":"test","timestamp":1}"#;
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            stream.write_all(response.as_bytes()).await.expect("write");
+        });
+        let socket = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), address.port());
+        let client = G5Client::for_test_resolved(
+            &format!("http://g5-resolve.invalid:{}", address.port()),
+            socket,
+        )
+        .expect("client");
+        assert_eq!(
+            client.health("resolve-test").await.expect("health").status,
+            "ok"
+        );
+        server.await.expect("server");
+    }
+
+    #[test]
+    fn request_validator_rejects_missing_required_board_fields() {
+        let operation = core_operation("adminCreateBoard").expect("operation");
+        let request = CoreExecuteRequest {
+            body: Some(json!({"bo_table":"notice"})),
+            ..Default::default()
+        };
+        assert!(matches!(
+            validate_core_request(operation, &request),
+            Err(ConnectorError::InvalidCoreRequest)
+        ));
+    }
+
+    #[test]
+    fn request_validator_accepts_exact_system_mail_payload() {
+        let operation = core_operation("adminSystemSendMemberMail").expect("operation");
+        let request = CoreExecuteRequest {
+            body: Some(json!({
+                "ma_id":1,
+                "mb_ids":["admin"],
+                "subject":"subject",
+                "content":"content"
+            })),
+            ..Default::default()
+        };
+        validate_core_request(operation, &request).expect("exact mail payload");
+    }
+
+    #[test]
+    fn request_validator_treats_optional_null_query_as_omitted() {
+        let operation = core_operation("adminListMembers").expect("operation");
+        let request = CoreExecuteRequest {
+            query: BTreeMap::from([
+                ("page".into(), json!(1)),
+                ("per_page".into(), json!(20)),
+                ("search".into(), Value::Null),
+                ("search_field".into(), Value::Null),
+            ]),
+            ..Default::default()
+        };
+        validate_core_request(operation, &request).expect("optional null query");
+    }
+
+    #[test]
+    fn response_validator_rejects_wrong_required_field_type() {
+        let result = serde_json::from_value::<HealthEnvelope>(json!({
+            "status":"ok",
+            "version":"1",
+            "timestamp":"not-an-integer"
+        }));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn response_validator_accepts_runtime_mysql_mail_datetime() {
+        assert!(is_mysql_datetime("2026-07-22 10:36:17"));
+        assert!(!is_mysql_datetime("2026/07/22"));
+    }
+
+    #[test]
+    fn response_validator_rejects_malformed_rfc7807_error() {
+        let result = serde_json::from_value::<g5_fleet_core::ProblemDetails>(json!({
+            "type":"about:blank",
+            "status":500,
+            "title":"broken"
+        }));
+        assert!(result.is_err());
+    }
 
     #[derive(Clone)]
     struct MockState {

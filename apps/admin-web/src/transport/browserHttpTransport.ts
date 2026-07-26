@@ -29,6 +29,9 @@ export class BrowserHttpTransport implements HttpTransport {
     if (request.csrfToken) {
       headers.set("x-csrf-token", request.csrfToken);
     }
+    if (request.requestId) {
+      headers.set("x-request-id", request.requestId);
+    }
     const fetcher = this.fetcher ?? globalThis.fetch.bind(globalThis);
     const response = await fetcher(endpoint, {
       method: request.method,

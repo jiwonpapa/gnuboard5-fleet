@@ -1,83 +1,33 @@
 import { useEffect, useState } from "react";
-import {
-  BrowserRouter,
-  NavLink,
-  Route,
-  Routes,
-} from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { getHealth, getMeta, type MetaResponse } from "./api/system";
 import { VerticalFlow } from "./components/VerticalFlow";
+import { AppShell } from "./layout/AppShell";
+import { AdminMenuStatusPage } from "./status/AdminMenuStatusPage";
 
 type ServerState =
   | { status: "checking"; meta: null }
   | { status: "online"; meta: MetaResponse }
   | { status: "offline"; meta: null };
 
-const navigation = [
-  { to: "/", label: "개요", mark: "01" },
-  { to: "/sites", label: "사이트", mark: "02" },
-  { to: "/activity", label: "작업 기록", mark: "03" },
-];
-
 export default function App() {
-  const [navigationOpen, setNavigationOpen] = useState(false);
   const server = useServerState();
 
   return (
     <BrowserRouter>
-      <div className="app-shell">
-        <header className="mobile-header">
-          <Brand />
-          <button
-            className="menu-button"
-            type="button"
-            aria-expanded={navigationOpen}
-            aria-controls="primary-navigation"
-            onClick={() => setNavigationOpen((open) => !open)}
-          >
-            메뉴
-          </button>
-        </header>
-
-        <aside
-          id="primary-navigation"
-          className="sidebar"
-          data-open={navigationOpen}
-        >
-          <Brand />
-          <p className="sidebar-label">Fleet workspace</p>
-          <nav aria-label="주요 메뉴">
-            {navigation.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === "/"}
-                onClick={() => setNavigationOpen(false)}
-              >
-                <span>{item.label}</span>
-                <span className="nav-mark">{item.mark}</span>
-              </NavLink>
-            ))}
-          </nav>
-          <div className="sidebar-context">
-            <span className="context-kicker">선택된 사이트</span>
-            <strong>아직 연결되지 않음</strong>
-            <span>사이트별 요청 경계가 이곳에 표시됩니다.</span>
-          </div>
-          <ServerBadge state={server.status} />
-        </aside>
-
-        <main className="workspace">
-          <WorkspaceHeader server={server} />
-          <Routes>
-            <Route path="/" element={<Overview />} />
-            <Route path="/sites" element={<Sites />} />
-            <Route path="/activity" element={<Activity />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-      </div>
+      <AppShell
+        serverState={server.status}
+        serverVersion={server.meta?.server_version}
+      >
+        <Routes>
+          <Route path="/" element={<Overview />} />
+          <Route path="/sites" element={<Sites />} />
+          <Route path="/activity" element={<Activity />} />
+          <Route path="/admin/:domain" element={<AdminMenuStatusPage />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </AppShell>
     </BrowserRouter>
   );
 }
@@ -98,47 +48,6 @@ function useServerState(): ServerState {
     return () => controller.abort();
   }, []);
   return state;
-}
-
-function Brand() {
-  return (
-    <div className="brand" aria-label="G5 Fleet">
-      <span className="brand-symbol">G5</span>
-      <span>
-        <strong>Fleet</strong>
-        <small>통합 관리자</small>
-      </span>
-    </div>
-  );
-}
-
-function ServerBadge({ state }: { state: ServerState["status"] }) {
-  const label = state === "online"
-    ? "서버 정상"
-    : state === "offline"
-    ? "서버 연결 실패"
-    : "서버 확인 중";
-  return (
-    <div className="server-badge" data-state={state}>
-      <span className="status-dot" />
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function WorkspaceHeader({ server }: { server: ServerState }) {
-  return (
-    <header className="workspace-header">
-      <div>
-        <span className="eyebrow">G5 Fleet / 운영 공간</span>
-        <h1>사이트 운영 현황</h1>
-      </div>
-      <div className="version">
-        <span>서버 버전</span>
-        <strong>{server.meta?.server_version ?? "확인 중"}</strong>
-      </div>
-    </header>
-  );
 }
 
 function Overview() {
