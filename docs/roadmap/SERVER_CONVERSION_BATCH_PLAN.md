@@ -2,6 +2,12 @@
 
 이 문서는 Tauri 참조 snapshot을 Rust self-hosted 서버와 React PWA로 전환하는 실행 순서의 정본입니다. 제품 경계는 [ADR-0006](../adr/0006-server-only-product-pivot.md), 기술 선택은 [서버·웹 기술 스택](../architecture/SERVER_WEB_TECH_STACK.md)을 따릅니다.
 
+> **현재 실행 정본:** 2026-07-26 전체 감사 이후의 실제 재이관은
+> [도메인별 재사용 이관 배치](./DOMAIN_REUSE_MIGRATION_PLAN.md)를
+> 따릅니다. 아래 B00~B10 기록은 서버 전환 기반을 만든 과거 작업
+> 이력이며, React 화면·REST 소비·legacy 테스트의 전체 이관 완료
+> 근거로 사용할 수 없습니다.
+
 ## 0. 2026-07-24 완료 판정 정정
 
 전체 이관 동등성 하네스를 새로 적용한 결과 `MIGRATION_STATIC`은
