@@ -67,9 +67,9 @@ R00에서 `make check-batch BATCH=Rxx`를 구현합니다. 각 배치는 아래
 
 ## 4. 배치 순서
 
-R00 구현 중 manifest 상태는 R00 `active`, 나머지는 `planned`입니다.
-완료 증거가 기록되면 R00을 `batch_pass`로 닫고 R01만 `active`로
-전환합니다.
+현재 manifest 상태는 R00 `batch_pass`, R01 `active`, 나머지는
+`planned`입니다. R00은 배치 통제만 닫았으며 제품 기능 이관 완료를
+뜻하지 않습니다.
 
 ### 4.1 이관 통제와 공통 기반
 
@@ -164,3 +164,11 @@ make check-batch BATCH=R00
 
 배치 gate가 PASS하더라도 전역 `make audit-migration-parity`는 R36 전까지
 FAIL과 전체 잔여 수를 그대로 반환합니다.
+
+R00 closeout:
+
+- 구현 commit: `1f10132a1c168fb0bdbac6d75ba647d460f9179e`
+- tracked 증거: `docs/audits/evidence/R00_BATCH_GATE_PASS.json`
+- R00 finding: 0
+- 전역 잔여 finding: 712
+- 다음 R01 사전 probe: FAIL 49

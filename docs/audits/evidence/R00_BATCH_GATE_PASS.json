@@ -1,0 +1,55 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R00",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "1f10132a1c168fb0bdbac6d75ba647d460f9179e",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "1f10132a1c168fb0bdbac6d75ba647d460f9179e"
+  },
+  "generated_at": "2026-07-26T07:52:47Z",
+  "commands": [
+    "make check-batch BATCH=R00",
+    "make audit-migration-parity",
+    "python3 -m tools.migration_parity.batch_cli --batch R01 --profile static --no-output"
+  ],
+  "results": {
+    "harness_tests": {
+      "passed": 26,
+      "failed": 0
+    },
+    "batch_findings": 0,
+    "ownership": {
+      "legacy": {
+        "owned": 510,
+        "total": 510
+      },
+      "core_operations": {
+        "owned": 189,
+        "total": 189
+      },
+      "required_capabilities": {
+        "owned": 13,
+        "total": 13
+      }
+    },
+    "global_migration": {
+      "status": "FAIL",
+      "findings": 712
+    },
+    "next_batch_probe": {
+      "batch": "R01",
+      "status": "FAIL",
+      "findings": 49
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "333325b62c4a042c318aab6369ca8add028471e0b047de6985b09f6c276b16be",
+    "migration_batches": "c7a4a4adfc422e9fd4b9f3cb300accc9c52c11731bbbfd91744ea0dda2912fe4"
+  },
+  "source_report": {
+    "path": "output/audit/runs/migration-batch-R00-20260726T075240Z-2f6099f9/result.json",
+    "sha256": "16fc549e9f5f8c39a20292a1ba29b216ecb4a95ac8d47d4ef4e4870b5e2e9934"
+  },
+  "claim_limit": "R00 control gate only; product migration remains incomplete."
+}

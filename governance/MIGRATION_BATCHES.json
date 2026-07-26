@@ -9,9 +9,14 @@
       "id": "R00",
       "sequence": 0,
       "title": "배치 감사 통제",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": [],
       "control_only": true,
+      "completion": {
+        "implementation_commit": "1f10132a1c168fb0bdbac6d75ba647d460f9179e",
+        "evidence_path": "docs/audits/evidence/R00_BATCH_GATE_PASS.json",
+        "closed_at": "2026-07-26T07:52:47Z"
+      },
       "core": {
         "domains": [],
         "operation_ids": [],
@@ -24,7 +29,7 @@
       "id": "R01",
       "sequence": 1,
       "title": "React 공통 기반 재사용",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R00"],
       "core": {
         "domains": [],
