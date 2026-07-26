@@ -13,7 +13,10 @@ Rust Axum HTTP·WebSocket 경계로 교체합니다.
 - raw `invoke()` 호출: 중앙 client 1곳
 - 활성 React: route 3개, TS/TSX 20개, 약 3,439 LOC
 - Core OpenAPI 소비 대상: 29개 domain, 189 operations
-- 전체 migration 미종결: 523 findings
+- 전체 migration 미종결: 712 findings
+  - legacy inventory 510
+  - Core operation typed 소비 189
+  - 필수 capability 13
 
 따라서 UI는 재사용 가능성이 높지만 아직 이관 완료가 아닙니다. 과거
 B00~B10은 기반 작업 이력으로만 보존하고, 아래 R 배치의 PASS 증거 없이
@@ -64,13 +67,15 @@ R00에서 `make check-batch BATCH=Rxx`를 구현합니다. 각 배치는 아래
 
 ## 4. 배치 순서
 
-모든 배치의 초기 상태는 `PLANNED`입니다.
+R00 구현 중 manifest 상태는 R00 `active`, 나머지는 `planned`입니다.
+완료 증거가 기록되면 R00을 `batch_pass`로 닫고 R01만 `active`로
+전환합니다.
 
 ### 4.1 이관 통제와 공통 기반
 
 | 배치 | 범위 | 주요 결과 |
 |---|---|---|
-| R00 | 배치 감사 통제 | machine-readable manifest, scoped gate, 잔여 findings 계수 |
+| R00 | 배치 감사 통제 | `MIGRATION_BATCHES.json`, scoped gate, 잔여 findings 계수 |
 | R01 | React 공통 기반 재사용 | AppShell, navigation, 공통 component·style·type·test 추출, 중앙 transport 교체 |
 | R02 | Fleet 설치·인증·보안 | 설치 wizard, master 계정, TOTP·recovery, session·lockout·audit workflow |
 | R03 | 사이트·활동·backup | 사이트 등록/수정/삭제, health, activity, backup·restore UI와 서버 흐름 |
@@ -133,7 +138,7 @@ legacy page: 2/2
 legacy command: 17/17
 legacy test: 8/8
 reuse: 31 reused / 6 adapted / 1 redesigned / 0 deferred
-global migration findings: 523 → 474
+global migration findings: 712 → 663
 commit/push: 미실행
 전체 제품 완료: 아니오
 ```
@@ -150,3 +155,12 @@ commit/push: 미실행
 3. scoped audit가 선택 배치의 누락을 fail-closed로 검출하게 합니다.
 4. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
 5. R00 검증·commit·push 후에만 R01을 시작합니다.
+
+실행 명령:
+
+```bash
+make check-batch BATCH=R00
+```
+
+배치 gate가 PASS하더라도 전역 `make audit-migration-parity`는 R36 전까지
+FAIL과 전체 잔여 수를 그대로 반환합니다.

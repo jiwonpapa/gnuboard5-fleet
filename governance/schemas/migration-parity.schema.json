@@ -10,6 +10,7 @@
     "legacy_baseline",
     "active_expectations",
     "mappings",
+    "core_operation_mappings",
     "required_capabilities",
     "evidence_registry",
     "profile_evidence",
@@ -104,6 +105,28 @@
         "rust_tests": {
           "$ref": "#/$defs/mappingList"
         }
+      }
+    },
+    "core_operation_mappings": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/implementation"
+          },
+          {
+            "type": "object",
+            "required": [
+              "operation_id"
+            ],
+            "properties": {
+              "operation_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        ]
       }
     },
     "required_capabilities": {

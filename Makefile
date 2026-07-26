@@ -3,7 +3,7 @@ ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 export PYTHONDONTWRITEBYTECODE := 1
 
 .NOTPARALLEL: bootstrap prepare check
-.PHONY: doctor bootstrap prepare check test-audit test-migration-parity test-upstream test-runtime test-package test-certification runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-migration-parity audit-migration-runtime audit-migration-staging audit-server-scaffold audit-server-static audit-local audit-package audit-staging upstream-sync upstream-audit upstream-verify secret-scan package-build package-smoke certification-up certification-down certification-clean certification-local-smoke staging-rehearsal staging-smoke
+.PHONY: doctor bootstrap prepare check check-batch test-audit test-migration-parity test-upstream test-runtime test-package test-certification runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-migration-parity audit-migration-batch audit-migration-runtime audit-migration-staging audit-server-scaffold audit-server-static audit-local audit-package audit-staging upstream-sync upstream-audit upstream-verify secret-scan package-build package-smoke certification-up certification-down certification-clean certification-local-smoke staging-rehearsal staging-smoke
 
 doctor:
 	@cd "$(ROOT)" && command -v git >/dev/null
@@ -92,6 +92,14 @@ audit-migration:
 
 audit-migration-parity:
 	cd "$(ROOT)" && "$(PYTHON)" -m tools.migration_parity.cli --profile static
+
+audit-migration-batch:
+	@test -n "$(BATCH)" || { echo "BATCH=RNN is required" >&2; exit 2; }
+	cd "$(ROOT)" && "$(PYTHON)" -m tools.migration_parity.batch_cli --batch "$(BATCH)" --profile static
+
+check-batch:
+	+$(MAKE) test-migration-parity
+	+$(MAKE) audit-migration-batch BATCH="$(BATCH)"
 
 audit-migration-runtime:
 	cd "$(ROOT)" && "$(PYTHON)" -m tools.migration_parity.cli --profile runtime

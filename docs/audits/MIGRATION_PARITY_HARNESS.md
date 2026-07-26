@@ -6,9 +6,10 @@
 registry를 검사할 뿐, desktop snapshot 전체가 서버·웹으로 이관됐음을
 증명하지 않습니다.
 
-전체 전환 완료 판정은 별도 모듈인 `tools/migration_parity`와
-`governance/MIGRATION_PARITY.json`만 담당합니다. 현재 정적 감사 결과는
-`FAIL`입니다.
+전체 전환 완료 판정은 별도 모듈인 `tools/migration_parity`,
+`governance/MIGRATION_PARITY.json`과
+`governance/MIGRATION_BATCHES.json`만 담당합니다. 현재 정적 감사
+결과는 `FAIL`입니다.
 
 | legacy 감사 축 | 기준선 | 유효 매핑 | 현재 판정 |
 |---|---:|---:|---|
@@ -17,6 +18,7 @@ registry를 검사할 뿐, desktop snapshot 전체가 서버·웹으로 이관�
 | Rust workspace member | 21 | 0 | FAIL |
 | frontend regression test | 100 | 0 | FAIL |
 | Rust regression test | 93 | 0 | FAIL |
+| Core operation typed 소비 | 189 | 0 | FAIL |
 | 서버 전환 필수 capability | 13 | 0 | FAIL |
 
 활성 server route 35개와 Core registry 189개는 현황 inventory입니다. 이
@@ -31,6 +33,8 @@ registry를 검사할 뿐, desktop snapshot 전체가 서버·웹으로 이관�
 - `manifest.py`: 매핑 계약과 허용 값 검증
 - `parity.py`: baseline, 1:1 매핑, target, test, symbol, capability 검증
 - `runtime.py`: Git revision·시간에 결속된 evidence와 실시간 staging probe
+- `batch.py`: legacy·Core operation·capability의 단일 배치 소유권과 scoped finding
+- `batch_cli.py`: 선택 배치 gate와 전역 잔여 findings 동시 보고
 - `report.py`: 원자적 JSON 결과 기록
 - `cli.py`: profile 실행과 종료 코드
 - `tests/`: 정상 fixture, fail-closed, 변이 회귀
@@ -82,6 +86,9 @@ make test-migration-parity
 # 전체 정적 이관 동등성
 make audit-migration-parity
 
+# 선택 배치의 정적 gate와 전체 잔여 findings 동시 보고
+make check-batch BATCH=R00
+
 # 동일 revision의 로컬 runtime evidence 포함
 make audit-migration-runtime
 
@@ -98,6 +105,12 @@ make audit-migration-staging
 `output/audit/runs/<run_id>/result.json`에 기록됩니다. 보고서에는 전체
 legacy·active inventory, 매핑 coverage, capability 상태, 모든 finding과
 실시간 probe 결과가 들어갑니다.
+
+배치 보고서는 선택 범위의 정확한 operation·legacy·capability ID와 배치
+finding, 전역 finding을 함께 기록합니다. R00 control gate는 712개
+미종결 항목 때문에 실패하지 않지만 baseline drift, inventory anomaly,
+배치 소유권 누락·중복이 있으면 fail-closed됩니다. R01 이후 배치는 자신이
+소유한 미종결 항목이 하나라도 있으면 실패합니다.
 
 ## 기준선 변경
 

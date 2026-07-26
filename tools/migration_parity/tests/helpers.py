@@ -58,7 +58,14 @@ def make_fixture(root: Path) -> tuple[dict[str, Any], Inventory, Inventory]:
     active = Inventory(
         categories={
             "server_routes": [],
-            "core_operations": [],
+            "core_operations": [
+                InventoryItem(
+                    item_id="fixtureOperation",
+                    path="contracts/core-operations.json",
+                    sha256="b" * 64,
+                    metadata={"domain": "fixture"},
+                )
+            ],
             "active_workspace_members": [],
             "web_pages": [],
             "web_tests": [],
@@ -73,6 +80,21 @@ def make_fixture(root: Path) -> tuple[dict[str, Any], Inventory, Inventory]:
         "legacy_baseline": baseline,
         "active_expectations": {},
         "mappings": mappings,
+        "core_operation_mappings": [
+            {
+                "operation_id": "fixtureOperation",
+                "target_paths": ["apps/admin-server/src/lib.rs"],
+                "test_paths": ["apps/admin-server/tests/parity.rs"],
+                "checks": [
+                    {
+                        "path": "apps/admin-server/src/lib.rs",
+                        "contains": "migrated_contract",
+                    }
+                ],
+                "evidence_ids": [],
+                "rationale": "fixture operation mapping",
+            }
+        ],
         "required_capabilities": [
             {
                 "id": "fixture_capability",

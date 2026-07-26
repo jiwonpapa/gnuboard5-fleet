@@ -58,6 +58,7 @@
     "frontend_tests": [],
     "rust_tests": []
   },
+  "core_operation_mappings": [],
   "required_capabilities": [
     {
       "id": "first_run_setup_state",

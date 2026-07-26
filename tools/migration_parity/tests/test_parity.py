@@ -42,6 +42,22 @@ class ParityTest(unittest.TestCase):
             self.assertIn("mapping.unmapped", {finding.code for finding in findings})
             self.assertEqual(1, coverage["react_pages"]["unmapped"])
 
+    def test_unmapped_core_operation_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest, legacy, active = make_fixture(root)
+            manifest["core_operation_mappings"] = []
+            findings, coverage, _, _ = audit_parity(
+                root,
+                manifest,
+                legacy,
+                active,
+                profile="static",
+                git_revision="a" * 40,
+            )
+            self.assertIn("operation.unmapped", {finding.code for finding in findings})
+            self.assertEqual(1, coverage["core_operations"]["unmapped"])
+
     def test_deferred_is_tracked_but_not_pass(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

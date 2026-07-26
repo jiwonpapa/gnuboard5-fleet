@@ -79,6 +79,19 @@ def validate_manifest_shape(data: dict[str, Any]) -> None:
             )
         _require_type(mappings.get(category), list, f"$.mappings.{category}")
 
+    operation_mappings = data.get("core_operation_mappings")
+    _require_type(operation_mappings, list, "$.core_operation_mappings")
+    operation_ids: set[str] = set()
+    for index, entry in enumerate(operation_mappings):
+        location = f"$.core_operation_mappings[{index}]"
+        _require_type(entry, dict, location)
+        operation_id = entry.get("operation_id")
+        if not isinstance(operation_id, str) or not operation_id:
+            raise ManifestError(f"{location}.operation_id: non-empty string required")
+        if operation_id in operation_ids:
+            raise ManifestError(f"{location}.operation_id: duplicate {operation_id}")
+        operation_ids.add(operation_id)
+
     expectations = data.get("active_expectations")
     _require_type(expectations, dict, "$.active_expectations")
     for category, expectation in expectations.items():

@@ -25,6 +25,7 @@ class ManifestTest(unittest.TestCase):
             },
             set(manifest["mappings"]),
         )
+        self.assertEqual([], manifest["core_operation_mappings"])
 
     def test_missing_legacy_category_is_harness_error(self) -> None:
         manifest = json.loads(
@@ -43,5 +44,17 @@ class ManifestTest(unittest.TestCase):
         broken["required_capabilities"].append(
             copy.deepcopy(broken["required_capabilities"][0])
         )
+        with self.assertRaisesRegex(ManifestError, "duplicate"):
+            validate_manifest_shape(broken)
+
+    def test_duplicate_core_operation_mapping_is_harness_error(self) -> None:
+        manifest = json.loads(
+            (ROOT / "governance/MIGRATION_PARITY.json").read_text(encoding="utf-8")
+        )
+        broken = copy.deepcopy(manifest)
+        broken["core_operation_mappings"] = [
+            {"operation_id": "getHealth"},
+            {"operation_id": "getHealth"},
+        ]
         with self.assertRaisesRegex(ManifestError, "duplicate"):
             validate_manifest_shape(broken)

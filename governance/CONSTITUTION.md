@@ -72,7 +72,9 @@ G5 legacy source
 → live 저장/readback/cleanup
 ```
 
-증명 단계는 `SCAFFOLD_PASS`, `MIGRATION_SOURCE_CLOSURE_PASS`, `MIGRATION_STATIC_PASS`, `SERVER_SCAFFOLD_PASS`, `SERVER_STATIC_PASS`, `LOCAL_RUNTIME_PASS`, `PACKAGE_PASS`, `STAGING_PASS`, `LIVE_CERTIFIED`로 구분합니다. `MIGRATION_SOURCE_CLOSURE_PASS`는 sanitized source·provenance·공급 계약만 증명하며 legacy 기능 이관 완료를 뜻하지 않습니다. `MIGRATION_STATIC_PASS`는 별도 동등성 하네스가 legacy command·page·crate·test 전체의 활성 target과 회귀 검사를 폐쇄했을 때만 부여합니다. `SERVER_SCAFFOLD_PASS`는 활성 Axum/React 골격과 build·route·transport 경계만 증명하며 189개 Core 소비나 보안 완성을 뜻하지 않습니다. blocked, skipped, stale, scanner-zero를 PASS로 승격하지 않습니다. 모든 child artifact는 부모 run ID에 귀속하고 자체 run ID와 hash를 기록하며, 같은 Git SHA, OpenAPI SHA, upstream G5 commit, image digest를 사용합니다.
+증명 단계는 `SCAFFOLD_PASS`, `MIGRATION_SOURCE_CLOSURE_PASS`, `BATCH_GATE_PASS`, `MIGRATION_STATIC_PASS`, `SERVER_SCAFFOLD_PASS`, `SERVER_STATIC_PASS`, `LOCAL_RUNTIME_PASS`, `PACKAGE_PASS`, `STAGING_PASS`, `LIVE_CERTIFIED`로 구분합니다. `MIGRATION_SOURCE_CLOSURE_PASS`는 sanitized source·provenance·공급 계약만 증명하며 legacy 기능 이관 완료를 뜻하지 않습니다. `BATCH_GATE_PASS`는 선택한 R 배치의 정적 범위만 폐쇄했음을 뜻하며 전체 전환 완료가 아닙니다. `MIGRATION_STATIC_PASS`는 별도 동등성 하네스가 legacy command·page·crate·test와 189개 Core operation 전체의 활성 target과 회귀 검사를 폐쇄했을 때만 부여합니다. `SERVER_SCAFFOLD_PASS`는 활성 Axum/React 골격과 build·route·transport 경계만 증명하며 189개 Core 소비나 보안 완성을 뜻하지 않습니다. blocked, skipped, stale, scanner-zero를 PASS로 승격하지 않습니다. 모든 child artifact는 부모 run ID에 귀속하고 자체 run ID와 hash를 기록하며, 같은 Git SHA, OpenAPI SHA, upstream G5 commit, image digest를 사용합니다.
+
+`governance/MIGRATION_BATCHES.json`은 legacy 510개, Core operation 189개와 필수 capability의 단일 배치 소유권 정본입니다. 한 번에 하나의 배치만 `active`일 수 있고 선행 배치의 tracked 완료 증거가 없으면 다음 배치를 활성화하지 않습니다.
 
 감사 결과는 `output/audit/runs/<run_id>/result.json`에 불변 증적으로 저장하고 `output/audit/latest.json`은 탐색용 포인터로만 사용합니다.
 

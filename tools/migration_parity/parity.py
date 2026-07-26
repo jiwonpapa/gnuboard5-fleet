@@ -294,6 +294,123 @@ def _validate_evidence_ids(
     return valid, findings
 
 
+def _audit_core_operation_mappings(
+    root: Path,
+    manifest: dict[str, Any],
+    active: Inventory,
+    *,
+    profile: str,
+    allowed_roots: tuple[Path, ...],
+    evidence_registry: dict[str, Any],
+) -> tuple[list[Finding], dict[str, int], set[str]]:
+    findings: list[Finding] = []
+    evidence_to_validate: set[str] = set()
+    items = active.categories.get("core_operations", [])
+    expected_ids = {item.item_id for item in items}
+    seen: dict[str, int] = {}
+    valid_ids: set[str] = set()
+
+    for index, entry in enumerate(manifest["core_operation_mappings"]):
+        if not isinstance(entry, dict):
+            findings.append(
+                Finding(
+                    "operation.entry_invalid",
+                    f"core_operation_mappings[{index}]는 object여야 합니다.",
+                    "core_operations",
+                )
+            )
+            continue
+        operation_id = entry.get("operation_id")
+        if not isinstance(operation_id, str) or not operation_id:
+            findings.append(
+                Finding(
+                    "operation.id_missing",
+                    "operation_id가 없습니다.",
+                    "core_operations",
+                )
+            )
+            continue
+        seen[operation_id] = seen.get(operation_id, 0) + 1
+        if operation_id not in expected_ids:
+            findings.append(
+                Finding(
+                    "operation.id_unknown",
+                    "canonical Core operation inventory에 없는 ID입니다.",
+                    "core_operations",
+                    operation_id,
+                )
+            )
+            continue
+
+        implementation_findings = _validate_implementation(
+            root,
+            entry,
+            owner_id=operation_id,
+            allowed_roots=allowed_roots,
+        )
+        findings.extend(
+            Finding(
+                finding.code.replace("mapping.", "operation.", 1),
+                finding.message,
+                "core_operations",
+                finding.item_id,
+                finding.severity,
+            )
+            for finding in implementation_findings
+        )
+        evidence_ids, evidence_findings = _validate_evidence_ids(
+            entry,
+            evidence_registry,
+            owner_id=operation_id,
+            required=profile in ("runtime", "staging"),
+        )
+        evidence_to_validate.update(evidence_ids)
+        findings.extend(
+            Finding(
+                finding.code,
+                finding.message,
+                "core_operations",
+                finding.item_id,
+                finding.severity,
+            )
+            for finding in evidence_findings
+        )
+        if not implementation_findings and not evidence_findings:
+            valid_ids.add(operation_id)
+
+    for operation_id, count in sorted(seen.items()):
+        if count > 1:
+            findings.append(
+                Finding(
+                    "operation.duplicate",
+                    "동일 Core operation이 두 번 이상 매핑됐습니다.",
+                    "core_operations",
+                    operation_id,
+                )
+            )
+            valid_ids.discard(operation_id)
+
+    unmapped_ids = expected_ids - set(seen)
+    for operation_id in sorted(unmapped_ids):
+        findings.append(
+            Finding(
+                "operation.unmapped",
+                "Core operation의 typed 서버·웹 소비 매핑이 없습니다.",
+                "core_operations",
+                operation_id,
+            )
+        )
+
+    coverage = {
+        "total": len(expected_ids),
+        "mapped": len(expected_ids & set(seen)),
+        "valid": len(valid_ids),
+        "deferred": 0,
+        "unmapped": len(unmapped_ids),
+    }
+    return findings, coverage, evidence_to_validate
+
+
 def audit_parity(
     root: Path,
     manifest: dict[str, Any],
@@ -476,6 +593,20 @@ def audit_parity(
             "deferred": deferred,
             "unmapped": len(unmapped_ids),
         }
+
+    operation_findings, operation_coverage, operation_evidence = (
+        _audit_core_operation_mappings(
+            root,
+            manifest,
+            active,
+            profile=profile,
+            allowed_roots=allowed_roots,
+            evidence_registry=evidence_registry,
+        )
+    )
+    findings.extend(operation_findings)
+    coverage["core_operations"] = operation_coverage
+    evidence_to_validate.update(operation_evidence)
 
     for category, expectation in manifest["active_expectations"].items():
         items = active.categories.get(category)

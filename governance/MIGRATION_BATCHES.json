@@ -1,0 +1,1181 @@
+{
+  "$schema": "schemas/migration-batches.schema.json",
+  "schema": "g5-fleet.migration-batches/v1",
+  "policy": {
+    "final_batch": "R36"
+  },
+  "batches": [
+    {
+      "id": "R00",
+      "sequence": 0,
+      "title": "배치 감사 통제",
+      "state": "active",
+      "depends_on": [],
+      "control_only": true,
+      "core": {
+        "domains": [],
+        "operation_ids": [],
+        "expected_count": 0
+      },
+      "legacy": {},
+      "capability_ids": []
+    },
+    {
+      "id": "R01",
+      "sequence": 1,
+      "title": "React 공통 기반 재사용",
+      "state": "planned",
+      "depends_on": ["R00"],
+      "core": {
+        "domains": [],
+        "operation_ids": [],
+        "expected_count": 0
+      },
+      "legacy": {
+        "react_pages": [
+          {
+            "pattern": "status/AdminMenuStatusPage\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "rust_workspace_members": [
+          {
+            "pattern": "(?:g5-admin-api-client|g5-admin-api-ports|g5-admin-app-error|g5-admin-error-contract|g5-admin-models|g5-admin-port-types|g5-admin-runtime-types|g5-admin-store-ports|g5-admin-transport|g5-admin/src-tauri)",
+            "expected_count": 10
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "api/client/core/command-context\\.test\\.ts",
+            "expected_count": 1
+          },
+          {
+            "pattern": "app/.+",
+            "expected_count": 1
+          },
+          {
+            "pattern": "features/(?:admin/shared|layout|shared)/.+",
+            "expected_count": 14
+          }
+        ],
+        "rust_tests": [
+          {
+            "pattern": "(?:g5-admin-api-client|g5-admin-api-ports|g5-admin-app-error|g5-admin-error-contract|g5-admin-port-types|g5-admin-store-ports)/.+",
+            "expected_count": 12
+          },
+          {
+            "pattern": "g5-admin-models/src/(?:models/tests/mod\\.rs|openapi_wire/validator/tests\\.rs)::.+",
+            "expected_count": 7
+          },
+          {
+            "pattern": "g5-admin/src-tauri/src/error/tests\\.rs::.+",
+            "expected_count": 3
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R02",
+      "sequence": 2,
+      "title": "Fleet 설치·인증·보안",
+      "state": "planned",
+      "depends_on": ["R01"],
+      "core": {
+        "domains": [],
+        "operation_ids": [],
+        "expected_count": 0
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::auth::session::.+",
+            "expected_count": 4
+          },
+          {
+            "pattern": "crate::commands::(?:master_lock|security)::.+",
+            "expected_count": 15
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "(?:auth|master|security)/.+Page\\.tsx",
+            "expected_count": 4
+          }
+        ],
+        "rust_workspace_members": [
+          {
+            "pattern": "(?:g5-admin-local-store|g5-admin-runtime-config|g5-admin-security-core|g5-admin-session-store)",
+            "expected_count": 4
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "App\\.first-run\\.e2e\\.test\\.tsx",
+            "expected_count": 1
+          },
+          {
+            "pattern": "features/(?:auth|master|security)/.+",
+            "expected_count": 5
+          }
+        ],
+        "rust_tests": [
+          {
+            "pattern": "g5-admin-local-store/src/tests/(?:master_key|recovery)\\.rs::.+",
+            "expected_count": 8
+          },
+          {
+            "pattern": "(?:g5-admin-runtime-config/src/tests\\.rs|g5-admin-security-core/src/tests/mod\\.rs|g5-admin-session-store/src/lib\\.rs)::.+",
+            "expected_count": 10
+          },
+          {
+            "pattern": "g5-admin/src-tauri/src/app_state/tests/(?:master_lock|security)\\.rs::.+",
+            "expected_count": 7
+          }
+        ]
+      },
+      "capability_ids": [
+        "first_run_setup_state",
+        "browser_install_wizard",
+        "totp_enrollment_and_login",
+        "recovery_codes",
+        "auth_rate_limit_and_lockout",
+        "audit_log_write_path",
+        "audit_log_query_api",
+        "audit_log_web_ui"
+      ]
+    },
+    {
+      "id": "R03",
+      "sequence": 3,
+      "title": "사이트·활동·backup",
+      "state": "planned",
+      "depends_on": ["R02"],
+      "core": {
+        "domains": [],
+        "operation_ids": [],
+        "expected_count": 0
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::(?:activity|backup|dashboard|debug)::.+",
+            "expected_count": 9
+          },
+          {
+            "pattern": "crate::commands::site::(?:catalog|health|mutations)::.+",
+            "expected_count": 6
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "(?:onboarding|overview|sites)/.+Page\\.tsx",
+            "expected_count": 4
+          }
+        ],
+        "rust_workspace_members": [
+          {
+            "pattern": "(?:g5-admin-debug-support|g5-admin-health-check|g5-admin-site-manager)",
+            "expected_count": 3
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "debug/.+",
+            "expected_count": 6
+          },
+          {
+            "pattern": "features/(?:dev|onboarding|overview|sites)/.+",
+            "expected_count": 5
+          }
+        ],
+        "rust_tests": [
+          {
+            "pattern": "(?:g5-admin-debug-support/src/tests/mod\\.rs|g5-admin-health-check/src/tests\\.rs|g5-admin-models/src/models/health\\.rs|g5-admin-site-manager/src/tests/mod\\.rs)::.+",
+            "expected_count": 8
+          },
+          {
+            "pattern": "g5-admin-local-store/src/tests/(?:backup|sites_security)\\.rs::.+",
+            "expected_count": 9
+          },
+          {
+            "pattern": "g5-admin/src-tauri/src/app_state/tests/(?:dev_bootstrap|sites)\\.rs::.+",
+            "expected_count": 7
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R04",
+      "sequence": 4,
+      "title": "SSH·SFTP·terminal",
+      "state": "planned",
+      "depends_on": ["R03"],
+      "core": {
+        "domains": [],
+        "operation_ids": [],
+        "expected_count": 0
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::site::(?:sftp|sftp_transfer|ssh_host_verification|ssh_profiles|ssh_session|ssh_terminal_bridge)::.+",
+            "expected_count": 32
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "(?:server-files|server-ssh)/.+Page\\.tsx",
+            "expected_count": 2
+          }
+        ],
+        "rust_workspace_members": [
+          {
+            "pattern": "(?:g5-admin-sftp-transfer-queue|g5-admin-ssh|g5-admin-ssh-ports|g5-admin-ssh-terminal-bridge)",
+            "expected_count": 4
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "api/client/(?:sftp-transfer|ssh-host-verification|ssh-session|ssh-shell|ssh-terminal-bridge)\\.test\\.ts",
+            "expected_count": 5
+          },
+          {
+            "pattern": "features/(?:server-files|server-profiles|server-ssh)/.+",
+            "expected_count": 10
+          }
+        ],
+        "rust_tests": [
+          {
+            "pattern": "g5-admin-local-store/src/tests/ssh_profiles\\.rs::.+",
+            "expected_count": 1
+          },
+          {
+            "pattern": "(?:g5-admin-sftp-transfer-queue/src/tests\\.rs|g5-admin-ssh-ports/src/tests/mod\\.rs)::.+",
+            "expected_count": 3
+          },
+          {
+            "pattern": "g5-admin/src-tauri/src/app_state/tests/(?:sftp|ssh_host_verification|ssh_profiles|ssh_sessions)\\.rs::.+",
+            "expected_count": 15
+          }
+        ]
+      },
+      "capability_ids": [
+        "remote_ssh_sftp_runtime_certification"
+      ]
+    },
+    {
+      "id": "R10",
+      "sequence": 5,
+      "title": "admin·config·schema",
+      "state": "planned",
+      "depends_on": ["R04"],
+      "core": {
+        "domains": ["admin", "config", "schema"],
+        "operation_ids": [],
+        "expected_count": 5
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::(?:config|schema)::.+",
+            "expected_count": 4
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "config/AdminConfigPage\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/(?:config|schema)/.+",
+            "expected_count": 7
+          }
+        ],
+        "rust_tests": [
+          {
+            "pattern": "g5-admin-models/src/models/config/tests\\.rs::.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R11",
+      "sequence": 6,
+      "title": "auth·member self·system auth",
+      "state": "planned",
+      "depends_on": ["R10"],
+      "core": {
+        "domains": ["auth", "member"],
+        "operation_ids": [
+          "adminSystemListAuths",
+          "adminSystemSaveAuth",
+          "adminSystemDeleteAuth"
+        ],
+        "expected_count": 10
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::permission::.+",
+            "expected_count": 6
+          },
+          {
+            "pattern": "crate::commands::member::queries::cmd_member_me_get",
+            "expected_count": 1
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "permissions/AdminPermissionsPage\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/permissions/.+",
+            "expected_count": 1
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R12",
+      "sequence": 7,
+      "title": "members",
+      "state": "planned",
+      "depends_on": ["R11"],
+      "core": {
+        "domains": ["members"],
+        "operation_ids": [],
+        "expected_count": 10
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::member::(?:media|mutations)::.+",
+            "expected_count": 7
+          },
+          {
+            "pattern": "crate::commands::member::queries::cmd_admin_.+",
+            "expected_count": 3
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "members/.+Page\\.tsx",
+            "expected_count": 2
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/members/.+",
+            "expected_count": 4
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R13",
+      "sequence": 8,
+      "title": "groups",
+      "state": "planned",
+      "depends_on": ["R12"],
+      "core": {
+        "domains": ["groups"],
+        "operation_ids": [],
+        "expected_count": 17
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::board_group::.+",
+            "expected_count": 17
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "board-groups/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/board-groups/.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R14",
+      "sequence": 9,
+      "title": "boards",
+      "state": "planned",
+      "depends_on": ["R13"],
+      "core": {
+        "domains": ["boards"],
+        "operation_ids": [],
+        "expected_count": 7
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::board::.+",
+            "expected_count": 7
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "boards/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/boards/.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R15",
+      "sequence": 10,
+      "title": "contents",
+      "state": "planned",
+      "depends_on": ["R14"],
+      "core": {
+        "domains": ["contents"],
+        "operation_ids": [],
+        "expected_count": 5
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::content::.+",
+            "expected_count": 5
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "contents/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/contents/.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R16",
+      "sequence": 11,
+      "title": "faq-masters·faqs",
+      "state": "planned",
+      "depends_on": ["R15"],
+      "core": {
+        "domains": ["faq-masters", "faqs"],
+        "operation_ids": [],
+        "expected_count": 14
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::faq::.+",
+            "expected_count": 14
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "faqs/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/faqs/.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R17",
+      "sequence": 12,
+      "title": "menus",
+      "state": "planned",
+      "depends_on": ["R16"],
+      "core": {
+        "domains": ["menus"],
+        "operation_ids": [],
+        "expected_count": 7
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::menu::.+",
+            "expected_count": 7
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "menus/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/menus/.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R18",
+      "sequence": 13,
+      "title": "layouts",
+      "state": "planned",
+      "depends_on": ["R17"],
+      "core": {
+        "domains": ["layouts"],
+        "operation_ids": [],
+        "expected_count": 8
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::layout::.+",
+            "expected_count": 8
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "layouts/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/layouts/.+",
+            "expected_count": 1
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R19",
+      "sequence": 14,
+      "title": "theme",
+      "state": "planned",
+      "depends_on": ["R18"],
+      "core": {
+        "domains": ["theme"],
+        "operation_ids": [],
+        "expected_count": 4
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::theme::.+",
+            "expected_count": 4
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "theme/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/theme/.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R20",
+      "sequence": 15,
+      "title": "points",
+      "state": "planned",
+      "depends_on": ["R19"],
+      "core": {
+        "domains": ["points"],
+        "operation_ids": [],
+        "expected_count": 7
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::point::.+",
+            "expected_count": 9
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "points/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/points/.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R21",
+      "sequence": 16,
+      "title": "polls",
+      "state": "planned",
+      "depends_on": ["R20"],
+      "core": {
+        "domains": ["polls"],
+        "operation_ids": [
+          "adminSystemListPolls",
+          "adminSystemCreatePoll",
+          "adminSystemDeletePoll",
+          "adminSystemGetPoll",
+          "adminSystemUpdatePoll"
+        ],
+        "expected_count": 10
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::poll::.+",
+            "expected_count": 10
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "polls/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/polls/.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R22",
+      "sequence": 17,
+      "title": "popups",
+      "state": "planned",
+      "depends_on": ["R21"],
+      "core": {
+        "domains": ["popups"],
+        "operation_ids": [
+          "adminSystemListPopups",
+          "adminSystemCreatePopup",
+          "adminSystemDeletePopup",
+          "adminSystemGetPopup",
+          "adminSystemUpdatePopup"
+        ],
+        "expected_count": 10
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::popup::.+",
+            "expected_count": 10
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "popups/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/popups/.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R23",
+      "sequence": 18,
+      "title": "popular",
+      "state": "planned",
+      "depends_on": ["R22"],
+      "core": {
+        "domains": ["popular"],
+        "operation_ids": [],
+        "expected_count": 3
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::popular::.+",
+            "expected_count": 3
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "popular/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/popular/.+",
+            "expected_count": 1
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R24",
+      "sequence": 19,
+      "title": "visits",
+      "state": "planned",
+      "depends_on": ["R23"],
+      "core": {
+        "domains": ["visits"],
+        "operation_ids": [],
+        "expected_count": 3
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::visit::.+",
+            "expected_count": 3
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "visits/.+Page\\.tsx",
+            "expected_count": 3
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/visits/.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R25",
+      "sequence": 20,
+      "title": "reports",
+      "state": "planned",
+      "depends_on": ["R24"],
+      "core": {
+        "domains": ["reports"],
+        "operation_ids": [],
+        "expected_count": 3
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::report::.+",
+            "expected_count": 3
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "reports/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/reports/.+",
+            "expected_count": 1
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R26",
+      "sequence": 21,
+      "title": "qa",
+      "state": "planned",
+      "depends_on": ["R25"],
+      "core": {
+        "domains": ["qa"],
+        "operation_ids": [
+          "adminSystemGetQaConfig",
+          "adminSystemUpdateQaConfig"
+        ],
+        "expected_count": 3
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::(?:qa|qa_config)::.+",
+            "expected_count": 3
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "qa-config/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/qa-config/.+",
+            "expected_count": 1
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R27",
+      "sequence": 22,
+      "title": "write-count",
+      "state": "planned",
+      "depends_on": ["R26"],
+      "core": {
+        "domains": ["write-count"],
+        "operation_ids": [],
+        "expected_count": 1
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::write_count::.+",
+            "expected_count": 1
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "write-count/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/write-count/.+",
+            "expected_count": 1
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R28",
+      "sequence": 23,
+      "title": "mails",
+      "state": "planned",
+      "depends_on": ["R27"],
+      "core": {
+        "domains": ["mails"],
+        "operation_ids": [
+          "adminSystemListMailRecipients",
+          "adminSystemListMails",
+          "adminSystemSendMemberMail",
+          "adminSystemSendMailTest"
+        ],
+        "expected_count": 13
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::(?:mail|mail_test)::.+",
+            "expected_count": 13
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "(?:mail-test|mails)/.+Page\\.tsx",
+            "expected_count": 2
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/(?:mail-test|mails)/.+",
+            "expected_count": 3
+          }
+        ],
+        "rust_tests": [
+          {
+            "pattern": "g5-admin-models/src/models/mail/system\\.rs::.+",
+            "expected_count": 1
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R29",
+      "sequence": 24,
+      "title": "sms config",
+      "state": "planned",
+      "depends_on": ["R28"],
+      "core": {
+        "domains": ["sms"],
+        "operation_ids": [],
+        "expected_count": 3
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::sms::.+",
+            "expected_count": 3
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "system/AdminSmsConfigPage\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/system/.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R30",
+      "sequence": 25,
+      "title": "sms-contacts",
+      "state": "planned",
+      "depends_on": ["R29"],
+      "core": {
+        "domains": ["sms-contacts"],
+        "operation_ids": [],
+        "expected_count": 15
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::sms_contact::.+",
+            "expected_count": 15
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "sms-contacts/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/sms-contacts/.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R31",
+      "sequence": 26,
+      "title": "sms-templates",
+      "state": "planned",
+      "depends_on": ["R30"],
+      "core": {
+        "domains": ["sms-templates"],
+        "operation_ids": [],
+        "expected_count": 13
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::sms_template::.+",
+            "expected_count": 13
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "sms-templates/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/sms-templates/.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R32",
+      "sequence": 27,
+      "title": "sms-messages",
+      "state": "planned",
+      "depends_on": ["R31"],
+      "core": {
+        "domains": ["sms-messages"],
+        "operation_ids": [],
+        "expected_count": 6
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::(?:sms_history|sms_message)::.+",
+            "expected_count": 6
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "(?:sms-history|sms-messages)/.+Page\\.tsx",
+            "expected_count": 2
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/(?:sms-history|sms-messages)/.+",
+            "expected_count": 4
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R33",
+      "sequence": 28,
+      "title": "push",
+      "state": "planned",
+      "depends_on": ["R32"],
+      "core": {
+        "domains": ["push"],
+        "operation_ids": [],
+        "expected_count": 2
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::push::.+",
+            "expected_count": 2
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "push/.+Page\\.tsx",
+            "expected_count": 1
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R34",
+      "sequence": 29,
+      "title": "system tools·maintenance",
+      "state": "planned",
+      "depends_on": ["R33"],
+      "core": {
+        "domains": [],
+        "operation_ids": [
+          "adminSystemBrowscapStatus",
+          "adminSystemBrowscapConvert",
+          "adminSystemBrowscapUpdate",
+          "adminSystemPurgeCacheFiles",
+          "adminSystemPurgeCaptchaFiles",
+          "adminSystemPurgeMemberListFiles",
+          "adminSystemPurgeSessionFiles",
+          "adminSystemPurgeThumbnailFiles",
+          "adminSystemPhpInfo",
+          "getHealth"
+        ],
+        "expected_count": 10
+      },
+      "legacy": {
+        "tauri_commands": [
+          {
+            "pattern": "crate::commands::auth::health::.+",
+            "expected_count": 1
+          },
+          {
+            "pattern": "crate::commands::(?:maintenance|system_tools)::.+",
+            "expected_count": 9
+          }
+        ],
+        "react_pages": [
+          {
+            "pattern": "(?:maintenance|system-tools)/.+Page\\.tsx",
+            "expected_count": 3
+          }
+        ],
+        "frontend_tests": [
+          {
+            "pattern": "features/system-tools/.+",
+            "expected_count": 2
+          }
+        ]
+      },
+      "capability_ids": []
+    },
+    {
+      "id": "R35",
+      "sequence": 30,
+      "title": "알림·PWA",
+      "state": "planned",
+      "depends_on": ["R34"],
+      "core": {
+        "domains": [],
+        "operation_ids": [],
+        "expected_count": 0
+      },
+      "legacy": {},
+      "capability_ids": [
+        "production_notification_transports",
+        "web_push_subscription_management"
+      ]
+    },
+    {
+      "id": "R36",
+      "sequence": 31,
+      "title": "전체 종결",
+      "state": "planned",
+      "depends_on": ["R35"],
+      "core": {
+        "domains": [],
+        "operation_ids": [],
+        "expected_count": 0
+      },
+      "legacy": {},
+      "capability_ids": [
+        "typed_core_domain_consumers",
+        "legacy_ui_workflow_parity"
+      ]
+    }
+  ]
+}
