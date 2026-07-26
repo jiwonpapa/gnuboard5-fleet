@@ -54,7 +54,7 @@ R00에서 `make check-batch BATCH=Rxx`를 구현합니다. 각 배치는 아래
 | test | Rust·React scoped test와 Tauri active dependency 금지 |
 | runtime | 로컬 G5 저장·재조회·원복 또는 read-only readback |
 | parity | 선택 항목 0 unmapped, 0 pending, 0 invalid evidence |
-| report | 배치 결과와 전체 523 findings 중 남은 수를 함께 기록 |
+| report | 배치 결과와 최초 712 findings 중 남은 수를 함께 기록 |
 | git | 검증된 단일 배치 commit과 원격 push SHA |
 
 상태 표기는 다음으로 제한합니다.
@@ -67,8 +67,8 @@ R00에서 `make check-batch BATCH=Rxx`를 구현합니다. 각 배치는 아래
 
 ## 4. 배치 순서
 
-현재 manifest 상태는 R00 `batch_pass`, R01 `active`, 나머지는
-`planned`입니다. R00은 배치 통제만 닫았으며 제품 기능 이관 완료를
+현재 manifest 상태는 R00·R01 `batch_pass`, R02 `active`, 나머지는
+`planned`입니다. R01은 공통 기반 49개만 닫았으며 제품 기능 이관 완료를
 뜻하지 않습니다.
 
 ### 4.1 이관 통제와 공통 기반
@@ -124,7 +124,7 @@ R28, 나머지 10개는 R34가 소유합니다.
 | 배치 | 범위 | 완료 기준 |
 |---|---|---|
 | R35 | 알림·PWA | outbox, fake delivery, Web Push subscription, offline/cache 안전 |
-| R36 | 전체 종결 | 523 findings 0, 현재 SHA package·staging 배포, 전체 readback·rollback 증거 |
+| R36 | 전체 종결 | 최초 712 findings 0, 현재 SHA package·staging 배포, 전체 readback·rollback 증거 |
 
 ## 5. 배치별 보고 형식
 
@@ -146,20 +146,20 @@ commit/push: 미실행
 분모, runtime 증거, commit·push SHA가 없는 보고는 `BATCH_PASS`가
 아닙니다. `deferred`가 하나라도 있으면 해당 배치는 완료가 아닙니다.
 
-## 6. 첫 실행
+## 6. 현재 실행
 
-첫 작업은 R00입니다.
+R00과 R01은 닫혔고 다음 작업은 R02입니다.
 
-1. 배치 manifest에 위 operation 소유권을 고정합니다.
-2. legacy command/page/test를 배치에 1:1 배정합니다.
-3. scoped audit가 선택 배치의 누락을 fail-closed로 검출하게 합니다.
+1. R02의 legacy 58개와 필수 capability 8개를 기존 코드에서 우선 추출합니다.
+2. 설치 wizard, master 계정, TOTP·복구·lockout·audit 흐름을 서버 경계로 이관합니다.
+3. scoped audit의 66 findings를 0으로 닫기 전 R03을 시작하지 않습니다.
 4. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
-5. R00 검증·commit·push 후에만 R01을 시작합니다.
+5. R02 검증·commit·push 후에만 R03을 시작합니다.
 
 실행 명령:
 
 ```bash
-make check-batch BATCH=R00
+make check-batch BATCH=R02
 ```
 
 배치 gate가 PASS하더라도 전역 `make audit-migration-parity`는 R36 전까지
@@ -172,3 +172,13 @@ R00 closeout:
 - R00 finding: 0
 - 전역 잔여 finding: 712
 - 다음 R01 사전 probe: FAIL 49
+
+R01 closeout:
+
+- 구현 commit: `a53b866aeb60a556ffe179c2516f849533a3f080`
+- tracked 증거: `docs/audits/evidence/R01_BATCH_GATE_PASS.json`
+- scope: legacy 49, Core 0, capability 0
+- reuse: 18 reused / 19 adapted / 12 redesigned / 0 deferred
+- R01 finding: 0
+- 전역 잔여 finding: 663
+- 다음 R02 사전 probe: FAIL 66

@@ -29,8 +29,13 @@
       "id": "R01",
       "sequence": 1,
       "title": "React 공통 기반 재사용",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R00"],
+      "completion": {
+        "implementation_commit": "a53b866aeb60a556ffe179c2516f849533a3f080",
+        "evidence_path": "docs/audits/evidence/R01_BATCH_GATE_PASS.json",
+        "closed_at": "2026-07-26T08:45:08Z"
+      },
       "core": {
         "domains": [],
         "operation_ids": [],
@@ -84,7 +89,7 @@
       "id": "R02",
       "sequence": 2,
       "title": "Fleet 설치·인증·보안",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R01"],
       "core": {
         "domains": [],

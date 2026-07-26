@@ -14,14 +14,15 @@ registry를 검사할 뿐, desktop snapshot 전체가 서버·웹으로 이관�
 | legacy 감사 축 | 기준선 | 유효 매핑 | 현재 판정 |
 |---|---:|---:|---|
 | Tauri command | 253 | 0 | FAIL |
-| React page | 43 | 0 | FAIL |
-| Rust workspace member | 21 | 0 | FAIL |
-| frontend regression test | 100 | 0 | FAIL |
-| Rust regression test | 93 | 0 | FAIL |
+| React page | 43 | 1 | PARTIAL |
+| Rust workspace member | 21 | 10 | PARTIAL |
+| frontend regression test | 100 | 16 | PARTIAL |
+| Rust regression test | 93 | 22 | PARTIAL |
 | Core operation typed 소비 | 189 | 0 | FAIL |
 | 서버 전환 필수 capability | 13 | 0 | FAIL |
 
-활성 server route 35개와 Core registry 189개는 현황 inventory입니다. 이
+R01은 공통 기반 49개를 닫아 전역 finding을 712개에서 663개로
+줄였습니다. 활성 server route 35개와 Core registry 189개는 현황 inventory입니다. 이
 숫자만으로 253개 command, 43개 page 또는 실제 업무 흐름의 이관을
 인증하지 않습니다.
 
@@ -87,7 +88,7 @@ make test-migration-parity
 make audit-migration-parity
 
 # 선택 배치의 정적 gate와 전체 잔여 findings 동시 보고
-make check-batch BATCH=R00
+make check-batch BATCH=R02
 
 # 동일 revision의 로컬 runtime evidence 포함
 make audit-migration-runtime
@@ -119,5 +120,5 @@ finding, 전역 finding을 함께 기록합니다. R00 control gate는 712개
 매핑 영향 분석, 변이 테스트 후 함께 갱신합니다.
 
 `make check`는 하네스 자체 테스트와 정적 동등성 감사를 필수로 실행합니다.
-따라서 현재처럼 전체 매핑이 없으면 기존 좁은 서버 gate가 PASS해도
+따라서 현재처럼 전체 매핑이 미완료이면 기존 좁은 서버 gate가 PASS해도
 최종 `make check`는 FAIL하는 것이 정상입니다.

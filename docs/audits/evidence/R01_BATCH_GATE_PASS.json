@@ -1,0 +1,85 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R01",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "a53b866aeb60a556ffe179c2516f849533a3f080",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "a53b866aeb60a556ffe179c2516f849533a3f080"
+  },
+  "generated_at": "2026-07-26T08:45:08Z",
+  "commands": [
+    "make active-check",
+    "make check-batch BATCH=R01",
+    "python3 -m tools.migration_parity.batch_cli --batch R02 --profile static --no-output"
+  ],
+  "results": {
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {
+        "passed": 41,
+        "failed": 0
+      },
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_tests": {
+        "passed": 24,
+        "failed": 0
+      },
+      "web_build": "PASS"
+    },
+    "harness_tests": {
+      "passed": 26,
+      "failed": 0
+    },
+    "batch_scope": {
+      "legacy": 49,
+      "core_operations": 0,
+      "required_capabilities": 0
+    },
+    "reuse": {
+      "reused": 18,
+      "adapted": 19,
+      "redesigned": 12,
+      "deferred": 0
+    },
+    "batch_findings": 0,
+    "ownership": {
+      "legacy": {
+        "owned": 510,
+        "total": 510
+      },
+      "core_operations": {
+        "owned": 189,
+        "total": 189
+      },
+      "required_capabilities": {
+        "owned": 13,
+        "total": 13
+      }
+    },
+    "global_migration": {
+      "status": "FAIL",
+      "findings": 663
+    },
+    "next_batch_probe": {
+      "batch": "R02",
+      "status": "FAIL",
+      "scope": {
+        "legacy": 58,
+        "required_capabilities": 8
+      },
+      "findings": 66
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "c8052a08a9dd8077b4f59806ccefd72cdf2b41a8164f6d471313e083e279f8b4",
+    "migration_batches": "516a9af883cd4d27f4c2f42b0189ceec630d3f1fa9156baae35d4b910182b7ff"
+  },
+  "source_report": {
+    "path": "output/audit/runs/migration-batch-R01-20260726T084436Z-6a10309b/result.json",
+    "sha256": "d5f4d84d4770093e8d26f930bd1e7fc1af1f7160b2fd1d939f11c5fdce5f09fa"
+  },
+  "claim_limit": "R01 shared React and Rust foundations only; domain workflows, install/auth capabilities, Core operation consumption, runtime, package and staging certification remain incomplete."
+}

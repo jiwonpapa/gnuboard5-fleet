@@ -347,9 +347,10 @@ HTTPS origin은 내부 CA로 검증합니다.
 
 ## 4. 현재 바로 시작할 배치
 
-현재 시작점은 **B02 전체 이관 재감사**입니다. 510개 legacy inventory의
-매핑을 실제 target·회귀 test·symbol check로 닫고, 13개 필수 capability를
-구현 증명한 뒤 B02부터 순서대로 완료 게이트를 재판정합니다.
+현재 시작점은 새 실행 정본의 **R02 Fleet 설치·인증·보안**입니다.
+R00 배치 통제와 R01 공통 기반 49개는 tracked 증거로 닫았고, 남은
+663개는 `DOMAIN_REUSE_MIGRATION_PLAN.md`의 단일 활성 배치 순서로
+실제 target·회귀 test·symbol check를 채웁니다.
 
 staging VM은 유지하되 정적 이관 동등성이 PASS하기 전에는 staging
 readiness·배포 receipt만으로 B10 또는 전체 전환 완료를 주장하지
