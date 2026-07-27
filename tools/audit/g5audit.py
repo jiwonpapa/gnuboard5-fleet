@@ -1800,7 +1800,14 @@ def check_remote_ssh_sftp_boundary(root: Path) -> str:
         "web_api": root / "apps/admin-web/src/api/fleet.ts",
         "web_component": root / "apps/admin-web/src/components/RemoteWorkspace.tsx",
         "ssh_page": root / "apps/admin-web/src/features/server-ssh/SiteSshSessionPage.tsx",
+        "ssh_surface": root / "apps/admin-web/src/features/server-ssh/SiteSshXtermSurface.tsx",
         "sftp_page": root / "apps/admin-web/src/features/server-files/SiteSftpBrowserPage.tsx",
+        "sftp_list": root / "apps/admin-web/src/features/server-files/SiteSftpBrowserList.tsx",
+        "sftp_tree": root / "apps/admin-web/src/features/server-files/SiteSftpDirectoryTree.tsx",
+        "sftp_details": root / "apps/admin-web/src/features/server-files/SiteSftpEntryDetailsCard.tsx",
+        "sftp_test": root / "apps/admin-web/src/features/server-files/SiteSftpBrowserPage.test.tsx",
+        "ssh_test": root / "apps/admin-web/src/features/server-ssh/SiteSshSessionPage.test.tsx",
+        "web_package": root / "apps/admin-web/package.json",
         "web_test": root / "apps/admin-web/src/api/fleet.test.ts",
         "runtime_test": root / "crates/fleet-remote/tests/runtime_certification.rs",
         "runtime_tool": root / "tools/certification/remote_runtime_smoke.py",
@@ -1829,6 +1836,11 @@ def check_remote_ssh_sftp_boundary(root: Path) -> str:
         "upload_cancellable",
         "signal_control",
         "terminal_ticket_is_single_use_and_owner_site_bound",
+        "pub enum SftpEntryKind",
+        "pub struct SftpEntry",
+        "parse_sftp_listing",
+        "listed_path.starts_with('/')",
+        "sftp_listing_is_parsed_into_browser_entries_without_losing_spaces",
     )
     missing_remote = [token for token in remote_tokens if token not in remote]
     if missing_remote:
@@ -1862,7 +1874,14 @@ def check_remote_ssh_sftp_boundary(root: Path) -> str:
     web_api = paths["web_api"].read_text(encoding="utf-8")
     web_component = paths["web_component"].read_text(encoding="utf-8")
     ssh_page = paths["ssh_page"].read_text(encoding="utf-8")
+    ssh_surface = paths["ssh_surface"].read_text(encoding="utf-8")
     sftp_page = paths["sftp_page"].read_text(encoding="utf-8")
+    sftp_list = paths["sftp_list"].read_text(encoding="utf-8")
+    sftp_tree = paths["sftp_tree"].read_text(encoding="utf-8")
+    sftp_details = paths["sftp_details"].read_text(encoding="utf-8")
+    sftp_test = paths["sftp_test"].read_text(encoding="utf-8")
+    ssh_test = paths["ssh_test"].read_text(encoding="utf-8")
+    web_package = paths["web_package"].read_text(encoding="utf-8")
     web_test = paths["web_test"].read_text(encoding="utf-8")
     web_tokens = (
         "openTerminalSocket",
@@ -1893,6 +1912,38 @@ def check_remote_ssh_sftp_boundary(root: Path) -> str:
     ):
         if token not in sftp_page:
             raise ValueError(f"remote Admin Web SFTP workflow missing: {token}")
+    sftp_workspace_tokens = (
+        ("SiteSftpBrowserList", sftp_page),
+        ("SiteSftpDirectoryTree", sftp_page),
+        ("SiteSftpEntryDetailsCard", sftp_page),
+        ("sortSftpEntries", sftp_list),
+        ("onOpenDirectory", sftp_list),
+        ("buildPathAncestors", sftp_tree),
+        ("SFTP 선택 항목 상세", sftp_details),
+        ("resubmits browser bytes after an authorized failed upload retry", sftp_test),
+        ('name: "index.php"', sftp_test),
+        ('kind: "directory"', sftp_test),
+    )
+    for token, source in sftp_workspace_tokens:
+        if token not in source:
+            raise ValueError(f"remote Admin Web structured SFTP workspace missing: {token}")
+    ssh_workspace_tokens = (
+        ("SiteSshXtermSurface", ssh_page),
+        ("keepConnected", ssh_page),
+        ("reconnectAttempts.current >= 3", ssh_page),
+        ("작업면 최대화", ssh_page),
+        ("빠른 명령", ssh_page),
+        ('import("xterm")', ssh_surface),
+        ("FitAddon", ssh_surface),
+        ("ResizeObserver", ssh_surface),
+        ("server-ready", ssh_test),
+        ("현재 경로", ssh_test),
+        ('"xterm": "5.3.0"', web_package),
+        ('"@xterm/addon-fit": "0.11.0"', web_package),
+    )
+    for token, source in ssh_workspace_tokens:
+        if token not in source:
+            raise ValueError(f"remote Admin Web xterm workspace missing: {token}")
     if (
         "not.toContain(\"one-time-secret\")" not in web_test
         or "ticket.one-time-secret" not in web_test
@@ -1917,6 +1968,8 @@ def check_remote_ssh_sftp_boundary(root: Path) -> str:
         "managed_remote_survives_terminal_interrupt_reconnect_and_sftp_roundtrip",
         "open terminal before interruption",
         "reconnect terminal",
+        "list structured remote directory",
+        "directory.entries.iter()",
         "download over product SFTP executor",
         "pause running upload",
         "RemoteError::Cancelled",

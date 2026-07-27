@@ -59,6 +59,18 @@ describe("SiteSshSessionPage", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "연결" }));
     await screen.findByText("connected");
+    FakeSocket.instances[0]?.onmessage?.(
+      new MessageEvent("message", { data: "server-ready\n" }),
+    );
+    await screen.findByText(/server-ready/);
+    fireEvent.click(screen.getByRole("button", { name: /현재 경로/ }));
+    expect(FakeSocket.instances[0]?.send).toHaveBeenCalledWith("pwd\n");
+    expect(screen.getByRole("button", { name: "터미널 글꼴 축소" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "작업면 최대화" }))
+      .toBeInTheDocument();
+    expect(screen.getByLabelText("연결유지 off")).toBeInTheDocument();
+
     fireEvent.change(screen.getByLabelText("터미널 입력"), {
       target: { value: "pwd" },
     });

@@ -88,6 +88,21 @@ async fn managed_remote_survives_terminal_interrupt_reconnect_and_sftp_roundtrip
         .upload(&profile, &source, &uploaded)
         .await
         .expect("upload over product SFTP executor");
+    let directory = executor
+        .sftp(
+            &profile,
+            &SftpCommand::List {
+                path: remote_dir.clone(),
+            },
+        )
+        .await
+        .expect("list structured remote directory");
+    assert!(
+        directory.entries.iter().any(|entry| entry.path == uploaded),
+        "structured listing missed {uploaded}; raw output:\n{}\nparsed entries: {:?}",
+        directory.output,
+        directory.entries,
+    );
     executor
         .sftp(
             &profile,

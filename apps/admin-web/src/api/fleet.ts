@@ -173,6 +173,24 @@ export type SftpOperation =
   | { action: "delete_file"; path: string }
   | { action: "delete_directory"; path: string };
 
+export interface SftpEntry {
+  name: string;
+  path: string;
+  kind: "directory" | "file" | "symlink" | "other";
+  size: number | null;
+  permissions: string;
+  owner: string;
+  group: string;
+  modified: string;
+}
+
+export interface SftpResult {
+  output: string;
+  resolved_path: string | null;
+  parent_path: string | null;
+  entries: SftpEntry[];
+}
+
 export interface TransferJob {
   job_id: string;
   owner_user_id: string;
@@ -624,7 +642,7 @@ export function runSftpOperation(
   operation: SftpOperation,
   csrfToken: string,
 ) {
-  return transport.request<{ output: string }, SftpOperation>({
+  return transport.request<SftpResult, SftpOperation>({
     method: "POST",
     path: `/sites/${encodeURIComponent(siteId)}/sftp`,
     csrfToken,

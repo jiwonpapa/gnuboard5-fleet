@@ -267,8 +267,32 @@ impl SftpCommand {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SftpEntryKind {
+    Directory,
+    File,
+    Symlink,
+    Other,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct SftpEntry {
+    pub name: String,
+    pub path: String,
+    pub kind: SftpEntryKind,
+    pub size: Option<u64>,
+    pub permissions: String,
+    pub owner: String,
+    pub group: String,
+    pub modified: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct SftpResult {
     pub output: String,
+    pub resolved_path: Option<String>,
+    pub parent_path: Option<String>,
+    pub entries: Vec<SftpEntry>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -377,8 +401,25 @@ impl OpenSshExecutor {
         if !output.status.success() {
             return Err(RemoteError::Process);
         }
+        let output = String::from_utf8_lossy(&output.stdout).into_owned();
+        let (resolved_path, parent_path, entries) = match operation {
+            SftpCommand::List { path } => (
+                Some(path.clone()),
+                remote_parent(path),
+                parse_sftp_listing(path, false, &output),
+            ),
+            SftpCommand::Stat { path } => (
+                Some(path.clone()),
+                remote_parent(path),
+                parse_sftp_listing(path, true, &output),
+            ),
+            _ => (None, None, Vec::new()),
+        };
         Ok(SftpResult {
-            output: String::from_utf8_lossy(&output.stdout).into_owned(),
+            output,
+            resolved_path,
+            parent_path,
+            entries,
         })
     }
 
@@ -403,6 +444,9 @@ impl OpenSshExecutor {
         }
         Ok(SftpResult {
             output: String::from_utf8_lossy(&output.stdout).into_owned(),
+            resolved_path: None,
+            parent_path: None,
+            entries: Vec::new(),
         })
     }
 
@@ -977,6 +1021,92 @@ fn validate_octal_mode(mode: &str) -> RemoteResult<()> {
     Ok(())
 }
 
+fn parse_sftp_listing(path: &str, stat_only: bool, output: &str) -> Vec<SftpEntry> {
+    output
+        .lines()
+        .filter_map(|line| {
+            let line = line.trim();
+            if line.is_empty()
+                || line.starts_with("sftp>")
+                || line.starts_with("Connected to ")
+                || line.starts_with("Fetching ")
+            {
+                return None;
+            }
+            let fields = line.split_whitespace().collect::<Vec<_>>();
+            if fields.len() < 9 || fields[0].len() != 10 {
+                return None;
+            }
+            let permissions = fields[0].to_owned();
+            let raw_name = fields[8..].join(" ");
+            let listed_path = raw_name
+                .split(" -> ")
+                .next()
+                .unwrap_or(raw_name.as_str())
+                .trim_end_matches('/');
+            let name = listed_path
+                .rsplit('/')
+                .next()
+                .unwrap_or(listed_path)
+                .to_owned();
+            if matches!(name.as_str(), "." | "..") {
+                return None;
+            }
+            let kind = match permissions.as_bytes().first().copied() {
+                Some(b'd') => SftpEntryKind::Directory,
+                Some(b'-') => SftpEntryKind::File,
+                Some(b'l') => SftpEntryKind::Symlink,
+                _ => SftpEntryKind::Other,
+            };
+            let entry_path = if stat_only {
+                path.to_owned()
+            } else if listed_path.starts_with('/') {
+                let parent_prefix = if path == "/" {
+                    "/".to_owned()
+                } else {
+                    format!("{}/", path.trim_end_matches('/'))
+                };
+                if !listed_path.starts_with(&parent_prefix) {
+                    return None;
+                }
+                listed_path.to_owned()
+            } else {
+                join_remote_path(path, &name)
+            };
+            Some(SftpEntry {
+                name,
+                path: entry_path,
+                kind,
+                size: fields[4].parse::<u64>().ok(),
+                permissions,
+                owner: fields[2].to_owned(),
+                group: fields[3].to_owned(),
+                modified: fields[5..8].join(" "),
+            })
+        })
+        .collect()
+}
+
+fn join_remote_path(base: &str, name: &str) -> String {
+    if base == "/" {
+        format!("/{name}")
+    } else {
+        format!("{}/{name}", base.trim_end_matches('/'))
+    }
+}
+
+fn remote_parent(path: &str) -> Option<String> {
+    let trimmed = path.trim_end_matches('/');
+    if trimmed.is_empty() || trimmed == "/" {
+        return None;
+    }
+    match trimmed.rsplit_once('/') {
+        Some(("", _)) => Some("/".to_owned()),
+        Some((parent, _)) => Some(parent.to_owned()),
+        None => None,
+    }
+}
+
 fn quote_sftp(value: &str) -> String {
     format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
 }
@@ -1145,6 +1275,38 @@ mod tests {
             "[ssh.example.com]:2222 ssh-ed25519 BAUG"
         );
         assert!(inspection.server_key_fingerprint.starts_with("SHA256:"));
+    }
+
+    #[test]
+    fn sftp_listing_is_parsed_into_browser_entries_without_losing_spaces() {
+        let output = [
+            "sftp> ls -la \"/var/www\"",
+            "drwxr-xr-x    2 deploy staff        4096 Jul 27 12:30 assets",
+            "-rw-r-----    1 deploy staff         128 Jul 27 12:31 index file.html",
+            "lrwxrwxrwx    1 deploy staff          10 Jul 27 12:32 current -> releases/v2",
+        ]
+        .join("\n");
+        let entries = parse_sftp_listing("/var/www", false, &output);
+        assert_eq!(entries.len(), 3);
+        assert_eq!(entries[0].kind, SftpEntryKind::Directory);
+        assert_eq!(entries[0].path, "/var/www/assets");
+        assert_eq!(entries[1].name, "index file.html");
+        assert_eq!(entries[1].size, Some(128));
+        assert_eq!(entries[2].kind, SftpEntryKind::Symlink);
+        assert_eq!(entries[2].name, "current");
+        assert_eq!(remote_parent("/var/www"), Some("/var".to_owned()));
+
+        let absolute_output = [
+            "drwxr-xr-x    ? deploy staff 4096 Jul 27 2026 /var/www/.",
+            "drwxr-xr-x    ? root root 4096 Jul 27 2026 /var/www/..",
+            "-rw-r-----    ? deploy staff 128 Jul 27 2026 /var/www/index file.html",
+            "-rw-r-----    ? other staff 128 Jul 27 2026 /tmp/outside.txt",
+        ]
+        .join("\n");
+        let absolute_entries = parse_sftp_listing("/var/www", false, &absolute_output);
+        assert_eq!(absolute_entries.len(), 1);
+        assert_eq!(absolute_entries[0].name, "index file.html");
+        assert_eq!(absolute_entries[0].path, "/var/www/index file.html");
     }
 
     #[tokio::test]
