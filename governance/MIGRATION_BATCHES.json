@@ -89,8 +89,13 @@
       "id": "R02",
       "sequence": 2,
       "title": "Fleet 설치·인증·보안",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R01"],
+      "completion": {
+        "implementation_commit": "2193d26feaf2b09e84f8c12deceed646c1d2c75f",
+        "evidence_path": "docs/audits/evidence/R02_BATCH_GATE_PASS.json",
+        "closed_at": "2026-07-27T12:28:28Z"
+      },
       "core": {
         "domains": [],
         "operation_ids": [],
@@ -159,7 +164,7 @@
       "id": "R03",
       "sequence": 3,
       "title": "사이트·활동·backup",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R02"],
       "core": {
         "domains": [],

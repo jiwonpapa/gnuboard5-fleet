@@ -1,0 +1,112 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R02",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "2193d26feaf2b09e84f8c12deceed646c1d2c75f",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "2193d26feaf2b09e84f8c12deceed646c1d2c75f"
+  },
+  "generated_at": "2026-07-27T12:28:28Z",
+  "commands": [
+    "make active-check",
+    "make check-batch BATCH=R01",
+    "make check-batch BATCH=R02",
+    "make audit-runtime-prepare",
+    "make audit-server-static",
+    "python3 -m tools.migration_parity.batch_cli --batch R03 --profile static --no-output"
+  ],
+  "results": {
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {
+        "passed": 47,
+        "failed": 0
+      },
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 22,
+      "web_tests": {
+        "passed": 32,
+        "failed": 0
+      },
+      "web_build": "PASS"
+    },
+    "audit_harness_tests": {
+      "passed": 22,
+      "failed": 0
+    },
+    "migration_harness_tests": {
+      "passed": 26,
+      "failed": 0
+    },
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "checks": {
+        "passed": 35,
+        "failed": 0
+      }
+    },
+    "predecessor_regression": {
+      "batch": "R01",
+      "status": "PASS",
+      "findings": 0
+    },
+    "batch_scope": {
+      "legacy": 58,
+      "core_operations": 0,
+      "required_capabilities": 8
+    },
+    "reuse": {
+      "reused": 3,
+      "adapted": 20,
+      "redesigned": 35,
+      "deferred": 0
+    },
+    "batch_findings": 0,
+    "ownership": {
+      "legacy": {
+        "owned": 510,
+        "total": 510
+      },
+      "core_operations": {
+        "owned": 189,
+        "total": 189
+      },
+      "required_capabilities": {
+        "owned": 13,
+        "total": 13
+      }
+    },
+    "global_migration": {
+      "status": "FAIL",
+      "findings": 597
+    },
+    "next_batch_probe": {
+      "batch": "R03",
+      "status": "FAIL",
+      "scope": {
+        "legacy": 57,
+        "required_capabilities": 0
+      },
+      "findings": 57
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "bd12c7c8fba1f0651248f6e978291d50c3f0e18a3dec5a69e0d1b649870562fd",
+    "migration_batches": "6e37de70c9f37d21913a2649fd791714f8041ded0a782295d6fdcf93aee6c811"
+  },
+  "source_reports": [
+    {
+      "path": "output/audit/runs/migration-batch-R02-20260727T122758Z-d4e34c52/result.json",
+      "sha256": "79805a323c37bb22accc47bd1a7deb758edcfb664785d6583b8f102043d802a2"
+    },
+    {
+      "path": "output/audit/runs/20260727T122659Z-1a9383f119d2/result.json",
+      "sha256": "4a605266951e43ffa83bc862d02a15dd85a0b436cfdd4c5d1ffe22f3f5e27737"
+    }
+  ],
+  "claim_limit": "R02 installation, master authentication, forced TOTP, recovery, lockout and append-only audit static parity only; additional administrator enrollment, site and backup workflows, Core operation consumers, package, runtime and staging certification remain incomplete."
+}

@@ -13,16 +13,17 @@ registry를 검사할 뿐, desktop snapshot 전체가 서버·웹으로 이관�
 
 | legacy 감사 축 | 기준선 | 유효 매핑 | 현재 판정 |
 |---|---:|---:|---|
-| Tauri command | 253 | 0 | FAIL |
-| React page | 43 | 1 | PARTIAL |
-| Rust workspace member | 21 | 10 | PARTIAL |
-| frontend regression test | 100 | 16 | PARTIAL |
-| Rust regression test | 93 | 22 | PARTIAL |
+| Tauri command | 253 | 19 | PARTIAL |
+| React page | 43 | 5 | PARTIAL |
+| Rust workspace member | 21 | 14 | PARTIAL |
+| frontend regression test | 100 | 22 | PARTIAL |
+| Rust regression test | 93 | 47 | PARTIAL |
 | Core operation typed 소비 | 189 | 0 | FAIL |
-| 서버 전환 필수 capability | 13 | 0 | FAIL |
+| 서버 전환 필수 capability | 13 | 8 | PARTIAL |
 
-R01은 공통 기반 49개를 닫아 전역 finding을 712개에서 663개로
-줄였습니다. 활성 server route 35개와 Core registry 189개는 현황 inventory입니다. 이
+R01 공통 기반 49개와 R02 설치·인증·보안 66개를 닫아 전역 finding을
+712개에서 597개로 줄였습니다. 활성 server route 45개와 Core registry
+189개는 현황 inventory입니다. 이
 숫자만으로 253개 command, 43개 page 또는 실제 업무 흐름의 이관을
 인증하지 않습니다.
 
@@ -88,7 +89,7 @@ make test-migration-parity
 make audit-migration-parity
 
 # 선택 배치의 정적 gate와 전체 잔여 findings 동시 보고
-make check-batch BATCH=R02
+make check-batch BATCH=R03
 
 # 동일 revision의 로컬 runtime evidence 포함
 make audit-migration-runtime

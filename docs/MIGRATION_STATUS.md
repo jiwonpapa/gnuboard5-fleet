@@ -2,17 +2,17 @@
 
 ## 현재 판정
 
-2026-07-24 전체 이관 동등성 하네스 적용 결과는
+2026-07-27 R02 마감 후 전체 이관 동등성 하네스 결과는
 `MIGRATION_STATIC FAIL`입니다.
 
-- legacy inventory 510개 중 유효 매핑 0
-  - Tauri command 253
-  - React page 43
-  - Rust workspace member 21
-  - frontend regression test 100
-  - Rust regression test 93
-- 서버 전환 필수 capability 13개 중 구현 증명 0
-- 활성 server route 35개와 Core registry 189개는 존재하지만 전체 이관
+- legacy inventory 510개 중 유효 매핑 107, 미매핑 403
+  - Tauri command 19/253
+  - React page 5/43
+  - Rust workspace member 14/21
+  - frontend regression test 22/100
+  - Rust regression test 47/93
+- 서버 전환 필수 capability 8/13 구현 증명
+- 활성 server route 45개와 Core registry 189개는 존재하지만 전체 이관
   증거로 승격하지 않음
 
 아래 구현 목록은 현재 소스에 존재하는 기반 기능 inventory입니다. 전체
@@ -70,7 +70,10 @@ legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B
 - image archive·SPDX·PHP Connector·checksum release manifest 구현
 - SQLite 검증 snapshot과 암호화 master-key recovery archive 구현
 - upgrade 전후 핵심 row 보존과 실패 upgrade 자동 rollback harness 구현
-- step-up 기반 Fleet 사용자 추가 API·UI와 사용자별 site 소유 경계 구현
+- OTP 없는 추가 관리자 생성을 정책 차단하고 별도 OTP 등록 흐름 전까지 UI 미노출
+- 최초 설치 상태, 관리자·OTP·복구 코드 원자 저장과 비밀번호+OTP 로그인 구현
+- 로그인 5회 실패 15분 lockout과 일회성 복구 코드 사용·재발급 구현
+- mutation append-only 감사 기록, principal·site 범위 조회 API와 필터·상세 웹 UI 구현
 - test-only local-certification feature와 공식 G5 v5.6.32 기동 harness 구현
 - local·browser·package·staging 증거 evaluator와 stale revision 차단 구현
 - 공식 G5 v5.6.32+Shop에서 Connector 로그인·설정 수정·재조회·원복 PASS
@@ -98,3 +101,22 @@ manifest의 image ID·platform·version·revision을 실행 중 container와
 핵심 row readback을 확인해 배포·rollback receipt를 생성합니다.
 CA private key와 receipt, `staging.json`은 Git에 넣지 않으며 동일
 revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장합니다.
+
+## 현재 배치
+
+R00~R02는 tracked 증거로 닫혔습니다. R02는 legacy 58개와 capability
+8개를 닫아 전역 finding을 663개에서 597개로 줄였습니다.
+
+- 구현 commit: `2193d26feaf2b09e84f8c12deceed646c1d2c75f`
+- 증거: `docs/audits/evidence/R02_BATCH_GATE_PASS.json`
+- R02 scoped finding: 0
+- `SERVER_STATIC_PASS`: 35/35
+- 다음 활성 배치: R03 사이트·활동·backup
+- R03 사전 probe: FAIL 57
+
+```bash
+make check-batch BATCH=R03
+```
+
+전체 완료는 아닙니다. 전역 감사 597개가 남아 있으며 R36 전까지
+`MIGRATION_STATIC FAIL`을 유지합니다.
