@@ -36,7 +36,7 @@
   },
   "active_expectations": {
     "server_routes": {
-      "minimum": 1
+      "minimum": 45
     },
     "core_operations": {
       "exact": 189
@@ -45,15 +45,39 @@
       "minimum": 6
     },
     "web_tests": {
-      "minimum": 1
+      "minimum": 22
     },
     "rust_tests": {
-      "minimum": 1
+      "minimum": 47
     }
   },
   "mappings": {
-    "tauri_commands": [],
+    "tauri_commands": [
+      {"legacy_id":"crate::commands::auth::session::cmd_auth_login","disposition":"adapted","target_paths":["apps/admin-server/src/api.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"Tauri 로그인을 서버 세션 쿠키와 OTP 필수 로그인으로 이관했습니다."},
+      {"legacy_id":"crate::commands::auth::session::cmd_auth_logout","disposition":"adapted","target_paths":["apps/admin-server/src/api.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"login_cookie_csrf_and_logout_contract_fail_closed"}],"evidence_ids":[],"rationale":"Tauri 로그아웃을 CSRF 보호 서버 세션 폐기로 이관했습니다."},
+      {"legacy_id":"crate::commands::auth::session::cmd_auth_refresh","disposition":"redesigned","target_paths":["apps/admin-server/src/api.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"login_cookie_csrf_and_logout_contract_fail_closed"}],"evidence_ids":[],"rationale":"native 세션 refresh를 서버 세션 조회와 CSRF 회전으로 재설계했습니다."},
+      {"legacy_id":"crate::commands::auth::session::cmd_auth_status","disposition":"adapted","target_paths":["apps/admin-server/src/api.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"login_cookie_csrf_and_logout_contract_fail_closed"}],"evidence_ids":[],"rationale":"인증 상태 조회를 브라우저 세션 API로 이관했습니다."},
+      {"legacy_id":"crate::commands::master_lock::cmd_master_lock_lock","disposition":"redesigned","target_paths":["apps/admin-web/src/features/master/MasterIdleGuard.tsx"],"test_paths":["apps/admin-web/src/features/master/MasterIdleGuard.test.tsx"],"checks":[{"path":"apps/admin-web/src/features/master/MasterIdleGuard.test.tsx","contains":"locks after the configured idle time"}],"evidence_ids":[],"rationale":"master lock을 유휴 세션 만료와 서버 로그아웃으로 재설계했습니다."},
+      {"legacy_id":"crate::commands::master_lock::cmd_master_lock_setup","disposition":"redesigned","target_paths":["apps/admin-server/src/api.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"master setup을 관리자와 OTP의 원자적 최초 설치로 재설계했습니다."},
+      {"legacy_id":"crate::commands::master_lock::cmd_master_lock_status","disposition":"redesigned","target_paths":["apps/admin-server/src/api.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"master 상태를 명시적 설치 상태와 인증 세션으로 분리했습니다."},
+      {"legacy_id":"crate::commands::master_lock::cmd_master_lock_unlock","disposition":"adapted","target_paths":["apps/admin-server/src/api.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"master unlock을 비밀번호와 OTP가 필요한 서버 로그인으로 이관했습니다."},
+      {"legacy_id":"crate::commands::master_lock::cmd_master_lock_unlock_fast","disposition":"redesigned","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["crates/fleet-security/tests/security_boundary.rs"],"checks":[{"path":"crates/fleet-security/tests/security_boundary.rs","contains":"two_users_two_sites_sessions_csrf_and_secrets_are_isolated"}],"evidence_ids":[],"rationale":"기기 fast unlock 대신 서버 세션과 OTP 경계를 사용합니다."},
+      {"legacy_id":"crate::commands::master_lock::cmd_master_lock_verify_totp","disposition":"adapted","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"TOTP 검증을 서버 보안 서비스와 로그인 계약으로 이관했습니다."},
+      {"legacy_id":"crate::commands::security::fast_unlock::cmd_security_disable_fast_unlock","disposition":"redesigned","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["crates/fleet-security/tests/security_boundary.rs"],"checks":[{"path":"crates/fleet-security/tests/security_boundary.rs","contains":"two_users_two_sites_sessions_csrf_and_secrets_are_isolated"}],"evidence_ids":[],"rationale":"서버 제품은 기기 fast unlock 비밀을 저장하지 않아 해당 설정을 제거했습니다."},
+      {"legacy_id":"crate::commands::security::fast_unlock::cmd_security_enable_fast_unlock","disposition":"redesigned","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["crates/fleet-security/tests/security_boundary.rs"],"checks":[{"path":"crates/fleet-security/tests/security_boundary.rs","contains":"two_users_two_sites_sessions_csrf_and_secrets_are_isolated"}],"evidence_ids":[],"rationale":"서버 제품은 기기 fast unlock 대신 OTP 세션을 사용합니다."},
+      {"legacy_id":"crate::commands::security::fast_unlock::cmd_security_fast_unlock_status","disposition":"redesigned","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["crates/fleet-security/tests/security_boundary.rs"],"checks":[{"path":"crates/fleet-security/tests/security_boundary.rs","contains":"two_users_two_sites_sessions_csrf_and_secrets_are_isolated"}],"evidence_ids":[],"rationale":"fast unlock 상태를 OTP 활성 상태와 세션 보안 설정으로 재설계했습니다."},
+      {"legacy_id":"crate::commands::security::settings::cmd_security_change_master_password","disposition":"adapted","target_paths":["apps/admin-server/src/api.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"현재 비밀번호와 OTP를 검증하는 서버 비밀번호 변경으로 이관했습니다."},
+      {"legacy_id":"crate::commands::security::settings::cmd_security_settings_get","disposition":"adapted","target_paths":["apps/admin-server/src/api.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"보안 설정 조회를 인증된 서버 API로 이관했습니다."},
+      {"legacy_id":"crate::commands::security::settings::cmd_security_update_idle_timeout","disposition":"adapted","target_paths":["apps/admin-server/src/api.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"유휴 만료 정책을 사용자별 서버 설정으로 이관했습니다."},
+      {"legacy_id":"crate::commands::security::totp::cmd_security_disable_totp","disposition":"redesigned","target_paths":["apps/admin-server/src/api.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"서버 API 계약은 보존하되 웹 제품은 필수 OTP 정책으로 비활성화를 노출하지 않습니다."},
+      {"legacy_id":"crate::commands::security::totp::cmd_security_enable_totp","disposition":"adapted","target_paths":["apps/admin-server/src/api.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"OTP 활성화를 암호화 저장과 복구 코드 교체가 포함된 서버 흐름으로 이관했습니다."},
+      {"legacy_id":"crate::commands::security::totp::cmd_security_start_totp_enrollment","disposition":"adapted","target_paths":["apps/admin-server/src/api.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"OTP 등록 challenge를 인증된 서버 API로 이관했습니다."}
+    ],
     "react_pages": [
+      {"legacy_id":"auth/LoginPage.tsx","disposition":"adapted","target_paths":["apps/admin-web/src/features/auth/LoginPage.tsx"],"test_paths":["apps/admin-web/src/features/auth/LoginPage.test.tsx"],"checks":[{"path":"apps/admin-web/src/features/auth/LoginPage.test.tsx","contains":"submits password and OTP"}],"evidence_ids":[],"rationale":"로그인 화면을 OTP와 일회성 복구 코드가 필수인 웹 화면으로 이관했습니다."},
+      {"legacy_id":"master/MasterSetupPage.tsx","disposition":"redesigned","target_paths":["apps/admin-web/src/features/install/InstallWizardPage.tsx"],"test_paths":["apps/admin-web/src/App.first-run.e2e.test.tsx"],"checks":[{"path":"apps/admin-web/src/App.first-run.e2e.test.tsx","contains":"requires administrator, OTP verification"}],"evidence_ids":[],"rationale":"master setup을 웹 최초 설치 마법사로 재설계했습니다."},
+      {"legacy_id":"master/MasterUnlockPage.tsx","disposition":"redesigned","target_paths":["apps/admin-web/src/features/auth/FleetAccessGate.tsx"],"test_paths":["apps/admin-web/src/features/master/master-flow.test.ts"],"checks":[{"path":"apps/admin-web/src/features/master/master-flow.test.ts","contains":"never opens the application"}],"evidence_ids":[],"rationale":"native unlock 화면을 설치 상태와 서버 세션 진입 게이트로 재설계했습니다."},
+      {"legacy_id":"security/SecuritySettingsPage.tsx","disposition":"adapted","target_paths":["apps/admin-web/src/features/security/SecuritySettingsPage.tsx"],"test_paths":["apps/admin-web/src/features/security/SecuritySettingsPage.test.tsx"],"checks":[{"path":"apps/admin-web/src/features/security/SecuritySettingsPage.test.tsx","contains":"keeps OTP mandatory"}],"evidence_ids":[],"rationale":"보안 설정을 OTP 필수 반응형 웹 화면으로 이관했습니다."},
       {
         "legacy_id": "status/AdminMenuStatusPage.tsx",
         "disposition": "adapted",
@@ -70,6 +94,10 @@
       }
     ],
     "rust_workspace_members": [
+      {"legacy_id":"g5-admin-local-store","disposition":"adapted","target_paths":["crates/fleet-store/src/lib.rs"],"test_paths":["crates/fleet-store/tests/security.rs"],"checks":[{"path":"crates/fleet-store/tests/security.rs","contains":"installation_state_stays_incomplete_until_atomic_totp_completion"}],"evidence_ids":[],"rationale":"로컬 저장 책임을 fail-closed SQLite 설치·보안 저장소로 이관했습니다."},
+      {"legacy_id":"g5-admin-runtime-config","disposition":"redesigned","target_paths":["apps/admin-server/src/main.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"readiness_fails_closed_without_web_build"}],"evidence_ids":[],"rationale":"native runtime 설정을 명시적 서버 환경과 readiness 계약으로 재설계했습니다."},
+      {"legacy_id":"g5-admin-security-core","disposition":"adapted","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["crates/fleet-security/src/auth.rs"],"checks":[{"path":"crates/fleet-security/src/auth.rs","contains":"generated_totp_code_verifies_against_same_secret"}],"evidence_ids":[],"rationale":"암호·OTP·세션 보안 코어를 Tauri 없이 서버 crate로 이관했습니다."},
+      {"legacy_id":"g5-admin-session-store","disposition":"redesigned","target_paths":["crates/fleet-store/src/records.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"login_cookie_csrf_and_logout_contract_fail_closed"}],"evidence_ids":[],"rationale":"native 세션 파일을 SQLite 서버 세션과 HttpOnly cookie 계약으로 재설계했습니다."},
       {
         "legacy_id": "g5-admin-api-client",
         "disposition": "adapted",
@@ -238,6 +266,12 @@
       }
     ],
     "frontend_tests": [
+      {"legacy_id":"App.first-run.e2e.test.tsx","disposition":"adapted","target_paths":["apps/admin-web/src/App.first-run.e2e.test.tsx"],"test_paths":["apps/admin-web/src/App.first-run.e2e.test.tsx"],"checks":[{"path":"apps/admin-web/src/App.first-run.e2e.test.tsx","contains":"first-run installation"}],"evidence_ids":[],"rationale":"기존 인증 회귀를 서버 설치·OTP 웹 흐름의 동작 테스트로 이관했습니다."},
+      {"legacy_id":"features/auth/LoginPage.test.tsx","disposition":"adapted","target_paths":["apps/admin-web/src/features/auth/LoginPage.test.tsx"],"test_paths":["apps/admin-web/src/features/auth/LoginPage.test.tsx"],"checks":[{"path":"apps/admin-web/src/features/auth/LoginPage.test.tsx","contains":"describe("}],"evidence_ids":[],"rationale":"기존 인증 회귀를 서버 설치·OTP 웹 흐름의 동작 테스트로 이관했습니다."},
+      {"legacy_id":"features/auth/use-auth-session.test.tsx","disposition":"adapted","target_paths":["apps/admin-web/src/features/auth/use-auth-session.test.tsx"],"test_paths":["apps/admin-web/src/features/auth/use-auth-session.test.tsx"],"checks":[{"path":"apps/admin-web/src/features/auth/use-auth-session.test.tsx","contains":"describe("}],"evidence_ids":[],"rationale":"기존 인증 회귀를 서버 설치·OTP 웹 흐름의 동작 테스트로 이관했습니다."},
+      {"legacy_id":"features/master/MasterIdleGuard.test.tsx","disposition":"adapted","target_paths":["apps/admin-web/src/features/master/MasterIdleGuard.test.tsx"],"test_paths":["apps/admin-web/src/features/master/MasterIdleGuard.test.tsx"],"checks":[{"path":"apps/admin-web/src/features/master/MasterIdleGuard.test.tsx","contains":"describe("}],"evidence_ids":[],"rationale":"기존 인증 회귀를 서버 설치·OTP 웹 흐름의 동작 테스트로 이관했습니다."},
+      {"legacy_id":"features/master/master-flow.test.ts","disposition":"adapted","target_paths":["apps/admin-web/src/features/master/master-flow.test.ts"],"test_paths":["apps/admin-web/src/features/master/master-flow.test.ts"],"checks":[{"path":"apps/admin-web/src/features/master/master-flow.test.ts","contains":"describe("}],"evidence_ids":[],"rationale":"기존 인증 회귀를 서버 설치·OTP 웹 흐름의 동작 테스트로 이관했습니다."},
+      {"legacy_id":"features/security/SecuritySettingsPage.test.tsx","disposition":"adapted","target_paths":["apps/admin-web/src/features/security/SecuritySettingsPage.test.tsx"],"test_paths":["apps/admin-web/src/features/security/SecuritySettingsPage.test.tsx"],"checks":[{"path":"apps/admin-web/src/features/security/SecuritySettingsPage.test.tsx","contains":"describe("}],"evidence_ids":[],"rationale":"기존 인증 회귀를 서버 설치·OTP 웹 흐름의 동작 테스트로 이관했습니다."},
       {
         "legacy_id": "api/client/core/command-context.test.ts",
         "disposition": "redesigned",
@@ -464,6 +498,31 @@
       }
     ],
     "rust_tests": [
+      {"legacy_id":"g5-admin-local-store/src/tests/master_key.rs::env_master_key_overrides_storage_backend","disposition":"redesigned","target_paths":["crates/fleet-store/src/lib.rs"],"test_paths":["crates/fleet-store/tests/durability.rs"],"checks":[{"path":"crates/fleet-store/tests/durability.rs","contains":"verified_backup_restores_critical_rows_to_separate_directory"}],"evidence_ids":[],"rationale":"native master key 선택을 서버 외부 key 공급과 검증 backup 경계로 재설계했습니다."},
+      {"legacy_id":"g5-admin-local-store/src/tests/master_key.rs::file_master_key_storage_creates_local_key_file_without_keychain","disposition":"redesigned","target_paths":["crates/fleet-store/src/lib.rs"],"test_paths":["crates/fleet-store/tests/durability.rs"],"checks":[{"path":"crates/fleet-store/tests/durability.rs","contains":"verified_backup_restores_critical_rows_to_separate_directory"}],"evidence_ids":[],"rationale":"keychain 없는 파일 저장을 서버 외부 key와 검증 backup 경계로 재설계했습니다."},
+      {"legacy_id":"g5-admin-local-store/src/tests/master_key.rs::file_master_key_storage_ignores_existing_keychain_secret","disposition":"redesigned","target_paths":["crates/fleet-store/src/lib.rs"],"test_paths":["crates/fleet-store/tests/durability.rs"],"checks":[{"path":"crates/fleet-store/tests/durability.rs","contains":"verified_backup_restores_critical_rows_to_separate_directory"}],"evidence_ids":[],"rationale":"native keychain 분기를 서버 외부 key와 복구 검증 경계로 재설계했습니다."},
+      {"legacy_id":"g5-admin-local-store/src/tests/master_key.rs::file_storage_preserves_existing_database_when_master_key_is_missing","disposition":"redesigned","target_paths":["crates/fleet-store/src/lib.rs"],"test_paths":["crates/fleet-store/tests/durability.rs"],"checks":[{"path":"crates/fleet-store/tests/durability.rs","contains":"initialization_is_explicit_locked_and_missing_database_fails_closed"}],"evidence_ids":[],"rationale":"key 누락 시 기존 DB 보존을 DB 누락·잠금의 fail-closed 초기화로 재설계했습니다."},
+      {"legacy_id":"g5-admin-local-store/src/tests/master_key.rs::keychain_storage_preserves_existing_database_when_master_key_is_missing","disposition":"redesigned","target_paths":["crates/fleet-store/src/lib.rs"],"test_paths":["crates/fleet-store/tests/durability.rs"],"checks":[{"path":"crates/fleet-store/tests/durability.rs","contains":"initialization_is_explicit_locked_and_missing_database_fails_closed"}],"evidence_ids":[],"rationale":"keychain 누락 시 보존 회귀를 서버 DB fail-closed 회귀로 재설계했습니다."},
+      {"legacy_id":"g5-admin-local-store/src/tests/master_key.rs::legacy_master_key_file_migrates_to_keyring_and_is_removed","disposition":"redesigned","target_paths":["crates/fleet-store/src/lib.rs"],"test_paths":["crates/fleet-store/tests/durability.rs"],"checks":[{"path":"crates/fleet-store/tests/durability.rs","contains":"verified_backup_restores_critical_rows_to_separate_directory"}],"evidence_ids":[],"rationale":"native keyring 이관을 서버 설치·검증 backup 소유 경계로 재설계했습니다."},
+      {"legacy_id":"g5-admin-local-store/src/tests/master_key.rs::open_connection_creates_fresh_database_before_key_exists_in_secure_storage","disposition":"redesigned","target_paths":["crates/fleet-store/src/lib.rs"],"test_paths":["crates/fleet-store/tests/durability.rs"],"checks":[{"path":"crates/fleet-store/tests/durability.rs","contains":"initialization_is_explicit_locked_and_missing_database_fails_closed"}],"evidence_ids":[],"rationale":"자동 신규 DB 생성을 금지하고 명시적 init-store만 허용하도록 재설계했습니다."},
+      {"legacy_id":"g5-admin-local-store/src/tests/recovery.rs::file_storage_recovers_latest_matching_orphaned_database","disposition":"redesigned","target_paths":["crates/fleet-store/src/lib.rs"],"test_paths":["crates/fleet-store/tests/durability.rs"],"checks":[{"path":"crates/fleet-store/tests/durability.rs","contains":"verified_backup_restores_critical_rows_to_separate_directory"}],"evidence_ids":[],"rationale":"고아 DB 자동 선택 대신 checksum과 실제 restore readback이 있는 복구로 재설계했습니다."},
+      {"legacy_id":"g5-admin-runtime-config/src/tests.rs::allows_missing_legacy_base_url","disposition":"redesigned","target_paths":["apps/admin-server/src/main.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"readiness_fails_closed_without_web_build"}],"evidence_ids":[],"rationale":"legacy base URL 설정을 제거하고 서버 readiness 환경 계약으로 재설계했습니다."},
+      {"legacy_id":"g5-admin-runtime-config/src/tests.rs::carries_dev_bootstrap_when_present","disposition":"redesigned","target_paths":["apps/admin-server/src/main.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"readiness_fails_closed_without_web_build"}],"evidence_ids":[],"rationale":"개발 bootstrap 주입을 제거하고 명시적 최초 설치 상태로 재설계했습니다."},
+      {"legacy_id":"g5-admin-runtime-config/src/tests.rs::rejects_empty_base_url","disposition":"redesigned","target_paths":["apps/admin-server/src/main.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"readiness_fails_closed_without_web_build"}],"evidence_ids":[],"rationale":"native base URL 검증을 same-origin 서버 배포와 readiness 검증으로 재설계했습니다."},
+      {"legacy_id":"g5-admin-runtime-config/src/tests.rs::trims_trailing_slash_from_base_url","disposition":"redesigned","target_paths":["apps/admin-server/src/main.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"readiness_fails_closed_without_web_build"}],"evidence_ids":[],"rationale":"native base URL 정규화를 same-origin 상대 API 경계로 대체했습니다."},
+      {"legacy_id":"g5-admin-security-core/src/tests/mod.rs::fast_unlock_secret_is_32_bytes_hex","disposition":"reused","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["crates/fleet-security/src/auth.rs"],"checks":[{"path":"crates/fleet-security/src/auth.rs","contains":"fast_unlock_secret_is_32_bytes_hex"}],"evidence_ids":[],"rationale":"기존 순수 Rust 보안 검증을 서버 보안 코어에서 동일한 회귀로 재사용했습니다."},
+      {"legacy_id":"g5-admin-security-core/src/tests/mod.rs::generated_totp_code_verifies_against_same_secret","disposition":"reused","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["crates/fleet-security/src/auth.rs"],"checks":[{"path":"crates/fleet-security/src/auth.rs","contains":"generated_totp_code_verifies_against_same_secret"}],"evidence_ids":[],"rationale":"기존 순수 Rust TOTP 검증을 서버 보안 코어에서 동일한 회귀로 재사용했습니다."},
+      {"legacy_id":"g5-admin-security-core/src/tests/mod.rs::invalid_totp_shape_is_rejected_before_totp_verify","disposition":"reused","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["crates/fleet-security/src/auth.rs"],"checks":[{"path":"crates/fleet-security/src/auth.rs","contains":"invalid_totp_shape_is_rejected_before_totp_verify"}],"evidence_ids":[],"rationale":"기존 TOTP 입력 검증을 서버 보안 코어에서 동일한 회귀로 재사용했습니다."},
+      {"legacy_id":"g5-admin-session-store/src/lib.rs::clear_session_resets_cached_value","disposition":"redesigned","target_paths":["crates/fleet-store/src/records.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"login_cookie_csrf_and_logout_contract_fail_closed"}],"evidence_ids":[],"rationale":"native cache clear를 서버 세션 폐기와 쿠키 만료로 재설계했습니다."},
+      {"legacy_id":"g5-admin-session-store/src/lib.rs::load_session_migrates_legacy_file_into_local_database","disposition":"redesigned","target_paths":["crates/fleet-store/src/records.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"login_cookie_csrf_and_logout_contract_fail_closed"}],"evidence_ids":[],"rationale":"native 세션 파일 이관 대신 신규 서버 세션 발급을 사용하도록 재설계했습니다."},
+      {"legacy_id":"g5-admin-session-store/src/lib.rs::load_session_uses_cached_value_after_first_backend_read","disposition":"redesigned","target_paths":["crates/fleet-store/src/records.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"login_cookie_csrf_and_logout_contract_fail_closed"}],"evidence_ids":[],"rationale":"native 메모리 cache를 요청별 서버 세션 검증으로 재설계했습니다."},
+      {"legacy_id":"g5-admin/src-tauri/src/app_state/tests/master_lock.rs::lock_master_drops_unlock_state_until_next_unlock","disposition":"redesigned","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"login_cookie_csrf_and_logout_contract_fail_closed"}],"evidence_ids":[],"rationale":"master lock 상태 제거를 서버 세션 폐기와 재로그인으로 재설계했습니다."},
+      {"legacy_id":"g5-admin/src-tauri/src/app_state/tests/master_lock.rs::master_lock_rejects_wrong_password","disposition":"redesigned","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"잘못된 master 비밀번호 거부를 서버 로그인과 lockout 회귀로 재설계했습니다."},
+      {"legacy_id":"g5-admin/src-tauri/src/app_state/tests/master_lock.rs::master_lock_setup_unlocks_without_creating_a_default_site","disposition":"redesigned","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["crates/fleet-store/tests/security.rs"],"checks":[{"path":"crates/fleet-store/tests/security.rs","contains":"installation_state_stays_incomplete_until_atomic_totp_completion"}],"evidence_ids":[],"rationale":"설치와 사이트 생성을 분리한 관리자·OTP 원자 설치로 재설계했습니다."},
+      {"legacy_id":"g5-admin/src-tauri/src/app_state/tests/master_lock.rs::unlock_master_lock_applies_temporary_lockout_after_repeated_failures","disposition":"redesigned","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"반복 실패 임시 잠금을 서버 로그인 rate limit으로 재설계했습니다."},
+      {"legacy_id":"g5-admin/src-tauri/src/app_state/tests/master_lock.rs::unlock_master_lock_requires_totp_when_enabled","disposition":"redesigned","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"조건부 TOTP unlock을 서버 제품의 필수 TOTP 로그인으로 강화했습니다."},
+      {"legacy_id":"g5-admin/src-tauri/src/app_state/tests/security.rs::export_backup_requires_sensitive_action_password","disposition":"redesigned","target_paths":["crates/fleet-store/src/lib.rs"],"test_paths":["crates/fleet-store/tests/durability.rs"],"checks":[{"path":"crates/fleet-store/tests/durability.rs","contains":"verified_backup_restores_critical_rows_to_separate_directory"}],"evidence_ids":[],"rationale":"backup 보안 회귀를 검증 backup·restore readback 경계로 재설계했습니다."},
+      {"legacy_id":"g5-admin/src-tauri/src/app_state/tests/security.rs::security_changes_require_current_totp_when_enabled","disposition":"redesigned","target_paths":["crates/fleet-security/src/auth.rs"],"test_paths":["apps/admin-server/tests/http_contract.rs"],"checks":[{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],"evidence_ids":[],"rationale":"민감 보안 변경에 현재 비밀번호와 TOTP를 요구하는 서버 회귀로 재설계했습니다."},
       {
         "legacy_id": "g5-admin-api-client/src/lib.rs::resolve_constructor_rejects_invalid_url",
         "disposition": "reused",
@@ -781,43 +840,91 @@
   "required_capabilities": [
     {
       "id": "first_run_setup_state",
-      "state": "pending",
-      "description": "설치 전용 상태 조회와 bootstrap 종료의 원자적 보존"
+      "state": "implemented",
+      "description": "설치 전용 상태 조회와 bootstrap 종료의 원자적 보존",
+      "profiles": ["static"],
+      "target_paths": ["crates/fleet-store/src/security.rs", "apps/admin-server/src/api.rs"],
+      "test_paths": ["crates/fleet-store/tests/security.rs", "apps/admin-server/tests/http_contract.rs"],
+      "checks": [{"path":"crates/fleet-store/tests/security.rs","contains":"installation_state_stays_incomplete_until_atomic_totp_completion"}],
+      "evidence_ids": [],
+      "rationale": "setup_required 상태와 관리자·OTP·복구 코드·설치 완료를 한 SQLite transaction으로 보존합니다."
     },
     {
       "id": "browser_install_wizard",
-      "state": "pending",
-      "description": "웹주소 접속 후 환경 점검, 마스터 계정, TOTP까지 완료하는 설치 UI"
+      "state": "implemented",
+      "description": "웹주소 접속 후 환경 점검, 마스터 계정, TOTP까지 완료하는 설치 UI",
+      "profiles": ["static"],
+      "target_paths": ["apps/admin-web/src/features/install/InstallWizardPage.tsx", "apps/admin-web/src/features/auth/FleetAccessGate.tsx"],
+      "test_paths": ["apps/admin-web/src/App.first-run.e2e.test.tsx"],
+      "checks": [{"path":"apps/admin-web/src/App.first-run.e2e.test.tsx","contains":"requires administrator, OTP verification"}],
+      "evidence_ids": [],
+      "rationale": "설치 상태가 setup_required일 때만 관리자, OTP, 복구 코드 확인의 3단계 웹 마법사를 노출합니다."
     },
     {
       "id": "totp_enrollment_and_login",
-      "state": "pending",
-      "description": "TOTP 등록, 복구, 로그인 challenge와 고위험 step-up"
+      "state": "implemented",
+      "description": "TOTP 등록, 복구, 로그인 challenge와 고위험 step-up",
+      "profiles": ["static"],
+      "target_paths": ["crates/fleet-security/src/auth.rs", "apps/admin-server/src/api.rs", "apps/admin-web/src/features/auth/LoginPage.tsx"],
+      "test_paths": ["apps/admin-server/tests/http_contract.rs", "apps/admin-web/src/features/auth/LoginPage.test.tsx"],
+      "checks": [{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],
+      "evidence_ids": [],
+      "rationale": "TOTP secret은 AES-GCM으로 저장하고 로그인·step-up에서 현재 OTP 또는 일회성 복구 코드를 검증합니다."
     },
     {
       "id": "recovery_codes",
-      "state": "pending",
-      "description": "일회성 복구 코드 생성, hash 저장, 폐기와 재발급"
+      "state": "implemented",
+      "description": "일회성 복구 코드 생성, hash 저장, 폐기와 재발급",
+      "profiles": ["static"],
+      "target_paths": ["crates/fleet-security/src/auth.rs", "crates/fleet-store/src/security.rs", "apps/admin-web/src/features/security/SecuritySettingsPage.tsx"],
+      "test_paths": ["apps/admin-server/tests/http_contract.rs", "apps/admin-web/src/App.first-run.e2e.test.tsx"],
+      "checks": [{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],
+      "evidence_ids": [],
+      "rationale": "복구 코드 원문은 최초 한 번만 반환하고 hash만 저장하며 사용·재발급 시 기존 값을 폐기합니다."
     },
     {
       "id": "auth_rate_limit_and_lockout",
-      "state": "pending",
-      "description": "로그인과 TOTP brute-force rate limit 및 lockout"
+      "state": "implemented",
+      "description": "로그인과 TOTP brute-force rate limit 및 lockout",
+      "profiles": ["static"],
+      "target_paths": ["crates/fleet-security/src/auth.rs", "crates/fleet-store/src/security.rs"],
+      "test_paths": ["apps/admin-server/tests/http_contract.rs"],
+      "checks": [{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],
+      "evidence_ids": [],
+      "rationale": "로그인 식별자 범위에서 비밀번호·OTP 실패를 함께 집계하고 제한 시간 동안 요청을 차단합니다."
     },
     {
       "id": "audit_log_write_path",
-      "state": "pending",
-      "description": "모든 보안·mutation 요청의 append-only 감사 기록"
+      "state": "implemented",
+      "description": "모든 보안·mutation 요청의 append-only 감사 기록",
+      "profiles": ["static"],
+      "target_paths": ["apps/admin-server/src/api.rs", "crates/fleet-store/src/security.rs", "crates/fleet-store/migrations/0003_install_auth_audit.sql"],
+      "test_paths": ["crates/fleet-store/tests/security.rs", "apps/admin-server/tests/http_contract.rs"],
+      "checks": [{"path":"crates/fleet-store/tests/security.rs","contains":"audit_log_rejects_update_and_delete_after_append"}],
+      "evidence_ids": [],
+      "rationale": "모든 비-GET API 결과를 principal·site·request 범위로 기록하고 DB trigger로 UPDATE와 DELETE를 거부합니다."
     },
     {
       "id": "audit_log_query_api",
-      "state": "pending",
-      "description": "권한·사용자·사이트 범위가 적용된 감사 로그 조회 API"
+      "state": "implemented",
+      "description": "권한·사용자·사이트 범위가 적용된 감사 로그 조회 API",
+      "profiles": ["static"],
+      "target_paths": ["apps/admin-server/src/api.rs", "crates/fleet-store/src/security.rs"],
+      "test_paths": ["apps/admin-server/tests/http_contract.rs"],
+      "checks": [{"path":"apps/admin-server/tests/http_contract.rs","contains":"first_run_totp_recovery_lockout_and_audit_contract_are_enforced"}],
+      "evidence_ids": [],
+      "rationale": "인증 principal 범위를 강제하고 선택 site_id와 제한 건수를 적용하는 감사 조회 API를 제공합니다."
     },
     {
       "id": "audit_log_web_ui",
-      "state": "pending",
-      "description": "필터·상세·추적 ID를 제공하는 감사 로그 웹 UI"
+      "state": "implemented",
+      "description": "필터·상세·추적 ID를 제공하는 감사 로그 웹 UI",
+      "profiles": ["static"],
+      "target_paths": ["apps/admin-web/src/features/audit/AuditLogPage.tsx"],
+      "test_paths": ["apps/admin-web/src/features/audit/AuditLogPage.test.tsx"],
+      "checks": [{"path":"apps/admin-web/src/features/audit/AuditLogPage.test.tsx","contains":"renders principal-scoped append-only audit results"}],
+      "evidence_ids": [],
+      "rationale": "반응형 표에서 site_id 필터, 결과, request_id와 JSON 상세를 확인할 수 있습니다."
     },
     {
       "id": "typed_core_domain_consumers",

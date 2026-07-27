@@ -92,6 +92,20 @@ impl FleetStore {
         .bind(password_hash)
         .execute(&mut *transaction)
         .await?;
+        sqlx::query("INSERT INTO user_security_settings (user_id) VALUES (?)")
+            .bind(user_id)
+            .execute(&mut *transaction)
+            .await?;
+        sqlx::query(
+            "UPDATE installation_security SET state = 'complete', \
+             setup_login_name = NULL, setup_token_hash = NULL, \
+             setup_totp_nonce = NULL, setup_totp_ciphertext = NULL, \
+             setup_expires_at = NULL, \
+             completed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') \
+             WHERE singleton = 1 AND state = 'setup_required'",
+        )
+        .execute(&mut *transaction)
+        .await?;
         transaction.commit().await?;
         Ok(())
     }
@@ -229,6 +243,28 @@ impl FleetStore {
              WHERE session_id = ? AND user_id = ? AND revoked_at IS NULL",
         )
         .bind(now_unix.to_string())
+        .bind(session_id)
+        .bind(user_id)
+        .execute(&self.inner.pool)
+        .await?;
+        if result.rows_affected() != 1 {
+            return Err(StoreError::NotFound);
+        }
+        Ok(())
+    }
+
+    pub async fn rotate_session_csrf(
+        &self,
+        session_id: &str,
+        user_id: &str,
+        csrf_hash: &[u8],
+    ) -> StoreResult<()> {
+        let _writer = self.inner.writer.lock().await;
+        let result = sqlx::query(
+            "UPDATE web_sessions SET csrf_hash = ? \
+             WHERE session_id = ? AND user_id = ? AND revoked_at IS NULL",
+        )
+        .bind(csrf_hash)
         .bind(session_id)
         .bind(user_id)
         .execute(&self.inner.pool)

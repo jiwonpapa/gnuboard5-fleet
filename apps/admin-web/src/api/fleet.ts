@@ -6,6 +6,51 @@ export interface LoginResponse {
   expires_at_unix: number;
 }
 
+export interface InstallStatus {
+  state: "complete" | "setup_required";
+}
+
+export interface InstallChallenge {
+    setup_token: string;
+    manual_entry_key: string;
+    otpauth_uri: string;
+    expires_at_unix: number;
+}
+
+export interface TotpChallenge {
+  manual_entry_key: string;
+  otpauth_uri: string;
+}
+
+export interface InstallCompletion {
+  principal_id: string;
+  recovery_codes: string[];
+}
+
+export interface FleetSession {
+  principal_id: string;
+  web_session_id: string;
+  expires_at_unix: number;
+  step_up_active: boolean;
+  csrf_token: string;
+}
+
+export interface SecuritySettings {
+  totp_enabled: boolean;
+  session_idle_timeout_minutes: number;
+}
+
+export interface AuditEntry {
+  audit_id: number;
+  request_id: string | null;
+  principal_id: string | null;
+  site_id: string | null;
+  action: string;
+  outcome: "success" | "denied" | "failed";
+  details: unknown;
+  created_at: string;
+}
+
 export interface Site {
   site_id: string;
   owner_user_id: string;
@@ -89,34 +134,179 @@ export interface TransferJob {
 
 const transport = new BrowserHttpTransport("/api/v1");
 
-export function bootstrapAdmin(loginName: string, password: string) {
-  return transport.request<{ principal_id: string }, {
-    login_name: string;
-    password: string;
-  }>({
-    method: "POST",
-    path: "/bootstrap",
-    body: { login_name: loginName, password },
+export function getInstallStatus() {
+  return transport.request<InstallStatus>({
+    method: "GET",
+    path: "/install/status",
   });
 }
 
-export function loginFleet(loginName: string, password: string) {
+export function startInstallChallenge(loginName: string) {
+  return transport.request<InstallChallenge, {
+    login_name: string;
+  }>({
+    method: "POST",
+    path: "/install/challenge",
+    body: { login_name: loginName },
+  });
+}
+
+export function completeInstall(input: {
+  setup_token: string;
+  login_name: string;
+  password: string;
+  totp_code: string;
+}) {
+  return transport.request<InstallCompletion, typeof input>({
+    method: "POST",
+    path: "/install/complete",
+    body: input,
+  });
+}
+
+export function loginFleet(
+  loginName: string,
+  password: string,
+  factor: { totpCode?: string; recoveryCode?: string } = {},
+) {
   return transport.request<LoginResponse, {
     login_name: string;
     password: string;
+    totp_code?: string;
+    recovery_code?: string;
   }>({
     method: "POST",
     path: "/auth/login",
-    body: { login_name: loginName, password },
+    body: {
+      login_name: loginName,
+      password,
+      totp_code: factor.totpCode,
+      recovery_code: factor.recoveryCode,
+    },
   });
 }
 
-export function stepUp(password: string, csrfToken: string) {
-  return transport.request<null, { password: string }>({
+export function getFleetSession() {
+  return transport.request<FleetSession>({
+    method: "GET",
+    path: "/session",
+  });
+}
+
+export function logoutFleet(csrfToken: string) {
+  return transport.request<null>({
+    method: "POST",
+    path: "/auth/logout",
+    csrfToken,
+  });
+}
+
+export function stepUp(
+  password: string,
+  csrfToken: string,
+  factor: { totpCode?: string; recoveryCode?: string } = {},
+) {
+  return transport.request<null, {
+    password: string;
+    totp_code?: string;
+    recovery_code?: string;
+  }>({
     method: "POST",
     path: "/auth/step-up",
     csrfToken,
-    body: { password },
+    body: {
+      password,
+      totp_code: factor.totpCode,
+      recovery_code: factor.recoveryCode,
+    },
+  });
+}
+
+export function getSecuritySettings() {
+  return transport.request<SecuritySettings>({
+    method: "GET",
+    path: "/security/settings",
+  });
+}
+
+export function updateIdleTimeout(minutes: number, csrfToken: string) {
+  return transport.request<null, { minutes: number }>({
+    method: "PUT",
+    path: "/security/idle-timeout",
+    csrfToken,
+    body: { minutes },
+  });
+}
+
+export function changeFleetPassword(
+  input: {
+    current_password: string;
+    new_password: string;
+    totp_code?: string;
+    recovery_code?: string;
+  },
+  csrfToken: string,
+) {
+  return transport.request<null, typeof input>({
+    method: "PUT",
+    path: "/security/password",
+    csrfToken,
+    body: input,
+  });
+}
+
+export function startTotpEnrollment(csrfToken: string) {
+  return transport.request<TotpChallenge>({
+    method: "POST",
+    path: "/security/totp/challenge",
+    csrfToken,
+  });
+}
+
+export function enableTotp(code: string, csrfToken: string) {
+  return transport.request<{ recovery_codes: string[] }, { code: string }>({
+    method: "POST",
+    path: "/security/totp/enable",
+    csrfToken,
+    body: { code },
+  });
+}
+
+export function disableTotp(
+  input: {
+    current_password: string;
+    totp_code?: string;
+    recovery_code?: string;
+  },
+  csrfToken: string,
+) {
+  return transport.request<null, typeof input>({
+    method: "POST",
+    path: "/security/totp/disable",
+    csrfToken,
+    body: input,
+  });
+}
+
+export function regenerateRecoveryCodes(csrfToken: string) {
+  return transport.request<{ recovery_codes: string[] }>({
+    method: "POST",
+    path: "/security/recovery-codes",
+    csrfToken,
+  });
+}
+
+export function listAuditEntries(input: {
+  siteId?: string;
+  limit?: number;
+} = {}) {
+  const query = new URLSearchParams();
+  if (input.siteId) query.set("site_id", input.siteId);
+  if (input.limit) query.set("limit", String(input.limit));
+  const suffix = query.size ? `?${query.toString()}` : "";
+  return transport.request<AuditEntry[]>({
+    method: "GET",
+    path: `/audit${suffix}`,
   });
 }
 

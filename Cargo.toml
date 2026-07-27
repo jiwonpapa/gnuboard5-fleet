@@ -28,6 +28,7 @@ subtle = "2.6.1"
 tempfile = "3.27.0"
 thiserror = "2.0.19"
 tokio = { version = "1.53.0", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal", "sync", "time"] }
+totp-rs = { version = "5.7.2", features = ["gen_secret", "otpauth"] }
 tower = { version = "0.5.3", features = ["util"] }
 tower-http = { version = "0.6.11", features = ["fs", "trace"] }
 tracing = "0.1.44"

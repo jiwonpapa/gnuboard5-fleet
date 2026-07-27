@@ -1,22 +1,18 @@
-import { type FormEvent, lazy, Suspense, useState } from "react";
+import { type FormEvent, lazy, Suspense, useEffect, useState } from "react";
 
 import {
   type BasicConfig,
   type ConnectorHealth,
   type Site,
   type SiteOverview,
-  bootstrapAdmin,
   connectorHealth,
   connectorLogin,
   connectorLogout,
   connectorRefresh,
-  createFleetUser,
   createSite,
   getBasicConfig,
   getSiteOverview,
   listSites,
-  loginFleet,
-  stepUp,
   updateBasicConfig,
 } from "../api/fleet";
 
@@ -30,8 +26,7 @@ const RemoteWorkspace = lazy(async () => {
   return { default: module.RemoteWorkspace };
 });
 
-export function VerticalFlow() {
-  const [csrf, setCsrf] = useState("");
+export function VerticalFlow({ csrfToken }: { csrfToken: string }) {
   const [sites, setSites] = useState<Site[]>([]);
   const [site, setSite] = useState<Site | null>(null);
   const [health, setHealth] = useState<ConnectorHealth | null>(null);
@@ -40,32 +35,25 @@ export function VerticalFlow() {
   const [baseline, setBaseline] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [createdUser, setCreatedUser] = useState("");
 
-  async function authenticate(
-    loginName: string,
-    password: string,
-    bootstrap: boolean,
-  ) {
-    await run(async () => {
-      if (bootstrap) {
-        await bootstrapAdmin(loginName, password);
-      }
-      const session = await loginFleet(loginName, password);
-      await stepUp(password, session.csrf_token);
-      setCsrf(session.csrf_token);
-      const ownedSites = await listSites();
-      setSites(ownedSites);
-      setSite(ownedSites[0] ?? null);
-    });
-  }
-
-  async function registerFleetUser(loginName: string, password: string) {
-    await run(async () => {
-      await createFleetUser(loginName, password, csrf);
-      setCreatedUser(loginName);
-    });
-  }
+  useEffect(() => {
+    let active = true;
+    void listSites()
+      .then((ownedSites) => {
+        if (active) {
+          setSites(ownedSites);
+          setSite(ownedSites[0] ?? null);
+        }
+      })
+      .catch((caught) => {
+        if (active) {
+          setError(caught instanceof Error ? caught.message : "사이트 목록을 읽지 못했습니다.");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function registerSite(input: {
     site_id: string;
@@ -73,7 +61,7 @@ export function VerticalFlow() {
     base_url: string;
   }) {
     await run(async () => {
-      await createSite(input, csrf);
+      await createSite(input, csrfToken);
       const ownedSites = await listSites();
       setSites(ownedSites);
       setSite(ownedSites.find((item) => item.site_id === input.site_id) ?? null);
@@ -91,7 +79,7 @@ export function VerticalFlow() {
       await connectorLogin(
         site.site_id,
         { mb_id: mbId, mb_password: mbPassword },
-        csrf,
+        csrfToken,
       );
       const [nextOverview, nextConfig] = await Promise.all([
         getSiteOverview(site.site_id),
@@ -106,7 +94,7 @@ export function VerticalFlow() {
   async function saveCf10(value: string) {
     if (!site) return;
     await run(async () => {
-      await updateBasicConfig(site.site_id, value, csrf);
+      await updateBasicConfig(site.site_id, value, csrfToken);
       setConfig(await getBasicConfig(site.site_id));
     });
   }
@@ -114,7 +102,7 @@ export function VerticalFlow() {
   async function refreshConnector() {
     if (!site) return;
     await run(async () => {
-      await connectorRefresh(site.site_id, csrf);
+      await connectorRefresh(site.site_id, csrfToken);
       setConfig(await getBasicConfig(site.site_id));
     });
   }
@@ -122,7 +110,7 @@ export function VerticalFlow() {
   async function logoutConnector() {
     if (!site) return;
     await run(async () => {
-      await connectorLogout(site.site_id, csrf);
+      await connectorLogout(site.site_id, csrfToken);
       setHealth(null);
       setOverview(null);
       setConfig(null);
@@ -133,7 +121,7 @@ export function VerticalFlow() {
   async function rollbackCf10() {
     if (!site || baseline === null) return;
     await run(async () => {
-      await updateBasicConfig(site.site_id, baseline, csrf);
+      await updateBasicConfig(site.site_id, baseline, csrfToken);
       setConfig(await getBasicConfig(site.site_id));
     });
   }
@@ -152,39 +140,29 @@ export function VerticalFlow() {
 
   return (
     <section className="vertical-flow" aria-label="최초 사이트 연결 흐름">
-      <FlowStep index="01" title="Fleet 로그인" done={Boolean(csrf)}>
-        <FleetLoginForm disabled={busy} onSubmit={authenticate} />
-        {csrf && (
-          <FleetUserForm
-            disabled={busy}
-            createdUser={createdUser}
-            onSubmit={registerFleetUser}
-          />
-        )}
+      <FlowStep index="01" title="Fleet 보안 세션" done>
+        <StepHint>
+          OTP로 인증된 Fleet 세션입니다. 추가 관리자는 별도 OTP 등록 흐름이
+          제공되기 전까지 생성할 수 없습니다.
+        </StepHint>
       </FlowStep>
 
       <FlowStep index="02" title="사이트 등록" done={Boolean(site)}>
-        {csrf
-          ? (
-            <>
-              <SiteForm disabled={busy} onSubmit={registerSite} />
-              {sites.length > 0 && (
-                <div className="site-pills" aria-label="등록 사이트">
-                  {sites.map((item) => (
-                    <button
-                      key={item.site_id}
-                      type="button"
-                      data-active={site?.site_id === item.site_id}
-                      onClick={() => setSite(item)}
-                    >
-                      {item.display_name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          )
-          : <StepHint>먼저 Fleet 관리자 로그인이 필요합니다.</StepHint>}
+        <SiteForm disabled={busy} onSubmit={registerSite} />
+        {sites.length > 0 && (
+          <div className="site-pills" aria-label="등록 사이트">
+            {sites.map((item) => (
+              <button
+                key={item.site_id}
+                type="button"
+                data-active={site?.site_id === item.site_id}
+                onClick={() => setSite(item)}
+              >
+                {item.display_name}
+              </button>
+            ))}
+          </div>
+        )}
       </FlowStep>
 
       <FlowStep index="03" title="Connector 확인·로그인" done={Boolean(config)}>
@@ -253,10 +231,10 @@ export function VerticalFlow() {
       {site && config && (
         <>
           <Suspense fallback={<StepHint>Core registry를 여는 중입니다.</StepHint>}>
-            <CoreDomainConsole siteId={site.site_id} csrfToken={csrf} />
+            <CoreDomainConsole siteId={site.site_id} csrfToken={csrfToken} />
           </Suspense>
           <Suspense fallback={<StepHint>원격 관리 도구를 여는 중입니다.</StepHint>}>
-            <RemoteWorkspace siteId={site.site_id} csrfToken={csrf} />
+            <RemoteWorkspace siteId={site.site_id} csrfToken={csrfToken} />
           </Suspense>
         </>
       )}
@@ -279,104 +257,6 @@ function FlowStep(props: {
       </header>
       <div className="flow-step-body">{props.children}</div>
     </article>
-  );
-}
-
-function FleetUserForm(props: {
-  disabled: boolean;
-  createdUser: string;
-  onSubmit: (loginName: string, password: string) => Promise<void>;
-}) {
-  const [loginName, setLoginName] = useState("");
-  const [password, setPassword] = useState("");
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    await props.onSubmit(loginName, password);
-    setPassword("");
-  }
-  return (
-    <form className="flow-form" onSubmit={(event) => void submit(event)}>
-      <label>
-        <span>추가 Fleet 사용자</span>
-        <input
-          required
-          minLength={3}
-          autoComplete="off"
-          value={loginName}
-          onChange={(event) => setLoginName(event.target.value)}
-        />
-      </label>
-      <label>
-        <span>초기 비밀번호</span>
-        <input
-          required
-          minLength={12}
-          type="password"
-          autoComplete="new-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
-      </label>
-      <button className="secondary-action" disabled={props.disabled} type="submit">
-        Fleet 사용자 추가
-      </button>
-      {props.createdUser && (
-        <span className="inline-status">{props.createdUser} 생성 완료</span>
-      )}
-    </form>
-  );
-}
-
-function FleetLoginForm(props: {
-  disabled: boolean;
-  onSubmit: (
-    loginName: string,
-    password: string,
-    bootstrap: boolean,
-  ) => Promise<void>;
-}) {
-  const [loginName, setLoginName] = useState("");
-  const [password, setPassword] = useState("");
-  const [bootstrap, setBootstrap] = useState(false);
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    await props.onSubmit(loginName, password, bootstrap);
-    setPassword("");
-  }
-  return (
-    <form className="flow-form" onSubmit={(event) => void submit(event)}>
-      <label>
-        <span>Fleet 아이디</span>
-        <input
-          required
-          autoComplete="username"
-          value={loginName}
-          onChange={(event) => setLoginName(event.target.value)}
-        />
-      </label>
-      <label>
-        <span>Fleet 비밀번호</span>
-        <input
-          required
-          minLength={12}
-          type="password"
-          autoComplete={bootstrap ? "new-password" : "current-password"}
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
-      </label>
-      <label className="check-label">
-        <input
-          type="checkbox"
-          checked={bootstrap}
-          onChange={(event) => setBootstrap(event.target.checked)}
-        />
-        <span>최초 관리자 생성</span>
-      </label>
-      <button className="primary-action" disabled={props.disabled} type="submit">
-        {bootstrap ? "관리자 생성 후 로그인" : "Fleet 로그인"}
-      </button>
-    </form>
   );
 }
 

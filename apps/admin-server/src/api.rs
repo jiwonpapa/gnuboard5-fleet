@@ -7,13 +7,14 @@ use axum::{
     Json, Router,
     body::{Body, Bytes},
     extract::{
-        Path, State,
+        Path, Query, State,
         ws::{Message, WebSocket, WebSocketUpgrade},
     },
     http::{
-        HeaderMap, HeaderValue, StatusCode,
+        HeaderMap, HeaderValue, Method, Request, StatusCode,
         header::{CONTENT_TYPE, COOKIE, SET_COOKIE},
     },
+    middleware::Next,
     response::{IntoResponse, Response},
     routing::{get, post, put},
 };
@@ -29,7 +30,7 @@ use g5_fleet_remote::{
     TerminalTicket,
 };
 use g5_fleet_security::{AuthError, PrincipalSession, SecretPurpose, SystemResolver, UrlGuard};
-use g5_fleet_store::{JobRecord, SiteRecord, StoreError};
+use g5_fleet_store::{AuditEntry, JobRecord, SiteRecord, StoreError};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -52,26 +53,31 @@ pub struct RequestContext {
 }
 
 #[derive(Deserialize)]
-struct BootstrapRequest {
+struct InstallChallengeRequest {
+    login_name: String,
+}
+
+#[derive(Deserialize)]
+struct InstallCompleteRequest {
+    setup_token: String,
     login_name: String,
     password: String,
+    totp_code: String,
 }
 
 #[derive(Deserialize)]
 struct LoginRequest {
     login_name: String,
     password: String,
+    totp_code: Option<String>,
+    recovery_code: Option<String>,
 }
 
 #[derive(Deserialize)]
 struct StepUpRequest {
     password: String,
-}
-
-#[derive(Deserialize)]
-struct CreateUserRequest {
-    login_name: String,
-    password: String,
+    totp_code: Option<String>,
+    recovery_code: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -124,14 +130,34 @@ struct ConnectorLoginResponse {
     expires_in: i64,
 }
 
-#[derive(Debug, Serialize)]
-struct BootstrapResponse {
-    principal_id: String,
+#[derive(Debug, Deserialize, Serialize)]
+pub struct InstallStatusResponse {
+    pub state: String,
 }
 
-#[derive(Debug, Serialize)]
-struct CreateUserResponse {
-    principal_id: String,
+#[derive(Debug, Deserialize, Serialize)]
+pub struct InstallChallengeResponse {
+    pub setup_token: String,
+    pub manual_entry_key: String,
+    pub otpauth_uri: String,
+    pub expires_at_unix: i64,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct TotpChallengeResponse {
+    pub manual_entry_key: String,
+    pub otpauth_uri: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct InstallCompleteResponse {
+    pub principal_id: String,
+    pub recovery_codes: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RecoveryCodesResponse {
+    pub recovery_codes: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -146,15 +172,56 @@ pub struct SessionResponse {
     pub web_session_id: String,
     pub expires_at_unix: i64,
     pub step_up_active: bool,
+    pub csrf_token: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SecuritySettingsResponse {
+    pub totp_enabled: bool,
+    pub session_idle_timeout_minutes: i64,
+}
+
+#[derive(Deserialize)]
+struct PasswordChangeRequest {
+    current_password: String,
+    new_password: String,
+    totp_code: Option<String>,
+    recovery_code: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct IdleTimeoutRequest {
+    minutes: i64,
+}
+
+#[derive(Deserialize)]
+struct TotpCodeRequest {
+    code: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct AuditQuery {
+    site_id: Option<String>,
+    limit: Option<i64>,
 }
 
 pub(crate) fn router() -> Router<AppState> {
     Router::new()
-        .route("/bootstrap", post(bootstrap))
+        .route("/install/status", get(install_status))
+        .route("/install/challenge", post(install_challenge))
+        .route("/install/complete", post(install_complete))
         .route("/auth/login", post(login))
         .route("/auth/logout", post(logout))
         .route("/auth/step-up", post(step_up))
         .route("/session", get(session))
+        .route("/security/settings", get(security_settings))
+        .route("/security/password", put(change_password))
+        .route("/security/idle-timeout", put(update_idle_timeout))
+        .route("/security/totp/challenge", post(totp_challenge))
+        .route("/security/totp/enable", post(enable_totp))
+        .route("/security/totp/disable", post(disable_totp))
+        .route("/security/recovery-codes", post(regenerate_recovery_codes))
+        .route("/audit", get(list_audit_entries))
         .route("/users", post(create_user))
         .route("/plugins", get(plugin_slots))
         .route("/core/registry", get(core_registry))
@@ -205,19 +272,65 @@ pub(crate) fn router() -> Router<AppState> {
         )
 }
 
-async fn bootstrap(
+async fn install_status(State(state): State<AppState>) -> Response {
+    match state.config.auth.install_status().await {
+        Ok(status) => Json(InstallStatusResponse {
+            state: status.state,
+        })
+        .into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn install_challenge(
     State(state): State<AppState>,
-    Json(payload): Json<BootstrapRequest>,
+    Json(payload): Json<InstallChallengeRequest>,
 ) -> Response {
     match state
         .config
         .auth
-        .bootstrap_admin(&payload.login_name, &payload.password)
+        .start_install_challenge(&payload.login_name)
         .await
     {
-        Ok(principal_id) => (
+        Ok(challenge) => (
             StatusCode::CREATED,
-            Json(BootstrapResponse { principal_id }),
+            Json(InstallChallengeResponse {
+                setup_token: challenge
+                    .setup_token
+                    .expect("install challenge carries setup token"),
+                manual_entry_key: challenge.manual_entry_key,
+                otpauth_uri: challenge.otpauth_uri,
+                expires_at_unix: challenge
+                    .expires_at_unix
+                    .expect("install challenge carries expiry"),
+            }),
+        )
+            .into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn install_complete(
+    State(state): State<AppState>,
+    Json(payload): Json<InstallCompleteRequest>,
+) -> Response {
+    match state
+        .config
+        .auth
+        .complete_install(
+            &payload.setup_token,
+            &payload.login_name,
+            &payload.password,
+            &payload.totp_code,
+        )
+        .await
+    {
+        Ok(completion) => (
+            StatusCode::CREATED,
+            Json(InstallCompleteResponse {
+                principal_id: completion.principal_id,
+                recovery_codes: completion.recovery_codes,
+            }),
         )
             .into_response(),
         Err(error) => auth_error(error),
@@ -228,7 +341,12 @@ async fn login(State(state): State<AppState>, Json(payload): Json<LoginRequest>)
     match state
         .config
         .auth
-        .login(&payload.login_name, &payload.password)
+        .login_with_factor(
+            &payload.login_name,
+            &payload.password,
+            payload.totp_code.as_deref(),
+            payload.recovery_code.as_deref(),
+        )
         .await
     {
         Ok(tokens) => {
@@ -262,12 +380,17 @@ async fn session(State(state): State<AppState>, headers: HeaderMap) -> Response 
         Ok(value) => value,
         Err(response) => return response,
     };
+    let csrf_token = match state.config.auth.rotate_csrf(&principal).await {
+        Ok(token) => token,
+        Err(error) => return auth_error(error),
+    };
     let step_up_active = state.config.auth.require_recent_step_up(&principal).is_ok();
     Json(SessionResponse {
         principal_id: principal.principal_id,
         web_session_id: principal.web_session_id,
         expires_at_unix: principal.expires_at_unix,
         step_up_active,
+        csrf_token,
     })
     .into_response()
 }
@@ -275,28 +398,17 @@ async fn session(State(state): State<AppState>, headers: HeaderMap) -> Response 
 async fn create_user(
     State(state): State<AppState>,
     headers: HeaderMap,
-    Json(payload): Json<CreateUserRequest>,
+    Json(_payload): Json<serde_json::Value>,
 ) -> Response {
-    let (_, principal) = match mutation_context(&state, &headers, None).await {
+    let (_, _principal) = match mutation_context(&state, &headers, None).await {
         Ok(value) => value,
         Err(response) => return response,
     };
-    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
-        return auth_error(error);
-    }
-    match state
-        .config
-        .auth
-        .create_user(&principal, &payload.login_name, &payload.password)
-        .await
-    {
-        Ok(principal_id) => (
-            StatusCode::CREATED,
-            Json(CreateUserResponse { principal_id }),
-        )
-            .into_response(),
-        Err(error) => auth_error(error),
-    }
+    api_error(
+        StatusCode::CONFLICT,
+        "user_totp_enrollment_required",
+        "Additional administrators require a dedicated OTP enrollment flow.",
+    )
 }
 
 async fn logout(State(state): State<AppState>, headers: HeaderMap) -> Response {
@@ -331,11 +443,170 @@ async fn step_up(
     match state
         .config
         .auth
-        .step_up(&principal, &payload.password)
+        .step_up_with_factor(
+            &principal,
+            &payload.password,
+            payload.totp_code.as_deref(),
+            payload.recovery_code.as_deref(),
+        )
         .await
     {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(error) => auth_error(error),
+    }
+}
+
+async fn security_settings(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    let (_, principal) = match context(&state, &headers, None).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state.config.auth.security_settings(&principal).await {
+        Ok(settings) => Json(SecuritySettingsResponse {
+            totp_enabled: settings.totp_enabled,
+            session_idle_timeout_minutes: settings.session_idle_timeout_minutes,
+        })
+        .into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn change_password(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<PasswordChangeRequest>,
+) -> Response {
+    let (_, principal) = match mutation_context(&state, &headers, None).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .auth
+        .change_password(
+            &principal,
+            &payload.current_password,
+            &payload.new_password,
+            payload.totp_code.as_deref(),
+            payload.recovery_code.as_deref(),
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn update_idle_timeout(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<IdleTimeoutRequest>,
+) -> Response {
+    let (_, principal) = match mutation_context(&state, &headers, None).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .auth
+        .update_idle_timeout(&principal, payload.minutes)
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn totp_challenge(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    let (_, principal) = match mutation_context(&state, &headers, None).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state.config.auth.start_totp_enrollment(&principal).await {
+        Ok(challenge) => Json(TotpChallengeResponse {
+            manual_entry_key: challenge.manual_entry_key,
+            otpauth_uri: challenge.otpauth_uri,
+        })
+        .into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn enable_totp(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<TotpCodeRequest>,
+) -> Response {
+    let (_, principal) = match mutation_context(&state, &headers, None).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .auth
+        .enable_totp(&principal, &payload.code)
+        .await
+    {
+        Ok(recovery_codes) => Json(RecoveryCodesResponse { recovery_codes }).into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn disable_totp(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(_payload): Json<serde_json::Value>,
+) -> Response {
+    let (_, _principal) = match mutation_context(&state, &headers, None).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    api_error(
+        StatusCode::FORBIDDEN,
+        "totp_required_policy",
+        "TOTP cannot be disabled for Fleet administrators.",
+    )
+}
+
+async fn regenerate_recovery_codes(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    let (_, principal) = match mutation_context(&state, &headers, None).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .auth
+        .regenerate_recovery_codes(&principal)
+        .await
+    {
+        Ok(recovery_codes) => Json(RecoveryCodesResponse { recovery_codes }).into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn list_audit_entries(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(query): Query<AuditQuery>,
+) -> Response {
+    let (request_context, _) = match context(&state, &headers, query.site_id.clone()).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let limit = query.limit.unwrap_or(50).clamp(1, 100);
+    match state
+        .config
+        .auth
+        .store()
+        .list_audit_entries(
+            &request_context.principal_id,
+            request_context.site_id.as_deref(),
+            limit,
+        )
+        .await
+    {
+        Ok(entries) => Json::<Vec<AuditEntry>>(entries).into_response(),
+        Err(error) => store_error(error),
     }
 }
 
@@ -1474,6 +1745,82 @@ fn terminal_ticket_protocol(headers: &HeaderMap) -> Option<String> {
         })
 }
 
+pub(crate) async fn audit_mutation_request(
+    State(state): State<AppState>,
+    request: Request<Body>,
+    next: Next,
+) -> Response {
+    if request.method() == Method::GET {
+        return next.run(request).await;
+    }
+    let method = request.method().clone();
+    let path = request.uri().path().to_owned();
+    let audit_request_id = request_id(request.headers());
+    let site_id = site_id_from_path(&path);
+    let principal_id = if let Some(token) = cookie_value(request.headers(), SESSION_COOKIE) {
+        state
+            .config
+            .auth
+            .authenticate(token)
+            .await
+            .ok()
+            .map(|principal| principal.principal_id)
+    } else {
+        None
+    };
+    let response = next.run(request).await;
+    let outcome = if response.status().is_success() {
+        "success"
+    } else if matches!(
+        response.status(),
+        StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN | StatusCode::TOO_MANY_REQUESTS
+    ) {
+        "denied"
+    } else {
+        "failed"
+    };
+    let details = serde_json::json!({
+        "method": method.as_str(),
+        "path": path,
+        "status": response.status().as_u16()
+    });
+    if state
+        .config
+        .auth
+        .store()
+        .append_audit(
+            Some(&audit_request_id),
+            principal_id.as_deref(),
+            site_id.as_deref(),
+            &format!("http.{}", method.as_str().to_ascii_lowercase()),
+            outcome,
+            &details,
+        )
+        .await
+        .is_err()
+    {
+        return api_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "audit_write_failed",
+            "Mutation audit record could not be persisted.",
+        );
+    }
+    response
+}
+
+fn site_id_from_path(path: &str) -> Option<String> {
+    let mut segments = path.split('/').filter(|segment| !segment.is_empty());
+    while let Some(segment) = segments.next() {
+        if segment == "sites" {
+            return segments
+                .next()
+                .filter(|value| !value.is_empty())
+                .map(str::to_owned);
+        }
+    }
+    None
+}
+
 async fn owned_site_context(
     state: &AppState,
     headers: &HeaderMap,
@@ -1604,6 +1951,26 @@ fn auth_error(error: AuthError) -> Response {
             "invalid_credentials",
             "Authentication failed.",
         ),
+        AuthError::SecondFactorRequired => api_error(
+            StatusCode::UNAUTHORIZED,
+            "second_factor_required",
+            "TOTP or a recovery code is required.",
+        ),
+        AuthError::InvalidSecondFactor => api_error(
+            StatusCode::UNAUTHORIZED,
+            "invalid_second_factor",
+            "TOTP or recovery code verification failed.",
+        ),
+        AuthError::InstallIncomplete => api_error(
+            StatusCode::CONFLICT,
+            "installation_incomplete",
+            "Fleet installation setup is incomplete.",
+        ),
+        AuthError::RateLimited { .. } => api_error(
+            StatusCode::TOO_MANY_REQUESTS,
+            "authentication_locked",
+            "Authentication is temporarily locked.",
+        ),
         AuthError::Csrf => api_error(
             StatusCode::FORBIDDEN,
             "csrf_failed",
@@ -1618,6 +1985,11 @@ fn auth_error(error: AuthError) -> Response {
             StatusCode::BAD_REQUEST,
             "password_policy",
             "Password does not meet policy.",
+        ),
+        AuthError::IdleTimeoutPolicy => api_error(
+            StatusCode::BAD_REQUEST,
+            "idle_timeout_policy",
+            "Idle timeout must be between 5 and 1440 minutes.",
         ),
         AuthError::Store(error) => store_error(error),
         _ => api_error(

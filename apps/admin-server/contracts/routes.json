@@ -23,11 +23,25 @@
       "purpose": "web_bootstrap_metadata"
     },
     {
+      "method": "GET",
+      "path": "/api/v1/install/status",
+      "auth": "public",
+      "site_context": false,
+      "purpose": "first_run_setup_state"
+    },
+    {
       "method": "POST",
-      "path": "/api/v1/bootstrap",
+      "path": "/api/v1/install/challenge",
       "auth": "first_run_only",
       "site_context": false,
-      "purpose": "initial_administrator"
+      "purpose": "forced_totp_install_challenge"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/install/complete",
+      "auth": "first_run_challenge",
+      "site_context": false,
+      "purpose": "atomic_initial_administrator_totp_and_recovery"
     },
     {
       "method": "POST",
@@ -55,14 +69,70 @@
       "path": "/api/v1/session",
       "auth": "session",
       "site_context": false,
-      "purpose": "session_readback"
+      "purpose": "session_readback_and_csrf_rotation"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/security/settings",
+      "auth": "session",
+      "site_context": false,
+      "purpose": "security_settings_readback"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/security/password",
+      "auth": "session_csrf_password_totp",
+      "site_context": false,
+      "purpose": "master_password_change"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/security/idle-timeout",
+      "auth": "session_csrf_step_up",
+      "site_context": false,
+      "purpose": "session_idle_timeout"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/security/totp/challenge",
+      "auth": "session_csrf_step_up",
+      "site_context": false,
+      "purpose": "totp_enrollment_challenge"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/security/totp/enable",
+      "auth": "session_csrf_step_up",
+      "site_context": false,
+      "purpose": "totp_enable_and_recovery_generation"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/security/totp/disable",
+      "auth": "session_csrf",
+      "site_context": false,
+      "purpose": "totp_disable_policy_denial"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/security/recovery-codes",
+      "auth": "session_csrf",
+      "site_context": false,
+      "purpose": "recovery_code_rotation"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/audit",
+      "auth": "session",
+      "site_context": false,
+      "purpose": "principal_and_optional_site_scoped_audit_query"
     },
     {
       "method": "POST",
       "path": "/api/v1/users",
-      "auth": "session_csrf_step_up",
+      "auth": "session_csrf",
       "site_context": false,
-      "purpose": "fleet_operator_creation"
+      "purpose": "additional_admin_totp_enrollment_required"
     },
     {
       "method": "GET",

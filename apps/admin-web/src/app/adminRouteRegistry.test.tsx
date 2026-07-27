@@ -13,7 +13,7 @@ describe("adminRouteRegistry", () => {
       delivery: "planned",
     });
     expect(adminRoutes.filter((route) => route.delivery === "active")).toHaveLength(
-      3,
+      4,
     );
     expect(groupedAdminRoutes().get("메시징")?.length).toBeGreaterThanOrEqual(6);
   });

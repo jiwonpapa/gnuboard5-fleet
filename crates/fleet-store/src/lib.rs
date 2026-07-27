@@ -1,6 +1,7 @@
 mod backup;
 mod error;
 mod records;
+mod security;
 
 use std::{
     fs::{self, File, OpenOptions},
@@ -17,6 +18,10 @@ pub use records::{
     EncryptedSecretRecord, JobRecord, NotificationOutboxRecord, SessionRecord, SiteRecord,
     UserCredential,
 };
+pub use security::{
+    AuditEntry, EncryptedTotpSecret, InstallationSecurityState, PendingInstallChallenge,
+    UserSecuritySettings,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::{
     SqlitePool,
@@ -25,7 +30,7 @@ use sqlx::{
 };
 use tokio::sync::Mutex;
 
-pub const EXPECTED_SCHEMA_VERSION: i64 = 2;
+pub const EXPECTED_SCHEMA_VERSION: i64 = 3;
 pub const APPLICATION_ID: i64 = 1_194_673_740;
 pub const DATABASE_FILENAME: &str = "fleet.sqlite3";
 pub const IDENTITY_FILENAME: &str = "installation.json";
@@ -222,6 +227,10 @@ impl FleetStore {
         .bind(password_hash)
         .execute(&mut *transaction)
         .await?;
+        sqlx::query("INSERT INTO user_security_settings (user_id) VALUES (?)")
+            .bind(user_id)
+            .execute(&mut *transaction)
+            .await?;
         transaction.commit().await?;
         Ok(())
     }

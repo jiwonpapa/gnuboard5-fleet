@@ -33,8 +33,8 @@ class InventoryTest(unittest.TestCase):
     def test_active_inventory_is_observation_not_conversion_proof(self) -> None:
         inventory = build_active_inventory(ROOT)
         self.assertEqual([], inventory.anomalies)
-        self.assertEqual(35, len(inventory.categories["server_routes"]))
+        self.assertEqual(45, len(inventory.categories["server_routes"]))
         self.assertEqual(189, len(inventory.categories["core_operations"]))
         self.assertEqual(7, len(inventory.categories["active_workspace_members"]))
-        self.assertEqual(15, len(inventory.categories["web_tests"]))
-        self.assertGreaterEqual(len(inventory.categories["rust_tests"]), 41)
+        self.assertEqual(22, len(inventory.categories["web_tests"]))
+        self.assertGreaterEqual(len(inventory.categories["rust_tests"]), 47)

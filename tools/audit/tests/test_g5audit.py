@@ -127,6 +127,7 @@ class G5AuditTest(unittest.TestCase):
                 "apps/admin-server/Cargo.toml",
                 "apps/admin-web/package.json",
                 "crates/fleet-connector/Cargo.toml",
+                "crates/fleet-core/Cargo.toml",
                 "crates/fleet-notify/Cargo.toml",
                 "crates/fleet-remote/Cargo.toml",
                 "crates/fleet-security/Cargo.toml",

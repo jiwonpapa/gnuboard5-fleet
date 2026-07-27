@@ -5,7 +5,10 @@ use std::{
 };
 
 use async_trait::async_trait;
-use g5_fleet_security::{AuthError, AuthService, Resolver, SecretPurpose, SsrfError, UrlGuard};
+use g5_fleet_security::{
+    AuthError, AuthService, Resolver, SecretPurpose, SsrfError, UrlGuard,
+    generate_current_totp_code,
+};
 use g5_fleet_store::FleetStore;
 use tempfile::TempDir;
 
@@ -19,18 +22,29 @@ async fn two_users_two_sites_sessions_csrf_and_secrets_are_isolated() {
         .await
         .expect("store");
     let auth = AuthService::new(store.clone(), &[9_u8; 32]).expect("auth");
-    let admin_id = auth
-        .bootstrap_admin("admin", ADMIN_PASSWORD)
+    let challenge = auth
+        .start_install_challenge("admin")
         .await
-        .expect("bootstrap");
-    assert!(
-        auth.bootstrap_admin("second-admin", ADMIN_PASSWORD)
-            .await
-            .is_err()
-    );
+        .expect("install challenge");
+    let totp_secret = challenge.manual_entry_key;
+    let totp_code =
+        generate_current_totp_code(&totp_secret, "G5 Fleet", "admin").expect("install TOTP");
+    let completion = auth
+        .complete_install(
+            challenge.setup_token.as_deref().expect("setup token"),
+            "admin",
+            ADMIN_PASSWORD,
+            &totp_code,
+        )
+        .await
+        .expect("complete install");
+    let admin_id = completion.principal_id;
+    assert!(auth.start_install_challenge("second-admin").await.is_err());
 
+    let totp_code =
+        generate_current_totp_code(&totp_secret, "G5 Fleet", "admin").expect("login TOTP");
     let admin_tokens = auth
-        .login("admin", ADMIN_PASSWORD)
+        .login_with_factor("admin", ADMIN_PASSWORD, Some(&totp_code), None)
         .await
         .expect("admin login");
     let mut admin = auth
@@ -48,7 +62,11 @@ async fn two_users_two_sites_sessions_csrf_and_secrets_are_isolated() {
         auth.require_recent_step_up(&admin),
         Err(AuthError::StepUpRequired)
     ));
-    auth.step_up(&admin, ADMIN_PASSWORD).await.expect("step up");
+    let totp_code =
+        generate_current_totp_code(&totp_secret, "G5 Fleet", "admin").expect("step-up TOTP");
+    auth.step_up_with_factor(&admin, ADMIN_PASSWORD, Some(&totp_code), None)
+        .await
+        .expect("step up");
     admin = auth
         .authenticate(&admin_tokens.session_token)
         .await

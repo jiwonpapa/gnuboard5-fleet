@@ -52,6 +52,51 @@ async fn json<T: serde::de::DeserializeOwned>(response: axum::response::Response
     serde_json::from_slice(&bytes).expect("valid JSON")
 }
 
+async fn complete_install(
+    app: &axum::Router,
+    login_name: &str,
+    password: &str,
+) -> (String, Vec<String>) {
+    let challenge = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/install/challenge",
+            None,
+            None,
+            Some(serde_json::json!({"login_name": login_name})),
+        ))
+        .await
+        .expect("install challenge");
+    assert_eq!(challenge.status(), StatusCode::CREATED);
+    let challenge: g5_fleet_admin_server::InstallChallengeResponse = json(challenge).await;
+    let code = g5_fleet_security::generate_current_totp_code(
+        &challenge.manual_entry_key,
+        "G5 Fleet",
+        login_name,
+    )
+    .expect("current TOTP");
+    let complete = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/install/complete",
+            None,
+            None,
+            Some(serde_json::json!({
+                "setup_token": challenge.setup_token,
+                "login_name": login_name,
+                "password": password,
+                "totp_code": code
+            })),
+        ))
+        .await
+        .expect("install complete");
+    assert_eq!(complete.status(), StatusCode::CREATED);
+    let complete: g5_fleet_admin_server::InstallCompleteResponse = json(complete).await;
+    (challenge.manual_entry_key, complete.recovery_codes)
+}
+
 #[tokio::test]
 async fn health_readiness_and_meta_contract_are_live() {
     let (_web, _data, app) = fixture().await;
@@ -80,7 +125,7 @@ async fn health_readiness_and_meta_contract_are_live() {
     let meta: MetaResponse = json(meta).await;
     assert_eq!(meta.api_version, "v1");
     assert_eq!(meta.product_name, "G5 Fleet");
-    assert_eq!(meta.database_schema_version, 2);
+    assert_eq!(meta.database_schema_version, 3);
     assert!(!meta.build_revision.is_empty());
     assert!(!meta.image_version.is_empty());
 }
@@ -151,11 +196,21 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("GET", "/healthz"),
             ("GET", "/readyz"),
             ("GET", "/api/v1/meta"),
-            ("POST", "/api/v1/bootstrap"),
+            ("GET", "/api/v1/install/status"),
+            ("POST", "/api/v1/install/challenge"),
+            ("POST", "/api/v1/install/complete"),
             ("POST", "/api/v1/auth/login"),
             ("POST", "/api/v1/auth/logout"),
             ("POST", "/api/v1/auth/step-up"),
             ("GET", "/api/v1/session"),
+            ("GET", "/api/v1/security/settings"),
+            ("PUT", "/api/v1/security/password"),
+            ("PUT", "/api/v1/security/idle-timeout"),
+            ("POST", "/api/v1/security/totp/challenge"),
+            ("POST", "/api/v1/security/totp/enable"),
+            ("POST", "/api/v1/security/totp/disable"),
+            ("POST", "/api/v1/security/recovery-codes"),
+            ("GET", "/api/v1/audit"),
             ("POST", "/api/v1/users"),
             ("GET", "/api/v1/plugins"),
             ("GET", "/api/v1/core/registry"),
@@ -191,21 +246,11 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
 async fn login_cookie_csrf_and_logout_contract_fail_closed() {
     let (_web, _data, app) = fixture().await;
     let password = "correct horse battery staple";
-    let bootstrap = app
-        .clone()
-        .oneshot(
-            Request::post("/api/v1/bootstrap")
-                .header("content-type", "application/json")
-                .body(Body::from(
-                    serde_json::json!({"login_name":"admin","password":password}).to_string(),
-                ))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-    assert_eq!(bootstrap.status(), StatusCode::CREATED);
-    let bootstrap_body = bootstrap.into_body().collect().await.unwrap().to_bytes();
-    assert!(!String::from_utf8_lossy(&bootstrap_body).contains(password));
+    let (totp_secret, recovery_codes) = complete_install(&app, "admin", password).await;
+    assert_eq!(recovery_codes.len(), 10);
+    let totp_code =
+        g5_fleet_security::generate_current_totp_code(&totp_secret, "G5 Fleet", "admin")
+            .expect("login TOTP");
 
     let login = app
         .clone()
@@ -213,7 +258,12 @@ async fn login_cookie_csrf_and_logout_contract_fail_closed() {
             Request::post("/api/v1/auth/login")
                 .header("content-type", "application/json")
                 .body(Body::from(
-                    serde_json::json!({"login_name":"admin","password":password}).to_string(),
+                    serde_json::json!({
+                        "login_name":"admin",
+                        "password":password,
+                        "totp_code":totp_code
+                    })
+                    .to_string(),
                 ))
                 .unwrap(),
         )
@@ -232,6 +282,7 @@ async fn login_cookie_csrf_and_logout_contract_fail_closed() {
     assert!(set_cookie.contains("SameSite=Strict"));
     let cookie = set_cookie.split(';').next().unwrap().to_owned();
     let login: g5_fleet_admin_server::LoginResponse = json(login).await;
+    assert!(!login.csrf_token.is_empty());
 
     let no_csrf = app
         .clone()
@@ -258,13 +309,14 @@ async fn login_cookie_csrf_and_logout_contract_fail_closed() {
         .await
         .unwrap();
     assert_eq!(session.status(), StatusCode::OK);
+    let session: g5_fleet_admin_server::SessionResponse = json(session).await;
 
     let logout = app
         .clone()
         .oneshot(
             Request::post("/api/v1/auth/logout")
                 .header("cookie", &cookie)
-                .header("x-csrf-token", login.csrf_token)
+                .header("x-csrf-token", session.csrf_token)
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -282,6 +334,198 @@ async fn login_cookie_csrf_and_logout_contract_fail_closed() {
         .await
         .unwrap();
     assert_eq!(revoked.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn first_run_totp_recovery_lockout_and_audit_contract_are_enforced() {
+    let (_web, _data, app) = fixture().await;
+    let status = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/install/status",
+            None,
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    let status: g5_fleet_admin_server::InstallStatusResponse = json(status).await;
+    assert_eq!(status.state, "setup_required");
+
+    let password = "correct horse battery staple";
+    let (totp_secret, recovery_codes) = complete_install(&app, "admin", password).await;
+    assert_eq!(recovery_codes.len(), 10);
+
+    let missing_totp = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/auth/login",
+            None,
+            None,
+            Some(serde_json::json!({
+                "login_name": "admin",
+                "password": password
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(missing_totp.status(), StatusCode::UNAUTHORIZED);
+    let missing_totp: ErrorEnvelope = json(missing_totp).await;
+    assert_eq!(missing_totp.error.code, "second_factor_required");
+
+    for attempt in 1..=5 {
+        let response = app
+            .clone()
+            .oneshot(json_request(
+                Method::POST,
+                "/api/v1/auth/login",
+                None,
+                None,
+                Some(serde_json::json!({
+                    "login_name": "unknown-user",
+                    "password": "definitely the wrong password"
+                })),
+            ))
+            .await
+            .unwrap();
+        if attempt < 5 {
+            assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+        } else {
+            assert_eq!(response.status(), StatusCode::TOO_MANY_REQUESTS);
+        }
+    }
+
+    let totp_code =
+        g5_fleet_security::generate_current_totp_code(&totp_secret, "G5 Fleet", "admin")
+            .expect("login TOTP");
+    let login = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/auth/login",
+            None,
+            None,
+            Some(serde_json::json!({
+                "login_name": "admin",
+                "password": password,
+                "totp_code": totp_code
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(login.status(), StatusCode::OK);
+    let cookie = login
+        .headers()
+        .get("set-cookie")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .split(';')
+        .next()
+        .unwrap()
+        .to_owned();
+    let login: g5_fleet_admin_server::LoginResponse = json(login).await;
+
+    let settings = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/security/settings",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    let settings: g5_fleet_admin_server::SecuritySettingsResponse = json(settings).await;
+    assert!(settings.totp_enabled);
+    assert_eq!(settings.session_idle_timeout_minutes, 30);
+
+    let disable_totp = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/security/totp/disable",
+            Some(&cookie),
+            Some(&login.csrf_token),
+            Some(serde_json::json!({
+                "current_password": password,
+                "totp_code": g5_fleet_security::generate_current_totp_code(
+                    &totp_secret,
+                    "G5 Fleet",
+                    "admin"
+                ).unwrap()
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(disable_totp.status(), StatusCode::FORBIDDEN);
+    let disable_totp: ErrorEnvelope = json(disable_totp).await;
+    assert_eq!(disable_totp.error.code, "totp_required_policy");
+
+    let audit = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/audit?limit=100",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(audit.status(), StatusCode::OK);
+    let audit: Vec<g5_fleet_store::AuditEntry> = json(audit).await;
+    assert!(audit.iter().any(|entry| entry.action == "install.complete"));
+    assert!(audit.iter().any(|entry| entry.action == "auth.login"));
+
+    let logout = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/auth/logout",
+            Some(&cookie),
+            Some(&login.csrf_token),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(logout.status(), StatusCode::NO_CONTENT);
+
+    let recovery_login = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/auth/login",
+            None,
+            None,
+            Some(serde_json::json!({
+                "login_name": "admin",
+                "password": password,
+                "recovery_code": recovery_codes[0]
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(recovery_login.status(), StatusCode::OK);
+
+    let reused_recovery = app
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/auth/login",
+            None,
+            None,
+            Some(serde_json::json!({
+                "login_name": "admin",
+                "password": password,
+                "recovery_code": recovery_codes[0]
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(reused_recovery.status(), StatusCode::UNAUTHORIZED);
 }
 
 #[tokio::test]
@@ -309,21 +553,10 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         notification_worker: None,
     });
     let fleet_password = "correct horse battery staple";
-    let bootstrap = app
-        .clone()
-        .oneshot(json_request(
-            Method::POST,
-            "/api/v1/bootstrap",
-            None,
-            None,
-            Some(serde_json::json!({
-                "login_name": "admin",
-                "password": fleet_password
-            })),
-        ))
-        .await
-        .unwrap();
-    assert_eq!(bootstrap.status(), StatusCode::CREATED);
+    let (totp_secret, _) = complete_install(&app, "admin", fleet_password).await;
+    let totp_code =
+        g5_fleet_security::generate_current_totp_code(&totp_secret, "G5 Fleet", "admin")
+            .expect("login TOTP");
 
     let login = app
         .clone()
@@ -334,7 +567,8 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             None,
             Some(serde_json::json!({
                 "login_name": "admin",
-                "password": fleet_password
+                "password": fleet_password,
+                "totp_code": totp_code
             })),
         ))
         .await
@@ -360,13 +594,19 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             "/api/v1/auth/step-up",
             Some(&cookie),
             Some(&csrf),
-            Some(serde_json::json!({"password": fleet_password})),
+            Some(serde_json::json!({
+                "password": fleet_password,
+                "totp_code": g5_fleet_security::generate_current_totp_code(
+                    &totp_secret,
+                    "G5 Fleet",
+                    "admin"
+                ).unwrap()
+            })),
         ))
         .await
         .unwrap();
     assert_eq!(step_up.status(), StatusCode::NO_CONTENT);
 
-    let peer_password = "another durable peer password";
     let create_peer = app
         .clone()
         .oneshot(json_request(
@@ -376,12 +616,17 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             Some(&csrf),
             Some(serde_json::json!({
                 "login_name": "peer",
-                "password": peer_password
+                "password": "another durable peer password"
             })),
         ))
         .await
         .unwrap();
-    assert_eq!(create_peer.status(), StatusCode::CREATED);
+    assert_eq!(create_peer.status(), StatusCode::CONFLICT);
+    let create_peer: ErrorEnvelope = json(create_peer).await;
+    assert_eq!(
+        create_peer.error.code, "user_totp_enrollment_required",
+        "password-only Fleet administrators must not be created"
+    );
 
     let site = app
         .clone()
@@ -399,44 +644,6 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .await
         .unwrap();
     assert_eq!(site.status(), StatusCode::CREATED);
-
-    let peer_login = app
-        .clone()
-        .oneshot(json_request(
-            Method::POST,
-            "/api/v1/auth/login",
-            None,
-            None,
-            Some(serde_json::json!({
-                "login_name": "peer",
-                "password": peer_password
-            })),
-        ))
-        .await
-        .unwrap();
-    assert_eq!(peer_login.status(), StatusCode::OK);
-    let peer_cookie = peer_login
-        .headers()
-        .get("set-cookie")
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .split(';')
-        .next()
-        .unwrap()
-        .to_owned();
-    let peer_site = app
-        .clone()
-        .oneshot(json_request(
-            Method::GET,
-            "/api/v1/sites/site-a",
-            Some(&peer_cookie),
-            None,
-            None,
-        ))
-        .await
-        .unwrap();
-    assert_eq!(peer_site.status(), StatusCode::NOT_FOUND);
 
     let plugins = app
         .clone()

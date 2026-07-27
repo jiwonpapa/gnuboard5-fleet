@@ -3,6 +3,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { getHealth, getMeta, type MetaResponse } from "./api/system";
 import { VerticalFlow } from "./components/VerticalFlow";
+import { AuditLogPage } from "./features/audit/AuditLogPage";
+import { FleetAccessGate } from "./features/auth/FleetAccessGate";
+import { useAuthSession } from "./features/auth/useAuthSession";
+import { SecuritySettingsPage } from "./features/security/SecuritySettingsPage";
 import { AppShell } from "./layout/AppShell";
 import { AdminMenuStatusPage } from "./status/AdminMenuStatusPage";
 
@@ -16,18 +20,21 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <AppShell
-        serverState={server.status}
-        serverVersion={server.meta?.server_version}
-      >
-        <Routes>
-          <Route path="/" element={<Overview />} />
-          <Route path="/sites" element={<Sites />} />
-          <Route path="/activity" element={<Activity />} />
-          <Route path="/admin/:domain" element={<AdminMenuStatusPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </AppShell>
+      <FleetAccessGate>
+        <AppShell
+          serverState={server.status}
+          serverVersion={server.meta?.server_version}
+        >
+          <Routes>
+            <Route path="/" element={<Overview />} />
+            <Route path="/sites" element={<Sites />} />
+            <Route path="/audit" element={<AuditLogPage />} />
+            <Route path="/security" element={<SecuritySettingsPage />} />
+            <Route path="/admin/:domain" element={<AdminMenuStatusPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AppShell>
+      </FleetAccessGate>
     </BrowserRouter>
   );
 }
@@ -101,6 +108,7 @@ function Metric(props: { label: string; value: string; note: string }) {
 }
 
 function Sites() {
+  const { session } = useAuthSession();
   return (
     <section className="page" aria-labelledby="sites-title">
       <div className="page-heading">
@@ -113,18 +121,8 @@ function Sites() {
           </p>
         </div>
       </div>
-      <VerticalFlow />
+      <VerticalFlow csrfToken={session.csrf_token} />
     </section>
-  );
-}
-
-function Activity() {
-  return (
-    <PlaceholderPage
-      eyebrow="Activity"
-      title="작업 기록"
-      description="사용자와 사이트에 귀속된 변경 작업이 시간순으로 표시됩니다."
-    />
   );
 }
 

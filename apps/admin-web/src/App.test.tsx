@@ -20,6 +20,32 @@ describe("App", () => {
             { status: 200 },
           );
         }
+        if (path === "/api/v1/install/status") {
+          return new Response(JSON.stringify({ state: "complete" }), {
+            status: 200,
+          });
+        }
+        if (path === "/api/v1/session") {
+          return new Response(
+            JSON.stringify({
+              principal_id: "user-1",
+              web_session_id: "session-1",
+              expires_at_unix: 4_000_000_000,
+              step_up_active: true,
+              csrf_token: "csrf-current",
+            }),
+            { status: 200 },
+          );
+        }
+        if (path === "/api/v1/security/settings") {
+          return new Response(
+            JSON.stringify({
+              totp_enabled: true,
+              session_idle_timeout_minutes: 30,
+            }),
+            { status: 200 },
+          );
+        }
         return new Response(
           JSON.stringify({
             api_version: "v1",
@@ -38,7 +64,9 @@ describe("App", () => {
 
   it("renders the responsive operations shell and live server state", async () => {
     render(<App />);
-    expect(screen.getByRole("heading", { name: "연결 상태" })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "연결 상태" }),
+    ).toBeVisible();
     expect(screen.getByRole("navigation", { name: "주요 메뉴" })).toBeVisible();
     expect(await screen.findByText("서버 정상")).toBeVisible();
     expect(screen.getByText("0.1.0")).toBeVisible();

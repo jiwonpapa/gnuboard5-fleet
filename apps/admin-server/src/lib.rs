@@ -11,6 +11,7 @@ use axum::{
     Json, Router,
     extract::State,
     http::StatusCode,
+    middleware,
     response::{IntoResponse, Response},
     routing::get,
 };
@@ -29,7 +30,11 @@ pub const SERVICE_NAME: &str = "g5-fleet-admin-server";
 pub const API_VERSION: &str = "v1";
 pub const DEFAULT_BUILD_REVISION: &str = "development";
 pub const DEFAULT_IMAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
-pub use api::{LoginResponse, RequestContext, SessionResponse};
+pub use api::{
+    InstallChallengeResponse, InstallCompleteResponse, InstallStatusResponse, LoginResponse,
+    RecoveryCodesResponse, RequestContext, SecuritySettingsResponse, SessionResponse,
+    TotpChallengeResponse,
+};
 
 pub fn build_revision() -> String {
     env::var("G5_FLEET_BUILD_REVISION").unwrap_or_else(|_| DEFAULT_BUILD_REVISION.to_owned())
@@ -126,6 +131,10 @@ pub fn build_router(config: AppConfig) -> Router {
     let api = Router::new()
         .route("/meta", get(meta))
         .merge(api::router())
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            api::audit_mutation_request,
+        ))
         .fallback(api_not_found);
 
     Router::new()

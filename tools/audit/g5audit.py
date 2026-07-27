@@ -1465,12 +1465,52 @@ def check_server_scaffold_contract(root: Path) -> str:
         ("GET", "/healthz", "public", False),
         ("GET", "/readyz", "public", False),
         ("GET", "/api/v1/meta", "public", False),
-        ("POST", "/api/v1/bootstrap", "first_run_only", False),
+        ("GET", "/api/v1/install/status", "public", False),
+        ("POST", "/api/v1/install/challenge", "first_run_only", False),
+        ("POST", "/api/v1/install/complete", "first_run_challenge", False),
         ("POST", "/api/v1/auth/login", "public", False),
         ("POST", "/api/v1/auth/logout", "session_csrf", False),
         ("POST", "/api/v1/auth/step-up", "session_csrf", False),
         ("GET", "/api/v1/session", "session", False),
-        ("POST", "/api/v1/users", "session_csrf_step_up", False),
+        ("GET", "/api/v1/security/settings", "session", False),
+        (
+            "PUT",
+            "/api/v1/security/password",
+            "session_csrf_password_totp",
+            False,
+        ),
+        (
+            "PUT",
+            "/api/v1/security/idle-timeout",
+            "session_csrf_step_up",
+            False,
+        ),
+        (
+            "POST",
+            "/api/v1/security/totp/challenge",
+            "session_csrf_step_up",
+            False,
+        ),
+        (
+            "POST",
+            "/api/v1/security/totp/enable",
+            "session_csrf_step_up",
+            False,
+        ),
+        (
+            "POST",
+            "/api/v1/security/totp/disable",
+            "session_csrf",
+            False,
+        ),
+        (
+            "POST",
+            "/api/v1/security/recovery-codes",
+            "session_csrf_step_up",
+            False,
+        ),
+        ("GET", "/api/v1/audit", "session", False),
+        ("POST", "/api/v1/users", "session_csrf", False),
         ("GET", "/api/v1/plugins", "session", False),
         ("GET", "/api/v1/core/registry", "session", False),
         ("GET", "/api/v1/sites", "session", False),
@@ -1608,7 +1648,7 @@ def check_server_scaffold_contract(root: Path) -> str:
     missing = [token for token in required_tokens if token not in source]
     if missing:
         raise ValueError(f"active server scaffold source tokens missing: {missing}")
-    return "Axum healthz·readyz·meta, JSON error envelope, React SPA static fallback 확인"
+    return "Axum healthz·readyz·meta, 설치·OTP·감사 API, JSON error envelope, React SPA fallback 확인"
 
 
 def check_server_vertical_flow(root: Path) -> str:
@@ -2223,7 +2263,8 @@ def check_auth_site_boundary(root: Path) -> str:
         "Argon2::default()",
         "Aes256Gcm",
         "ct_eq",
-        "create_initial_user",
+        "complete_install",
+        "login_with_factor",
         "decrypt_secret_for_connector",
         "secret_aad",
     ):

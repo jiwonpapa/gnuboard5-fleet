@@ -557,8 +557,10 @@ mod tests {
             base_url: "https://example.test".into(),
         };
         let value = serde_json::to_value(target).expect("serialize");
+        assert_eq!(value.as_object().map(serde_json::Map::len), Some(3));
+        assert_eq!(value["principal_id"], "user-1");
         assert_eq!(value["site_id"], "site-1");
-        assert!(value.get("active_site_id").is_none());
+        assert_eq!(value["base_url"], "https://example.test");
         assert_eq!(
             serde_json::to_value(RuntimeSecretStorage::EncryptedSqlite).expect("runtime mode"),
             "encrypted_sqlite"
