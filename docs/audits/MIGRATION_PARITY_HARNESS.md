@@ -89,7 +89,7 @@ make test-migration-parity
 make audit-migration-parity
 
 # 선택 배치의 정적 gate와 전체 잔여 findings 동시 보고
-make check-batch BATCH=R10
+make check-batch BATCH=R11
 
 # 동일 revision의 로컬 runtime evidence 포함
 make audit-migration-runtime

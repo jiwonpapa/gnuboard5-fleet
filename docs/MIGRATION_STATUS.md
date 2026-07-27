@@ -111,24 +111,26 @@ revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장�
 
 ## 현재 배치
 
-R00~R04는 tracked 증거로 닫혔습니다. R04는 legacy 72개와 capability
-1개를 닫아 전역 finding을 540개에서 467개로 줄였습니다.
+R00~R10은 tracked 증거로 닫혔습니다. R10은 legacy 14개와 Core operation
+5개를 닫아 전역 finding을 467개에서 448개로 줄였습니다.
 
-- 구현 commit: `fac6a92fc2213d39257fad04fc9c70e75c22dcdd`
-- 증거: `docs/audits/evidence/R04_BATCH_GATE_PASS.json`
+- 구현 commit: `e92bf23111f30967940b778f9e55a74171d33dee`
+- 증거: `docs/audits/evidence/R10_BATCH_GATE_PASS.json`
 - runtime 증거: `docs/audits/evidence/R04_REMOTE_RUNTIME_CERTIFICATION.json`
-- R04 scoped finding: 0
+- R10 scoped finding: 0
 - `SERVER_STATIC_PASS`: 35/35
+- typed Core 소비: 5/189
+- 웹 테스트: 50 PASS
 - `LOCAL_RUNTIME_PASS`: SSH/SFTP 8개 실제 검증
 - staging `fac6a92` 배포·TLS·ready/meta와 실패 upgrade backup rollback
   receipt PASS. 다만 과거 B10 local/browser/package 증거가 현재 SHA와 달라
   전체 `audit-staging` PASS로 승격하지 않음
-- 다음 활성 배치: R10 admin·config·schema
-- R10 사전 probe: FAIL 19
+- 다음 활성 배치: R11 auth·member self·system auth
+- R11 사전 probe: FAIL 19
 
 ```bash
-make check-batch BATCH=R10
+make check-batch BATCH=R11
 ```
 
-전체 완료는 아닙니다. 전역 감사 467개가 남아 있으며 R36 전까지
+전체 완료는 아닙니다. 전역 감사 448개가 남아 있으며 R36 전까지
 `MIGRATION_STATIC FAIL`을 유지합니다.

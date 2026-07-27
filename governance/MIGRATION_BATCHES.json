@@ -294,8 +294,13 @@
       "id": "R10",
       "sequence": 5,
       "title": "admin·config·schema",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R04"],
+      "completion": {
+        "implementation_commit": "e92bf23111f30967940b778f9e55a74171d33dee",
+        "evidence_path": "docs/audits/evidence/R10_BATCH_GATE_PASS.json",
+        "closed_at": "2026-07-27T15:11:29Z"
+      },
       "core": {
         "domains": ["admin", "config", "schema"],
         "operation_ids": [],
@@ -333,7 +338,7 @@
       "id": "R11",
       "sequence": 6,
       "title": "auth·member self·system auth",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R10"],
       "core": {
         "domains": ["auth", "member"],
