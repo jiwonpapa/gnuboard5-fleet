@@ -1,0 +1,23 @@
+{
+  "schema": "g5-fleet.remote-runtime-certification/v1",
+  "status": "PASS",
+  "proof_level": "LOCAL_RUNTIME_PASS",
+  "git_revision": "fac6a92fc2213d39257fad04fc9c70e75c22dcdd",
+  "generated_at": "2026-07-27T14:35:56.673230Z",
+  "target": {
+    "host_sha256": "34ed766f76c70c9572254e6b26387c4d94bb655a147951b4bdbf1d9a1d484675",
+    "port": 22,
+    "user_sha256": "b8b4168efb7e311e8b28f23e70e0fbdcc98eed97a7afc03df49e13a6ea86cd7c"
+  },
+  "verified": [
+    "managed_private_network_target_pin",
+    "strict_observed_host_key",
+    "terminal_connect_interrupt_reconnect",
+    "terminal_command_readback",
+    "sftp_mkdir_upload_stat_chmod_copy_move_download",
+    "sftp_byte_for_byte_readback",
+    "sftp_running_transfer_process_abort",
+    "sftp_fixture_cleanup"
+  ],
+  "secrets_recorded": false
+}

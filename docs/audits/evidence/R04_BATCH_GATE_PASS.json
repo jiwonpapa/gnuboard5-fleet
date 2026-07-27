@@ -1,0 +1,165 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R04",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "fac6a92fc2213d39257fad04fc9c70e75c22dcdd",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "fac6a92fc2213d39257fad04fc9c70e75c22dcdd"
+  },
+  "generated_at": "2026-07-27T14:45:38Z",
+  "commands": [
+    "make active-check",
+    "make check-batch BATCH=R04",
+    "make audit-runtime-prepare",
+    "make audit-server-static",
+    "python3 tools/certification/remote_runtime_smoke.py --host <redacted> --user <redacted> --port 22 --private-key-file <redacted>",
+    "make check",
+    "make package-build VERSION=r04-fac6a92",
+    "tools/certification/staging_rehearsal.sh <provider-id> r04-fac6a92 <env-file> <release-manifest> <receipt-dir>",
+    "SSL_CERT_FILE=<trusted-mkcert-ca> make staging-smoke CONFIG=<staging-input>"
+  ],
+  "results": {
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {
+        "passed": 53,
+        "failed": 0,
+        "ignored": 1
+      },
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 31,
+      "web_tests": {
+        "passed": 44,
+        "failed": 0
+      },
+      "web_build": "PASS"
+    },
+    "audit_harness_tests": {
+      "passed": 22,
+      "failed": 0
+    },
+    "migration_harness_tests": {
+      "passed": 26,
+      "failed": 0
+    },
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "checks": {
+        "passed": 35,
+        "failed": 0
+      }
+    },
+    "remote_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "receipt": "docs/audits/evidence/R04_REMOTE_RUNTIME_CERTIFICATION.json",
+      "verified_operations": 8,
+      "secrets_recorded": false
+    },
+    "staging_runtime": {
+      "status": "PASS",
+      "base_url": "https://g5-fleet.test",
+      "version": "r04-fac6a92",
+      "revision": "fac6a92fc2213d39257fad04fc9c70e75c22dcdd",
+      "image_id": "sha256:e384b37fa5f4b955f91a151c0faf1a0f2c5cf5634ce11a15564e8949d5e5cd78",
+      "platform": "linux/amd64",
+      "database_schema_version": 3,
+      "upgrade_backup_readback": "PASS",
+      "failed_upgrade_rollback_rehearsal": "PASS",
+      "trusted_tls_ready_meta_smoke": "PASS",
+      "browser_desktop_mobile_overflow": false,
+      "browser_console_issues": 0,
+      "audit_staging": "NOT_PROMOTED_STALE_B10_PARENT_RECEIPTS"
+    },
+    "full_check": {
+      "status": "EXPECTED_FAIL",
+      "passed_through": "SERVER_STATIC_PASS",
+      "blocked_by": "global migration parity",
+      "global_findings": 467
+    },
+    "predecessor_regression": {
+      "batch": "R03",
+      "status": "PASS",
+      "findings": 0
+    },
+    "batch_scope": {
+      "legacy": 72,
+      "core_operations": 0,
+      "required_capabilities": 1
+    },
+    "reuse": {
+      "reused": 1,
+      "adapted": 55,
+      "redesigned": 16,
+      "deferred": 0
+    },
+    "batch_findings": 0,
+    "ownership": {
+      "legacy": {
+        "owned": 510,
+        "total": 510
+      },
+      "core_operations": {
+        "owned": 189,
+        "total": 189
+      },
+      "required_capabilities": {
+        "owned": 13,
+        "total": 13
+      }
+    },
+    "global_migration": {
+      "status": "FAIL",
+      "findings": 467
+    },
+    "next_batch_probe": {
+      "batch": "R10",
+      "status": "FAIL",
+      "scope": {
+        "legacy": 14,
+        "core_operations": 5,
+        "required_capabilities": 0
+      },
+      "findings": 19
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "32f87de96e898baf32ca93778010fb0fd3862d725782ce621bcae78712d499db",
+    "migration_batches": "f802d6e00986a5e48ba839ff6a4e0e6c2e13571814113b0a0bb3fb2fce46ae32"
+  },
+  "source_reports": [
+    {
+      "path": "output/audit/runs/migration-batch-R04-20260727T144538Z-6ec0251c/result.json",
+      "sha256": "214b36befdfca809674648196dfd455ce698712f016978603542cc56b5ceca5b"
+    },
+    {
+      "path": "output/audit/runs/20260727T144005Z-e7014f75f638/result.json",
+      "sha256": "7497406baea0558077cccb210ce7b561535a5591458eabfaadef90d13e0aba3f"
+    },
+    {
+      "path": "output/audit/runs/migration-parity-20260727T144052Z-715cf6d5/result.json",
+      "sha256": "df8a2c3767aff6c3602b5ce8be276e74b1aaa2f26fb0e125b0999f72bd2a89dd"
+    },
+    {
+      "path": "docs/audits/evidence/R04_REMOTE_RUNTIME_CERTIFICATION.json",
+      "sha256": "cfa32eafa2574d36f1cb37679a492d36ef128565c3ac9bff6884482c2f069e64"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R10-20260727T144058Z-f693133f/result.json",
+      "sha256": "f9bfa044ce41050149c28356d0de980a3bf574ebc8aea89e6af7aa2467cce2e7"
+    },
+    {
+      "path": ".cache/evidence/package-release.json",
+      "sha256": "061348d3251a82eae396b7e318cb36439cbab775b1c9a90bafae8e2d16ae2e96"
+    },
+    {
+      "path": ".cache/evidence/staging.json",
+      "sha256": "3586c096209ca14006583e28d55b8034381596d08e695ff44aa72d6b2d8ab176"
+    }
+  ],
+  "claim_limit": "R04 SSH profile, observed host-key trust, terminal WebSocket, SFTP browser, running transfer process interruption, queue control and the named staging VM deployment/rollback only; Core OpenAPI domain consumers, production notifications and current-SHA B10 local/browser/package parent certification remain incomplete."
+}

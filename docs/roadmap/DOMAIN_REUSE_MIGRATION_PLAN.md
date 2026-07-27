@@ -67,8 +67,8 @@ R00에서 `make check-batch BATCH=Rxx`를 구현합니다. 각 배치는 아래
 
 ## 4. 배치 순서
 
-현재 manifest 상태는 R00~R03 `batch_pass`, R04 `active`, 나머지는
-`planned`입니다. R03까지 172개를 닫았으며 제품 기능 이관 완료를
+현재 manifest 상태는 R00~R04 `batch_pass`, R10 `active`, 나머지는
+`planned`입니다. R04까지 245개를 닫았으며 제품 기능 이관 완료를
 뜻하지 않습니다.
 
 ### 4.1 이관 통제와 공통 기반
@@ -148,18 +148,18 @@ commit/push: 미실행
 
 ## 6. 현재 실행
 
-R00~R03은 닫혔고 다음 작업은 R04입니다.
+R00~R04는 닫혔고 다음 작업은 R10입니다.
 
-1. R04의 legacy 72개와 capability 1개를 기존 코드에서 우선 추출합니다.
-2. SSH profile·host verification, terminal WebSocket, SFTP streaming·중단복구를 서버 경계로 이관합니다.
-3. scoped audit의 73 findings를 0으로 닫기 전 R10을 시작하지 않습니다.
+1. R10의 legacy 14개와 Core operation 5개를 기존 코드에서 우선 추출합니다.
+2. admin·config·schema의 typed DTO·Axum route·React workflow를 실제 readback과 함께 이관합니다.
+3. scoped audit의 19 findings를 0으로 닫기 전 R11을 시작하지 않습니다.
 4. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
-5. R04 검증·commit·push 후에만 R10을 시작합니다.
+5. R10 검증·commit·push 후에만 R11을 시작합니다.
 
 실행 명령:
 
 ```bash
-make check-batch BATCH=R04
+make check-batch BATCH=R10
 ```
 
 배치 gate가 PASS하더라도 전역 `make audit-migration-parity`는 R36 전까지
@@ -202,3 +202,14 @@ R03 closeout:
 - R03 finding: 0
 - 전역 잔여 finding: 540
 - 다음 R04 사전 probe: FAIL 73
+
+R04 closeout:
+
+- 구현 commit: `fac6a92fc2213d39257fad04fc9c70e75c22dcdd`
+- tracked 증거: `docs/audits/evidence/R04_BATCH_GATE_PASS.json`
+- runtime 증거: `docs/audits/evidence/R04_REMOTE_RUNTIME_CERTIFICATION.json`
+- scope: legacy 72, Core 0, capability 1
+- reuse: 1 reused / 55 adapted / 16 redesigned / 0 deferred
+- R04 finding: 0
+- 전역 잔여 finding: 467
+- 다음 R10 사전 probe: FAIL 19

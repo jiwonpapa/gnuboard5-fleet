@@ -2,17 +2,17 @@
 
 ## 현재 판정
 
-2026-07-27 R03 마감 후 전체 이관 동등성 하네스 결과는
+2026-07-27 R04 마감 후 전체 이관 동등성 하네스 결과는
 `MIGRATION_STATIC FAIL`입니다.
 
-- legacy inventory 510개 중 유효 매핑 164, 미매핑 346
-  - Tauri command 34/253
-  - React page 9/43
-  - Rust workspace member 17/21
-  - frontend regression test 33/100
-  - Rust regression test 71/93
-- 서버 전환 필수 capability 8/13 구현 증명
-- 활성 server route 52개와 Core registry 189개는 존재하지만 전체 이관
+- legacy inventory 510개 중 유효 매핑 236, 미매핑 274
+  - Tauri command 66/253
+  - React page 11/43
+  - Rust workspace member 21/21
+  - frontend regression test 48/100
+  - Rust regression test 90/93
+- 서버 전환 필수 capability 9/13 구현 증명
+- 활성 server route 57개와 Core registry 189개는 존재하지만 전체 이관
   증거로 승격하지 않음
 
 아래 구현 목록은 현재 소스에 존재하는 기반 기능 inventory입니다. 전체
@@ -53,9 +53,11 @@ legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B
 - risk-based step-up, DELETE 명시 확인, 외부 메일·SMS·Push 9개 routine 차단
 - G5 token refresh·logout의 서버 전용 암호화 수명주기 구현
 - SSH 개인키·known_hosts의 사용자·사이트 단위 서버 암호화 저장
-- public IP DNS pin·재검증과 strict host key를 강제하는 OpenSSH adapter 구현
+- 관리 대상 public·private IP DNS pin·재검증과 strict host key를 강제하는 OpenSSH adapter 구현
 - hash-only 60초 일회성 ticket 기반 terminal WebSocket 중계 구현
 - 구조화된 SFTP 명령, bounded upload/download stream과 SQLite 전송 상태 구현
+- 실행 중 OpenSSH 전송 process 중단, 동시 전송 제한과 브라우저 재전송 구현
+- 관측 host key, terminal 중단·재접속, SFTP readback·전송 중단·cleanup 스테이징 VM PASS
 - 터미널 ticket 교차 사용자·사이트 차단과 전송 실패·재시도·취소 상태 테스트 PASS
 - SQLite notification lease·retry·dedupe·dead-letter worker 구현
 - Telegram·Web Push injected adapter와 외부 네트워크 없는 fake delivery PASS
@@ -90,7 +92,7 @@ legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B
 ## 아직 인증하지 않는 것
 
 - 실제 G5 runtime 대상 Core 189개 route 실행·실데이터 field readback
-- 실제 외부 호스트 대상 SSH/SFTP 연결·중단·재접속
+- R04에서 인증한 사설 스테이징 VM 외 production SSH/SFTP 대상
 - Telegram/Web Push 실제 발송
 
 현재 revision은 routine `SERVER_STATIC_PASS`와 별도로 공식 G5·Chromium
@@ -109,19 +111,24 @@ revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장�
 
 ## 현재 배치
 
-R00~R03은 tracked 증거로 닫혔습니다. R03은 legacy 57개를 닫아 전역
-finding을 597개에서 540개로 줄였습니다.
+R00~R04는 tracked 증거로 닫혔습니다. R04는 legacy 72개와 capability
+1개를 닫아 전역 finding을 540개에서 467개로 줄였습니다.
 
-- 구현 commit: `05a6e8c150a7fcaf3c36de6e87db4b88a1c51c4c`
-- 증거: `docs/audits/evidence/R03_BATCH_GATE_PASS.json`
-- R03 scoped finding: 0
+- 구현 commit: `fac6a92fc2213d39257fad04fc9c70e75c22dcdd`
+- 증거: `docs/audits/evidence/R04_BATCH_GATE_PASS.json`
+- runtime 증거: `docs/audits/evidence/R04_REMOTE_RUNTIME_CERTIFICATION.json`
+- R04 scoped finding: 0
 - `SERVER_STATIC_PASS`: 35/35
-- 다음 활성 배치: R04 SSH·SFTP·terminal
-- R04 사전 probe: FAIL 73
+- `LOCAL_RUNTIME_PASS`: SSH/SFTP 8개 실제 검증
+- staging `fac6a92` 배포·TLS·ready/meta와 실패 upgrade backup rollback
+  receipt PASS. 다만 과거 B10 local/browser/package 증거가 현재 SHA와 달라
+  전체 `audit-staging` PASS로 승격하지 않음
+- 다음 활성 배치: R10 admin·config·schema
+- R10 사전 probe: FAIL 19
 
 ```bash
-make check-batch BATCH=R04
+make check-batch BATCH=R10
 ```
 
-전체 완료는 아닙니다. 전역 감사 540개가 남아 있으며 R36 전까지
+전체 완료는 아닙니다. 전역 감사 467개가 남아 있으며 R36 전까지
 `MIGRATION_STATIC FAIL`을 유지합니다.

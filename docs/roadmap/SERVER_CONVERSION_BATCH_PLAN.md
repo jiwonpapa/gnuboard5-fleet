@@ -267,13 +267,15 @@ routine 차단, mock Connector config 수정·재조회·원복을 검증했습�
 - 다른 사용자 terminal·transfer event 수신 차단
 
 현재 상태: 완료. SSH profile을 사용자·사이트별 암호화 secret으로
-저장하고 strict known_hosts, public IP DNS pin·재검증, 고정 OpenSSH
+저장하고 strict known_hosts, 관리 대상 public·private IP DNS pin·재검증, 고정 OpenSSH
 binary를 강제했습니다. 60초 hash-only 일회성 ticket WebSocket,
 구조화된 SFTP 명령, bounded upload/download stream과 SQLite transfer
 상태를 Axum·React에 연결하고 disconnect 시 process 종료 경계를
 구현했습니다. 교차 사용자·사이트 ticket·job 차단과
-실패·재시도·취소 상태는 내부 테스트로 검증했으며 실제 외부 SSH/SFTP
-접속은 B10 전까지 인증하지 않습니다.
+실패·재시도·취소 상태를 내부 테스트로 검증했습니다. R04에서 별도
+스테이징 VM의 실제 host key 관측, terminal 중단·재접속, SFTP readback,
+실행 중 전송 process 중단과 fixture cleanup을 `LOCAL_RUNTIME_PASS`로
+인증했습니다.
 
 ### B08 — 알림·PWA·플러그인 경계
 
@@ -347,9 +349,10 @@ HTTPS origin은 내부 CA로 검증합니다.
 
 ## 4. 현재 바로 시작할 배치
 
-현재 시작점은 새 실행 정본의 **R04 SSH·SFTP·terminal**입니다.
+현재 시작점은 새 실행 정본의 **R10 admin·config·schema**입니다.
 R00 배치 통제, R01 공통 기반 49개, R02 설치·인증·보안 66개와
-R03 사이트·활동·backup 57개는 tracked 증거로 닫았고, 남은 540개는 `DOMAIN_REUSE_MIGRATION_PLAN.md`의 단일 활성 배치 순서로
+R03 사이트·활동·backup 57개, R04 SSH·SFTP·terminal 73개는 tracked
+증거로 닫았고, 남은 467개는 `DOMAIN_REUSE_MIGRATION_PLAN.md`의 단일 활성 배치 순서로
 실제 target·회귀 test·symbol check를 채웁니다.
 
 staging VM은 유지하되 정적 이관 동등성이 PASS하기 전에는 staging
