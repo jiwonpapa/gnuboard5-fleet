@@ -59,6 +59,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         store.close().await;
         return Ok(());
     }
+    if command == "migrate-store" {
+        let store = FleetStore::migrate_existing(&data_dir).await?;
+        store.full_integrity_check().await?;
+        info!(
+            data_dir = %store.data_dir().display(),
+            installation_id = %store.identity().installation_id,
+            schema_version = store.identity().schema_version,
+            "G5 Fleet store migration verified"
+        );
+        store.close().await;
+        return Ok(());
+    }
     if command == "backup" {
         let snapshot = required_argument(2, "backup requires SNAPSHOT_PATH")?;
         let store = FleetStore::open_existing(&data_dir).await?;

@@ -7,8 +7,8 @@ use std::{
 };
 
 use g5_fleet_store::{
-    DATABASE_FILENAME, EXPECTED_SCHEMA_VERSION, FleetStore, StoreError, decrypt_portable_backup,
-    encrypt_portable_backup,
+    DATABASE_FILENAME, EXPECTED_SCHEMA_VERSION, FleetStore, InstallationIdentity, StoreError,
+    decrypt_portable_backup, encrypt_portable_backup,
 };
 use sqlx::{
     Connection, Executor, SqliteConnection, migrate::Migrator, sqlite::SqliteConnectOptions,
@@ -54,6 +54,100 @@ async fn initialization_is_explicit_locked_and_missing_database_fails_closed() {
         .await
         .expect("reopen");
     reopened.full_integrity_check().await.expect("integrity");
+}
+
+#[tokio::test]
+async fn existing_schema_migration_is_explicit_preserves_rows_and_repairs_stale_identity() {
+    let data = TempDir::new().expect("data tempdir");
+    let migration_dir = TempDir::new().expect("migration tempdir");
+    fs::write(
+        migration_dir.path().join("0001_control_plane.sql"),
+        include_str!("../migrations/0001_control_plane.sql"),
+    )
+    .expect("v1 migration");
+    fs::write(
+        migration_dir.path().join("0002_security_boundary.sql"),
+        include_str!("../migrations/0002_security_boundary.sql"),
+    )
+    .expect("v2 migration");
+    let migrator = Migrator::new(migration_dir.path())
+        .await
+        .expect("load v2 migrations");
+    let database = data.path().join(DATABASE_FILENAME);
+    let mut connection = SqliteConnection::connect_with(
+        &SqliteConnectOptions::new()
+            .filename(&database)
+            .create_if_missing(true)
+            .foreign_keys(true),
+    )
+    .await
+    .expect("create v2 database");
+    migrator.run(&mut connection).await.expect("migrate to v2");
+    sqlx::query(
+        "INSERT INTO installation_metadata \
+         (singleton, installation_id, schema_version) VALUES (1, ?, 2)",
+    )
+    .bind(INSTALLATION_ID)
+    .execute(&mut connection)
+    .await
+    .expect("v2 installation metadata");
+    sqlx::query(
+        "INSERT INTO fleet_users (user_id, login_name, password_hash) \
+         VALUES ('legacy-user', 'legacy-admin', ?)",
+    )
+    .bind(vec![7_u8; 32])
+    .execute(&mut connection)
+    .await
+    .expect("legacy user");
+    connection.close().await.expect("close v2 database");
+    let mut identity = InstallationIdentity {
+        schema: "g5-fleet.installation/v1".to_owned(),
+        installation_id: INSTALLATION_ID.to_owned(),
+        database_filename: DATABASE_FILENAME.to_owned(),
+        schema_version: 2,
+        created_at_unix: 1,
+    };
+    fs::write(
+        data.path().join("installation.json"),
+        serde_json::to_vec(&identity).expect("serialize v2 identity"),
+    )
+    .expect("write v2 identity");
+
+    let normal_open = FleetStore::open_existing(data.path()).await.unwrap_err();
+    assert!(
+        matches!(normal_open, StoreError::InvalidIdentity(_)),
+        "normal startup must not migrate implicitly"
+    );
+
+    let migrated = FleetStore::migrate_existing(data.path())
+        .await
+        .expect("explicit migration");
+    migrated.full_integrity_check().await.expect("integrity");
+    assert_eq!(migrated.identity().schema_version, EXPECTED_SCHEMA_VERSION);
+    assert_eq!(migrated.readback().await.expect("readback").users, 1);
+    migrated.close().await;
+
+    identity.schema_version = 2;
+    fs::write(
+        data.path().join("installation.json"),
+        serde_json::to_vec(&identity).expect("serialize stale identity"),
+    )
+    .expect("simulate interrupted identity update");
+    let recovered = FleetStore::migrate_existing(data.path())
+        .await
+        .expect("repair stale identity after committed migration");
+    assert_eq!(recovered.identity().schema_version, EXPECTED_SCHEMA_VERSION);
+    assert_eq!(
+        recovered.readback().await.expect("recovery readback").users,
+        1
+    );
+    recovered.close().await;
+
+    FleetStore::open_existing(data.path())
+        .await
+        .expect("open migrated store")
+        .close()
+        .await;
 }
 
 #[tokio::test]

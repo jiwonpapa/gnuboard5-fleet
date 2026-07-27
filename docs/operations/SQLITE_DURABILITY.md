@@ -100,4 +100,4 @@ G5_FLEET_INSTALLATION_ID=fleet-production-01 \
 cargo run -p g5-fleet-admin-server -- init-store
 ```
 
-이후 `serve`는 동일 경로의 `installation.json`과 `fleet.sqlite3`를 기존 상태로 열며 누락되면 종료합니다. Backup·restore 운영 명령과 upgrade orchestration은 B09 패키징 배치에서 이 검증 API에 연결합니다.
+이후 `serve`는 동일 경로의 `installation.json`과 `fleet.sqlite3`를 기존 상태로 열며 누락되거나 schema가 다르면 종료합니다. Upgrade는 검증 backup을 먼저 만든 뒤에만 `migrate-store`를 실행하고, migration·integrity·readback 중 하나라도 실패하면 이전 image와 검증 backup으로 rollback합니다. Backup·restore 운영 명령과 upgrade orchestration은 B09 패키징 배치에서 이 검증 API에 연결합니다.

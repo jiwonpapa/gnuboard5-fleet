@@ -52,6 +52,10 @@ if [ "$(env_value G5_FLEET_PULL_POLICY "$env_file")" != "never" ]; then
     exit 1
   fi
 fi
+if ! compose run --rm --no-deps app migrate-store; then
+  rollback
+  exit 1
+fi
 if ! start_and_verify; then
   rollback
   exit 1

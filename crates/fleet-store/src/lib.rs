@@ -177,6 +177,55 @@ impl FleetStore {
         })
     }
 
+    /// Migrates an existing installation after the upgrade orchestrator has
+    /// created and verified a backup. Normal `open_existing` remains
+    /// fail-closed on schema drift.
+    pub async fn migrate_existing(data_dir: impl AsRef<Path>) -> StoreResult<Self> {
+        let data_dir = require_existing_data_directory(data_dir.as_ref())?;
+        let identity_path = data_dir.join(IDENTITY_FILENAME);
+        let database_path = data_dir.join(DATABASE_FILENAME);
+        require_regular_file(&identity_path, StoreError::MissingIdentity)?;
+        require_regular_file(&database_path, StoreError::MissingDatabase)?;
+
+        let mut identity: InstallationIdentity = serde_json::from_slice(
+            &fs::read(&identity_path)
+                .map_err(|error| io_error("reading installation identity", error))?,
+        )?;
+        validate_migratable_identity(&identity)?;
+        let lock_file = acquire_installation_lock(&data_dir)?;
+        let pool = connect_database(&database_path, false).await?;
+
+        let result = async {
+            verify_database(&pool, false).await?;
+            verify_migration_source(&pool, &identity).await?;
+            MIGRATOR.run(&pool).await?;
+            verify_database(&pool, true).await?;
+
+            identity.schema_version = EXPECTED_SCHEMA_VERSION;
+            verify_installation_metadata(&pool, &identity).await?;
+            set_private_permissions(&database_path)?;
+            replace_json_atomic(&identity_path, &identity)?;
+            sync_directory(&data_dir)?;
+            Ok::<(), StoreError>(())
+        }
+        .await;
+        if let Err(error) = result {
+            pool.close().await;
+            return Err(error);
+        }
+
+        Ok(Self {
+            inner: Arc::new(StoreInner {
+                pool,
+                writer: Mutex::new(()),
+                data_dir,
+                database_path,
+                identity,
+                _lock_file: lock_file,
+            }),
+        })
+    }
+
     pub fn data_dir(&self) -> &Path {
         &self.inner.data_dir
     }
@@ -432,6 +481,57 @@ async fn verify_installation_metadata(
     }
 }
 
+async fn verify_migration_source(
+    pool: &SqlitePool,
+    identity: &InstallationIdentity,
+) -> StoreResult<()> {
+    let application_id: i64 = sqlx::query_scalar("PRAGMA application_id")
+        .fetch_one(pool)
+        .await?;
+    if application_id != APPLICATION_ID {
+        return Err(StoreError::SettingMismatch(format!(
+            "application_id={application_id}"
+        )));
+    }
+    let user_version: i64 = sqlx::query_scalar("PRAGMA user_version")
+        .fetch_one(pool)
+        .await?;
+    let migration_version: Option<i64> =
+        sqlx::query_scalar("SELECT MAX(version) FROM _sqlx_migrations WHERE success = 1")
+            .fetch_one(pool)
+            .await?;
+    let migration_version = migration_version.unwrap_or_default();
+    let metadata: Option<(String, i64)> = sqlx::query_as(
+        "SELECT installation_id, schema_version \
+         FROM installation_metadata WHERE singleton = 1",
+    )
+    .fetch_optional(pool)
+    .await?;
+    let Some((installation_id, metadata_version)) = metadata else {
+        return Err(StoreError::InvalidIdentity(
+            "database installation metadata is missing".to_owned(),
+        ));
+    };
+    if installation_id != identity.installation_id {
+        return Err(StoreError::InvalidIdentity(format!(
+            "database installation id mismatch: id={installation_id}"
+        )));
+    }
+    if user_version != migration_version || user_version != metadata_version {
+        return Err(StoreError::SchemaMismatch {
+            expected: identity.schema_version,
+            actual: user_version,
+        });
+    }
+    if user_version < identity.schema_version || user_version > EXPECTED_SCHEMA_VERSION {
+        return Err(StoreError::SchemaMismatch {
+            expected: identity.schema_version,
+            actual: user_version,
+        });
+    }
+    Ok(())
+}
+
 async fn run_check(pool: &SqlitePool, pragma: &str) -> StoreResult<()> {
     let results: Vec<String> = sqlx::query_scalar(pragma).fetch_all(pool).await?;
     if results.len() != 1 || !results[0].eq_ignore_ascii_case("ok") {
@@ -473,6 +573,20 @@ fn validate_identity(identity: &InstallationIdentity) -> StoreResult<()> {
     if identity.schema != "g5-fleet.installation/v1"
         || identity.database_filename != DATABASE_FILENAME
         || identity.schema_version != EXPECTED_SCHEMA_VERSION
+    {
+        return Err(StoreError::InvalidIdentity(format!(
+            "schema={} database={} version={}",
+            identity.schema, identity.database_filename, identity.schema_version
+        )));
+    }
+    Ok(())
+}
+
+fn validate_migratable_identity(identity: &InstallationIdentity) -> StoreResult<()> {
+    validate_installation_id(&identity.installation_id)?;
+    if identity.schema != "g5-fleet.installation/v1"
+        || identity.database_filename != DATABASE_FILENAME
+        || !(1..=EXPECTED_SCHEMA_VERSION).contains(&identity.schema_version)
     {
         return Err(StoreError::InvalidIdentity(format!(
             "schema={} database={} version={}",
@@ -533,6 +647,20 @@ pub(crate) fn write_json_atomic<T: Serialize>(path: &Path, value: &T) -> StoreRe
     if path.exists() || path.is_symlink() {
         return Err(StoreError::UnsafeBackupTarget(path.to_path_buf()));
     }
+    write_json_temporary_and_publish(path, value)
+}
+
+fn replace_json_atomic<T: Serialize>(path: &Path, value: &T) -> StoreResult<()> {
+    if path.is_symlink() {
+        return Err(StoreError::SymlinkForbidden(path.to_path_buf()));
+    }
+    if !path.is_file() {
+        return Err(StoreError::MissingIdentity(path.to_path_buf()));
+    }
+    write_json_temporary_and_publish(path, value)
+}
+
+fn write_json_temporary_and_publish<T: Serialize>(path: &Path, value: &T) -> StoreResult<()> {
     let parent = path
         .parent()
         .ok_or_else(|| StoreError::UnsafeBackupTarget(path.to_path_buf()))?;
