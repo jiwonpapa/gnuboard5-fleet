@@ -143,6 +143,11 @@ export function SiteDashboardPage() {
         </div>
         <div className="action-row">
           <Link
+            to={`/sites/${encodeURIComponent(siteId)}/admin/permissions`}
+          >
+            관리자 권한
+          </Link>
+          <Link
             className="primary-action"
             to={`/sites/${encodeURIComponent(siteId)}/admin/config`}
           >

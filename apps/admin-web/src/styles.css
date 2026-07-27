@@ -1996,6 +1996,210 @@ code {
   background: var(--paper);
 }
 
+.permission-context {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  padding: 15px 0;
+  border-block: 1px solid var(--line);
+}
+
+.permission-context strong {
+  margin-left: auto;
+}
+
+.permission-mode {
+  display: flex;
+  gap: 24px;
+  margin-top: 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.permission-mode button {
+  padding: 0 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  background: transparent;
+}
+
+.permission-mode button[aria-current="page"] {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.permission-mode small {
+  margin-left: 7px;
+  color: var(--accent);
+}
+
+.permission-workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(420px, 1.2fr);
+  min-height: 560px;
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.permission-list {
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.permission-list header,
+.permission-editor > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 94px;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.permission-list header strong,
+.permission-list header span {
+  display: block;
+}
+
+.permission-list ul,
+.grant-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.permission-list li {
+  border-bottom: 1px solid var(--line);
+}
+
+.permission-list li > button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 24px;
+  border: 0;
+  border-left: 3px solid transparent;
+  color: var(--ink);
+  background: transparent;
+  text-align: left;
+}
+
+.permission-list li > button[aria-current="true"] {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.permission-list li span,
+.permission-list li small,
+.permission-list li code {
+  display: block;
+}
+
+.permission-list li small {
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.permission-list li b {
+  color: var(--accent);
+  font-size: 0.78rem;
+}
+
+.permission-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 24px;
+}
+
+.permission-editor > header {
+  display: block;
+}
+
+.permission-editor > header h3 {
+  margin: 5px 0;
+}
+
+.permission-editor > header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.permission-editor > label,
+.grant-composer,
+.grant-list,
+.auth-checks,
+.permission-actions,
+.permission-editor > .field-error {
+  margin-inline: 28px;
+}
+
+.permission-editor > label {
+  display: grid;
+  gap: 7px;
+  font-weight: 700;
+}
+
+.permission-editor input {
+  padding: 10px 11px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.auth-checks {
+  display: flex;
+  gap: 22px;
+  padding: 16px;
+  border: 1px solid var(--line);
+}
+
+.auth-checks label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.field-error {
+  color: var(--danger);
+}
+
+.grant-list {
+  border-top: 1px solid var(--line);
+}
+
+.grant-list li {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  padding: 11px 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.grant-composer {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.grant-composer label {
+  display: grid;
+  gap: 6px;
+}
+
+.permission-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
 .admin-config-index {
   padding: 26px 20px;
   border-right: 1px solid var(--line);
@@ -2822,6 +3026,33 @@ code {
 
   .ssh-terminal-workspace.is-fullscreen .ssh-xterm-frame {
     height: calc(100vh - 300px);
+  }
+}
+
+@media (max-width: 960px) {
+  .permission-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .permission-list {
+    max-height: 340px;
+    overflow-y: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .permission-context {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .permission-context strong {
+    margin-left: 0;
+  }
+
+  .grant-composer {
+    grid-template-columns: 1fr;
   }
 }
 

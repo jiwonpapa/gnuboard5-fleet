@@ -262,6 +262,90 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/dashboard",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_admin_dashboard"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/config",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_admin_config_readback"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/config",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_admin_config_update"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/schema",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_admin_schema_catalog"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/schema/{domain}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_admin_schema_detail"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/member/me",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "connector_member_identity"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/auth",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_member_auth_list"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/auth/{mb_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_member_auth_upsert"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/auth/{mb_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_member_auth_delete"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/permissions",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_system_permission_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/permissions",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_system_permission_save"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/permissions/{mb_id}/{au_menu}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_system_permission_delete"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/config/basic",
       "auth": "session",
       "site_context": true,

@@ -32,6 +32,16 @@ class ManifestTest(unittest.TestCase):
                 "adminUpdateConfig",
                 "adminListFieldSchemas",
                 "adminGetFieldSchema",
+                "login",
+                "refreshToken",
+                "logout",
+                "getMyProfile",
+                "adminListAuth",
+                "adminUpsertAuth",
+                "adminDeleteAuthByMember",
+                "adminSystemListAuths",
+                "adminSystemSaveAuth",
+                "adminSystemDeleteAuth",
             },
             {
                 mapping["operation_id"]

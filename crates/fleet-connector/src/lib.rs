@@ -10,6 +10,11 @@ use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 pub use g5_fleet_core::admin::{
     AdminConfig, AdminConfigUpdate, AdminDashboardData, AdminSchemaCatalog, AdminSchemaDetail,
 };
+pub use g5_fleet_core::permissions::{
+    AdminAuthListQuery, AdminAuthMember, AdminAuthMemberList, AdminAuthUpsert,
+    AdminSystemPermission, AdminSystemPermissionList, AdminSystemPermissionListQuery,
+    AdminSystemPermissionSave, MemberProfile, Pagination, valid_member_id, valid_system_menu,
+};
 use g5_fleet_security::{SystemResolver, UrlGuard};
 use reqwest::{
     Method,
@@ -296,6 +301,220 @@ pub trait ConnectorGateway: Send + Sync {
             .await?;
         typed_core_data("adminGetFieldSchema", response)
     }
+
+    async fn member_get_my_profile(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<MemberProfile> {
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "getMyProfile",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        typed_core_data("getMyProfile", response)
+    }
+
+    async fn admin_list_auth(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminAuthListQuery,
+    ) -> ConnectorResult<AdminAuthMemberList> {
+        validate_page(query.page, query.per_page)?;
+        if query
+            .mb_id
+            .as_deref()
+            .is_some_and(|value| !valid_member_id(value))
+        {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let input = CoreExecuteRequest {
+            query: query_map([
+                ("page", query.page.map(|value| json!(value))),
+                ("per_page", query.per_page.map(|value| json!(value))),
+                (
+                    "date_from",
+                    query.date_from.as_ref().map(|value| json!(value)),
+                ),
+                ("date_to", query.date_to.as_ref().map(|value| json!(value))),
+                ("mb_id", query.mb_id.as_ref().map(|value| json!(value))),
+            ]),
+            ..Default::default()
+        };
+        let envelope: TypedListEnvelope<AdminAuthMember> = typed_core_envelope(
+            "adminListAuth",
+            self.core_execute(base_url, request_id, access_token, "adminListAuth", &input)
+                .await?,
+        )?;
+        Ok(AdminAuthMemberList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_upsert_auth(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        mb_id: &str,
+        update: &AdminAuthUpsert,
+    ) -> ConnectorResult<AdminAuthMember> {
+        if !valid_member_id(mb_id) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let update = update
+            .normalized()
+            .ok_or(ConnectorError::InvalidCoreRequest)?;
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminUpsertAuth",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("mb_id".to_owned(), mb_id.to_owned())]),
+                    body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminUpsertAuth", response)
+    }
+
+    async fn admin_delete_auth_by_member(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        mb_id: &str,
+    ) -> ConnectorResult<()> {
+        if !valid_member_id(mb_id) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteAuthByMember",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("mb_id".to_owned(), mb_id.to_owned())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_empty("adminDeleteAuthByMember", response)
+    }
+
+    async fn admin_system_list_auths(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminSystemPermissionListQuery,
+    ) -> ConnectorResult<AdminSystemPermissionList> {
+        validate_page(query.page, query.per_page)?;
+        if query
+            .mb_id
+            .as_deref()
+            .is_some_and(|value| !valid_member_id(value))
+        {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let input = CoreExecuteRequest {
+            query: query_map([
+                ("page", query.page.map(|value| json!(value))),
+                ("per_page", query.per_page.map(|value| json!(value))),
+                ("mb_id", query.mb_id.as_ref().map(|value| json!(value))),
+            ]),
+            ..Default::default()
+        };
+        let envelope: TypedListEnvelope<AdminSystemPermission> = typed_core_envelope(
+            "adminSystemListAuths",
+            self.core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemListAuths",
+                &input,
+            )
+            .await?,
+        )?;
+        Ok(AdminSystemPermissionList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_system_save_auth(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        input: &AdminSystemPermissionSave,
+    ) -> ConnectorResult<AdminSystemPermission> {
+        let input = input
+            .normalized()
+            .ok_or(ConnectorError::InvalidCoreRequest)?;
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemSaveAuth",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(input).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminSystemSaveAuth", response)
+    }
+
+    async fn admin_system_delete_auth(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        mb_id: &str,
+        au_menu: &str,
+    ) -> ConnectorResult<()> {
+        if !valid_member_id(mb_id) || !valid_system_menu(au_menu) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemDeleteAuth",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([
+                        ("mb_id".to_owned(), mb_id.to_owned()),
+                        ("au_menu".to_owned(), au_menu.to_owned()),
+                    ]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_empty("adminSystemDeleteAuth", response)
+    }
+}
+
+#[derive(Deserialize)]
+struct TypedListEnvelope<T> {
+    data: Vec<T>,
+    pagination: Pagination,
 }
 
 fn typed_core_data<T: DeserializeOwned>(
@@ -313,6 +532,46 @@ fn typed_core_data<T: DeserializeOwned>(
         .and_then(|value| value.get("data").cloned())
         .ok_or(ConnectorError::Contract)?;
     serde_json::from_value(data).map_err(|_| ConnectorError::Contract)
+}
+
+fn typed_core_envelope<T: DeserializeOwned>(
+    operation_id: &str,
+    response: CoreExecuteResponse,
+) -> ConnectorResult<T> {
+    if response.operation_id != operation_id
+        || response.body_base64.is_some()
+        || !(200..300).contains(&response.upstream_status)
+    {
+        return Err(ConnectorError::Contract);
+    }
+    serde_json::from_value(response.data.ok_or(ConnectorError::Contract)?)
+        .map_err(|_| ConnectorError::Contract)
+}
+
+fn typed_core_empty(operation_id: &str, response: CoreExecuteResponse) -> ConnectorResult<()> {
+    if response.operation_id != operation_id
+        || response.body_base64.is_some()
+        || !(200..300).contains(&response.upstream_status)
+    {
+        return Err(ConnectorError::Contract);
+    }
+    Ok(())
+}
+
+fn validate_page(page: Option<u32>, per_page: Option<u32>) -> ConnectorResult<()> {
+    if page.is_some_and(|value| value == 0)
+        || per_page.is_some_and(|value| !(1..=100).contains(&value))
+    {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    Ok(())
+}
+
+fn query_map<const N: usize>(values: [(&str, Option<Value>); N]) -> BTreeMap<String, Value> {
+    values
+        .into_iter()
+        .filter_map(|(name, value)| value.map(|value| (name.to_owned(), value)))
+        .collect()
 }
 
 #[derive(Clone, Debug, Default)]

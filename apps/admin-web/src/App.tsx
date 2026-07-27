@@ -9,6 +9,7 @@ import { AdminConfigWorkspacePage } from "./features/config/AdminConfigWorkspace
 import { DiagnosticsPage } from "./features/debug/DiagnosticsPage";
 import { SiteOnboardingPage } from "./features/onboarding/SiteOnboardingPage";
 import { AdminOverviewPage } from "./features/overview/AdminOverviewPage";
+import { AdminPermissionsWorkspacePage } from "./features/permissions/AdminPermissionsWorkspacePage";
 import { SecuritySettingsPage } from "./features/security/SecuritySettingsPage";
 import { SiteActivationPage } from "./features/sites/SiteActivationPage";
 import { SiteDashboardPage } from "./features/sites/SiteDashboardPage";
@@ -39,6 +40,10 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/config"
               element={<AdminConfigWorkspacePage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/permissions"
+              element={<AdminPermissionsWorkspacePage />}
             />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />

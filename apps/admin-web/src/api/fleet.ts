@@ -225,6 +225,57 @@ export interface AdminSchemaCatalog {
   total: number;
 }
 
+export interface Pagination {
+  mode: string | null;
+  total: number | null;
+  page: number | null;
+  per_page: number | null;
+  last_page: number | null;
+  cursor: string | null;
+  next_cursor: string | null;
+  has_next: boolean | null;
+  has_prev: boolean | null;
+}
+
+export interface MemberProfile {
+  mb_id: string;
+  mb_name: string | null;
+  mb_nick: string | null;
+  mb_email: string | null;
+  mb_level: number | null;
+  mb_point: number | null;
+}
+
+export interface AdminAuthAssignment {
+  au_menu: string;
+  au_auth: string;
+}
+
+export interface AdminAuthMember {
+  mb_id: string;
+  mb_name: string;
+  mb_nick: string;
+  auths: AdminAuthAssignment[];
+}
+
+export interface AdminSystemPermission {
+  mb_id: string;
+  au_menu: string;
+  au_auth: string;
+  mb_name: string | null;
+  mb_nick: string | null;
+}
+
+export interface AdminAuthMemberList {
+  items: AdminAuthMember[];
+  pagination: Pagination;
+}
+
+export interface AdminSystemPermissionList {
+  items: AdminSystemPermission[];
+  pagination: Pagination;
+}
+
 export interface CoreExecuteInput {
   path: Record<string, string>;
   query: Record<string, unknown>;
@@ -703,6 +754,95 @@ export function getAdminFieldSchema(siteId: string, domain: string) {
   });
 }
 
+export function getMyProfile(siteId: string) {
+  return transport.request<MemberProfile>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/member/me`,
+  });
+}
+
+export function listAdminAuth(
+  siteId: string,
+  query: { page?: number; per_page?: number; mb_id?: string } = {},
+) {
+  return transport.request<AdminAuthMemberList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/auth${
+      fleetQuery(query)
+    }`,
+  });
+}
+
+export function upsertAdminAuth(
+  siteId: string,
+  mbId: string,
+  auths: AdminAuthAssignment[],
+  csrfToken: string,
+) {
+  return transport.request<AdminAuthMember, { auths: AdminAuthAssignment[] }>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/auth/${
+      encodeURIComponent(mbId)
+    }`,
+    csrfToken,
+    body: { auths },
+  });
+}
+
+export function deleteAdminAuthByMember(
+  siteId: string,
+  mbId: string,
+  csrfToken: string,
+) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/auth/${
+      encodeURIComponent(mbId)
+    }`,
+    csrfToken,
+  });
+}
+
+export function listAdminSystemPermissions(
+  siteId: string,
+  query: { page?: number; per_page?: number; mb_id?: string } = {},
+) {
+  return transport.request<AdminSystemPermissionList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/permissions${
+      fleetQuery(query)
+    }`,
+  });
+}
+
+export function saveAdminSystemPermission(
+  siteId: string,
+  input: { mb_id: string; au_menu: string; au_auth: string },
+  csrfToken: string,
+) {
+  return transport.request<AdminSystemPermission, typeof input>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/permissions`,
+    csrfToken,
+    body: input,
+  });
+}
+
+export function deleteAdminSystemPermission(
+  siteId: string,
+  mbId: string,
+  menu: string,
+  csrfToken: string,
+) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/permissions/${
+      encodeURIComponent(mbId)
+    }/${encodeURIComponent(menu)}`,
+    csrfToken,
+  });
+}
+
 export function getCoreRegistry() {
   return transport.request<CoreOperation[]>({
     method: "GET",
@@ -928,4 +1068,13 @@ function sameOriginApi(path: `/${string}`) {
     throw new Error("same-origin Fleet API만 허용됩니다.");
   }
   return url;
+}
+
+function fleetQuery(values: Record<string, string | number | undefined>) {
+  const query = new URLSearchParams();
+  for (const [name, value] of Object.entries(values)) {
+    if (value !== undefined && value !== "") query.set(name, String(value));
+  }
+  const encoded = query.toString();
+  return encoded ? `?${encoded}` : "";
 }

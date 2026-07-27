@@ -230,6 +230,21 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("POST", "/api/v1/sites/{site_id}/connector/refresh"),
             ("POST", "/api/v1/sites/{site_id}/connector/logout"),
             ("GET", "/api/v1/sites/{site_id}/overview"),
+            ("GET", "/api/v1/sites/{site_id}/admin/dashboard"),
+            ("GET", "/api/v1/sites/{site_id}/admin/config"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/config"),
+            ("GET", "/api/v1/sites/{site_id}/admin/schema"),
+            ("GET", "/api/v1/sites/{site_id}/admin/schema/{domain}"),
+            ("GET", "/api/v1/sites/{site_id}/member/me"),
+            ("GET", "/api/v1/sites/{site_id}/admin/auth"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/auth/{mb_id}"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/auth/{mb_id}"),
+            ("GET", "/api/v1/sites/{site_id}/admin/permissions"),
+            ("POST", "/api/v1/sites/{site_id}/admin/permissions"),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/permissions/{mb_id}/{au_menu}",
+            ),
             ("GET", "/api/v1/sites/{site_id}/config/basic"),
             ("PUT", "/api/v1/sites/{site_id}/config/basic"),
             ("POST", "/api/v1/sites/{site_id}/core/{operation_id}",),
@@ -551,6 +566,19 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
     .unwrap();
     let mock = MockConnector {
         cf_10: Arc::new(Mutex::new("baseline".to_owned())),
+        permissions: Arc::new(Mutex::new(vec![serde_json::json!({
+            "mb_id": "g5admin",
+            "au_menu": "config_100",
+            "au_auth": "r",
+            "mb_name": "관리자",
+            "mb_nick": "관리자"
+        })])),
+        auth_members: Arc::new(Mutex::new(vec![serde_json::json!({
+            "mb_id": "g5admin",
+            "mb_name": "관리자",
+            "mb_nick": "관리자",
+            "auths": [{"au_menu": "100100", "au_auth": "r"}]
+        })])),
     };
     let app = build_router(AppConfig {
         web_root: web.path().to_path_buf(),
@@ -1030,6 +1058,150 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
     assert_eq!(admin_config_rollback.status(), StatusCode::OK);
     assert_eq!(*mock.cf_10.lock().unwrap(), "baseline");
 
+    let member_me = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/member/me",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(member_me.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(member_me).await["mb_id"], "g5admin");
+
+    let auth_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/auth?page=1&per_page=100",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(auth_list.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(auth_list).await["items"][0]["mb_id"],
+        "g5admin"
+    );
+
+    let auth_upsert = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/auth/auditor",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "auths": [{"au_menu": "100100", "au_auth": "W,R"}]
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(auth_upsert.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(auth_upsert).await["auths"][0]["au_auth"],
+        "r,w"
+    );
+    let auth_readback = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/auth?page=1&per_page=100",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert!(
+        json::<Value>(auth_readback).await["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|item| item["mb_id"] == "auditor")
+    );
+    let auth_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/auth/auditor",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(auth_delete.status(), StatusCode::NO_CONTENT);
+
+    let permission_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/permissions?page=1&per_page=100",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(permission_list.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(permission_list).await["items"][0]["au_menu"],
+        "config_100"
+    );
+    let permission_save = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/permissions",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "mb_id": "auditor",
+                "au_menu": "board_200",
+                "au_auth": "D,R,R"
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(permission_save.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(permission_save).await["au_auth"], "rd");
+    let permission_readback = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/permissions?page=1&per_page=100",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert!(
+        json::<Value>(permission_readback).await["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|item| item["mb_id"] == "auditor" && item["au_menu"] == "board_200")
+    );
+    let permission_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/permissions/auditor/board_200",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(permission_delete.status(), StatusCode::NO_CONTENT);
+
     let registry = app
         .clone()
         .oneshot(json_request(
@@ -1375,6 +1547,8 @@ fn json_request(
 #[derive(Clone, Default)]
 struct MockConnector {
     cf_10: Arc<Mutex<String>>,
+    permissions: Arc<Mutex<Vec<Value>>>,
+    auth_members: Arc<Mutex<Vec<Value>>>,
 }
 
 #[async_trait]
@@ -1577,6 +1751,90 @@ impl ConnectorGateway for MockConnector {
                     },
                     "meta": {}
                 })
+            }
+            "getMyProfile" => serde_json::json!({
+                "data": {
+                    "mb_id": "g5admin",
+                    "mb_name": "관리자",
+                    "mb_nick": "관리자",
+                    "mb_email": "admin@example.test",
+                    "mb_level": 10,
+                    "mb_point": 100
+                },
+                "meta": {}
+            }),
+            "adminSystemListAuths" => serde_json::json!({
+                "data": self.permissions.lock().unwrap().clone(),
+                "pagination": {
+                    "mode": "cursor",
+                    "total": self.permissions.lock().unwrap().len(),
+                    "page": 1,
+                    "per_page": 100,
+                    "last_page": 1,
+                    "cursor": null,
+                    "next_cursor": null,
+                    "has_next": false,
+                    "has_prev": false
+                },
+                "meta": {}
+            }),
+            "adminSystemSaveAuth" => {
+                let mut saved = input.body.clone().unwrap();
+                saved["mb_name"] = Value::Null;
+                saved["mb_nick"] = Value::Null;
+                let mb_id = saved["mb_id"].as_str().unwrap();
+                let au_menu = saved["au_menu"].as_str().unwrap();
+                let mut items = self.permissions.lock().unwrap();
+                items.retain(|item| {
+                    item["mb_id"].as_str() != Some(mb_id)
+                        || item["au_menu"].as_str() != Some(au_menu)
+                });
+                items.push(saved.clone());
+                serde_json::json!({"data": saved, "meta": {}})
+            }
+            "adminSystemDeleteAuth" => {
+                let mb_id = input.path.get("mb_id").map(String::as_str);
+                let au_menu = input.path.get("au_menu").map(String::as_str);
+                self.permissions.lock().unwrap().retain(|item| {
+                    item["mb_id"].as_str() != mb_id || item["au_menu"].as_str() != au_menu
+                });
+                Value::Null
+            }
+            "adminListAuth" => serde_json::json!({
+                "data": self.auth_members.lock().unwrap().clone(),
+                "pagination": {
+                    "mode": "cursor",
+                    "total": self.auth_members.lock().unwrap().len(),
+                    "page": 1,
+                    "per_page": 100,
+                    "last_page": 1,
+                    "cursor": null,
+                    "next_cursor": null,
+                    "has_next": false,
+                    "has_prev": false
+                },
+                "meta": {}
+            }),
+            "adminUpsertAuth" => {
+                let mb_id = input.path.get("mb_id").unwrap().clone();
+                let saved = serde_json::json!({
+                    "mb_id": mb_id,
+                    "mb_name": "권한 사용자",
+                    "mb_nick": "권한 사용자",
+                    "auths": input.body.as_ref().unwrap()["auths"].clone()
+                });
+                let mut items = self.auth_members.lock().unwrap();
+                items.retain(|item| item["mb_id"].as_str() != saved["mb_id"].as_str());
+                items.push(saved.clone());
+                serde_json::json!({"data": saved, "meta": {}})
+            }
+            "adminDeleteAuthByMember" => {
+                let mb_id = input.path.get("mb_id").map(String::as_str);
+                self.auth_members
+                    .lock()
+                    .unwrap()
+                    .retain(|item| item["mb_id"].as_str() != mb_id);
+                Value::Null
             }
             _ => serde_json::json!({
                 "path": input.path,
