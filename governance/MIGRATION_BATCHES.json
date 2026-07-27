@@ -338,8 +338,13 @@
       "id": "R11",
       "sequence": 6,
       "title": "auth·member self·system auth",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R10"],
+      "completion": {
+        "implementation_commit": "302571c6d699f3197b031d8a425ab8e53bac4f46",
+        "evidence_path": "docs/audits/evidence/R11_BATCH_GATE_PASS.json",
+        "closed_at": "2026-07-27T23:34:02Z"
+      },
       "core": {
         "domains": ["auth", "member"],
         "operation_ids": [
@@ -379,7 +384,7 @@
       "id": "R12",
       "sequence": 7,
       "title": "members",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R11"],
       "core": {
         "domains": ["members"],

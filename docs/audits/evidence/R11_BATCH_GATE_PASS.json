@@ -1,0 +1,155 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R11",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "302571c6d699f3197b031d8a425ab8e53bac4f46",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "302571c6d699f3197b031d8a425ab8e53bac4f46"
+  },
+  "generated_at": "2026-07-27T23:34:02Z",
+  "commands": [
+    "make active-check",
+    "make audit-runtime-prepare",
+    "make check",
+    "make check-batch BATCH=R11",
+    "python3 -m tools.migration_parity.batch_cli --batch R12 --profile static"
+  ],
+  "results": {
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {
+        "passed": 58,
+        "failed": 0,
+        "ignored": 1
+      },
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 35,
+      "web_tests": {
+        "passed": 55,
+        "failed": 0
+      },
+      "web_build": "PASS"
+    },
+    "audit_harness_tests": {
+      "passed": 22,
+      "failed": 0
+    },
+    "migration_harness_tests": {
+      "passed": 26,
+      "failed": 0
+    },
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "checks": {
+        "passed": 35,
+        "failed": 0
+      }
+    },
+    "typed_operation_consumption": {
+      "operations": [
+        "login",
+        "refreshToken",
+        "logout",
+        "getMyProfile",
+        "adminListAuth",
+        "adminUpsertAuth",
+        "adminDeleteAuthByMember",
+        "adminSystemListAuths",
+        "adminSystemSaveAuth",
+        "adminSystemDeleteAuth"
+      ],
+      "reused_specialized_connector_session_routes": 3,
+      "new_site_scoped_axum_routes": 7,
+      "browser_same_origin_transport": "PASS",
+      "permission_input_fail_closed": "PASS",
+      "save_readback_delete": "PASS",
+      "destructive_confirmation": "PASS",
+      "csrf_and_step_up_write_guard": "PASS",
+      "browser_g5_secret_exposure": "NONE"
+    },
+    "route_registry": {
+      "status": "PASS",
+      "tracked_routes": 69,
+      "added_r10_routes": 5,
+      "added_r11_routes": 7
+    },
+    "full_check": {
+      "status": "EXPECTED_FAIL",
+      "passed_through": "SERVER_STATIC_PASS",
+      "blocked_by": "global migration parity",
+      "global_findings": 429
+    },
+    "predecessor_regression": {
+      "batch": "R10",
+      "status": "PASS",
+      "findings": 0
+    },
+    "batch_scope": {
+      "legacy": 9,
+      "core_operations": 10,
+      "required_capabilities": 0
+    },
+    "reuse": {
+      "reused": 1,
+      "adapted": 8,
+      "redesigned": 0,
+      "deferred": 0
+    },
+    "batch_findings": 0,
+    "ownership": {
+      "legacy": {
+        "owned": 510,
+        "total": 510
+      },
+      "core_operations": {
+        "owned": 189,
+        "total": 189
+      },
+      "required_capabilities": {
+        "owned": 13,
+        "total": 13
+      }
+    },
+    "global_migration": {
+      "status": "FAIL",
+      "findings": 429
+    },
+    "next_batch_probe": {
+      "batch": "R12",
+      "status": "FAIL",
+      "scope": {
+        "legacy": 16,
+        "core_operations": 10,
+        "required_capabilities": 0
+      },
+      "findings": 26
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "bf70ca05463ec602f9385e1ff10e679108eebb34be25ee04dd87fc5be1de21ee",
+    "migration_batches": "44201cb8af279ee17d7644d8f8ef9384a8b1d204148c058eb48e2153a24ad866"
+  },
+  "source_reports": [
+    {
+      "path": "output/audit/runs/migration-batch-R11-20260727T233349Z-b8615c87/result.json",
+      "sha256": "3bf405915d6e9e06f3fa652c98091425ce2e823e7ecf69d01c5b46927b822f42"
+    },
+    {
+      "path": "output/audit/runs/20260727T233254Z-e748b29e7e72/result.json",
+      "sha256": "99a4cf62c94fe2b238f1c63cacc4bd6fb8dee9ebca20bdbf69d70a58a4c96bec"
+    },
+    {
+      "path": "output/audit/runs/migration-parity-20260727T233335Z-e4e93fec/result.json",
+      "sha256": "7c807f1fff22a269244f2ec909d1c6c2a8c050672f13b26f453bd566a4ad22ae"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R12-20260727T233350Z-90f34465/result.json",
+      "sha256": "c195ff433f262bda8ba316f6a7b3e56e6daa6f55d101d09d61c847016e7b3596"
+    }
+  ],
+  "claim_limit": "R11 auth, member self and system-auth typed DTO, Connector gateway, explicit site_id Axum routes, same-origin responsive React workflow and mock Connector save-readback-delete static parity only; these ten operations are not promoted to current-SHA PHP local runtime, package, staging or live certification."
+}
