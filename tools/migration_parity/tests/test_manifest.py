@@ -25,7 +25,19 @@ class ManifestTest(unittest.TestCase):
             },
             set(manifest["mappings"]),
         )
-        self.assertEqual([], manifest["core_operation_mappings"])
+        self.assertEqual(
+            {
+                "adminGetDashboard",
+                "adminGetConfig",
+                "adminUpdateConfig",
+                "adminListFieldSchemas",
+                "adminGetFieldSchema",
+            },
+            {
+                mapping["operation_id"]
+                for mapping in manifest["core_operation_mappings"]
+            },
+        )
 
     def test_missing_legacy_category_is_harness_error(self) -> None:
         manifest = json.loads(

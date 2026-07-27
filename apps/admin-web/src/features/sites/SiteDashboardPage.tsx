@@ -141,9 +141,17 @@ export function SiteDashboardPage() {
           <h2 id="site-detail-title">{site?.display_name ?? "사이트 확인 중"}</h2>
           <p>이 화면의 요청은 <code>{siteId}</code> 사이트 경계에만 귀속됩니다.</p>
         </div>
-        <button type="button" disabled={busy || !site} onClick={() => void checkHealth()}>
-          G5 API 상태 확인
-        </button>
+        <div className="action-row">
+          <Link
+            className="primary-action"
+            to={`/sites/${encodeURIComponent(siteId)}/admin/config`}
+          >
+            기본환경설정
+          </Link>
+          <button type="button" disabled={busy || !site} onClick={() => void checkHealth()}>
+            G5 API 상태 확인
+          </button>
+        </div>
       </div>
       {health ? (
         <p className="success-message" role="status">

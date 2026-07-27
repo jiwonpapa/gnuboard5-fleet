@@ -922,6 +922,114 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         Some("baseline")
     );
 
+    let admin_dashboard = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/dashboard?limit=5",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(admin_dashboard.status(), StatusCode::OK);
+    let admin_dashboard: Value = json(admin_dashboard).await;
+    assert_eq!(admin_dashboard["limit"], 5);
+    assert_eq!(admin_dashboard["summary"]["members"]["total_members"], 12);
+
+    let schema_catalog = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/schema",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(schema_catalog.status(), StatusCode::OK);
+    let schema_catalog: Value = json(schema_catalog).await;
+    assert_eq!(schema_catalog["total"], 1);
+    assert_eq!(schema_catalog["items"][0]["domain"], "config");
+
+    let config_schema = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/schema/config",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(config_schema.status(), StatusCode::OK);
+    let config_schema: Value = json(config_schema).await;
+    assert_eq!(config_schema["field_count"], 2);
+    assert_eq!(
+        config_schema["fields_by_name"]["cf_title"]["input_type"],
+        "text"
+    );
+
+    let admin_config_baseline = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/config",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(admin_config_baseline.status(), StatusCode::OK);
+    let admin_config_baseline: Value = json(admin_config_baseline).await;
+    assert_eq!(admin_config_baseline["cf_10"], "baseline");
+
+    let admin_config_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/config",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"cf_10": "typed-sentinel"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(admin_config_update.status(), StatusCode::OK);
+    let admin_config_readback = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/config",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(admin_config_readback).await["cf_10"],
+        "typed-sentinel"
+    );
+
+    let admin_config_rollback = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/config",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"cf_10": "baseline"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(admin_config_rollback.status(), StatusCode::OK);
+    assert_eq!(*mock.cf_10.lock().unwrap(), "baseline");
+
     let registry = app
         .clone()
         .oneshot(json_request(
@@ -1355,15 +1463,132 @@ impl ConnectorGateway for MockConnector {
         input: &CoreExecuteRequest,
     ) -> ConnectorResult<CoreExecuteResponse> {
         assert_eq!(access_token, "g5-access-token");
+        let data = match operation_id {
+            "adminGetDashboard" => serde_json::json!({
+                "data": {
+                    "limit": input.query.get("limit").cloned().unwrap_or(serde_json::json!(5)),
+                    "summary": {
+                        "members": {
+                            "total_members": 12,
+                            "blocked_members": 1,
+                            "leave_members": 0
+                        },
+                        "posts": {"total_rows": 34},
+                        "points": {"total_rows": 56},
+                        "visits": {"total_visits": 78}
+                    },
+                    "recent_members": [],
+                    "recent_posts": [],
+                    "recent_points": []
+                },
+                "meta": {}
+            }),
+            "adminGetConfig" => serde_json::json!({
+                "data": {
+                    "cf_title": "Test Site",
+                    "cf_admin": "g5admin",
+                    "cf_10": self.cf_10.lock().unwrap().clone()
+                },
+                "meta": {}
+            }),
+            "adminUpdateConfig" => {
+                if let Some(value) = input
+                    .body
+                    .as_ref()
+                    .and_then(|body| body.get("cf_10"))
+                    .and_then(Value::as_str)
+                {
+                    *self.cf_10.lock().unwrap() = value.to_owned();
+                }
+                serde_json::json!({
+                    "data": {
+                        "cf_title": "Test Site",
+                        "cf_admin": "g5admin",
+                        "cf_10": self.cf_10.lock().unwrap().clone()
+                    },
+                    "meta": {}
+                })
+            }
+            "adminListFieldSchemas" => serde_json::json!({
+                "data": {
+                    "items": [{
+                        "domain": "config",
+                        "title": "기본환경설정",
+                        "legacy_form": "config_form",
+                        "field_count": 2,
+                        "section_count": 1,
+                        "generated_at": "2026-07-27T00:00:00Z"
+                    }],
+                    "total": 1
+                },
+                "meta": {}
+            }),
+            "adminGetFieldSchema" => {
+                let title = serde_json::json!({
+                    "name": "cf_title",
+                    "label": "사이트 제목",
+                    "input_type": "text",
+                    "data_type": "string",
+                    "required": true,
+                    "create_only": false,
+                    "readonly_on_update": false,
+                    "description": "브라우저 제목과 관리자 표시에 사용합니다.",
+                    "options": [],
+                    "option_source": null,
+                    "default_value": null
+                });
+                let sentinel = serde_json::json!({
+                    "name": "cf_10",
+                    "label": "여분 필드 10",
+                    "input_type": "text",
+                    "data_type": "string",
+                    "required": false,
+                    "create_only": false,
+                    "readonly_on_update": false,
+                    "description": null,
+                    "options": [],
+                    "option_source": null,
+                    "default_value": null
+                });
+                serde_json::json!({
+                    "data": {
+                        "domain": "config",
+                        "title": "기본환경설정",
+                        "legacy_form": "config_form",
+                        "generated_at": "2026-07-27T00:00:00Z",
+                        "field_count": 2,
+                        "section_count": 1,
+                        "layout": {
+                            "desktop": "tabs",
+                            "mobile": "accordion",
+                            "single_open": true
+                        },
+                        "sections": [{
+                            "key": "basic",
+                            "label": "기본",
+                            "order": 1,
+                            "description": "사이트 기본 정보",
+                            "fields": [title.clone(), sentinel.clone()]
+                        }],
+                        "fields_by_name": {
+                            "cf_title": title,
+                            "cf_10": sentinel
+                        }
+                    },
+                    "meta": {}
+                })
+            }
+            _ => serde_json::json!({
+                "path": input.path,
+                "query": input.query,
+                "body": input.body,
+            }),
+        };
         Ok(CoreExecuteResponse {
             operation_id: operation_id.to_owned(),
             upstream_status: 200,
             content_type: Some("application/json".to_owned()),
-            data: Some(serde_json::json!({
-                "path": input.path,
-                "query": input.query,
-                "body": input.body,
-            })),
+            data: Some(data),
             body_base64: None,
         })
     }

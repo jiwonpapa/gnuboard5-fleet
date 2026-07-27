@@ -7,6 +7,9 @@ use std::{
 
 use async_trait::async_trait;
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
+pub use g5_fleet_core::admin::{
+    AdminConfig, AdminConfigUpdate, AdminDashboardData, AdminSchemaCatalog, AdminSchemaDetail,
+};
 use g5_fleet_security::{SystemResolver, UrlGuard};
 use reqwest::{
     Method,
@@ -178,6 +181,138 @@ pub trait ConnectorGateway: Send + Sync {
         operation_id: &str,
         input: &CoreExecuteRequest,
     ) -> ConnectorResult<CoreExecuteResponse>;
+
+    async fn admin_get_dashboard(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        limit: Option<u8>,
+    ) -> ConnectorResult<AdminDashboardData> {
+        if limit.is_some_and(|value| !(1..=20).contains(&value)) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let input = CoreExecuteRequest {
+            query: limit
+                .map(|value| BTreeMap::from([("limit".to_owned(), json!(value))]))
+                .unwrap_or_default(),
+            ..Default::default()
+        };
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminGetDashboard",
+                &input,
+            )
+            .await?;
+        typed_core_data("adminGetDashboard", response)
+    }
+
+    async fn admin_get_config(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminConfig> {
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminGetConfig",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        typed_core_data("adminGetConfig", response)
+    }
+
+    async fn admin_update_config(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        update: &AdminConfigUpdate,
+    ) -> ConnectorResult<AdminConfig> {
+        if update.is_empty() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let body = serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?;
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminUpdateConfig",
+                &CoreExecuteRequest {
+                    body: Some(body),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminUpdateConfig", response)
+    }
+
+    async fn admin_list_field_schemas(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminSchemaCatalog> {
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListFieldSchemas",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        typed_core_data("adminListFieldSchemas", response)
+    }
+
+    async fn admin_get_field_schema(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        domain: &str,
+    ) -> ConnectorResult<AdminSchemaDetail> {
+        if domain.is_empty() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminGetFieldSchema",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("domain".to_owned(), domain.to_owned())]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminGetFieldSchema", response)
+    }
+}
+
+fn typed_core_data<T: DeserializeOwned>(
+    operation_id: &str,
+    response: CoreExecuteResponse,
+) -> ConnectorResult<T> {
+    if response.operation_id != operation_id
+        || response.body_base64.is_some()
+        || !(200..300).contains(&response.upstream_status)
+    {
+        return Err(ConnectorError::Contract);
+    }
+    let data = response
+        .data
+        .and_then(|value| value.get("data").cloned())
+        .ok_or(ConnectorError::Contract)?;
+    serde_json::from_value(data).map_err(|_| ConnectorError::Contract)
 }
 
 #[derive(Clone, Debug, Default)]

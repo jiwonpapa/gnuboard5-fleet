@@ -1952,6 +1952,247 @@ code {
   color: var(--muted);
 }
 
+.admin-config-page {
+  --config-index-width: 230px;
+}
+
+.admin-operations-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0 0 28px;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-operations-strip div {
+  padding: 18px 20px;
+}
+
+.admin-operations-strip div + div {
+  border-left: 1px solid var(--line);
+}
+
+.admin-operations-strip dt {
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.admin-operations-strip dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.admin-config-workspace {
+  display: grid;
+  grid-template-columns: var(--config-index-width) minmax(0, 1fr);
+  min-height: 620px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.admin-config-index {
+  padding: 26px 20px;
+  border-right: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 68%, var(--paper));
+}
+
+.admin-config-index > strong {
+  display: block;
+  margin: 6px 0 22px;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+
+.admin-config-index nav {
+  display: grid;
+  margin: 0 -8px;
+}
+
+.admin-config-index nav button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 9px;
+  border: 0;
+  border-left: 2px solid transparent;
+  color: var(--muted);
+  background: transparent;
+  text-align: left;
+}
+
+.admin-config-index nav button[aria-current="page"] {
+  border-left-color: var(--accent);
+  color: var(--ink);
+  background: var(--accent-soft);
+}
+
+.admin-config-index nav small {
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-config-index dl {
+  display: grid;
+  gap: 9px;
+  margin: 28px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.admin-config-index dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-config-index dt,
+.admin-config-index dd {
+  margin: 0;
+  font-size: 0.72rem;
+}
+
+.admin-config-index dt {
+  color: var(--muted);
+}
+
+.admin-config-editor {
+  min-width: 0;
+}
+
+.admin-config-editor > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 30px 34px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-config-editor > header h3 {
+  margin: 5px 0 6px;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+}
+
+.admin-config-editor > header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.admin-change-count {
+  flex: none;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-config-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 28px;
+  padding: 30px 34px 42px;
+}
+
+.admin-config-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.admin-config-field > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.admin-config-field em {
+  color: var(--accent);
+  font-size: 0.64rem;
+  font-style: normal;
+}
+
+.admin-config-field input:not([type="checkbox"]),
+.admin-config-field textarea,
+.admin-config-field select {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  background: var(--paper);
+  font: inherit;
+}
+
+.admin-config-field input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+
+.admin-config-field small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.admin-config-field > strong {
+  color: var(--danger);
+  font-size: 0.72rem;
+}
+
+.admin-config-field[data-error="true"] input,
+.admin-config-field[data-error="true"] textarea,
+.admin-config-field[data-error="true"] select {
+  border-color: var(--danger);
+}
+
+.admin-file-boundary {
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed var(--line-strong);
+  color: var(--muted);
+}
+
+.admin-config-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 34px;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 64%, var(--paper));
+}
+
+.admin-config-actions > div {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-config-actions span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.admin-config-actions button {
+  min-height: 40px;
+}
+
+.admin-step-up-note {
+  margin: 0;
+  padding: 11px 34px;
+  border-top: 1px solid var(--line);
+  color: var(--danger);
+  font-size: 0.76rem;
+}
+
 .dialog-backdrop {
   position: fixed;
   z-index: 100;
@@ -2436,6 +2677,75 @@ code {
   .two-column-grid,
   .diagnostics-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-operations-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-operations-strip div:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .admin-operations-strip div:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+
+  .admin-config-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-config-index {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .admin-config-index nav {
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .admin-config-index nav button {
+    flex: none;
+    gap: 14px;
+    border-left: 0;
+    border-bottom: 2px solid transparent;
+  }
+
+  .admin-config-index nav button[aria-current="page"] {
+    border-bottom-color: var(--accent);
+  }
+
+  .admin-config-index dl {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-config-index dl div {
+    display: grid;
+  }
+
+  .admin-config-editor > header,
+  .admin-config-fields {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .admin-config-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-config-actions {
+    grid-template-columns: 1fr 1fr;
+    padding: 18px 20px;
+  }
+
+  .admin-config-actions > div {
+    grid-column: 1 / -1;
+  }
+
+  .admin-step-up-note {
+    padding-right: 20px;
+    padding-left: 20px;
   }
 }
 

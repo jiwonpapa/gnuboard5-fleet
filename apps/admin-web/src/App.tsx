@@ -5,6 +5,7 @@ import { getHealth, getMeta, type MetaResponse } from "./api/system";
 import { AuditLogPage } from "./features/audit/AuditLogPage";
 import { FleetAccessGate } from "./features/auth/FleetAccessGate";
 import { BackupPage } from "./features/backup/BackupPage";
+import { AdminConfigWorkspacePage } from "./features/config/AdminConfigWorkspacePage";
 import { DiagnosticsPage } from "./features/debug/DiagnosticsPage";
 import { SiteOnboardingPage } from "./features/onboarding/SiteOnboardingPage";
 import { AdminOverviewPage } from "./features/overview/AdminOverviewPage";
@@ -35,6 +36,10 @@ export default function App() {
             <Route path="/sites/new" element={<SiteOnboardingPage />} />
             <Route path="/sites/:siteId" element={<SiteDashboardPage />} />
             <Route path="/sites/:siteId/activate" element={<SiteActivationPage />} />
+            <Route
+              path="/sites/:siteId/admin/config"
+              element={<AdminConfigWorkspacePage />}
+            />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />
             <Route path="/diagnostics" element={<DiagnosticsPage />} />

@@ -20,6 +20,7 @@ use axum::{
 };
 use futures_util::{SinkExt, StreamExt, stream};
 use g5_fleet_connector::{
+    AdminConfig, AdminConfigUpdate, AdminDashboardData, AdminSchemaCatalog, AdminSchemaDetail,
     BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin,
     CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, SiteOverview, core_operation,
     core_operations,
@@ -122,6 +123,11 @@ struct ConnectorLoginRequest {
 #[derive(Debug, Deserialize)]
 struct BasicConfigUpdateRequest {
     cf_10: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct AdminDashboardQuery {
+    limit: Option<u8>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -304,6 +310,16 @@ pub(crate) fn router() -> Router<AppState> {
         )
         .route("/sites/{site_id}/connector/logout", post(connector_logout))
         .route("/sites/{site_id}/overview", get(site_overview))
+        .route("/sites/{site_id}/admin/dashboard", get(admin_dashboard))
+        .route(
+            "/sites/{site_id}/admin/config",
+            get(admin_config_get).put(admin_config_update),
+        )
+        .route("/sites/{site_id}/admin/schema", get(admin_schema_catalog))
+        .route(
+            "/sites/{site_id}/admin/schema/{domain}",
+            get(admin_schema_detail),
+        )
         .route(
             "/sites/{site_id}/config/basic",
             get(basic_config_get).put(basic_config_update),
@@ -1408,6 +1424,155 @@ async fn core_execute(
         .await
     {
         Ok(response) => Json::<CoreExecuteResponse>(response).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_dashboard(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminDashboardQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_get_dashboard(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            query.limit,
+        )
+        .await
+    {
+        Ok(dashboard) => Json::<AdminDashboardData>(dashboard).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_config_get(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_get_config(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(config) => Json::<AdminConfig>(config).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_config_update(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(update): Json<AdminConfigUpdate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_update_config(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &update,
+        )
+        .await
+    {
+        Ok(config) => Json::<AdminConfig>(config).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_schema_catalog(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_list_field_schemas(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(catalog) => Json::<AdminSchemaCatalog>(catalog).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_schema_detail(
+    State(state): State<AppState>,
+    Path((site_id, domain)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_get_field_schema(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &domain,
+        )
+        .await
+    {
+        Ok(schema) => Json::<AdminSchemaDetail>(schema).into_response(),
         Err(error) => connector_error(error),
     }
 }

@@ -118,6 +118,113 @@ export interface SiteOverview {
   administrator_id: string | null;
 }
 
+export type AdminConfig = Record<string, string>;
+export type AdminConfigUpdate = Record<string, string | number | boolean>;
+
+export interface AdminDashboardData {
+  limit: number | null;
+  summary: {
+    members?: {
+      total_members?: number;
+      blocked_members?: number;
+      leave_members?: number;
+    };
+    posts?: { total_rows?: number };
+    points?: { total_rows?: number };
+    visits?: { total_visits?: number };
+  } | null;
+  recent_members: Array<{
+    mb_id?: string;
+    mb_name?: string;
+    mb_nick?: string;
+    mb_datetime?: string;
+  }>;
+  recent_posts: Array<{
+    bo_subject?: string;
+    wr_subject?: string;
+    wr_name?: string;
+    wr_datetime?: string;
+  }>;
+  recent_points: Array<{
+    mb_id?: string;
+    po_content?: string;
+    po_point?: number;
+    po_datetime?: string;
+  }>;
+}
+
+export interface AdminFieldOption {
+  value: string;
+  label: string;
+}
+
+export interface AdminFieldSchema {
+  name: string;
+  label: string;
+  input_type:
+    | "text"
+    | "textarea"
+    | "select"
+    | "checkbox"
+    | "radio"
+    | "password"
+    | "file"
+    | "number"
+    | "date"
+    | "datetime-local"
+    | "hidden";
+  data_type: "string" | "integer" | "boolean" | "file";
+  required: boolean;
+  create_only: boolean;
+  readonly_on_update: boolean;
+  description: string | null;
+  default_value: string | number | boolean | null;
+  options: AdminFieldOption[];
+  option_source: {
+    kind: "endpoint" | "directory";
+    name: string;
+    endpoint: string | null;
+    value_field: string | null;
+    label_field: string | null;
+  } | null;
+}
+
+export interface AdminSchemaSection {
+  key: string;
+  label: string;
+  order: number;
+  description: string | null;
+  fields: AdminFieldSchema[];
+}
+
+export interface AdminSchemaDetail {
+  domain: string;
+  title: string;
+  legacy_form: string;
+  generated_at: string;
+  field_count: number;
+  section_count: number;
+  layout: {
+    desktop: "tabs" | "stack";
+    mobile: "accordion" | "stack";
+    single_open: boolean;
+  } | null;
+  sections: AdminSchemaSection[];
+  fields_by_name: Record<string, AdminFieldSchema>;
+}
+
+export interface AdminSchemaCatalog {
+  items: Array<{
+    domain: string;
+    title: string;
+    legacy_form: string;
+    field_count: number;
+    section_count: number;
+    generated_at: string;
+  }>;
+  total: number;
+}
+
 export interface CoreExecuteInput {
   path: Record<string, string>;
   query: Record<string, unknown>;
@@ -548,6 +655,51 @@ export function updateBasicConfig(
     path: `/sites/${encodeURIComponent(siteId)}/config/basic`,
     csrfToken,
     body: { cf_10: cf10 },
+  });
+}
+
+export function getAdminDashboard(siteId: string, limit = 5) {
+  return transport.request<AdminDashboardData>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/dashboard?limit=${
+      encodeURIComponent(String(limit))
+    }`,
+  });
+}
+
+export function getAdminConfig(siteId: string) {
+  return transport.request<AdminConfig>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/config`,
+  });
+}
+
+export function updateAdminConfig(
+  siteId: string,
+  update: AdminConfigUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminConfig, AdminConfigUpdate>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/config`,
+    csrfToken,
+    body: update,
+  });
+}
+
+export function listAdminFieldSchemas(siteId: string) {
+  return transport.request<AdminSchemaCatalog>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/schema`,
+  });
+}
+
+export function getAdminFieldSchema(siteId: string, domain: string) {
+  return transport.request<AdminSchemaDetail>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/schema/${
+      encodeURIComponent(domain)
+    }`,
   });
 }
 
