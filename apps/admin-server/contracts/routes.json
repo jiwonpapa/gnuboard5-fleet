@@ -116,7 +116,7 @@
     {
       "method": "POST",
       "path": "/api/v1/security/recovery-codes",
-      "auth": "session_csrf",
+      "auth": "session_csrf_step_up",
       "site_context": false,
       "purpose": "recovery_code_rotation"
     },
