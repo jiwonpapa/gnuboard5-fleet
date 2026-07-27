@@ -164,8 +164,13 @@
       "id": "R03",
       "sequence": 3,
       "title": "사이트·활동·backup",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R02"],
+      "completion": {
+        "implementation_commit": "05a6e8c150a7fcaf3c36de6e87db4b88a1c51c4c",
+        "evidence_path": "docs/audits/evidence/R03_BATCH_GATE_PASS.json",
+        "closed_at": "2026-07-27T12:56:12Z"
+      },
       "core": {
         "domains": [],
         "operation_ids": [],
@@ -225,7 +230,7 @@
       "id": "R04",
       "sequence": 4,
       "title": "SSH·SFTP·terminal",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R03"],
       "core": {
         "domains": [],

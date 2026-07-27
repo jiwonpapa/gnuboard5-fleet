@@ -347,9 +347,9 @@ HTTPS origin은 내부 CA로 검증합니다.
 
 ## 4. 현재 바로 시작할 배치
 
-현재 시작점은 새 실행 정본의 **R03 사이트·활동·backup**입니다.
-R00 배치 통제, R01 공통 기반 49개와 R02 설치·인증·보안 66개는
-tracked 증거로 닫았고, 남은 597개는 `DOMAIN_REUSE_MIGRATION_PLAN.md`의 단일 활성 배치 순서로
+현재 시작점은 새 실행 정본의 **R04 SSH·SFTP·terminal**입니다.
+R00 배치 통제, R01 공통 기반 49개, R02 설치·인증·보안 66개와
+R03 사이트·활동·backup 57개는 tracked 증거로 닫았고, 남은 540개는 `DOMAIN_REUSE_MIGRATION_PLAN.md`의 단일 활성 배치 순서로
 실제 target·회귀 test·symbol check를 채웁니다.
 
 staging VM은 유지하되 정적 이관 동등성이 PASS하기 전에는 staging

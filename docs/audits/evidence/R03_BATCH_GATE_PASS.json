@@ -1,0 +1,122 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R03",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "05a6e8c150a7fcaf3c36de6e87db4b88a1c51c4c",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "05a6e8c150a7fcaf3c36de6e87db4b88a1c51c4c"
+  },
+  "generated_at": "2026-07-27T12:56:12Z",
+  "commands": [
+    "make active-check",
+    "make check-batch BATCH=R02",
+    "make check-batch BATCH=R03",
+    "make audit-runtime-prepare",
+    "make audit-server-static",
+    "python3 -m tools.migration_parity.batch_cli --batch R04 --profile static"
+  ],
+  "results": {
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {
+        "passed": 49,
+        "failed": 0
+      },
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 27,
+      "web_tests": {
+        "passed": 37,
+        "failed": 0
+      },
+      "web_build": "PASS"
+    },
+    "audit_harness_tests": {
+      "passed": 22,
+      "failed": 0
+    },
+    "migration_harness_tests": {
+      "passed": 26,
+      "failed": 0
+    },
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "checks": {
+        "passed": 35,
+        "failed": 0
+      }
+    },
+    "full_check": {
+      "status": "EXPECTED_FAIL",
+      "passed_through": "SERVER_STATIC_PASS",
+      "blocked_by": "global migration parity",
+      "global_findings": 540
+    },
+    "predecessor_regression": {
+      "batch": "R02",
+      "status": "PASS",
+      "findings": 0
+    },
+    "batch_scope": {
+      "legacy": 57,
+      "core_operations": 0,
+      "required_capabilities": 0
+    },
+    "reuse": {
+      "reused": 2,
+      "adapted": 27,
+      "redesigned": 28,
+      "deferred": 0
+    },
+    "batch_findings": 0,
+    "ownership": {
+      "legacy": {
+        "owned": 510,
+        "total": 510
+      },
+      "core_operations": {
+        "owned": 189,
+        "total": 189
+      },
+      "required_capabilities": {
+        "owned": 13,
+        "total": 13
+      }
+    },
+    "global_migration": {
+      "status": "FAIL",
+      "findings": 540
+    },
+    "next_batch_probe": {
+      "batch": "R04",
+      "status": "FAIL",
+      "scope": {
+        "legacy": 72,
+        "required_capabilities": 1
+      },
+      "findings": 73
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "e3cbc31fa0c6b9b54580fdb1fe9bf727763e07fdb34568084fceb9ac83fffd12",
+    "migration_batches": "ab06b42ac8b4ea836e4a3c5739250076ddbe287b780fb131cbfcc43e6d29e266"
+  },
+  "source_reports": [
+    {
+      "path": "output/audit/runs/migration-batch-R03-20260727T125612Z-99a3375f/result.json",
+      "sha256": "513f0870ee6e609481c98dadd5a9a63cc698e496b4b68081dae2beab11b3a326"
+    },
+    {
+      "path": "output/audit/runs/20260727T125501Z-702202a292c9/result.json",
+      "sha256": "2f292e28df86a6ecf051da68de78caedcf48b9d85ee8786184e9eb6d7b0696ff"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R04-20260727T125610Z-2a279302/result.json",
+      "sha256": "97671ebf580fcca518ee372950d6174f3ff1158b1d51ed098bb891058e4bfc7a"
+    }
+  ],
+  "claim_limit": "R03 site catalog, explicit site routing, health, dashboard, activity, encrypted portable backup, verified pre-import restore and safe diagnostics static parity only; SSH/SFTP runtime certification, Core operation domain consumers, production notifications, package and staging certification remain incomplete."
+}

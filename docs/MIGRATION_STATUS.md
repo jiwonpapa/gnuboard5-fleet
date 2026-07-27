@@ -2,17 +2,17 @@
 
 ## 현재 판정
 
-2026-07-27 R02 마감 후 전체 이관 동등성 하네스 결과는
+2026-07-27 R03 마감 후 전체 이관 동등성 하네스 결과는
 `MIGRATION_STATIC FAIL`입니다.
 
-- legacy inventory 510개 중 유효 매핑 107, 미매핑 403
-  - Tauri command 19/253
-  - React page 5/43
-  - Rust workspace member 14/21
-  - frontend regression test 22/100
-  - Rust regression test 47/93
+- legacy inventory 510개 중 유효 매핑 164, 미매핑 346
+  - Tauri command 34/253
+  - React page 9/43
+  - Rust workspace member 17/21
+  - frontend regression test 33/100
+  - Rust regression test 71/93
 - 서버 전환 필수 capability 8/13 구현 증명
-- 활성 server route 45개와 Core registry 189개는 존재하지만 전체 이관
+- 활성 server route 52개와 Core registry 189개는 존재하지만 전체 이관
   증거로 승격하지 않음
 
 아래 구현 목록은 현재 소스에 존재하는 기반 기능 inventory입니다. 전체
@@ -74,6 +74,11 @@ legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B
 - 최초 설치 상태, 관리자·OTP·복구 코드 원자 저장과 비밀번호+OTP 로그인 구현
 - 로그인 5회 실패 15분 lockout과 일회성 복구 코드 사용·재발급 구현
 - mutation append-only 감사 기록, principal·site 범위 조회 API와 필터·상세 웹 UI 구현
+- 소유 사이트 등록·조회·수정·삭제와 명시적 `site_id` URL 선택 구현
+- 소유 사이트·주의 상태·작업·최근 활동 통합 dashboard 구현
+- Argon2id+AES-256-GCM 휴대용 사이트 backup 내보내기·병합 구현
+- backup 가져오기 전 SHA-256 snapshot과 실제 restore·integrity·readback 강제
+- Tauri DevTools·개발 bootstrap을 제거한 인증 서버 진단 화면 구현
 - test-only local-certification feature와 공식 G5 v5.6.32 기동 harness 구현
 - local·browser·package·staging 증거 evaluator와 stale revision 차단 구현
 - 공식 G5 v5.6.32+Shop에서 Connector 로그인·설정 수정·재조회·원복 PASS
@@ -104,19 +109,19 @@ revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장�
 
 ## 현재 배치
 
-R00~R02는 tracked 증거로 닫혔습니다. R02는 legacy 58개와 capability
-8개를 닫아 전역 finding을 663개에서 597개로 줄였습니다.
+R00~R03은 tracked 증거로 닫혔습니다. R03은 legacy 57개를 닫아 전역
+finding을 597개에서 540개로 줄였습니다.
 
-- 구현 commit: `2193d26feaf2b09e84f8c12deceed646c1d2c75f`
-- 증거: `docs/audits/evidence/R02_BATCH_GATE_PASS.json`
-- R02 scoped finding: 0
+- 구현 commit: `05a6e8c150a7fcaf3c36de6e87db4b88a1c51c4c`
+- 증거: `docs/audits/evidence/R03_BATCH_GATE_PASS.json`
+- R03 scoped finding: 0
 - `SERVER_STATIC_PASS`: 35/35
-- 다음 활성 배치: R03 사이트·활동·backup
-- R03 사전 probe: FAIL 57
+- 다음 활성 배치: R04 SSH·SFTP·terminal
+- R04 사전 probe: FAIL 73
 
 ```bash
-make check-batch BATCH=R03
+make check-batch BATCH=R04
 ```
 
-전체 완료는 아닙니다. 전역 감사 597개가 남아 있으며 R36 전까지
+전체 완료는 아닙니다. 전역 감사 540개가 남아 있으며 R36 전까지
 `MIGRATION_STATIC FAIL`을 유지합니다.
