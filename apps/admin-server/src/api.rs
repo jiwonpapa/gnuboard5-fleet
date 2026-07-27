@@ -30,7 +30,10 @@ use g5_fleet_remote::{
     TerminalTicket,
 };
 use g5_fleet_security::{AuthError, PrincipalSession, SecretPurpose, SystemResolver, UrlGuard};
-use g5_fleet_store::{AuditEntry, JobRecord, SiteRecord, StoreError};
+use g5_fleet_store::{
+    AuditEntry, JobRecord, PortableBackupEnvelope, SiteImportSummary, SiteRecord, StoreError,
+    decrypt_portable_backup, encrypt_portable_backup,
+};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -87,6 +90,23 @@ struct CreateSiteRequest {
     base_url: String,
 }
 
+#[derive(Debug, Deserialize)]
+struct UpdateSiteRequest {
+    display_name: String,
+    base_url: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct PortableBackupRequest {
+    password: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct PortableBackupImportRequest {
+    password: String,
+    envelope: PortableBackupEnvelope,
+}
+
 #[derive(Deserialize)]
 struct PutSecretRequest {
     purpose: String,
@@ -128,6 +148,28 @@ struct PluginSlot {
 struct ConnectorLoginResponse {
     connected: bool,
     expires_in: i64,
+}
+
+#[derive(Debug, Serialize)]
+struct DashboardResponse {
+    site_count: usize,
+    attention_count: usize,
+    active_job_count: i64,
+    recent_activity: Vec<AuditEntry>,
+}
+
+#[derive(Debug, Serialize)]
+struct RuntimeDiagnosticsResponse {
+    service: &'static str,
+    server_version: &'static str,
+    build_revision: String,
+    image_version: String,
+    database_engine: &'static str,
+    database_status: &'static str,
+    uptime_seconds: u64,
+    dev_bootstrap_available: bool,
+    native_devtools_available: bool,
+    log_tail_available: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -222,11 +264,19 @@ pub(crate) fn router() -> Router<AppState> {
         .route("/security/totp/disable", post(disable_totp))
         .route("/security/recovery-codes", post(regenerate_recovery_codes))
         .route("/audit", get(list_audit_entries))
+        .route("/activity", get(list_audit_entries))
+        .route("/dashboard", get(dashboard))
+        .route("/diagnostics/runtime", get(runtime_diagnostics))
+        .route("/backup/export", post(export_portable_backup))
+        .route("/backup/import", post(import_portable_backup))
         .route("/users", post(create_user))
         .route("/plugins", get(plugin_slots))
         .route("/core/registry", get(core_registry))
         .route("/sites", get(list_sites).post(create_site))
-        .route("/sites/{site_id}", get(get_site))
+        .route(
+            "/sites/{site_id}",
+            get(get_site).put(update_site).delete(delete_site),
+        )
         .route("/sites/{site_id}/secrets", put(put_secret))
         .route("/sites/{site_id}/connector/health", get(connector_health))
         .route("/sites/{site_id}/connector/login", post(connector_login))
@@ -627,6 +677,158 @@ async fn list_sites(State(state): State<AppState>, headers: HeaderMap) -> Respon
     }
 }
 
+async fn dashboard(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    let (context, _) = match context(&state, &headers, None).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let store = state.config.auth.store();
+    let sites = match store.list_owned_sites(&context.principal_id).await {
+        Ok(sites) => sites,
+        Err(error) => return store_error(error),
+    };
+    let active_job_count = match store.count_active_jobs(&context.principal_id).await {
+        Ok(count) => count,
+        Err(error) => return store_error(error),
+    };
+    let recent_activity = match store
+        .list_audit_entries(&context.principal_id, None, 8)
+        .await
+    {
+        Ok(entries) => entries,
+        Err(error) => return store_error(error),
+    };
+    Json(DashboardResponse {
+        site_count: sites.len(),
+        attention_count: sites.iter().filter(|site| site.status != "active").count(),
+        active_job_count,
+        recent_activity,
+    })
+    .into_response()
+}
+
+async fn runtime_diagnostics(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    if let Err(response) = context(&state, &headers, None).await {
+        return response;
+    }
+    let database_status = if state.config.auth.store().quick_check().await.is_ok() {
+        "ok"
+    } else {
+        "failed"
+    };
+    Json(RuntimeDiagnosticsResponse {
+        service: crate::SERVICE_NAME,
+        server_version: env!("CARGO_PKG_VERSION"),
+        build_revision: crate::build_revision(),
+        image_version: crate::image_version(),
+        database_engine: "sqlite",
+        database_status,
+        uptime_seconds: state.started_at.elapsed().as_secs(),
+        dev_bootstrap_available: false,
+        native_devtools_available: false,
+        log_tail_available: false,
+    })
+    .into_response()
+}
+
+async fn export_portable_backup(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<PortableBackupRequest>,
+) -> Response {
+    let (context, principal) = match mutation_context(&state, &headers, None).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let sites = match state
+        .config
+        .auth
+        .store()
+        .list_owned_sites(&context.principal_id)
+        .await
+    {
+        Ok(sites) => sites,
+        Err(error) => return store_error(error),
+    };
+    match encrypt_portable_backup(&sites, &payload.password) {
+        Ok(envelope) => Json(envelope).into_response(),
+        Err(error) => store_error(error),
+    }
+}
+
+async fn import_portable_backup(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<PortableBackupImportRequest>,
+) -> Response {
+    let (context, principal) = match mutation_context(&state, &headers, None).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let import = match decrypt_portable_backup(&payload.envelope, &payload.password) {
+        Ok(import) => import,
+        Err(error) => return store_error(error),
+    };
+    for site in &import.sites {
+        if validate_site_url(&site.base_url).await.is_err() {
+            return api_error(
+                StatusCode::BAD_REQUEST,
+                "backup_site_url_forbidden",
+                "Backup contains an invalid or forbidden site URL.",
+            );
+        }
+    }
+    if let Err(error) = verify_pre_import_recovery(state.config.auth.store()).await {
+        return store_error(error);
+    }
+    match state
+        .config
+        .auth
+        .store()
+        .import_owned_sites(&context.principal_id, &import.sites)
+        .await
+    {
+        Ok(summary) => Json::<SiteImportSummary>(summary).into_response(),
+        Err(error) => store_error(error),
+    }
+}
+
+async fn verify_pre_import_recovery(store: &g5_fleet_store::FleetStore) -> Result<(), StoreError> {
+    let backup_dir = tempfile::tempdir().map_err(|error| g5_fleet_store::StoreError::Io {
+        context: "creating pre-import backup directory",
+        source: error,
+    })?;
+    let restore_dir = tempfile::tempdir().map_err(|error| g5_fleet_store::StoreError::Io {
+        context: "creating pre-import restore directory",
+        source: error,
+    })?;
+    let snapshot = backup_dir.path().join("pre-import.sqlite3");
+    let artifact = store
+        .create_verified_backup(&snapshot, &crate::image_version(), &crate::build_revision())
+        .await?;
+    let restored = g5_fleet_store::FleetStore::restore_verified_backup(
+        &artifact.snapshot_path,
+        &artifact.manifest_path,
+        restore_dir.path(),
+    )
+    .await?;
+    if restored != artifact.manifest.readback {
+        return Err(StoreError::BackupManifest(
+            "pre-import restore readback mismatch".to_owned(),
+        ));
+    }
+    let restored_store = g5_fleet_store::FleetStore::open_existing(restore_dir.path()).await?;
+    restored_store.full_integrity_check().await?;
+    restored_store.close().await;
+    Ok(())
+}
+
 async fn core_registry(State(state): State<AppState>, headers: HeaderMap) -> Response {
     if let Err(response) = context(&state, &headers, None).await {
         return response;
@@ -716,6 +918,69 @@ async fn get_site(
             "site_not_found",
             "Site was not found.",
         ),
+        Err(error) => store_error(error),
+    }
+}
+
+async fn update_site(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(payload): Json<UpdateSiteRequest>,
+) -> Response {
+    let (context, principal, _) =
+        match owned_site_context(&state, &headers, site_id.clone(), true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    if validate_site_url(&payload.base_url).await.is_err() {
+        return api_error(
+            StatusCode::BAD_REQUEST,
+            "site_url_forbidden",
+            "Site URL is invalid or resolves to a non-public address.",
+        );
+    }
+    match state
+        .config
+        .auth
+        .store()
+        .update_owned_site(
+            &context.principal_id,
+            &site_id,
+            &payload.display_name,
+            &payload.base_url,
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => store_error(error),
+    }
+}
+
+async fn delete_site(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, principal, _) =
+        match owned_site_context(&state, &headers, site_id.clone(), true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    match state
+        .config
+        .auth
+        .store()
+        .delete_owned_site(&context.principal_id, &site_id)
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(error) => store_error(error),
     }
 }
@@ -2009,6 +2274,11 @@ fn store_error(error: StoreError) -> Response {
             StatusCode::NOT_FOUND,
             "resource_not_found",
             "Resource was not found.",
+        ),
+        StoreError::PortableBackup(_) => api_error(
+            StatusCode::BAD_REQUEST,
+            "portable_backup_rejected",
+            "Backup password, format, or contents were rejected.",
         ),
         _ => api_error(
             StatusCode::INTERNAL_SERVER_ERROR,

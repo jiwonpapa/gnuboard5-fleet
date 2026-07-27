@@ -35,6 +35,22 @@ export const adminRoutes: readonly AdminRouteMeta[] = [
     legacySource: "security/audit + activity command",
   },
   {
+    path: "/backup",
+    label: "백업",
+    group: "시스템",
+    description: "암호화 사이트 백업을 내보내고 검증 후 병합합니다.",
+    delivery: "active",
+    legacySource: "sites/SiteDashboardPage.tsx + backup commands",
+  },
+  {
+    path: "/diagnostics",
+    label: "진단",
+    group: "시스템",
+    description: "서버 런타임과 SQLite 상태를 확인합니다.",
+    delivery: "active",
+    legacySource: "debug/*",
+  },
+  {
     path: "/security",
     label: "보안 설정",
     group: "시스템",

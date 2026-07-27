@@ -28,6 +28,8 @@ pub enum StoreError {
     BackupInsideDataDirectory(PathBuf),
     #[error("backup manifest mismatch: {0}")]
     BackupManifest(String),
+    #[error("portable backup rejected: {0}")]
+    PortableBackup(String),
     #[error("Fleet state conflict: {0}")]
     Conflict(String),
     #[error("Fleet record not found")]

@@ -211,12 +211,19 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("POST", "/api/v1/security/totp/disable"),
             ("POST", "/api/v1/security/recovery-codes"),
             ("GET", "/api/v1/audit"),
+            ("GET", "/api/v1/activity"),
+            ("GET", "/api/v1/dashboard"),
+            ("GET", "/api/v1/diagnostics/runtime"),
+            ("POST", "/api/v1/backup/export"),
+            ("POST", "/api/v1/backup/import"),
             ("POST", "/api/v1/users"),
             ("GET", "/api/v1/plugins"),
             ("GET", "/api/v1/core/registry"),
             ("GET", "/api/v1/sites"),
             ("POST", "/api/v1/sites"),
             ("GET", "/api/v1/sites/{site_id}"),
+            ("PUT", "/api/v1/sites/{site_id}"),
+            ("DELETE", "/api/v1/sites/{site_id}"),
             ("PUT", "/api/v1/sites/{site_id}/secrets"),
             ("GET", "/api/v1/sites/{site_id}/connector/health"),
             ("POST", "/api/v1/sites/{site_id}/connector/login"),
@@ -985,6 +992,207 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap();
     assert_eq!(after_logout.status(), StatusCode::SERVICE_UNAVAILABLE);
     assert_eq!(mock.cf_10.lock().unwrap().as_str(), "baseline");
+}
+
+#[tokio::test]
+async fn site_lifecycle_dashboard_diagnostics_and_portable_backup_are_live() {
+    let (_web, _data, app) = fixture().await;
+    let password = "correct horse battery staple";
+    let (totp_secret, _) = complete_install(&app, "admin", password).await;
+    let totp_code =
+        g5_fleet_security::generate_current_totp_code(&totp_secret, "G5 Fleet", "admin")
+            .expect("login TOTP");
+    let login = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/auth/login",
+            None,
+            None,
+            Some(serde_json::json!({
+                "login_name": "admin",
+                "password": password,
+                "totp_code": totp_code
+            })),
+        ))
+        .await
+        .expect("login");
+    let cookie = login
+        .headers()
+        .get("set-cookie")
+        .expect("cookie")
+        .to_str()
+        .unwrap()
+        .split(';')
+        .next()
+        .unwrap()
+        .to_owned();
+    let login: g5_fleet_admin_server::LoginResponse = json(login).await;
+    let csrf = login.csrf_token;
+    let step_up = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/auth/step-up",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "password": password,
+                "totp_code": g5_fleet_security::generate_current_totp_code(
+                    &totp_secret,
+                    "G5 Fleet",
+                    "admin"
+                ).unwrap()
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(step_up.status(), StatusCode::NO_CONTENT);
+
+    let create = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "site_id": "site-a",
+                "display_name": "Site A",
+                "base_url": "https://93.184.216.34"
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::CREATED);
+
+    let update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "display_name": "Site A Updated",
+                "base_url": "https://93.184.216.35"
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(update.status(), StatusCode::NO_CONTENT);
+
+    let dashboard = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/dashboard",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(dashboard.status(), StatusCode::OK);
+    let dashboard: Value = json(dashboard).await;
+    assert_eq!(dashboard["site_count"], 1);
+    assert_eq!(dashboard["attention_count"], 1);
+    assert!(dashboard["recent_activity"].as_array().unwrap().len() >= 2);
+
+    let diagnostics = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/diagnostics/runtime",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(diagnostics.status(), StatusCode::OK);
+    let diagnostics: Value = json(diagnostics).await;
+    assert_eq!(diagnostics["database_engine"], "sqlite");
+    assert_eq!(diagnostics["database_status"], "ok");
+    assert_eq!(diagnostics["dev_bootstrap_available"], false);
+
+    let export = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/backup/export",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"password":"portable password"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(export.status(), StatusCode::OK);
+    let envelope: Value = json(export).await;
+    assert_eq!(envelope["format"], "g5-fleet-portable-backup-v1");
+    assert_eq!(envelope["site_count"], 1);
+
+    let wrong_password = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/backup/import",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "password":"different password",
+                "envelope":envelope.clone()
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(wrong_password.status(), StatusCode::BAD_REQUEST);
+
+    let delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(delete.status(), StatusCode::NO_CONTENT);
+
+    let import = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/backup/import",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "password":"portable password",
+                "envelope":envelope
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(import.status(), StatusCode::OK);
+    let import: Value = json(import).await;
+    assert_eq!(import["imported_site_count"], 1);
+    assert_eq!(import["reused_site_count"], 0);
+
+    let sites = app
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    let sites: Value = json(sites).await;
+    assert_eq!(sites.as_array().unwrap().len(), 1);
+    assert_eq!(sites[0]["display_name"], "Site A Updated");
 }
 
 fn json_request(

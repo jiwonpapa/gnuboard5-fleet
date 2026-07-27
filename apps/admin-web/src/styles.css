@@ -43,6 +43,10 @@ input {
   font: inherit;
 }
 
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 .app-shell {
   min-height: 100vh;
 }
@@ -250,6 +254,132 @@ input {
 
 .page {
   animation: page-in 240ms ease-out both;
+}
+
+.narrow-page {
+  max-width: 760px;
+}
+
+.stacked-form {
+  display: grid;
+  gap: 18px;
+}
+
+.stacked-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.stacked-form input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.site-list,
+.activity-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-list li,
+.activity-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.site-list li > div,
+.activity-list li {
+  min-width: 0;
+}
+
+.site-list strong,
+.site-list span,
+.activity-list strong,
+.activity-list span {
+  display: block;
+}
+
+.site-list span,
+.activity-list span {
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.site-list a {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.two-column-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.diagnostics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--line);
+}
+
+.diagnostics-grid > div {
+  padding: 18px;
+  background: var(--paper);
+}
+
+.diagnostics-grid dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.diagnostics-grid dd {
+  margin: 8px 0 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+
+.error-message,
+.success-message {
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+}
+
+.error-message {
+  color: var(--danger);
+  background: #f8e9e5;
+}
+
+.success-message {
+  color: #185c4c;
+  background: var(--accent-soft);
 }
 
 .page-heading {
@@ -1515,6 +1645,11 @@ input {
   }
 
   .audit-filter {
+    grid-template-columns: 1fr;
+  }
+
+  .two-column-grid,
+  .diagnostics-grid {
     grid-template-columns: 1fr;
   }
 }

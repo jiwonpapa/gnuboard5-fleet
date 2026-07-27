@@ -46,6 +46,14 @@ describe("App", () => {
             { status: 200 },
           );
         }
+        if (path === "/api/v1/dashboard") {
+          return new Response(JSON.stringify({
+            site_count: 0,
+            attention_count: 0,
+            active_job_count: 0,
+            recent_activity: [],
+          }), { status: 200 });
+        }
         return new Response(
           JSON.stringify({
             api_version: "v1",
@@ -65,7 +73,7 @@ describe("App", () => {
   it("renders the responsive operations shell and live server state", async () => {
     render(<App />);
     expect(
-      await screen.findByRole("heading", { name: "연결 상태" }),
+      await screen.findByRole("heading", { name: "통합 운영 현황" }),
     ).toBeVisible();
     expect(screen.getByRole("navigation", { name: "주요 메뉴" })).toBeVisible();
     expect(await screen.findByText("서버 정상")).toBeVisible();

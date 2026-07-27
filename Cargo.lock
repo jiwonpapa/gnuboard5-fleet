@@ -679,7 +679,11 @@ dependencies = [
 name = "g5-fleet-store"
 version = "0.1.0"
 dependencies = [
+ "aes-gcm",
+ "argon2",
+ "base64",
  "fs2",
+ "getrandom 0.3.4",
  "hex",
  "serde",
  "serde_json",

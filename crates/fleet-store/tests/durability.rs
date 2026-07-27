@@ -6,7 +6,10 @@ use std::{
     time::Duration,
 };
 
-use g5_fleet_store::{DATABASE_FILENAME, EXPECTED_SCHEMA_VERSION, FleetStore, StoreError};
+use g5_fleet_store::{
+    DATABASE_FILENAME, EXPECTED_SCHEMA_VERSION, FleetStore, StoreError, decrypt_portable_backup,
+    encrypt_portable_backup,
+};
 use sqlx::{
     Connection, Executor, SqliteConnection, migrate::Migrator, sqlite::SqliteConnectOptions,
 };
@@ -127,6 +130,73 @@ async fn verified_backup_restores_critical_rows_to_separate_directory() {
     .await
     .unwrap_err();
     assert!(matches!(rejected, StoreError::BackupManifest(_)));
+}
+
+#[tokio::test]
+async fn portable_backup_rejects_wrong_password_and_merges_owned_sites() {
+    let source_data = TempDir::new().expect("source data");
+    let target_data = TempDir::new().expect("target data");
+    let source = FleetStore::initialize(source_data.path(), "portable-source")
+        .await
+        .expect("source store");
+    source
+        .create_user("user-a", "admin-a", &[7_u8; 32])
+        .await
+        .expect("source user");
+    source
+        .create_site("site-a", "user-a", "Source A", "https://a.example.invalid")
+        .await
+        .expect("source site");
+    source
+        .create_site("site-b", "user-a", "Source B", "https://b.example.invalid")
+        .await
+        .expect("source site");
+    let envelope = encrypt_portable_backup(
+        &source
+            .list_owned_sites("user-a")
+            .await
+            .expect("source sites"),
+        "portable password",
+    )
+    .expect("encrypted portable backup");
+    assert_eq!(envelope.site_count, 2);
+    assert!(matches!(
+        decrypt_portable_backup(&envelope, "wrong password"),
+        Err(StoreError::PortableBackup(_))
+    ));
+
+    let target = FleetStore::initialize(target_data.path(), "portable-target")
+        .await
+        .expect("target store");
+    target
+        .create_user("user-b", "admin-b", &[8_u8; 32])
+        .await
+        .expect("target user");
+    target
+        .create_site("site-a", "user-b", "Old A", "https://old.example.invalid")
+        .await
+        .expect("existing site");
+    let payload =
+        decrypt_portable_backup(&envelope, "portable password").expect("decrypted portable backup");
+    let summary = target
+        .import_owned_sites("user-b", &payload.sites)
+        .await
+        .expect("merge sites");
+    assert_eq!(summary.imported_site_count, 1);
+    assert_eq!(summary.reused_site_count, 1);
+    let sites = target
+        .list_owned_sites("user-b")
+        .await
+        .expect("target sites");
+    assert_eq!(sites.len(), 2);
+    assert_eq!(
+        sites
+            .iter()
+            .find(|site| site.site_id == "site-a")
+            .expect("site-a")
+            .display_name,
+        "Source A"
+    );
 }
 
 #[tokio::test]

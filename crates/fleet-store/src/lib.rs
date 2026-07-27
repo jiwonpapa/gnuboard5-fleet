@@ -1,5 +1,6 @@
 mod backup;
 mod error;
+mod portable_backup;
 mod records;
 mod security;
 
@@ -14,9 +15,12 @@ use std::{
 pub use backup::{BackupArtifact, BackupManifest, BackupReadback};
 use error::io_error;
 pub use error::{StoreError, StoreResult};
+pub use portable_backup::{
+    PortableBackupEnvelope, PortableBackupImport, decrypt_portable_backup, encrypt_portable_backup,
+};
 pub use records::{
-    EncryptedSecretRecord, JobRecord, NotificationOutboxRecord, SessionRecord, SiteRecord,
-    UserCredential,
+    EncryptedSecretRecord, JobRecord, NotificationOutboxRecord, SessionRecord, SiteImportRecord,
+    SiteImportSummary, SiteRecord, UserCredential,
 };
 pub use security::{
     AuditEntry, EncryptedTotpSecret, InstallationSecurityState, PendingInstallChallenge,

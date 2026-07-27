@@ -30,6 +30,20 @@ pub struct SiteRecord {
     pub status: String,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct SiteImportRecord {
+    pub site_id: String,
+    pub display_name: String,
+    pub base_url: String,
+    pub status: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct SiteImportSummary {
+    pub imported_site_count: usize,
+    pub reused_site_count: usize,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EncryptedSecretRecord {
     pub algorithm: String,
@@ -319,6 +333,117 @@ impl FleetStore {
                 status,
             },
         ))
+    }
+
+    pub async fn update_owned_site(
+        &self,
+        owner_user_id: &str,
+        site_id: &str,
+        display_name: &str,
+        base_url: &str,
+    ) -> StoreResult<()> {
+        let _writer = self.inner.writer.lock().await;
+        let result = sqlx::query(
+            "UPDATE sites SET display_name = ?, base_url = ?, \
+             updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') \
+             WHERE owner_user_id = ? AND site_id = ?",
+        )
+        .bind(display_name)
+        .bind(base_url)
+        .bind(owner_user_id)
+        .bind(site_id)
+        .execute(&self.inner.pool)
+        .await?;
+        if result.rows_affected() != 1 {
+            return Err(StoreError::NotFound);
+        }
+        Ok(())
+    }
+
+    pub async fn delete_owned_site(&self, owner_user_id: &str, site_id: &str) -> StoreResult<()> {
+        let _writer = self.inner.writer.lock().await;
+        let result = sqlx::query("DELETE FROM sites WHERE owner_user_id = ? AND site_id = ?")
+            .bind(owner_user_id)
+            .bind(site_id)
+            .execute(&self.inner.pool)
+            .await?;
+        if result.rows_affected() != 1 {
+            return Err(StoreError::NotFound);
+        }
+        Ok(())
+    }
+
+    pub async fn count_active_jobs(&self, owner_user_id: &str) -> StoreResult<i64> {
+        Ok(sqlx::query_scalar(
+            "SELECT COUNT(*) FROM jobs \
+             WHERE owner_user_id = ? AND state IN ('queued', 'running')",
+        )
+        .bind(owner_user_id)
+        .fetch_one(&self.inner.pool)
+        .await?)
+    }
+
+    pub async fn import_owned_sites(
+        &self,
+        owner_user_id: &str,
+        sites: &[SiteImportRecord],
+    ) -> StoreResult<SiteImportSummary> {
+        if sites.len() > 1_000 {
+            return Err(StoreError::PortableBackup(
+                "site count exceeds the 1000 site safety limit".to_owned(),
+            ));
+        }
+        let _writer = self.inner.writer.lock().await;
+        let mut transaction = self.inner.pool.begin().await?;
+        let mut imported_site_count = 0;
+        let mut reused_site_count = 0;
+        for site in sites {
+            let existing_owner: Option<String> =
+                sqlx::query_scalar("SELECT owner_user_id FROM sites WHERE site_id = ?")
+                    .bind(&site.site_id)
+                    .fetch_optional(&mut *transaction)
+                    .await?;
+            match existing_owner {
+                Some(existing_owner) if existing_owner != owner_user_id => {
+                    return Err(StoreError::AccessDenied);
+                }
+                Some(_) => {
+                    sqlx::query(
+                        "UPDATE sites SET display_name = ?, base_url = ?, status = ?, \
+                         updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') \
+                         WHERE owner_user_id = ? AND site_id = ?",
+                    )
+                    .bind(&site.display_name)
+                    .bind(&site.base_url)
+                    .bind(&site.status)
+                    .bind(owner_user_id)
+                    .bind(&site.site_id)
+                    .execute(&mut *transaction)
+                    .await?;
+                    reused_site_count += 1;
+                }
+                None => {
+                    sqlx::query(
+                        "INSERT INTO sites \
+                         (site_id, owner_user_id, display_name, base_url, status) \
+                         VALUES (?, ?, ?, ?, ?)",
+                    )
+                    .bind(&site.site_id)
+                    .bind(owner_user_id)
+                    .bind(&site.display_name)
+                    .bind(&site.base_url)
+                    .bind(&site.status)
+                    .execute(&mut *transaction)
+                    .await?;
+                    imported_site_count += 1;
+                }
+            }
+        }
+        transaction.commit().await?;
+        Ok(SiteImportSummary {
+            imported_site_count,
+            reused_site_count,
+        })
     }
 
     #[allow(clippy::too_many_arguments)]

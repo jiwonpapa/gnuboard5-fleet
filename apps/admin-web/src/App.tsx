@@ -2,11 +2,15 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { getHealth, getMeta, type MetaResponse } from "./api/system";
-import { VerticalFlow } from "./components/VerticalFlow";
 import { AuditLogPage } from "./features/audit/AuditLogPage";
 import { FleetAccessGate } from "./features/auth/FleetAccessGate";
-import { useAuthSession } from "./features/auth/useAuthSession";
+import { BackupPage } from "./features/backup/BackupPage";
+import { DiagnosticsPage } from "./features/debug/DiagnosticsPage";
+import { SiteOnboardingPage } from "./features/onboarding/SiteOnboardingPage";
+import { AdminOverviewPage } from "./features/overview/AdminOverviewPage";
 import { SecuritySettingsPage } from "./features/security/SecuritySettingsPage";
+import { SiteActivationPage } from "./features/sites/SiteActivationPage";
+import { SiteDashboardPage } from "./features/sites/SiteDashboardPage";
 import { AppShell } from "./layout/AppShell";
 import { AdminMenuStatusPage } from "./status/AdminMenuStatusPage";
 
@@ -26,9 +30,14 @@ export default function App() {
           serverVersion={server.meta?.server_version}
         >
           <Routes>
-            <Route path="/" element={<Overview />} />
-            <Route path="/sites" element={<Sites />} />
+            <Route path="/" element={<AdminOverviewPage />} />
+            <Route path="/sites" element={<SiteDashboardPage />} />
+            <Route path="/sites/new" element={<SiteOnboardingPage />} />
+            <Route path="/sites/:siteId" element={<SiteDashboardPage />} />
+            <Route path="/sites/:siteId/activate" element={<SiteActivationPage />} />
             <Route path="/audit" element={<AuditLogPage />} />
+            <Route path="/backup" element={<BackupPage />} />
+            <Route path="/diagnostics" element={<DiagnosticsPage />} />
             <Route path="/security" element={<SecuritySettingsPage />} />
             <Route path="/admin/:domain" element={<AdminMenuStatusPage />} />
             <Route path="*" element={<NotFound />} />
@@ -55,75 +64,6 @@ function useServerState(): ServerState {
     return () => controller.abort();
   }, []);
   return state;
-}
-
-function Overview() {
-  return (
-    <section className="page" aria-labelledby="overview-title">
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">Overview</span>
-          <h2 id="overview-title">연결 상태</h2>
-          <p>등록된 G5 사이트와 최근 운영 작업을 한 화면에서 확인합니다.</p>
-        </div>
-        <button className="primary-action" type="button" disabled>
-          사이트 연결 준비 중
-        </button>
-      </div>
-
-      <div className="metric-line" aria-label="현재 운영 지표">
-        <Metric label="연결된 사이트" value="0" note="등록 대기" />
-        <Metric label="주의 필요" value="0" note="확인된 장애 없음" />
-        <Metric label="진행 중 작업" value="0" note="대기열 비어 있음" />
-      </div>
-
-      <div className="workspace-section">
-        <div className="section-heading">
-          <div>
-            <h3>사이트 목록</h3>
-            <p>사이트가 등록되면 상태와 마지막 동기화 시각이 표시됩니다.</p>
-          </div>
-          <span className="count">0 sites</span>
-        </div>
-        <div className="empty-row">
-          <span className="empty-index">—</span>
-          <div>
-            <strong>연결된 사이트가 없습니다.</strong>
-            <p>최초 사이트 연결 흐름이 준비되면 이곳에서 시작합니다.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Metric(props: { label: string; value: string; note: string }) {
-  return (
-    <div className="metric">
-      <span>{props.label}</span>
-      <strong>{props.value}</strong>
-      <small>{props.note}</small>
-    </div>
-  );
-}
-
-function Sites() {
-  const { session } = useAuthSession();
-  return (
-    <section className="page" aria-labelledby="sites-title">
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">Sites / First vertical flow</span>
-          <h2 id="sites-title">사이트 연결</h2>
-          <p>
-            Fleet 로그인부터 G5 설정 저장·재조회·원복까지 한 사이트 경계에서
-            진행합니다.
-          </p>
-        </div>
-      </div>
-      <VerticalFlow csrfToken={session.csrf_token} />
-    </section>
-  );
 }
 
 function NotFound() {

@@ -59,6 +59,46 @@ export interface Site {
   status: string;
 }
 
+export interface Dashboard {
+  site_count: number;
+  attention_count: number;
+  active_job_count: number;
+  recent_activity: AuditEntry[];
+}
+
+export interface RuntimeDiagnostics {
+  service: string;
+  server_version: string;
+  build_revision: string;
+  image_version: string;
+  database_engine: "sqlite";
+  database_status: "ok" | "failed";
+  uptime_seconds: number;
+  dev_bootstrap_available: false;
+  native_devtools_available: false;
+  log_tail_available: false;
+}
+
+export interface PortableBackupEnvelope {
+  format: string;
+  version: number;
+  cipher: string;
+  kdf: string;
+  kdf_memory_kib: number;
+  kdf_iterations: number;
+  kdf_lanes: number;
+  created_at_unix: number;
+  site_count: number;
+  salt_b64: string;
+  nonce_b64: string;
+  ciphertext_b64: string;
+}
+
+export interface PortableBackupImportSummary {
+  imported_site_count: number;
+  reused_site_count: number;
+}
+
 export interface ConnectorHealth {
   status: string;
   version: string;
@@ -330,6 +370,24 @@ export function listSites() {
   return transport.request<Site[]>({ method: "GET", path: "/sites" });
 }
 
+export function getDashboard() {
+  return transport.request<Dashboard>({ method: "GET", path: "/dashboard" });
+}
+
+export function getRuntimeDiagnostics() {
+  return transport.request<RuntimeDiagnostics>({
+    method: "GET",
+    path: "/diagnostics/runtime",
+  });
+}
+
+export function getSite(siteId: string) {
+  return transport.request<Site>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}`,
+  });
+}
+
 export function createSite(
   input: { site_id: string; display_name: string; base_url: string },
   csrfToken: string,
@@ -339,6 +397,52 @@ export function createSite(
     path: "/sites",
     csrfToken,
     body: input,
+  });
+}
+
+export function updateSite(
+  siteId: string,
+  input: { display_name: string; base_url: string },
+  csrfToken: string,
+) {
+  return transport.request<null, typeof input>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}`,
+    csrfToken,
+    body: input,
+  });
+}
+
+export function deleteSite(siteId: string, csrfToken: string) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}`,
+    csrfToken,
+  });
+}
+
+export function exportPortableBackup(password: string, csrfToken: string) {
+  return transport.request<PortableBackupEnvelope, { password: string }>({
+    method: "POST",
+    path: "/backup/export",
+    csrfToken,
+    body: { password },
+  });
+}
+
+export function importPortableBackup(
+  envelope: PortableBackupEnvelope,
+  password: string,
+  csrfToken: string,
+) {
+  return transport.request<
+    PortableBackupImportSummary,
+    { password: string; envelope: PortableBackupEnvelope }
+  >({
+    method: "POST",
+    path: "/backup/import",
+    csrfToken,
+    body: { password, envelope },
   });
 }
 
