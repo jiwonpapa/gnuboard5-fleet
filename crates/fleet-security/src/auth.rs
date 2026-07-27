@@ -784,6 +784,18 @@ impl AuthService {
             )
             .map_err(|_| AuthError::Decryption)
     }
+
+    pub async fn delete_secret(
+        &self,
+        principal_id: &str,
+        site_id: &str,
+        purpose: SecretPurpose,
+    ) -> AuthResult<()> {
+        self.store
+            .delete_encrypted_secret(principal_id, site_id, purpose.as_str())
+            .await?;
+        Ok(())
+    }
 }
 
 fn validate_password(password: &str) -> AuthResult<()> {

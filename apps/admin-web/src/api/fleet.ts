@@ -146,6 +146,16 @@ export interface SshProfileSummary {
   host: string;
   port: number;
   host_key_verification: "strict_known_hosts";
+  server_key_algorithm: string;
+  server_key_fingerprint: string;
+}
+
+export interface HostKeyInspection {
+  host: string;
+  port: number;
+  server_key_algorithm: string;
+  server_key_fingerprint: string;
+  known_hosts_line: string;
 }
 
 export interface TerminalTicket {
@@ -155,7 +165,10 @@ export interface TerminalTicket {
 
 export type SftpOperation =
   | { action: "list"; path: string }
+  | { action: "stat"; path: string }
   | { action: "mkdir"; path: string }
+  | { action: "chmod"; path: string; mode: string }
+  | { action: "copy"; from: string; to: string }
   | { action: "rename"; from: string; to: string }
   | { action: "delete_file"; path: string }
   | { action: "delete_directory"; path: string };
@@ -170,6 +183,16 @@ export interface TransferJob {
   result: unknown | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface TransferQueueSnapshot {
+  site_id: string;
+  jobs: TransferJob[];
+  active_count: number;
+  queued_count: number;
+  paused_count: number;
+  failed_count: number;
+  concurrency_limit: number;
 }
 
 const transport = new BrowserHttpTransport("/api/v1");
@@ -553,6 +576,31 @@ export function putSshProfile(
   });
 }
 
+export function deleteSshProfile(siteId: string, csrfToken: string) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/ssh/profile`,
+    csrfToken,
+  });
+}
+
+export function inspectSshHostKey(
+  siteId: string,
+  host: string,
+  port: number,
+  csrfToken: string,
+) {
+  return transport.request<
+    HostKeyInspection,
+    { host: string; port: number }
+  >({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/ssh/host-key`,
+    csrfToken,
+    body: { host, port },
+  });
+}
+
 export function issueTerminalTicket(siteId: string, csrfToken: string) {
   return transport.request<TerminalTicket>({
     method: "POST",
@@ -642,12 +690,43 @@ export function getTransfer(siteId: string, jobId: string) {
   });
 }
 
+export function getTransferQueue(siteId: string) {
+  return transport.request<TransferQueueSnapshot>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/transfers`,
+  });
+}
+
+export function setTransferConcurrency(
+  siteId: string,
+  concurrencyLimit: number,
+  csrfToken: string,
+) {
+  return transport.request<
+    TransferQueueSnapshot,
+    { concurrency_limit: number }
+  >({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/transfers/config`,
+    csrfToken,
+    body: { concurrency_limit: concurrencyLimit },
+  });
+}
+
 export function cancelTransfer(
   siteId: string,
   jobId: string,
   csrfToken: string,
 ) {
   return transferAction(siteId, jobId, "cancel", csrfToken);
+}
+
+export function pauseTransfer(
+  siteId: string,
+  jobId: string,
+  csrfToken: string,
+) {
+  return transferAction(siteId, jobId, "pause", csrfToken);
 }
 
 export function retryTransfer(
@@ -661,7 +740,7 @@ export function retryTransfer(
 function transferAction(
   siteId: string,
   jobId: string,
-  action: "cancel" | "retry",
+  action: "cancel" | "pause" | "retry",
   csrfToken: string,
 ) {
   return transport.request<null>({

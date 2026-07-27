@@ -510,6 +510,28 @@ impl FleetStore {
         ))
     }
 
+    pub async fn delete_encrypted_secret(
+        &self,
+        owner_user_id: &str,
+        site_id: &str,
+        purpose: &str,
+    ) -> StoreResult<()> {
+        let _writer = self.inner.writer.lock().await;
+        let result = sqlx::query(
+            "DELETE FROM encrypted_secrets \
+             WHERE owner_user_id = ? AND site_id = ? AND purpose = ?",
+        )
+        .bind(owner_user_id)
+        .bind(site_id)
+        .bind(purpose)
+        .execute(&self.inner.pool)
+        .await?;
+        if result.rows_affected() != 1 {
+            return Err(StoreError::NotFound);
+        }
+        Ok(())
+    }
+
     pub async fn create_job(
         &self,
         job_id: &str,
@@ -592,6 +614,66 @@ impl FleetStore {
             },
         )
         .transpose()
+    }
+
+    pub async fn owned_site_jobs(
+        &self,
+        owner_user_id: &str,
+        site_id: &str,
+        limit: u32,
+    ) -> StoreResult<Vec<JobRecord>> {
+        type JobRow = (
+            String,
+            String,
+            Option<String>,
+            String,
+            String,
+            String,
+            Option<String>,
+            String,
+            String,
+        );
+        let rows: Vec<JobRow> = sqlx::query_as(
+            "SELECT job_id, owner_user_id, site_id, kind, state, input_json, \
+             result_json, created_at, updated_at \
+             FROM jobs WHERE owner_user_id = ? AND site_id = ? \
+             AND kind IN ('sftp_upload', 'sftp_download') \
+             ORDER BY created_at DESC LIMIT ?",
+        )
+        .bind(owner_user_id)
+        .bind(site_id)
+        .bind(i64::from(limit.clamp(1, 100)))
+        .fetch_all(&self.inner.pool)
+        .await?;
+        rows.into_iter()
+            .map(
+                |(
+                    job_id,
+                    owner_user_id,
+                    site_id,
+                    kind,
+                    state,
+                    input_json,
+                    result_json,
+                    created_at,
+                    updated_at,
+                )| {
+                    Ok(JobRecord {
+                        job_id,
+                        owner_user_id,
+                        site_id,
+                        kind,
+                        state,
+                        input: serde_json::from_str(&input_json)?,
+                        result: result_json
+                            .map(|value| serde_json::from_str(&value))
+                            .transpose()?,
+                        created_at,
+                        updated_at,
+                    })
+                },
+            )
+            .collect()
     }
 
     pub async fn transition_job(

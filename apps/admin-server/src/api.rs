@@ -26,8 +26,8 @@ use g5_fleet_connector::{
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
-    RemoteError, SftpCommand, SftpResult, SshProfile, SshProfileSummary, TerminalProcess,
-    TerminalTicket,
+    HostKeyInspection, RemoteError, SftpCommand, SftpResult, SshProfile, SshProfileSummary,
+    TerminalProcess, TerminalTicket, TransferQueueSnapshot,
 };
 use g5_fleet_security::{AuthError, PrincipalSession, SecretPurpose, SystemResolver, UrlGuard};
 use g5_fleet_store::{
@@ -127,6 +127,24 @@ struct BasicConfigUpdateRequest {
 #[derive(Debug, Deserialize)]
 struct RemotePathRequest {
     path: String,
+}
+
+#[derive(Deserialize)]
+struct HostKeyInspectRequest {
+    host: String,
+    port: u16,
+}
+
+#[derive(Deserialize)]
+struct TransferConcurrencyRequest {
+    concurrency_limit: u8,
+}
+
+#[derive(Clone, Copy)]
+enum TransferAction {
+    Cancel,
+    Pause,
+    Retry,
 }
 
 #[derive(Debug, Deserialize)]
@@ -293,8 +311,11 @@ pub(crate) fn router() -> Router<AppState> {
         .route("/sites/{site_id}/core/{operation_id}", post(core_execute))
         .route(
             "/sites/{site_id}/ssh/profile",
-            get(get_ssh_profile).put(put_ssh_profile),
+            get(get_ssh_profile)
+                .put(put_ssh_profile)
+                .delete(delete_ssh_profile),
         )
+        .route("/sites/{site_id}/ssh/host-key", post(inspect_ssh_host_key))
         .route(
             "/sites/{site_id}/terminal/ticket",
             post(issue_terminal_ticket),
@@ -306,6 +327,11 @@ pub(crate) fn router() -> Router<AppState> {
             "/sites/{site_id}/transfers/download",
             post(download_transfer),
         )
+        .route("/sites/{site_id}/transfers", get(list_transfers))
+        .route(
+            "/sites/{site_id}/transfers/config",
+            put(set_transfer_concurrency),
+        )
         .route("/sites/{site_id}/transfers/{job_id}", get(get_transfer))
         .route(
             "/sites/{site_id}/transfers/{job_id}/cancel",
@@ -314,6 +340,10 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/transfers/{job_id}/retry",
             post(retry_transfer),
+        )
+        .route(
+            "/sites/{site_id}/transfers/{job_id}/pause",
+            post(pause_transfer),
         )
         .route("/sites/{site_id}/notifications", post(enqueue_notification))
         .route(
@@ -1434,6 +1464,54 @@ async fn get_ssh_profile(
     }
 }
 
+async fn delete_ssh_profile(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    match state
+        .config
+        .auth
+        .delete_secret(&context.principal_id, &site.site_id, SecretPurpose::Ssh)
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn inspect_ssh_host_key(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(payload): Json<HostKeyInspectRequest>,
+) -> Response {
+    let (_, principal, _) = match owned_site_context(&state, &headers, site_id, true).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    match state
+        .remote
+        .executor
+        .inspect_host_key(&payload.host, payload.port)
+        .await
+    {
+        Ok(inspection) => Json::<HostKeyInspection>(inspection).into_response(),
+        Err(error) => remote_error(error),
+    }
+}
+
 async fn issue_terminal_ticket(
     State(state): State<AppState>,
     Path(site_id): Path<String>,
@@ -1632,14 +1710,15 @@ async fn upload_transfer(
         Ok(value) => value,
         Err(error) => return remote_error(error),
     };
-    if let Err(error) = state
+    let cancellation = match state
         .remote
         .transfers
         .start(&context.principal_id, &job.job_id)
         .await
     {
-        return remote_error(error);
-    }
+        Ok(value) => value,
+        Err(error) => return remote_error(error),
+    };
     let staging = match tempfile::Builder::new()
         .prefix("g5-fleet-upload-")
         .tempdir()
@@ -1688,14 +1767,22 @@ async fn upload_transfer(
     if let Err(error) = state
         .remote
         .executor
-        .upload(&profile, &local_path, &remote_path)
+        .upload_cancellable(&profile, &local_path, &remote_path, cancellation)
         .await
     {
-        let _ = state
-            .remote
-            .transfers
-            .fail(&context.principal_id, &job.job_id)
-            .await;
+        if matches!(error, RemoteError::Cancelled) {
+            state
+                .remote
+                .transfers
+                .finish_controlled(&context.principal_id, &job.job_id)
+                .await;
+        } else {
+            let _ = state
+                .remote
+                .transfers
+                .fail(&context.principal_id, &job.job_id)
+                .await;
+        }
         return remote_error(error);
     }
     if let Err(error) = state
@@ -1749,14 +1836,15 @@ async fn download_transfer(
         Ok(value) => value,
         Err(error) => return remote_error(error),
     };
-    if let Err(error) = state
+    let cancellation = match state
         .remote
         .transfers
         .start(&context.principal_id, &job.job_id)
         .await
     {
-        return remote_error(error);
-    }
+        Ok(value) => value,
+        Err(error) => return remote_error(error),
+    };
     let staging = match tempfile::Builder::new()
         .prefix("g5-fleet-download-")
         .tempdir()
@@ -1768,14 +1856,22 @@ async fn download_transfer(
     if let Err(error) = state
         .remote
         .executor
-        .download(&profile, &payload.path, &local_path)
+        .download_cancellable(&profile, &payload.path, &local_path, cancellation)
         .await
     {
-        let _ = state
-            .remote
-            .transfers
-            .fail(&context.principal_id, &job.job_id)
-            .await;
+        if matches!(error, RemoteError::Cancelled) {
+            state
+                .remote
+                .transfers
+                .finish_controlled(&context.principal_id, &job.job_id)
+                .await;
+        } else {
+            let _ = state
+                .remote
+                .transfers
+                .fail(&context.principal_id, &job.job_id)
+                .await;
+        }
         return remote_error(error);
     }
     let size = match tokio::fs::metadata(&local_path).await {
@@ -1853,12 +1949,61 @@ async fn get_transfer(
     }
 }
 
+async fn list_transfers(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .remote
+        .transfers
+        .snapshot(&context.principal_id, &site.site_id)
+        .await
+    {
+        Ok(snapshot) => Json::<TransferQueueSnapshot>(snapshot).into_response(),
+        Err(error) => remote_error(error),
+    }
+}
+
+async fn set_transfer_concurrency(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(payload): Json<TransferConcurrencyRequest>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    match state
+        .remote
+        .transfers
+        .set_concurrency(
+            &context.principal_id,
+            &site.site_id,
+            payload.concurrency_limit,
+        )
+        .await
+    {
+        Ok(snapshot) => Json::<TransferQueueSnapshot>(snapshot).into_response(),
+        Err(error) => remote_error(error),
+    }
+}
+
 async fn cancel_transfer(
     State(state): State<AppState>,
     Path((site_id, job_id)): Path<(String, String)>,
     headers: HeaderMap,
 ) -> Response {
-    transfer_transition(&state, &headers, site_id, job_id, true).await
+    transfer_transition(&state, &headers, site_id, job_id, TransferAction::Cancel).await
 }
 
 async fn retry_transfer(
@@ -1866,7 +2011,15 @@ async fn retry_transfer(
     Path((site_id, job_id)): Path<(String, String)>,
     headers: HeaderMap,
 ) -> Response {
-    transfer_transition(&state, &headers, site_id, job_id, false).await
+    transfer_transition(&state, &headers, site_id, job_id, TransferAction::Retry).await
+}
+
+async fn pause_transfer(
+    State(state): State<AppState>,
+    Path((site_id, job_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    transfer_transition(&state, &headers, site_id, job_id, TransferAction::Pause).await
 }
 
 async fn enqueue_notification(
@@ -1936,7 +2089,7 @@ async fn transfer_transition(
     headers: &HeaderMap,
     site_id: String,
     job_id: String,
-    cancel: bool,
+    action: TransferAction,
 ) -> Response {
     let (context, principal, site) = match owned_site_context(state, headers, site_id, true).await {
         Ok(value) => value,
@@ -1960,18 +2113,28 @@ async fn transfer_transition(
             );
         }
     };
-    let result = if cancel {
-        state
-            .remote
-            .transfers
-            .cancel(&context.principal_id, &job.job_id)
-            .await
-    } else {
-        state
-            .remote
-            .transfers
-            .retry(&context.principal_id, &job.job_id)
-            .await
+    let result = match action {
+        TransferAction::Cancel => {
+            state
+                .remote
+                .transfers
+                .cancel(&context.principal_id, &job.job_id)
+                .await
+        }
+        TransferAction::Pause => {
+            state
+                .remote
+                .transfers
+                .pause(&context.principal_id, &job.job_id)
+                .await
+        }
+        TransferAction::Retry => {
+            state
+                .remote
+                .transfers
+                .retry(&context.principal_id, &job.job_id)
+                .await
+        }
     };
     match result {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
@@ -2354,7 +2517,7 @@ fn remote_error(error: RemoteError) -> Response {
         RemoteError::AddressForbidden => (
             StatusCode::BAD_REQUEST,
             "ssh_address_forbidden",
-            "SSH address is invalid or non-public.",
+            "SSH address is invalid, loopback, link-local, or otherwise forbidden.",
         ),
         RemoteError::InvalidTicket => (
             StatusCode::UNAUTHORIZED,
@@ -2375,6 +2538,11 @@ fn remote_error(error: RemoteError) -> Response {
             StatusCode::GATEWAY_TIMEOUT,
             "remote_timeout",
             "Remote operation timed out.",
+        ),
+        RemoteError::Cancelled => (
+            StatusCode::CONFLICT,
+            "remote_cancelled",
+            "Remote operation was cancelled.",
         ),
         _ => (
             StatusCode::BAD_GATEWAY,

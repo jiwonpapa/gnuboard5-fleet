@@ -9,13 +9,28 @@ describe("RemoteWorkspace", () => {
       "fetch",
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const path = new URL(input.toString()).pathname;
+        if (path.endsWith("/ssh/host-key") && init?.method === "POST") {
+          return new Response(
+            JSON.stringify({
+              host: "192.168.0.127",
+              port: 22,
+              server_key_algorithm: "ssh-ed25519",
+              server_key_fingerprint: "SHA256:server-fingerprint",
+              known_hosts_line:
+                "192.168.0.127 ssh-ed25519 AAAAC3NzaFixture",
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          );
+        }
         if (path.endsWith("/ssh/profile") && init?.method === "PUT") {
           return new Response(
             JSON.stringify({
               username: "deploy",
-              host: "93.184.216.34",
+              host: "192.168.0.127",
               port: 22,
               host_key_verification: "strict_known_hosts",
+              server_key_algorithm: "ssh-ed25519",
+              server_key_fingerprint: "SHA256:server-fingerprint",
             }),
             { status: 200, headers: { "content-type": "application/json" } },
           );
@@ -43,7 +58,7 @@ describe("RemoteWorkspace", () => {
       target: { value: "deploy" },
     });
     fireEvent.change(screen.getByLabelText("호스트"), {
-      target: { value: "93.184.216.34" },
+      target: { value: "192.168.0.127" },
     });
     const privateKey = [
       "-----BEGIN OPENSSH ",
@@ -53,19 +68,16 @@ describe("RemoteWorkspace", () => {
     fireEvent.change(screen.getByLabelText("OpenSSH 개인키"), {
       target: { value: privateKey },
     });
-    fireEvent.change(screen.getByLabelText("known_hosts · 사전 검증한 host key"), {
-      target: { value: "93.184.216.34 ssh-ed25519 fixture-host-key" },
-    });
+    fireEvent.click(screen.getByRole("button", { name: "서버 키 지문 검사" }));
+    await screen.findByText("SHA256:server-fingerprint");
+    fireEvent.click(screen.getByLabelText("이 서버 키 지문을 신뢰"));
     fireEvent.click(screen.getByRole("button", { name: "암호화 저장" }));
 
-    await screen.findByText("deploy@93.184.216.34:22");
+    await screen.findAllByText("deploy@192.168.0.127:22");
     await waitFor(() => {
       expect(screen.getByLabelText("OpenSSH 개인키")).toHaveValue("");
-      expect(
-        screen.getByLabelText("known_hosts · 사전 검증한 host key"),
-      ).toHaveValue("");
     });
     expect(document.body.textContent).not.toContain(privateKey);
-    expect(document.body.textContent).not.toContain("fixture-host-key");
+    expect(document.body.textContent).not.toContain("AAAAC3NzaFixture");
   });
 });

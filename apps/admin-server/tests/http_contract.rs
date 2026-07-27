@@ -235,14 +235,19 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("POST", "/api/v1/sites/{site_id}/core/{operation_id}",),
             ("GET", "/api/v1/sites/{site_id}/ssh/profile"),
             ("PUT", "/api/v1/sites/{site_id}/ssh/profile"),
+            ("DELETE", "/api/v1/sites/{site_id}/ssh/profile"),
+            ("POST", "/api/v1/sites/{site_id}/ssh/host-key"),
             ("POST", "/api/v1/sites/{site_id}/terminal/ticket"),
             ("GET", "/api/v1/sites/{site_id}/terminal"),
             ("POST", "/api/v1/sites/{site_id}/sftp"),
             ("POST", "/api/v1/sites/{site_id}/transfers/upload"),
             ("POST", "/api/v1/sites/{site_id}/transfers/download"),
+            ("GET", "/api/v1/sites/{site_id}/transfers"),
+            ("PUT", "/api/v1/sites/{site_id}/transfers/config"),
             ("GET", "/api/v1/sites/{site_id}/transfers/{job_id}"),
             ("POST", "/api/v1/sites/{site_id}/transfers/{job_id}/cancel",),
             ("POST", "/api/v1/sites/{site_id}/transfers/{job_id}/retry",),
+            ("POST", "/api/v1/sites/{site_id}/transfers/{job_id}/pause",),
             ("POST", "/api/v1/sites/{site_id}/notifications"),
             ("GET", "/api/v1/sites/{site_id}/notifications/{outbox_id}",),
         ]
@@ -762,6 +767,47 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
     assert_eq!(ticket.status(), StatusCode::OK);
     let ticket: TerminalTicket = json(ticket).await;
     assert!(ticket.ticket.len() >= 40);
+
+    let transfer_snapshot = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/transfers",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(transfer_snapshot.status(), StatusCode::OK);
+    let transfer_snapshot: Value = json(transfer_snapshot).await;
+    assert_eq!(transfer_snapshot["site_id"], "site-a");
+    assert_eq!(transfer_snapshot["concurrency_limit"], 2);
+
+    let profile_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/ssh/profile",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(profile_delete.status(), StatusCode::NO_CONTENT);
+    let profile_readback = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/ssh/profile",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(profile_readback.status(), StatusCode::NOT_FOUND);
 
     let health = app
         .clone()

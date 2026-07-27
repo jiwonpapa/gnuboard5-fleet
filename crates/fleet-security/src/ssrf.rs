@@ -53,14 +53,29 @@ impl Resolver for SystemResolver {
 #[derive(Clone, Debug)]
 pub struct UrlGuard<R> {
     resolver: R,
-    allow_private_for_local_certification: bool,
+    address_policy: AddressPolicy,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AddressPolicy {
+    PublicOnly,
+    ManagedRemote,
+    #[cfg(feature = "local-certification")]
+    LocalCertification,
 }
 
 impl<R: Resolver> UrlGuard<R> {
     pub fn new(resolver: R) -> Self {
         Self {
             resolver,
-            allow_private_for_local_certification: false,
+            address_policy: AddressPolicy::PublicOnly,
+        }
+    }
+
+    pub fn managed_remote(resolver: R) -> Self {
+        Self {
+            resolver,
+            address_policy: AddressPolicy::ManagedRemote,
         }
     }
 
@@ -68,7 +83,7 @@ impl<R: Resolver> UrlGuard<R> {
     pub fn local_certification(resolver: R) -> Self {
         Self {
             resolver,
-            allow_private_for_local_certification: true,
+            address_policy: AddressPolicy::LocalCertification,
         }
     }
 
@@ -85,8 +100,7 @@ impl<R: Resolver> UrlGuard<R> {
             Host::Ipv6(address) => vec![IpAddr::V6(address)],
             Host::Domain(_) => self.resolver.resolve(&host, port).await?,
         };
-        let pinned_addresses =
-            validate_addresses(addresses, self.allow_private_for_local_certification)?;
+        let pinned_addresses = validate_addresses(addresses, self.address_policy)?;
         Ok(OutboundTarget {
             url,
             host,
@@ -129,9 +143,7 @@ impl<R: Resolver> UrlGuard<R> {
             Host::Ipv6(address) => vec![IpAddr::V6(address)],
             Host::Domain(_) => self.resolver.resolve(&target.host, target.port).await?,
         };
-        if validate_addresses(current, self.allow_private_for_local_certification)?
-            != target.pinned_addresses
-        {
+        if validate_addresses(current, self.address_policy)? != target.pinned_addresses {
             return Err(SsrfError::DnsRebinding);
         }
         Ok(())
@@ -155,19 +167,48 @@ fn parse_url(raw: &str) -> Result<Url, SsrfError> {
 
 fn validate_addresses(
     addresses: Vec<IpAddr>,
-    allow_private_for_local_certification: bool,
+    policy: AddressPolicy,
 ) -> Result<BTreeSet<IpAddr>, SsrfError> {
     if addresses.is_empty() {
         return Err(SsrfError::ResolutionEmpty);
     }
     let mut validated = BTreeSet::new();
     for address in addresses {
-        if !allow_private_for_local_certification {
-            validate_public_ip(address)?;
+        match policy {
+            AddressPolicy::PublicOnly => validate_public_ip(address)?,
+            AddressPolicy::ManagedRemote => validate_managed_remote_ip(address)?,
+            #[cfg(feature = "local-certification")]
+            AddressPolicy::LocalCertification => {}
         }
         validated.insert(address);
     }
     Ok(validated)
+}
+
+pub fn validate_managed_remote_ip(address: IpAddr) -> Result<(), SsrfError> {
+    let blocked = match address {
+        IpAddr::V4(value) => {
+            value.is_loopback()
+                || value.is_link_local()
+                || value.is_broadcast()
+                || value.is_documentation()
+                || value.is_unspecified()
+                || value.is_multicast()
+                || value.octets()[0] == 0
+        }
+        IpAddr::V6(value) => {
+            value.is_loopback()
+                || value.is_unspecified()
+                || value.is_multicast()
+                || value.is_unicast_link_local()
+                || value.to_ipv4_mapped().is_some()
+        }
+    };
+    if blocked {
+        Err(SsrfError::NonPublicAddress(address))
+    } else {
+        Ok(())
+    }
 }
 
 pub fn validate_public_ip(address: IpAddr) -> Result<(), SsrfError> {
@@ -195,5 +236,24 @@ pub fn validate_public_ip(address: IpAddr) -> Result<(), SsrfError> {
         Err(SsrfError::NonPublicAddress(address))
     } else {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+
+    use super::{validate_managed_remote_ip, validate_public_ip};
+
+    #[test]
+    fn managed_remote_policy_allows_lan_but_blocks_loopback_and_metadata_link_local() {
+        assert!(validate_managed_remote_ip(IpAddr::V4(Ipv4Addr::new(192, 168, 0, 127))).is_ok());
+        assert!(
+            validate_managed_remote_ip(IpAddr::V6("fd00::127".parse::<Ipv6Addr>().unwrap()))
+                .is_ok()
+        );
+        assert!(validate_managed_remote_ip(IpAddr::V4(Ipv4Addr::LOCALHOST)).is_err());
+        assert!(validate_managed_remote_ip(IpAddr::V4(Ipv4Addr::new(169, 254, 169, 254))).is_err());
+        assert!(validate_public_ip(IpAddr::V4(Ipv4Addr::new(192, 168, 0, 127))).is_err());
     }
 }

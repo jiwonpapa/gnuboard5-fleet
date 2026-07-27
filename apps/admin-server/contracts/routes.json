@@ -296,6 +296,20 @@
       "purpose": "encrypted_ssh_profile"
     },
     {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/ssh/profile",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "encrypted_ssh_profile_delete"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/ssh/host-key",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "managed_remote_host_key_inspection"
+    },
+    {
       "method": "POST",
       "path": "/api/v1/sites/{site_id}/terminal/ticket",
       "auth": "session_csrf_step_up",
@@ -332,6 +346,20 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/transfers",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "owned_transfer_queue_snapshot"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/transfers/config",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "owned_transfer_concurrency"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/transfers/{job_id}",
       "auth": "session",
       "site_context": true,
@@ -350,6 +378,13 @@
       "auth": "session_csrf_step_up",
       "site_context": true,
       "purpose": "owned_transfer_retry"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/transfers/{job_id}/pause",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "owned_transfer_pause"
     },
     {
       "method": "POST",

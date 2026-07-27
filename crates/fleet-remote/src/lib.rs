@@ -9,7 +9,10 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use base64::{
+    Engine,
+    engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD},
+};
 use g5_fleet_security::{OutboundTarget, SystemResolver, UrlGuard};
 use g5_fleet_store::{FleetStore, JobRecord};
 use getrandom::fill as random_fill;
@@ -20,17 +23,20 @@ use tempfile::TempDir;
 use tokio::{
     io::{AsyncWriteExt, BufReader},
     process::{Child, ChildStderr, ChildStdin, ChildStdout, Command},
-    sync::Mutex,
-    time::timeout,
+    sync::{Mutex, watch},
+    time::{sleep, timeout},
 };
 
 const SSH_BINARY: &str = "/usr/bin/ssh";
 const SFTP_BINARY: &str = "/usr/bin/sftp";
+const SSH_KEYSCAN_BINARY: &str = "/usr/bin/ssh-keyscan";
 const TICKET_TTL_SECONDS: i64 = 60;
 const MAX_ACTIVE_TICKETS: usize = 1024;
 const MAX_KEY_BYTES: usize = 256 * 1024;
 const MAX_KNOWN_HOSTS_BYTES: usize = 256 * 1024;
 const MAX_REMOTE_PATH_BYTES: usize = 4096;
+
+type TransferControlMap = HashMap<(String, String), watch::Sender<bool>>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RemoteError {
@@ -50,6 +56,8 @@ pub enum RemoteError {
     Process,
     #[error("OpenSSH operation timed out")]
     Timeout,
+    #[error("remote operation was cancelled")]
+    Cancelled,
     #[error("transfer job state failed")]
     Job,
 }
@@ -71,6 +79,17 @@ pub struct SshProfileSummary {
     pub host: String,
     pub port: u16,
     pub host_key_verification: String,
+    pub server_key_algorithm: String,
+    pub server_key_fingerprint: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct HostKeyInspection {
+    pub host: String,
+    pub port: u16,
+    pub server_key_algorithm: String,
+    pub server_key_fingerprint: String,
+    pub known_hosts_line: String,
 }
 
 impl SshProfile {
@@ -110,11 +129,15 @@ impl SshProfile {
     }
 
     pub fn summary(&self) -> SshProfileSummary {
+        let (server_key_algorithm, server_key_fingerprint) = known_host_identity(&self.known_hosts)
+            .unwrap_or_else(|| ("unknown".to_owned(), "SHA256:unavailable".to_owned()));
         SshProfileSummary {
             username: self.username.clone(),
             host: self.host.clone(),
             port: self.port,
             host_key_verification: "strict_known_hosts".to_owned(),
+            server_key_algorithm,
+            server_key_fingerprint,
         }
     }
 }
@@ -196,7 +219,10 @@ impl TerminalTicketStore {
 #[serde(tag = "action", rename_all = "snake_case")]
 pub enum SftpCommand {
     List { path: String },
+    Stat { path: String },
     Mkdir { path: String },
+    Chmod { path: String, mode: String },
+    Copy { from: String, to: String },
     Rename { from: String, to: String },
     DeleteFile { path: String },
     DeleteDirectory { path: String },
@@ -206,10 +232,15 @@ impl SftpCommand {
     pub fn validate(&self) -> RemoteResult<()> {
         match self {
             Self::List { path }
+            | Self::Stat { path }
             | Self::Mkdir { path }
             | Self::DeleteFile { path }
             | Self::DeleteDirectory { path } => validate_remote_path(path),
-            Self::Rename { from, to } => {
+            Self::Chmod { path, mode } => {
+                validate_remote_path(path)?;
+                validate_octal_mode(mode)
+            }
+            Self::Copy { from, to } | Self::Rename { from, to } => {
                 validate_remote_path(from)?;
                 validate_remote_path(to)
             }
@@ -220,7 +251,12 @@ impl SftpCommand {
         self.validate()?;
         Ok(match self {
             Self::List { path } => format!("ls -la {}", quote_sftp(path)),
+            Self::Stat { path } => format!("ls -l {}", quote_sftp(path)),
             Self::Mkdir { path } => format!("mkdir {}", quote_sftp(path)),
+            Self::Chmod { path, mode } => {
+                format!("chmod {mode} {}", quote_sftp(path))
+            }
+            Self::Copy { .. } => return Err(RemoteError::InvalidPath),
             Self::Rename { from, to } => {
                 format!("rename {} {}", quote_sftp(from), quote_sftp(to))
             }
@@ -241,7 +277,7 @@ pub struct OpenSshExecutor;
 impl OpenSshExecutor {
     pub async fn validate_target(&self, profile: &SshProfile) -> RemoteResult<()> {
         profile.validate()?;
-        let guard = UrlGuard::new(SystemResolver);
+        let guard = UrlGuard::managed_remote(SystemResolver);
         let target = guard
             .resolve_host_port(&profile.host, profile.port)
             .await
@@ -250,6 +286,39 @@ impl OpenSshExecutor {
             .revalidate_before_connect(&target)
             .await
             .map_err(|_| RemoteError::AddressForbidden)
+    }
+
+    pub async fn inspect_host_key(&self, host: &str, port: u16) -> RemoteResult<HostKeyInspection> {
+        let guard = UrlGuard::managed_remote(SystemResolver);
+        let target = guard
+            .resolve_host_port(host, port)
+            .await
+            .map_err(|_| RemoteError::AddressForbidden)?;
+        guard
+            .revalidate_before_connect(&target)
+            .await
+            .map_err(|_| RemoteError::AddressForbidden)?;
+        let address = target
+            .pinned_addresses
+            .iter()
+            .next()
+            .ok_or(RemoteError::AddressForbidden)?;
+        let output = timeout(
+            Duration::from_secs(12),
+            Command::new(SSH_KEYSCAN_BINARY)
+                .args(["-T", "10", "-p", &port.to_string()])
+                .arg(address.to_string())
+                .kill_on_drop(true)
+                .output(),
+        )
+        .await
+        .map_err(|_| RemoteError::Timeout)?
+        .map_err(|_| RemoteError::Process)?;
+        if !output.status.success() && output.stdout.is_empty() {
+            return Err(RemoteError::Process);
+        }
+        parse_keyscan_output(host, port, &String::from_utf8_lossy(&output.stdout))
+            .ok_or(RemoteError::Process)
     }
 
     pub async fn spawn_terminal(&self, profile: &SshProfile) -> RemoteResult<TerminalProcess> {
@@ -281,6 +350,9 @@ impl OpenSshExecutor {
         profile: &SshProfile,
         operation: &SftpCommand,
     ) -> RemoteResult<SftpResult> {
+        if let SftpCommand::Copy { from, to } = operation {
+            return self.copy(profile, from, to).await;
+        }
         let prepared = PreparedConnection::new(profile).await?;
         let mut command = Command::new(SFTP_BINARY);
         command
@@ -310,6 +382,30 @@ impl OpenSshExecutor {
         })
     }
 
+    async fn copy(&self, profile: &SshProfile, from: &str, to: &str) -> RemoteResult<SftpResult> {
+        validate_remote_path(from)?;
+        validate_remote_path(to)?;
+        let prepared = PreparedConnection::new(profile).await?;
+        let output = timeout(
+            Duration::from_secs(30),
+            Command::new(SSH_BINARY)
+                .args(prepared.ssh_args())
+                .arg(prepared.destination())
+                .arg(format!("cp -- {} {}", quote_shell(from), quote_shell(to)))
+                .kill_on_drop(true)
+                .output(),
+        )
+        .await
+        .map_err(|_| RemoteError::Timeout)?
+        .map_err(|_| RemoteError::Process)?;
+        if !output.status.success() {
+            return Err(RemoteError::Process);
+        }
+        Ok(SftpResult {
+            output: String::from_utf8_lossy(&output.stdout).into_owned(),
+        })
+    }
+
     pub async fn upload(
         &self,
         profile: &SshProfile,
@@ -325,7 +421,28 @@ impl OpenSshExecutor {
             quote_sftp(&local_path.to_string_lossy()),
             quote_sftp(remote_path)
         );
-        self.run_sftp_batch(profile, &line, Duration::from_secs(300))
+        self.run_sftp_batch(profile, &line, Duration::from_secs(300), None)
+            .await
+            .map(|_| ())
+    }
+
+    pub async fn upload_cancellable(
+        &self,
+        profile: &SshProfile,
+        local_path: &Path,
+        remote_path: &str,
+        cancellation: TransferCancellation,
+    ) -> RemoteResult<()> {
+        validate_remote_path(remote_path)?;
+        if !local_path.is_file() || local_path.is_symlink() {
+            return Err(RemoteError::InvalidPath);
+        }
+        let line = format!(
+            "put {} {}",
+            quote_sftp(&local_path.to_string_lossy()),
+            quote_sftp(remote_path)
+        );
+        self.run_sftp_batch(profile, &line, Duration::from_secs(300), Some(cancellation))
             .await
             .map(|_| ())
     }
@@ -345,7 +462,28 @@ impl OpenSshExecutor {
             quote_sftp(remote_path),
             quote_sftp(&local_path.to_string_lossy())
         );
-        self.run_sftp_batch(profile, &line, Duration::from_secs(300))
+        self.run_sftp_batch(profile, &line, Duration::from_secs(300), None)
+            .await
+            .map(|_| ())
+    }
+
+    pub async fn download_cancellable(
+        &self,
+        profile: &SshProfile,
+        remote_path: &str,
+        local_path: &Path,
+        cancellation: TransferCancellation,
+    ) -> RemoteResult<()> {
+        validate_remote_path(remote_path)?;
+        if local_path.exists() || local_path.is_symlink() {
+            return Err(RemoteError::InvalidPath);
+        }
+        let line = format!(
+            "get {} {}",
+            quote_sftp(remote_path),
+            quote_sftp(&local_path.to_string_lossy())
+        );
+        self.run_sftp_batch(profile, &line, Duration::from_secs(300), Some(cancellation))
             .await
             .map(|_| ())
     }
@@ -355,6 +493,7 @@ impl OpenSshExecutor {
         profile: &SshProfile,
         line: &str,
         deadline: Duration,
+        cancellation: Option<TransferCancellation>,
     ) -> RemoteResult<String> {
         let prepared = PreparedConnection::new(profile).await?;
         let mut command = Command::new(SFTP_BINARY);
@@ -362,8 +501,8 @@ impl OpenSshExecutor {
             .args(prepared.sftp_args())
             .arg(prepared.destination())
             .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .kill_on_drop(true);
         let mut child = command.spawn().map_err(|_| RemoteError::Process)?;
         child
@@ -373,14 +512,34 @@ impl OpenSshExecutor {
             .write_all(format!("{line}\nquit\n").as_bytes())
             .await
             .map_err(|_| RemoteError::Process)?;
-        let output = timeout(deadline, child.wait_with_output())
-            .await
-            .map_err(|_| RemoteError::Timeout)?
-            .map_err(|_| RemoteError::Process)?;
-        if !output.status.success() {
+        let status = if let Some(mut cancellation) = cancellation {
+            tokio::select! {
+                result = child.wait() => result.map_err(|_| RemoteError::Process)?,
+                () = cancellation.cancelled() => {
+                    let _ = child.kill().await;
+                    let _ = child.wait().await;
+                    return Err(RemoteError::Cancelled);
+                }
+                () = sleep(deadline) => {
+                    let _ = child.kill().await;
+                    let _ = child.wait().await;
+                    return Err(RemoteError::Timeout);
+                }
+            }
+        } else {
+            match timeout(deadline, child.wait()).await {
+                Ok(result) => result.map_err(|_| RemoteError::Process)?,
+                Err(_) => {
+                    let _ = child.kill().await;
+                    let _ = child.wait().await;
+                    return Err(RemoteError::Timeout);
+                }
+            }
+        };
+        if !status.success() {
             return Err(RemoteError::Process);
         }
-        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+        Ok(String::new())
     }
 }
 
@@ -420,11 +579,47 @@ impl TerminalProcess {
 #[derive(Clone)]
 pub struct TransferCoordinator {
     store: FleetStore,
+    concurrency: Arc<Mutex<HashMap<(String, String), u8>>>,
+    controls: Arc<Mutex<TransferControlMap>>,
+    scheduling: Arc<Mutex<()>>,
+}
+
+pub struct TransferCancellation {
+    receiver: watch::Receiver<bool>,
+}
+
+impl TransferCancellation {
+    async fn cancelled(&mut self) {
+        if *self.receiver.borrow() {
+            return;
+        }
+        while self.receiver.changed().await.is_ok() {
+            if *self.receiver.borrow() {
+                return;
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub struct TransferQueueSnapshot {
+    pub site_id: String,
+    pub jobs: Vec<JobRecord>,
+    pub active_count: usize,
+    pub queued_count: usize,
+    pub paused_count: usize,
+    pub failed_count: usize,
+    pub concurrency_limit: u8,
 }
 
 impl TransferCoordinator {
     pub fn new(store: FleetStore) -> Self {
-        Self { store }
+        Self {
+            store,
+            concurrency: Arc::new(Mutex::new(HashMap::new())),
+            controls: Arc::new(Mutex::new(HashMap::new())),
+            scheduling: Arc::new(Mutex::new(())),
+        }
     }
 
     pub async fn queue(
@@ -453,34 +648,66 @@ impl TransferCoordinator {
             .ok_or(RemoteError::Job)
     }
 
-    pub async fn start(&self, owner_user_id: &str, job_id: &str) -> RemoteResult<()> {
-        self.transition(owner_user_id, job_id, &["queued"], "running", None)
-            .await
+    pub async fn start(
+        &self,
+        owner_user_id: &str,
+        job_id: &str,
+    ) -> RemoteResult<TransferCancellation> {
+        let job = self.get(owner_user_id, job_id).await?;
+        let site_id = job.site_id.ok_or(RemoteError::Job)?;
+        loop {
+            {
+                let _scheduling = self.scheduling.lock().await;
+                let current = self.get(owner_user_id, job_id).await?;
+                if current.state != "queued" || current.site_id.as_deref() != Some(&site_id) {
+                    return Err(RemoteError::Job);
+                }
+                let snapshot = self.snapshot(owner_user_id, &site_id).await?;
+                if snapshot.active_count < usize::from(snapshot.concurrency_limit) {
+                    self.transition(owner_user_id, job_id, &["queued"], "running", None)
+                        .await?;
+                    let (sender, receiver) = watch::channel(false);
+                    self.controls
+                        .lock()
+                        .await
+                        .insert((owner_user_id.to_owned(), job_id.to_owned()), sender);
+                    return Ok(TransferCancellation { receiver });
+                }
+            }
+            sleep(Duration::from_millis(100)).await;
+        }
     }
 
     pub async fn succeed(&self, owner_user_id: &str, job_id: &str, bytes: u64) -> RemoteResult<()> {
-        self.transition(
-            owner_user_id,
-            job_id,
-            &["running"],
-            "succeeded",
-            Some(&json!({"bytes": bytes, "progress": 100})),
-        )
-        .await
+        let result = self
+            .transition(
+                owner_user_id,
+                job_id,
+                &["running"],
+                "succeeded",
+                Some(&json!({"bytes": bytes, "progress": 100})),
+            )
+            .await;
+        self.clear_control(owner_user_id, job_id).await;
+        result
     }
 
     pub async fn fail(&self, owner_user_id: &str, job_id: &str) -> RemoteResult<()> {
-        self.transition(
-            owner_user_id,
-            job_id,
-            &["running"],
-            "failed",
-            Some(&json!({"error_code": "remote_transfer_failed"})),
-        )
-        .await
+        let result = self
+            .transition(
+                owner_user_id,
+                job_id,
+                &["running"],
+                "failed",
+                Some(&json!({"error_code": "remote_transfer_failed"})),
+            )
+            .await;
+        self.clear_control(owner_user_id, job_id).await;
+        result
     }
 
     pub async fn cancel(&self, owner_user_id: &str, job_id: &str) -> RemoteResult<()> {
+        self.signal_control(owner_user_id, job_id).await;
         self.transition(
             owner_user_id,
             job_id,
@@ -491,15 +718,105 @@ impl TransferCoordinator {
         .await
     }
 
-    pub async fn retry(&self, owner_user_id: &str, job_id: &str) -> RemoteResult<()> {
+    pub async fn pause(&self, owner_user_id: &str, job_id: &str) -> RemoteResult<()> {
+        self.signal_control(owner_user_id, job_id).await;
         self.transition(
             owner_user_id,
             job_id,
-            &["failed", "cancelled"],
-            "queued",
-            None,
+            &["queued", "running"],
+            "cancelled",
+            Some(&json!({"paused": true})),
         )
         .await
+    }
+
+    pub async fn retry(&self, owner_user_id: &str, job_id: &str) -> RemoteResult<()> {
+        let job = self.get(owner_user_id, job_id).await?;
+        let result = match job.state.as_str() {
+            "failed" => json!({"retry_requested": true}),
+            "cancelled"
+                if job
+                    .result
+                    .as_ref()
+                    .and_then(|value| value.get("paused"))
+                    .and_then(Value::as_bool)
+                    == Some(true) =>
+            {
+                json!({"paused": true, "retry_requested": true})
+            }
+            _ => return Err(RemoteError::Job),
+        };
+        self.transition(
+            owner_user_id,
+            job_id,
+            &[job.state.as_str()],
+            job.state.as_str(),
+            Some(&result),
+        )
+        .await
+    }
+
+    pub async fn finish_controlled(&self, owner_user_id: &str, job_id: &str) {
+        self.clear_control(owner_user_id, job_id).await;
+    }
+
+    pub async fn set_concurrency(
+        &self,
+        owner_user_id: &str,
+        site_id: &str,
+        limit: u8,
+    ) -> RemoteResult<TransferQueueSnapshot> {
+        if !(1..=4).contains(&limit) {
+            return Err(RemoteError::Job);
+        }
+        self.concurrency
+            .lock()
+            .await
+            .insert((owner_user_id.to_owned(), site_id.to_owned()), limit);
+        self.snapshot(owner_user_id, site_id).await
+    }
+
+    pub async fn snapshot(
+        &self,
+        owner_user_id: &str,
+        site_id: &str,
+    ) -> RemoteResult<TransferQueueSnapshot> {
+        let jobs = self
+            .store
+            .owned_site_jobs(owner_user_id, site_id, 48)
+            .await
+            .map_err(|_| RemoteError::Job)?;
+        let active_count = jobs.iter().filter(|job| job.state == "running").count();
+        let queued_count = jobs.iter().filter(|job| job.state == "queued").count();
+        let paused_count = jobs
+            .iter()
+            .filter(|job| {
+                job.state == "cancelled"
+                    && job
+                        .result
+                        .as_ref()
+                        .and_then(|result| result.get("paused"))
+                        .and_then(Value::as_bool)
+                        == Some(true)
+            })
+            .count();
+        let failed_count = jobs.iter().filter(|job| job.state == "failed").count();
+        let concurrency_limit = self
+            .concurrency
+            .lock()
+            .await
+            .get(&(owner_user_id.to_owned(), site_id.to_owned()))
+            .copied()
+            .unwrap_or(2);
+        Ok(TransferQueueSnapshot {
+            site_id: site_id.to_owned(),
+            jobs,
+            active_count,
+            queued_count,
+            paused_count,
+            failed_count,
+            concurrency_limit,
+        })
     }
 
     async fn transition(
@@ -515,6 +832,24 @@ impl TransferCoordinator {
             .await
             .map_err(|_| RemoteError::Job)
     }
+
+    async fn signal_control(&self, owner_user_id: &str, job_id: &str) {
+        if let Some(sender) = self
+            .controls
+            .lock()
+            .await
+            .get(&(owner_user_id.to_owned(), job_id.to_owned()))
+        {
+            let _ = sender.send(true);
+        }
+    }
+
+    async fn clear_control(&self, owner_user_id: &str, job_id: &str) {
+        self.controls
+            .lock()
+            .await
+            .remove(&(owner_user_id.to_owned(), job_id.to_owned()));
+    }
 }
 
 struct PreparedConnection {
@@ -528,7 +863,7 @@ struct PreparedConnection {
 impl PreparedConnection {
     async fn new(profile: &SshProfile) -> RemoteResult<Self> {
         profile.validate()?;
-        let guard = UrlGuard::new(SystemResolver);
+        let guard = UrlGuard::managed_remote(SystemResolver);
         let target = guard
             .resolve_host_port(&profile.host, profile.port)
             .await
@@ -632,8 +967,22 @@ fn validate_remote_path(path: &str) -> RemoteResult<()> {
     }
 }
 
+fn validate_octal_mode(mode: &str) -> RemoteResult<()> {
+    if mode.len() != 4
+        || !mode.starts_with('0')
+        || !mode.chars().all(|character| matches!(character, '0'..='7'))
+    {
+        return Err(RemoteError::InvalidPath);
+    }
+    Ok(())
+}
+
 fn quote_sftp(value: &str) -> String {
     format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
+}
+
+fn quote_shell(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "'\"'\"'"))
 }
 
 fn host_key_alias(host: &str, port: u16) -> String {
@@ -642,6 +991,51 @@ fn host_key_alias(host: &str, port: u16) -> String {
     } else {
         format!("[{host}]:{port}")
     }
+}
+
+fn known_host_identity(known_hosts: &str) -> Option<(String, String)> {
+    known_hosts.lines().find_map(|line| {
+        let mut fields = line.split_whitespace();
+        let _hosts = fields.next()?;
+        let algorithm = fields.next()?.to_owned();
+        let encoded = fields.next()?;
+        let key = STANDARD.decode(encoded).ok()?;
+        Some((
+            algorithm,
+            format!("SHA256:{}", URL_SAFE_NO_PAD.encode(Sha256::digest(key))),
+        ))
+    })
+}
+
+fn parse_keyscan_output(host: &str, port: u16, output: &str) -> Option<HostKeyInspection> {
+    let alias = host_key_alias(host, port);
+    let mut candidates = output
+        .lines()
+        .filter(|line| !line.trim_start().starts_with('#'))
+        .filter_map(|line| {
+            let mut fields = line.split_whitespace();
+            let _observed_host = fields.next()?;
+            let algorithm = fields.next()?.to_owned();
+            let encoded = fields.next()?.to_owned();
+            let key = STANDARD.decode(&encoded).ok()?;
+            let priority = match algorithm.as_str() {
+                "ssh-ed25519" => 0,
+                value if value.starts_with("ecdsa-") => 1,
+                "ssh-rsa" => 2,
+                _ => 3,
+            };
+            Some((priority, algorithm, encoded, key))
+        })
+        .collect::<Vec<_>>();
+    candidates.sort_by_key(|candidate| candidate.0);
+    let (_, algorithm, encoded, key) = candidates.into_iter().next()?;
+    Some(HostKeyInspection {
+        host: host.to_owned(),
+        port,
+        server_key_algorithm: algorithm.clone(),
+        server_key_fingerprint: format!("SHA256:{}", URL_SAFE_NO_PAD.encode(Sha256::digest(key))),
+        known_hosts_line: format!("{alias} {algorithm} {encoded}"),
+    })
 }
 
 fn random_token() -> RemoteResult<String> {
@@ -723,10 +1117,38 @@ mod tests {
             .validate()
             .is_err()
         );
+        assert!(
+            SftpCommand::Chmod {
+                path: "/safe/file.txt".to_owned(),
+                mode: "0644".to_owned(),
+            }
+            .validate()
+            .is_ok()
+        );
+        assert!(
+            SftpCommand::Chmod {
+                path: "/safe/file.txt".to_owned(),
+                mode: "47777".to_owned(),
+            }
+            .validate()
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn host_key_inspection_prefers_ed25519_and_rebinds_the_original_alias() {
+        let output = ["192.0.2.1 ssh-rsa AQID", "192.0.2.1 ssh-ed25519 BAUG"].join("\n");
+        let inspection = parse_keyscan_output("ssh.example.com", 2222, &output).unwrap();
+        assert_eq!(inspection.server_key_algorithm, "ssh-ed25519");
+        assert_eq!(
+            inspection.known_hosts_line,
+            "[ssh.example.com]:2222 ssh-ed25519 BAUG"
+        );
+        assert!(inspection.server_key_fingerprint.starts_with("SHA256:"));
     }
 
     #[tokio::test]
-    async fn transfer_jobs_are_persistent_owned_and_retryable() {
+    async fn transfer_jobs_are_persistent_owned_and_controls_abort_running_work() {
         let data = tempfile::tempdir().unwrap();
         let store = FleetStore::initialize(data.path(), "remote-test")
             .await
@@ -755,13 +1177,89 @@ mod tests {
             .unwrap();
         assert_eq!(job.state, "queued");
         assert!(transfers.get("user-b", &job.job_id).await.is_err());
-        transfers.start("user-a", &job.job_id).await.unwrap();
-        transfers.fail("user-a", &job.job_id).await.unwrap();
+        let mut cancellation = transfers.start("user-a", &job.job_id).await.unwrap();
+        transfers.pause("user-a", &job.job_id).await.unwrap();
+        timeout(Duration::from_secs(1), cancellation.cancelled())
+            .await
+            .unwrap();
+        transfers.finish_controlled("user-a", &job.job_id).await;
+        let snapshot = transfers
+            .set_concurrency("user-a", "site-a", 4)
+            .await
+            .unwrap();
+        assert_eq!(snapshot.paused_count, 1);
+        assert_eq!(snapshot.concurrency_limit, 4);
         transfers.retry("user-a", &job.job_id).await.unwrap();
-        transfers.cancel("user-a", &job.job_id).await.unwrap();
         assert_eq!(
             transfers.get("user-a", &job.job_id).await.unwrap().state,
             "cancelled"
         );
+        assert_eq!(
+            transfers
+                .get("user-a", &job.job_id)
+                .await
+                .unwrap()
+                .result
+                .unwrap()["retry_requested"],
+            true
+        );
+
+        let failed = transfers
+            .queue(
+                "user-a",
+                "site-a",
+                "sftp_download",
+                &json!({"remote_path":"/uploads/file.bin"}),
+            )
+            .await
+            .unwrap();
+        transfers.start("user-a", &failed.job_id).await.unwrap();
+        transfers.fail("user-a", &failed.job_id).await.unwrap();
+        transfers.retry("user-a", &failed.job_id).await.unwrap();
+        assert_eq!(
+            transfers
+                .get("user-a", &failed.job_id)
+                .await
+                .unwrap()
+                .result
+                .unwrap()["retry_requested"],
+            true
+        );
+
+        let first = transfers
+            .queue(
+                "user-a",
+                "site-a",
+                "sftp_upload",
+                &json!({"remote_path":"/uploads/first.bin"}),
+            )
+            .await
+            .unwrap();
+        let second = transfers
+            .queue(
+                "user-a",
+                "site-a",
+                "sftp_upload",
+                &json!({"remote_path":"/uploads/second.bin"}),
+            )
+            .await
+            .unwrap();
+        transfers
+            .set_concurrency("user-a", "site-a", 1)
+            .await
+            .unwrap();
+        transfers.start("user-a", &first.job_id).await.unwrap();
+        let waiting_transfers = transfers.clone();
+        let second_job_id = second.job_id.clone();
+        let waiting =
+            tokio::spawn(async move { waiting_transfers.start("user-a", &second_job_id).await });
+        sleep(Duration::from_millis(50)).await;
+        assert!(!waiting.is_finished());
+        transfers.succeed("user-a", &first.job_id, 1).await.unwrap();
+        timeout(Duration::from_secs(1), waiting)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
     }
 }

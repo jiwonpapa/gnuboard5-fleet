@@ -1600,6 +1600,18 @@ def check_server_scaffold_contract(root: Path) -> str:
             True,
         ),
         (
+            "DELETE",
+            "/api/v1/sites/{site_id}/ssh/profile",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "POST",
+            "/api/v1/sites/{site_id}/ssh/host-key",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
             "POST",
             "/api/v1/sites/{site_id}/terminal/ticket",
             "session_csrf_step_up",
@@ -1631,6 +1643,18 @@ def check_server_scaffold_contract(root: Path) -> str:
         ),
         (
             "GET",
+            "/api/v1/sites/{site_id}/transfers",
+            "session",
+            True,
+        ),
+        (
+            "PUT",
+            "/api/v1/sites/{site_id}/transfers/config",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "GET",
             "/api/v1/sites/{site_id}/transfers/{job_id}",
             "session",
             True,
@@ -1644,6 +1668,12 @@ def check_server_scaffold_contract(root: Path) -> str:
         (
             "POST",
             "/api/v1/sites/{site_id}/transfers/{job_id}/retry",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "POST",
+            "/api/v1/sites/{site_id}/transfers/{job_id}/pause",
             "session_csrf_step_up",
             True,
         ),
@@ -1769,7 +1799,11 @@ def check_remote_ssh_sftp_boundary(root: Path) -> str:
         "server_test": root / "apps/admin-server/tests/http_contract.rs",
         "web_api": root / "apps/admin-web/src/api/fleet.ts",
         "web_component": root / "apps/admin-web/src/components/RemoteWorkspace.tsx",
+        "ssh_page": root / "apps/admin-web/src/features/server-ssh/SiteSshSessionPage.tsx",
+        "sftp_page": root / "apps/admin-web/src/features/server-files/SiteSftpBrowserPage.tsx",
         "web_test": root / "apps/admin-web/src/api/fleet.test.ts",
+        "runtime_test": root / "crates/fleet-remote/tests/runtime_certification.rs",
+        "runtime_tool": root / "tools/certification/remote_runtime_smoke.py",
     }
     for label, path in paths.items():
         if not path.is_file() or path.is_symlink():
@@ -1779,17 +1813,21 @@ def check_remote_ssh_sftp_boundary(root: Path) -> str:
     remote_tokens = (
         'const SSH_BINARY: &str = "/usr/bin/ssh"',
         'const SFTP_BINARY: &str = "/usr/bin/sftp"',
+        'const SSH_KEYSCAN_BINARY: &str = "/usr/bin/ssh-keyscan"',
         "StrictHostKeyChecking=yes",
         "UserKnownHostsFile=",
         "GlobalKnownHostsFile=/dev/null",
         "HostKeyAlias=",
         "resolve_host_port",
         "revalidate_before_connect",
+        "UrlGuard::managed_remote",
         "kill_on_drop(true)",
         "token_hash(&ticket)",
         ".remove(&token_hash(ticket))",
         "validate_remote_path",
-        "transfer_jobs_are_persistent_owned_and_retryable",
+        "transfer_jobs_are_persistent_owned_and_controls_abort_running_work",
+        "upload_cancellable",
+        "signal_control",
         "terminal_ticket_is_single_use_and_owner_site_bound",
     )
     missing_remote = [token for token in remote_tokens if token not in remote]
@@ -1801,11 +1839,14 @@ def check_remote_ssh_sftp_boundary(root: Path) -> str:
     api = paths["api"].read_text(encoding="utf-8")
     api_tokens = (
         '"/sites/{site_id}/ssh/profile"',
+        '"/sites/{site_id}/ssh/host-key"',
         '"/sites/{site_id}/terminal/ticket"',
         '"/sites/{site_id}/terminal"',
         '"/sites/{site_id}/sftp"',
         '"/sites/{site_id}/transfers/upload"',
         '"/sites/{site_id}/transfers/download"',
+        '"/sites/{site_id}/transfers/config"',
+        '"/sites/{site_id}/transfers/{job_id}/pause"',
         "SecretPurpose::Ssh",
         "terminal_ticket_protocol",
         "relay_terminal",
@@ -1820,6 +1861,8 @@ def check_remote_ssh_sftp_boundary(root: Path) -> str:
 
     web_api = paths["web_api"].read_text(encoding="utf-8")
     web_component = paths["web_component"].read_text(encoding="utf-8")
+    ssh_page = paths["ssh_page"].read_text(encoding="utf-8")
+    sftp_page = paths["sftp_page"].read_text(encoding="utf-8")
     web_test = paths["web_test"].read_text(encoding="utf-8")
     web_tokens = (
         "openTerminalSocket",
@@ -1833,17 +1876,33 @@ def check_remote_ssh_sftp_boundary(root: Path) -> str:
         raise ValueError("remote Admin Web transport boundary is incomplete")
     if (
         "RemoteWorkspace" not in web_component
-        or "setPrivateKey(\"\")" not in web_component
-        or "setKnownHosts(\"\")" not in web_component
+        or "SiteSshSessionPage" not in web_component
+        or "SiteSftpBrowserPage" not in web_component
+        or "setPrivateKey(\"\")" not in ssh_page
+        or "known_hosts: inspection.known_hosts_line" not in ssh_page
+        or "이 서버 키 지문을 신뢰" not in ssh_page
     ):
         raise ValueError("remote Admin Web secret-clearing workflow is incomplete")
+    for token in (
+        "SFTP 파일 브라우저",
+        "SFTP 전송 큐",
+        "setTransferConcurrency",
+        "pauseTransfer",
+        "retryTransfer",
+        "SFTP 텍스트 편집기",
+    ):
+        if token not in sftp_page:
+            raise ValueError(f"remote Admin Web SFTP workflow missing: {token}")
     if (
         "not.toContain(\"one-time-secret\")" not in web_test
         or "ticket.one-time-secret" not in web_test
     ):
         raise ValueError("terminal ticket URL-exclusion test is missing")
     for forbidden in ("localStorage", "sessionStorage", "file://", "invoke("):
-        if forbidden in web_api or forbidden in web_component:
+        if any(
+            forbidden in source
+            for source in (web_api, web_component, ssh_page, sftp_page)
+        ):
             raise ValueError(f"remote web consumer contains forbidden token: {forbidden}")
 
     server_test = paths["server_test"].read_text(encoding="utf-8")
@@ -1852,9 +1911,24 @@ def check_remote_ssh_sftp_boundary(root: Path) -> str:
         or 'assert!(!ssh_profile_text.contains("PRIVATE KEY"))' not in server_test
     ):
         raise ValueError("remote server secret redaction test is missing")
+    runtime_test = paths["runtime_test"].read_text(encoding="utf-8")
+    runtime_tool = paths["runtime_tool"].read_text(encoding="utf-8")
+    for token in (
+        "managed_remote_survives_terminal_interrupt_reconnect_and_sftp_roundtrip",
+        "open terminal before interruption",
+        "reconnect terminal",
+        "download over product SFTP executor",
+        "pause running upload",
+        "RemoteError::Cancelled",
+        "delete remote fixture directory",
+    ):
+        if token not in runtime_test:
+            raise ValueError(f"remote runtime certification test missing: {token}")
+    if "LOCAL_RUNTIME_PASS" not in runtime_tool or "secrets_recorded" not in runtime_tool:
+        raise ValueError("remote runtime certification receipt contract is incomplete")
     return (
         "server-owned SSH/SFTP, strict host key·DNS pin, hash-only one-time WebSocket ticket, "
-        "site-bound streaming·persistent transfer state 확인"
+        "site-bound streaming·persistent transfer state·실행 process 중단 확인"
     )
 
 
