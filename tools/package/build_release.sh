@@ -7,7 +7,7 @@ image_repository=${2:-ghcr.io/jiwonpapa/gnuboard5-fleet}
 platform=${G5_FLEET_RELEASE_PLATFORM:-linux/amd64}
 
 case "$version" in
-  ""|*[!0-9A-Za-z._-]*) echo "usage: build_release.sh VERSION [IMAGE_REPOSITORY]" >&2; exit 1 ;;
+  "") echo "usage: build_release.sh VERSION [IMAGE_REPOSITORY]" >&2; exit 1 ;;
 esac
 case "$platform" in
   linux/amd64|linux/arm64) ;;
@@ -19,6 +19,7 @@ for command in docker git python3; do
     exit 1
   }
 done
+python3 "$root/tools/release/check_versioning.py" --release-version "$version" >/dev/null
 docker scout sbom --help >/dev/null
 
 revision=$(git -C "$root" rev-parse HEAD)

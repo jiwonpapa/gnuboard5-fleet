@@ -56,6 +56,10 @@ RequestContext(principal_id, web_session_id, site_id, request_id)
 - Connector 배포는 preflight, 백업, 임시 release 업로드, checksum, lint, health, login smoke, 원자적 전환, rollback을 거칩니다.
 - G5 코어와 root Composer/vendor를 덮어쓰지 않습니다.
 - 기본 배포 명령에 운영 host를 하드코딩하거나 `rsync --delete`, `777/666` 권한을 사용하지 않습니다.
+- 제품 릴리스 버전은 SemVer 2.0.0을 따르며 루트 Cargo workspace 버전을 정본으로 사용합니다.
+- 사용자 변경 기록은 Keep a Changelog 1.1.0 형식의 루트 `CHANGELOG.md`가 정본입니다.
+- changelog에 날짜와 버전이 확정되지 않았거나 제품 버전 표면이 불일치하면 패키지·tag·GitHub Release를 만들지 않습니다.
+- 이미 배포하거나 tag한 버전은 변경하지 않고 수정 사항은 새 버전으로 배포합니다.
 
 ## 7. 감사와 증거
 

@@ -72,8 +72,13 @@ image의 내장 version을 비교합니다. pull, health, version, readback 중
 
 ## 릴리스 빌드와 패키지 스모크
 
+버전 판정과 changelog 확정 절차는
+[`RELEASE_VERSIONING.md`](RELEASE_VERSIONING.md)를 먼저 따릅니다. `VERSION`은
+`v` 접두어 없는 SemVer여야 하며 루트 정본 버전 및 확정된 changelog 릴리스
+항목과 일치하지 않으면 빌드가 중단됩니다.
+
 ```bash
-tools/package/build_release.sh VERSION
+tools/package/build_release.sh X.Y.Z
 tools/package/package_smoke.sh
 ```
 

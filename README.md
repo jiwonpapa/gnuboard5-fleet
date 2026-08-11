@@ -6,7 +6,7 @@
 
 활성 제품은 Rust Axum 서버와 React PWA로만 배포합니다. 기존 Tauri 코드는 UI와 Rust 소비 구현을 서버 구조로 이관하기 위한 참조 snapshot이며 데스크톱 제품, 네이티브 wrapper, 코드 서명·공증 또는 updater를 제공하지 않습니다. 결정 근거는 [`ADR-0006`](docs/adr/0006-server-only-product-pivot.md), 구현 기준은 [`서버·웹 기술 스택`](docs/architecture/SERVER_WEB_TECH_STACK.md)에 있습니다.
 
-실제 재이관은 [`도메인별 재사용 이관 배치`](docs/roadmap/DOMAIN_REUSE_MIGRATION_PLAN.md)의 R00 → R36 순서로 진행합니다. 과거 B00 → B10은 서버 기반 작업 이력일 뿐 전체 전환 완료 근거가 아닙니다. R04까지 공통 기반, 설치·인증·보안, 사이트·활동·backup, SSH·SFTP·terminal 245개 항목을 닫았지만 legacy·Core·필수 capability 467개가 남아 있으므로 전체 판정은 여전히 `MIGRATION_STATIC FAIL`입니다. 현재 활성 배치는 R10 admin·config·schema입니다.
+실제 재이관은 [`도메인별 재사용 이관 배치`](docs/roadmap/DOMAIN_REUSE_MIGRATION_PLAN.md)의 R00 → R36 순서로 진행합니다. 과거 B00 → B10은 서버 기반 작업 이력일 뿐 전체 전환 완료 근거가 아닙니다. R11까지 283개 항목을 닫았지만 legacy·Core·필수 capability 429개가 남아 있으므로 전체 판정은 여전히 `MIGRATION_STATIC FAIL`입니다. 현재 활성 배치는 R12 members입니다.
 
 ## 제품 구성
 
@@ -30,7 +30,7 @@ make check
 ```bash
 make test-migration-parity
 make audit-migration-parity
-make check-batch BATCH=R10
+make check-batch BATCH=R12
 ```
 
 이미 upstream checkout이 준비되어 있으면 `make prepare`만 실행합니다. 이 준비 단계는 검증된 G5 원본과 현재 clean destination의 PHP connector를 `.cache/composed/gnuboard5-php`에 새로 합성하고 Composer 잠금 의존성을 설치합니다. 이어서 로컬 Python과 `tools/audit/requirements.txt`에 고정된 PyYAML의 버전·실행 파일·모듈 해시를 기록하고, 활성 Cargo/Bun lock 의존성을 준비합니다. 감사 의존성을 새로 설치하지 않으므로 정확한 PyYAML이 없으면 fail-closed됩니다.
@@ -42,6 +42,18 @@ make check-batch BATCH=R10
 개발 서버는 최초 한 번 `G5_FLEET_INSTALLATION_ID=local-fleet-01 cargo run -p g5-fleet-admin-server -- init-store`로 저장소를 명시적으로 초기화합니다. 이후 32-byte master key를 Base64로 `G5_FLEET_MASTER_KEY_BASE64`에 주입하고 `cargo run -p g5-fleet-admin-server -- serve`로 실행합니다. 웹주소에 처음 접속하면 관리자 → OTP 검증 → 일회성 복구 코드 확인을 모두 마쳐야 로그인 화면이 열립니다. OTP 비활성화와 OTP 없이 추가 관리자를 만드는 API는 정책상 거부됩니다. 기본 데이터 경로는 `data`, 웹 경로는 `apps/admin-web/dist`입니다. master key는 DB·Git에 넣지 않으며 DB backup과 별도로 보관합니다.
 
 서버 설치·백업·업그레이드는 [`서버 패키지 운영 문서`](docs/operations/SERVER_PACKAGE.md)를 따릅니다. 기본 Compose는 Axum+React `app`과 Caddy만 사용하며 별도 PostgreSQL·Redis container를 설치하지 않습니다.
+
+## 버전과 변경 기록
+
+제품 변경은 루트 [`CHANGELOG.md`](CHANGELOG.md)에 Keep a Changelog 1.1.0
+형식으로 기록하고, 릴리스 버전은 Semantic Versioning 2.0.0을 따릅니다.
+버전 정본, 공개 API 범위와 릴리스 절차는
+[`릴리스 버전 정책`](docs/operations/RELEASE_VERSIONING.md)에 있습니다.
+
+```bash
+make test-versioning
+make check-versioning
+```
 
 R36 local·package·staging 증거의 실행과 등급 분리는 [`제품 인증 실행 문서`](docs/operations/CERTIFICATION.md)를 따릅니다. local G5 검증용 MariaDB는 관리 대상 G5를 재현하는 test-only service이며 Fleet 서버 패키지의 구성요소가 아닙니다.
 

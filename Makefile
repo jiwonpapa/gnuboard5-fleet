@@ -3,7 +3,7 @@ ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 export PYTHONDONTWRITEBYTECODE := 1
 
 .NOTPARALLEL: bootstrap prepare check
-.PHONY: doctor bootstrap prepare check check-batch test-audit test-migration-parity test-upstream test-runtime test-package test-certification runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-migration-parity audit-migration-batch audit-migration-runtime audit-migration-staging audit-server-scaffold audit-server-static audit-local audit-package audit-staging upstream-sync upstream-audit upstream-verify secret-scan package-build package-smoke certification-up certification-down certification-clean certification-local-smoke staging-rehearsal staging-smoke
+.PHONY: doctor bootstrap prepare check check-batch test-versioning check-versioning test-audit test-migration-parity test-upstream test-runtime test-package test-certification runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-migration-parity audit-migration-batch audit-migration-runtime audit-migration-staging audit-server-scaffold audit-server-static audit-local audit-package audit-staging upstream-sync upstream-audit upstream-verify secret-scan package-build package-smoke certification-up certification-down certification-clean certification-local-smoke staging-rehearsal staging-smoke
 
 doctor:
 	@cd "$(ROOT)" && command -v git >/dev/null
@@ -21,6 +21,12 @@ doctor:
 
 test-audit:
 	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s tools/audit/tests -p 'test_*.py'
+
+test-versioning:
+	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s tools/release/tests -p 'test_*.py'
+
+check-versioning:
+	cd "$(ROOT)" && $(PYTHON) tools/release/check_versioning.py
 
 test-migration-parity:
 	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s tools/migration_parity/tests -p 'test_*.py'
@@ -126,6 +132,8 @@ audit-staging:
 
 check:
 	+$(MAKE) doctor
+	+$(MAKE) test-versioning
+	+$(MAKE) check-versioning
 	+$(MAKE) test-audit
 	+$(MAKE) test-migration-parity
 	+$(MAKE) test-upstream

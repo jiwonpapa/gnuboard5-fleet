@@ -33,6 +33,9 @@
 - routine 테스트에서 Telegram·Web Push·메일·SMS 외부 발송을 금지합니다.
 - `STATIC`, `LOCAL_RUNTIME`, `PACKAGE`, `STAGING`, `LIVE` 증거를 서로 승격해 표현하지 않습니다.
 - 로컬 `make check`가 정본이며 GitHub Actions는 수동 fallback만 허용합니다.
+- 제품 릴리스는 루트 `CHANGELOG.md`, Keep a Changelog 1.1.0과 SemVer 2.0.0을 따릅니다.
+- 제품 버전 정본은 루트 `Cargo.toml`이며 Admin Web·Compose·release manifest와 일치해야 합니다.
+- 확정 changelog 항목과 ISO 날짜가 없는 버전은 package·tag·GitHub Release로 배포하지 않습니다.
 
 ## 기본 마감
 
