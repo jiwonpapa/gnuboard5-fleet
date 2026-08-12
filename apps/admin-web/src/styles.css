@@ -186,6 +186,34 @@ code {
   border: 0;
 }
 
+.member-editor fieldset > label:not(.checkbox-row),
+.form-grid-two label {
+  display: grid;
+  gap: 6px;
+}
+
+.member-editor fieldset > label:not(.checkbox-row) input,
+.member-editor fieldset > label:not(.checkbox-row) select,
+.form-grid-two input {
+  width: 100%;
+}
+
+.form-grid-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.member-editor .checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.member-editor .checkbox-row input {
+  width: auto;
+}
+
 .member-editor legend,
 .member-editor h4 {
   margin: 0 0 12px;
@@ -292,7 +320,8 @@ code {
 @media (max-width: 720px) {
   .member-summary,
   .member-field-grid,
-  .member-flags {
+  .member-flags,
+  .form-grid-two {
     grid-template-columns: 1fr;
   }
 
