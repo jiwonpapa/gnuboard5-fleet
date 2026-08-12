@@ -1,0 +1,115 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R12",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "b330a2a32c6339434e0182413b25b3feb3e36338",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "b330a2a32c6339434e0182413b25b3feb3e36338"
+  },
+  "generated_at": "2026-08-12T02:13:55Z",
+  "commands": [
+    "make certification-clean",
+    "make certification-up",
+    "python3 tools/certification/local_runtime_smoke.py",
+    "make audit-runtime-verify",
+    "make active-check",
+    "make audit-server-static",
+    "make check-batch BATCH=R12",
+    "python3 -m tools.migration_parity.batch_cli --batch R13 --profile static"
+  ],
+  "results": {
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {"passed": 60, "failed": 0, "ignored": 1},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 38,
+      "web_tests": {"passed": 62, "failed": 0},
+      "web_build": "PASS"
+    },
+    "audit_harness_tests": {"passed": 22, "failed": 0},
+    "migration_harness_tests": {"passed": 26, "failed": 0},
+    "certification_harness_tests": {"passed": 6, "failed": 0},
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "b330a2a32c6339434e0182413b25b3feb3e36338",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "03645eda7a2be24cfb83c38c21535a01dc041b1a138ba0391f99f47367087578",
+      "otp_install_login_step_up": "PASS",
+      "member_operations": 10,
+      "list_export_detail": "PASS",
+      "update_and_level_readback": "PASS",
+      "icon_and_image_upload_delete": "PASS",
+      "soft_delete_date_readback": "PASS",
+      "external_delivery_attempts": 0
+    },
+    "typed_operation_consumption": {
+      "operations": [
+        "adminListMembers",
+        "adminExportMembersExcel",
+        "adminGetMember",
+        "adminUpdateMember",
+        "adminDeleteMember",
+        "adminUpdateMemberLevel",
+        "adminUploadMemberIcon",
+        "adminDeleteMemberIcon",
+        "adminUploadMemberImage",
+        "adminDeleteMemberImage"
+      ],
+      "new_site_scoped_axum_routes": 10,
+      "browser_same_origin_transport": "PASS",
+      "changed_fields_only": "PASS",
+      "save_readback": "PASS",
+      "destructive_confirmation": "PASS",
+      "csrf_and_step_up_write_guard": "PASS",
+      "browser_g5_secret_exposure": "NONE"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 79, "added_r12_routes": 10},
+    "predecessor_regression": {"batch": "R11", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 16, "core_operations": 10, "required_capabilities": 0},
+    "reuse": {"reused": 0, "adapted": 16, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "ownership": {
+      "legacy": {"owned": 510, "total": 510},
+      "core_operations": {"owned": 189, "total": 189},
+      "required_capabilities": {"owned": 13, "total": 13}
+    },
+    "global_migration": {"status": "FAIL", "findings": 403},
+    "next_batch_probe": {
+      "batch": "R13",
+      "status": "FAIL",
+      "scope": {"legacy": 20, "core_operations": 17, "required_capabilities": 0},
+      "findings": 37
+    },
+    "provider_defects_observed": [
+      "auth/register returns database_error because mb_mailling_date is not supplied on the official fresh-install schema"
+    ]
+  },
+  "manifest_sha256": {
+    "migration_parity": "4f6a5bea775d9e29b042189d7ce8143bbf1c747b3c608af953b374b2dd6878d2",
+    "migration_batches_before_closeout": "44201cb8af279ee17d7644d8f8ef9384a8b1d204148c058eb48e2153a24ad866"
+  },
+  "source_reports": [
+    {
+      "path": "output/audit/runs/20260812T021235Z-3c00c7590791/result.json",
+      "sha256": "800612038c3266ff8782959e9e8e5fa6aa4f81c04dedca17b0030a9ab2ee1a07"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R12-20260812T021345Z-c3923602/result.json",
+      "sha256": "973c5cae6a78927c319294fa4b7ce25c26f446a5a6355cf2faa0cb3a54f8822b"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R13-20260812T021345Z-7fcab74e/result.json",
+      "sha256": "d63bf52bb60a0780f4f686617b48b8ba4fe661393e47665909fcc2c6d45a38aa"
+    }
+  ],
+  "claim_limit": "R12 members 10-operation typed DTO, Connector, explicit site_id Axum routes, same-origin responsive React workflow and current-SHA official G5 5.6.32 local runtime readback only. This is not package, staging or live certification; global migration remains FAIL with 403 findings."
+}

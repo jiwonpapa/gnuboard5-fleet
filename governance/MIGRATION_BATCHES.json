@@ -384,11 +384,27 @@
       "id": "R12",
       "sequence": 7,
       "title": "members",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R11"],
+      "completion": {
+        "implementation_commit": "b330a2a32c6339434e0182413b25b3feb3e36338",
+        "evidence_path": "docs/audits/evidence/R12_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-12T02:13:55Z"
+      },
       "core": {
         "domains": ["members"],
-        "operation_ids": [],
+        "operation_ids": [
+          "adminListMembers",
+          "adminExportMembersExcel",
+          "adminGetMember",
+          "adminUpdateMember",
+          "adminDeleteMember",
+          "adminUpdateMemberLevel",
+          "adminUploadMemberIcon",
+          "adminDeleteMemberIcon",
+          "adminUploadMemberImage",
+          "adminDeleteMemberImage"
+        ],
         "expected_count": 10
       },
       "legacy": {
@@ -421,7 +437,7 @@
       "id": "R13",
       "sequence": 8,
       "title": "groups",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R12"],
       "core": {
         "domains": ["groups"],

@@ -2,17 +2,18 @@
 
 ## 현재 판정
 
-2026-07-27 R04 마감 후 전체 이관 동등성 하네스 결과는
+2026-08-12 R12 마감 후 전체 이관 동등성 하네스 결과는
 `MIGRATION_STATIC FAIL`입니다.
 
-- legacy inventory 510개 중 유효 매핑 236, 미매핑 274
-  - Tauri command 66/253
-  - React page 11/43
+- legacy inventory 510개 중 유효 매핑 275, 미매핑 235
+  - Tauri command 87/253
+  - React page 15/43
   - Rust workspace member 21/21
-  - frontend regression test 48/100
-  - Rust regression test 90/93
+- frontend regression test 60/100
+  - Rust regression test 92/93
 - 서버 전환 필수 capability 9/13 구현 증명
-- 활성 server route 57개와 Core registry 189개는 존재하지만 전체 이관
+- typed Core operation 소비 25/189
+- 활성 server route 79개와 Core registry 189개는 존재하지만 전체 이관
   증거로 승격하지 않음
 
 아래 구현 목록은 현재 소스에 존재하는 기반 기능 inventory입니다. 전체
@@ -86,6 +87,8 @@ legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B
 - 공식 G5 v5.6.32+Shop에서 Connector 로그인·설정 수정·재조회·원복 PASS
 - Chromium 2사용자×2사이트 가시성 격리와 동일 출처 Fleet transport PASS
 - OCI clean install·데이터 보존 upgrade·검증 backup·master key 복원·실패 rollback PASS
+- 회원 목록·export·상세·변경 필드 수정·레벨·아이콘·이미지·소프트 삭제 typed 소비 10개 구현
+- 공식 G5 v5.6.32 실런타임에서 R12 10개 operation 저장·readback·미디어 multipart 검증 PASS
 
 현재 migration profile은 기존 Tauri snapshot의 provenance와 source closure만 이관 증거로 검증합니다. routine `make prepare/check`는 해당 snapshot의 Bun·Cargo·Tauri·네이티브 패키징 의존성을 준비하거나 빌드하지 않습니다. 이는 데스크톱 제품 지원 또는 서버판 구현 완료를 뜻하지 않습니다.
 
@@ -111,26 +114,25 @@ revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장�
 
 ## 현재 배치
 
-R00~R11은 tracked 증거로 닫혔습니다. R11은 legacy 9개와 Core operation
-10개를 닫아 전역 finding을 448개에서 429개로 줄였습니다.
+R00~R12는 tracked 증거로 닫혔습니다. R12는 legacy 16개와 Core operation
+10개를 닫아 전역 finding을 429개에서 403개로 줄였습니다.
 
-- 구현 commit: `302571c6d699f3197b031d8a425ab8e53bac4f46`
-- 증거: `docs/audits/evidence/R11_BATCH_GATE_PASS.json`
-- runtime 증거: `docs/audits/evidence/R04_REMOTE_RUNTIME_CERTIFICATION.json`
-- R11 scoped finding: 0
+- 구현 commit: `b330a2a32c6339434e0182413b25b3feb3e36338`
+- 증거: `docs/audits/evidence/R12_BATCH_GATE_PASS.json`
+- R12 scoped finding: 0
 - `SERVER_STATIC_PASS`: 35/35
-- typed Core 소비: 15/189
-- 웹 테스트: 55 PASS
-- `LOCAL_RUNTIME_PASS`: SSH/SFTP 8개 실제 검증
+- typed Core 소비: 25/189
+- 웹 테스트: 62 PASS
+- `LOCAL_RUNTIME_PASS`: R12 회원 10개 operation 실제 G5 readback
 - staging `fac6a92` 배포·TLS·ready/meta와 실패 upgrade backup rollback
   receipt PASS. 다만 과거 B10 local/browser/package 증거가 현재 SHA와 달라
   전체 `audit-staging` PASS로 승격하지 않음
-- 다음 활성 배치: R12 members
-- R12 사전 probe: FAIL 26
+- 다음 활성 배치: R13 groups
+- R13 사전 probe: FAIL 37
 
 ```bash
-make check-batch BATCH=R12
+make check-batch BATCH=R13
 ```
 
-전체 완료는 아닙니다. 전역 감사 429개가 남아 있으며 R36 전까지
+전체 완료는 아닙니다. 전역 감사 403개가 남아 있으며 R36 전까지
 `MIGRATION_STATIC FAIL`을 유지합니다.
