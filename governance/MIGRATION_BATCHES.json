@@ -539,11 +539,22 @@
       "id": "R15",
       "sequence": 10,
       "title": "contents",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R14"],
+      "completion": {
+        "implementation_commit": "aee7b3aa5fd4d47e2616334d408f94f35cabffaa",
+        "evidence_path": "docs/audits/evidence/R15_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-12T05:42:49Z"
+      },
       "core": {
         "domains": ["contents"],
-        "operation_ids": [],
+        "operation_ids": [
+          "adminListContents",
+          "adminCreateContent",
+          "adminGetContent",
+          "adminUpdateContent",
+          "adminDeleteContent"
+        ],
         "expected_count": 5
       },
       "legacy": {
@@ -572,7 +583,7 @@
       "id": "R16",
       "sequence": 11,
       "title": "faq-masters·faqs",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R15"],
       "core": {
         "domains": ["faq-masters", "faqs"],
