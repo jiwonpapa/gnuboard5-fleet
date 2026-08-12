@@ -375,13 +375,15 @@ def main() -> int:
         headers=fleet_headers(admin_cookie, admin_csrf),
         expected=(204,),
     )
-    request(
+    deleted_member = request(
         fleet_base,
         "GET",
         member_path,
         headers=fleet_headers(admin_cookie),
-        expected=(404,),
-    )
+    ).json()
+    leave_date = deleted_member.get("mb_leave_date")
+    if not isinstance(leave_date, str) or not re.fullmatch(r"\d{8}", leave_date):
+        raise RuntimeError("R12 member soft-delete date readback failed")
     fleet_readback = request(
         fleet_base,
         "GET",
@@ -462,7 +464,7 @@ def main() -> int:
             "level_readback": "passed",
             "icon_upload_delete": "passed",
             "image_upload_delete": "passed",
-            "member_delete_readback": "passed",
+            "member_soft_delete_date_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,
