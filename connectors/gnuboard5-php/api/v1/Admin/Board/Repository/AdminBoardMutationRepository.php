@@ -105,6 +105,7 @@ final class AdminBoardMutationRepository extends AdminBaseRepository
 
     private ?AdminBoardMutationPayloadBuilder $resolvedPayloadBuilder = null;
     private ?AdminBoardCopyStore $resolvedCopyStore = null;
+    private ?AdminBoardWriteTableStore $resolvedWriteTableStore = null;
 
     /**
      * @param list<string>|null $updatableFields
@@ -114,11 +115,13 @@ final class AdminBoardMutationRepository extends AdminBaseRepository
         ?\Api\Core\Database\TableRegistry $tables = null,
         private readonly ?array $updatableFields = null,
         ?AdminBoardMutationPayloadBuilder $payloadBuilder = null,
-        ?AdminBoardCopyStore $copyStore = null
+        ?AdminBoardCopyStore $copyStore = null,
+        ?AdminBoardWriteTableStore $writeTableStore = null
     ) {
         parent::__construct($qb, $tables);
         $this->resolvedPayloadBuilder = $payloadBuilder;
         $this->resolvedCopyStore = $copyStore;
+        $this->resolvedWriteTableStore = $writeTableStore;
     }
 
     /**
@@ -131,15 +134,22 @@ final class AdminBoardMutationRepository extends AdminBaseRepository
         $columns = array_keys($data);
         $placeholders = array_map(static fn (string $column): string => ':' . $column, $columns);
 
-        $this->executeStatement(
-            sprintf(
-                'INSERT INTO %s (%s) VALUES (%s)',
-                $table,
-                implode(', ', $columns),
-                implode(', ', $placeholders)
-            ),
-            $data
-        );
+        $boTable = (string)($data['bo_table'] ?? '');
+        $this->writeTableStore()->create($boTable);
+        try {
+            $this->executeStatement(
+                sprintf(
+                    'INSERT INTO %s (%s) VALUES (%s)',
+                    $table,
+                    implode(', ', $columns),
+                    implode(', ', $placeholders)
+                ),
+                $data
+            );
+        } catch (\Throwable $exception) {
+            $this->writeTableStore()->drop($boTable);
+            throw $exception;
+        }
     }
 
     /**
@@ -166,10 +176,15 @@ final class AdminBoardMutationRepository extends AdminBaseRepository
     {
         $table = $this->tables()->get('board');
 
-        return $this->executeStatement(
+        $affected = $this->executeStatement(
             "DELETE FROM {$table} WHERE bo_table = :bo_table",
             ['bo_table' => $boTable]
         );
+        if ($affected > 0) {
+            $this->writeTableStore()->drop($boTable);
+        }
+
+        return $affected;
     }
 
     public function copyBoard(
@@ -209,5 +224,19 @@ final class AdminBoardMutationRepository extends AdminBaseRepository
         $this->resolvedCopyStore = new AdminBoardCopyStore($this->queryBuilder(), $this->tables());
 
         return $this->resolvedCopyStore;
+    }
+
+    private function writeTableStore(): AdminBoardWriteTableStore
+    {
+        if ($this->resolvedWriteTableStore instanceof AdminBoardWriteTableStore) {
+            return $this->resolvedWriteTableStore;
+        }
+
+        $this->resolvedWriteTableStore = new AdminBoardWriteTableStore(
+            $this->queryBuilder(),
+            $this->tables()
+        );
+
+        return $this->resolvedWriteTableStore;
     }
 }

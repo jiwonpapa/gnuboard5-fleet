@@ -162,7 +162,7 @@ final class AdminFinalRepositoryServiceCoverageTest extends TestCase
                 $board = (string)($params['bo_table'] ?? '');
                 return $this->createDbalResult($state[$board] ?? false);
             });
-        $qb->expects(self::exactly(5))
+        $qb->expects(self::exactly(7))
             ->method('executeStatement')
             ->willReturnCallback(function (string $sql, array $params = []) use (&$state): int {
                 if (str_starts_with($sql, 'INSERT INTO g5_board')) {
