@@ -6,10 +6,14 @@ import {
   connectorLogin,
   connectorLogout,
   connectorRefresh,
+  copyAdminBoard,
+  createAdminBoard,
   createAdminBoardGroup,
   createAdminLegacyGroup,
   deleteAdminBoardGroup,
   deleteAdminBoardGroupMember,
+  deleteAdminBoard,
+  deleteAdminNewPosts,
   deleteAdminLegacyGroup,
   deleteAdminLegacyGroupMember,
   deleteAdminMember,
@@ -19,6 +23,7 @@ import {
   exportAdminMembers,
   getAdminConfig,
   getAdminBoardGroup,
+  getAdminBoard,
   getAdminDashboard,
   getAdminFieldSchema,
   getAdminMember,
@@ -27,6 +32,7 @@ import {
   listAdminAuth,
   listAdminBoardGroupMembers,
   listAdminBoardGroups,
+  listAdminBoards,
   listAdminFieldSchemas,
   listAdminMembers,
   listAdminLegacyGroupMembers,
@@ -38,6 +44,7 @@ import {
   upsertAdminAuth,
   updateAdminConfig,
   updateAdminBoardGroup,
+  updateAdminBoard,
   updateAdminLegacyGroup,
   updateAdminMember,
   updateAdminMemberLevel,
@@ -274,6 +281,42 @@ describe("remote Fleet transport", () => {
       ["http://localhost:3000/api/v1/sites/site-a/admin/groups/staff/members?per_page=20", "GET"],
       ["http://localhost:3000/api/v1/sites/site-a/admin/groups/staff/members", "POST"],
       ["http://localhost:3000/api/v1/sites/site-a/admin/groups/staff/members/member01", "DELETE"],
+    ]);
+    for (const [, init] of fetcher.mock.calls.filter(([, call]) => call?.method !== "GET")) {
+      expect(new Headers(init?.headers).get("x-csrf-token")).toBe("csrf-1");
+    }
+  });
+
+  it("consumes all seven R14 board operations through explicit site scope", async () => {
+    const fetcher = vi.fn(async (
+      _input: RequestInfo | URL,
+      _init?: RequestInit,
+    ) => {
+      void _input;
+      void _init;
+      return new Response("{}", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    const create = { bo_table: "notice", bo_subject: "공지", gr_id: "staff" };
+    await listAdminBoards("site-a", { page: 2, search: "notice" });
+    await createAdminBoard("site-a", create, "csrf-1");
+    await getAdminBoard("site-a", "notice");
+    await updateAdminBoard("site-a", "notice", { bo_subject: "새 공지" }, "csrf-1");
+    await copyAdminBoard("site-a", "notice", { target_bo_table: "notice_copy", copy_posts: false }, "csrf-1");
+    await deleteAdminNewPosts("site-a", [101, 102], "csrf-1");
+    await deleteAdminBoard("site-a", "notice_copy", "csrf-1");
+
+    expect(fetcher.mock.calls.map(([input, init]) => [String(input), init?.method])).toEqual([
+      ["http://localhost:3000/api/v1/sites/site-a/admin/boards?page=2&search=notice", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/boards", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/boards/notice", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/boards/notice", "PUT"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/boards/notice/copy", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/boards/new-posts", "DELETE"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/boards/notice_copy", "DELETE"],
     ]);
     for (const [, init] of fetcher.mock.calls.filter(([, call]) => call?.method !== "GET")) {
       expect(new Headers(init?.headers).get("x-csrf-token")).toBe("csrf-1");

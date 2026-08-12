@@ -399,6 +399,62 @@ export interface AdminBoardGroupMemberResult {
   gm_datetime: string;
 }
 
+export interface AdminBoard {
+  bo_table: string;
+  bo_subject: string | null;
+  gr_id: string | null;
+  bo_device: string | null;
+  bo_use_category: boolean | null;
+  bo_category_list: string | null;
+  bo_admin: string | null;
+  bo_read_level: number | null;
+  bo_write_level: number | null;
+  bo_comment_level: number | null;
+  bo_download_level: number | null;
+  bo_use_secret: number | null;
+  bo_upload_count: number | null;
+  bo_upload_size: number | null;
+  bo_count_write: number | null;
+  bo_count_comment: number | null;
+}
+
+export interface AdminBoardList {
+  items: AdminBoard[];
+  pagination: Pagination;
+}
+
+export interface AdminBoardCreate {
+  bo_table: string;
+  bo_subject: string;
+  gr_id: string;
+  bo_use_category?: boolean;
+  bo_category_list?: string;
+  bo_read_level?: number;
+  bo_write_level?: number;
+  bo_comment_level?: number;
+  bo_download_level?: number;
+  bo_use_secret?: number;
+  bo_upload_count?: number;
+  bo_upload_size?: number;
+}
+
+export type AdminBoardUpdate = Partial<Omit<AdminBoardCreate, "bo_table">>;
+
+export interface AdminBoardCopy {
+  target_bo_table: string;
+  target_bo_subject?: string;
+  copy_posts: boolean;
+}
+
+export interface AdminNewPostsDeleteResult {
+  deleted: boolean;
+  deleted_count: number;
+  deleted_posts: number;
+  deleted_comments: number;
+  skipped: number;
+  bn_ids: number[];
+}
+
 export interface AdminAuthAssignment {
   au_menu: string;
   au_auth: string;
@@ -1110,6 +1166,88 @@ export function deleteAdminBoardGroupMember(
     method: "DELETE",
     path: `/sites/${encodeURIComponent(siteId)}/admin/board-groups/${encodeURIComponent(grId)}/members/${encodeURIComponent(mbId)}`,
     csrfToken,
+  });
+}
+
+export function listAdminBoards(
+  siteId: string,
+  query: {
+    page?: number;
+    per_page?: number;
+    gr_id?: string;
+    search?: string;
+    sort_by?: "bo_table" | "bo_subject" | "gr_id" | "bo_count_write" | "bo_count_comment";
+    sort_direction?: "ASC" | "DESC";
+  } = {},
+) {
+  return transport.request<AdminBoardList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/boards${fleetQuery(query)}`,
+  });
+}
+
+export function createAdminBoard(
+  siteId: string,
+  create: AdminBoardCreate,
+  csrfToken: string,
+) {
+  return transport.request<AdminBoard, AdminBoardCreate>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/boards`,
+    csrfToken,
+    body: create,
+  });
+}
+
+export function getAdminBoard(siteId: string, boTable: string) {
+  return transport.request<AdminBoard>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/boards/${encodeURIComponent(boTable)}`,
+  });
+}
+
+export function updateAdminBoard(
+  siteId: string,
+  boTable: string,
+  update: AdminBoardUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminBoard, AdminBoardUpdate>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/boards/${encodeURIComponent(boTable)}`,
+    csrfToken,
+    body: update,
+  });
+}
+
+export function copyAdminBoard(
+  siteId: string,
+  boTable: string,
+  copy: AdminBoardCopy,
+  csrfToken: string,
+) {
+  return transport.request<AdminBoard, AdminBoardCopy>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/boards/${encodeURIComponent(boTable)}/copy`,
+    csrfToken,
+    body: copy,
+  });
+}
+
+export function deleteAdminBoard(siteId: string, boTable: string, csrfToken: string) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/boards/${encodeURIComponent(boTable)}`,
+    csrfToken,
+  });
+}
+
+export function deleteAdminNewPosts(siteId: string, bnIds: number[], csrfToken: string) {
+  return transport.request<AdminNewPostsDeleteResult, { bn_ids: number[] }>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/boards/new-posts`,
+    csrfToken,
+    body: { bn_ids: bnIds },
   });
 }
 

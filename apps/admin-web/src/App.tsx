@@ -5,6 +5,7 @@ import { getHealth, getMeta, type MetaResponse } from "./api/system";
 import { AuditLogPage } from "./features/audit/AuditLogPage";
 import { FleetAccessGate } from "./features/auth/FleetAccessGate";
 import { BackupPage } from "./features/backup/BackupPage";
+import { AdminBoardsPage } from "./features/boards/AdminBoardsPage";
 import { AdminConfigWorkspacePage } from "./features/config/AdminConfigWorkspacePage";
 import { DiagnosticsPage } from "./features/debug/DiagnosticsPage";
 import { AdminBoardGroupsPage } from "./features/groups/AdminBoardGroupsPage";
@@ -59,6 +60,10 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/groups"
               element={<AdminBoardGroupsPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/boards"
+              element={<AdminBoardsPage />}
             />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />

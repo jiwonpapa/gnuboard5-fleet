@@ -1683,6 +1683,13 @@ def check_server_scaffold_contract(root: Path) -> str:
         ("GET", "/api/v1/sites/{site_id}/admin/groups/{gr_id}/members", "session", True),
         ("POST", "/api/v1/sites/{site_id}/admin/groups/{gr_id}/members", "session_csrf_step_up", True),
         ("DELETE", "/api/v1/sites/{site_id}/admin/groups/{gr_id}/members/{mb_id}", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/boards", "session", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/boards", "session_csrf_step_up", True),
+        ("DELETE", "/api/v1/sites/{site_id}/admin/boards/new-posts", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/boards/{bo_table}", "session", True),
+        ("PUT", "/api/v1/sites/{site_id}/admin/boards/{bo_table}", "session_csrf_step_up", True),
+        ("DELETE", "/api/v1/sites/{site_id}/admin/boards/{bo_table}", "session_csrf_step_up", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/boards/{bo_table}/copy", "session_csrf_step_up", True),
         (
             "GET",
             "/api/v1/sites/{site_id}/config/basic",

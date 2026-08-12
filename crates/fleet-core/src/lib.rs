@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 pub mod admin;
+pub mod boards;
 pub mod groups;
 pub mod members;
 pub mod permissions;

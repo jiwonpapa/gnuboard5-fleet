@@ -69,6 +69,13 @@ class ManifestTest(unittest.TestCase):
                 "adminLegacyListGroupMembers",
                 "adminLegacyAddGroupMember",
                 "adminLegacyDeleteGroupMember",
+                "adminListBoards",
+                "adminCreateBoard",
+                "adminGetBoard",
+                "adminUpdateBoard",
+                "adminDeleteBoard",
+                "adminCopyBoard",
+                "adminDeleteNewPosts",
             },
             {
                 mapping["operation_id"]

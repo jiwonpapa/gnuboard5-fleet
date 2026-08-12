@@ -308,6 +308,16 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
                 "DELETE",
                 "/api/v1/sites/{site_id}/admin/groups/{gr_id}/members/{mb_id}"
             ),
+            ("GET", "/api/v1/sites/{site_id}/admin/boards"),
+            ("POST", "/api/v1/sites/{site_id}/admin/boards"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/boards/new-posts"),
+            ("GET", "/api/v1/sites/{site_id}/admin/boards/{bo_table}"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/boards/{bo_table}"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/boards/{bo_table}"),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/boards/{bo_table}/copy"
+            ),
             ("GET", "/api/v1/sites/{site_id}/config/basic"),
             ("PUT", "/api/v1/sites/{site_id}/config/basic"),
             ("POST", "/api/v1/sites/{site_id}/core/{operation_id}",),
@@ -668,6 +678,22 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             "mb_nick": "회원 닉네임",
             "mb_level": 2,
             "mb_today_login": "2026-08-12 09:00:00"
+        })])),
+        boards: Arc::new(Mutex::new(vec![serde_json::json!({
+            "bo_table": "notice",
+            "bo_subject": "공지사항",
+            "gr_id": "staff",
+            "bo_use_category": false,
+            "bo_category_list": "",
+            "bo_read_level": 1,
+            "bo_write_level": 10,
+            "bo_comment_level": 2,
+            "bo_download_level": 2,
+            "bo_use_secret": 0,
+            "bo_upload_count": 2,
+            "bo_upload_size": 1048576,
+            "bo_count_write": 4,
+            "bo_count_comment": 1
         })])),
     };
     let app = build_router(AppConfig {
@@ -1683,6 +1709,116 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap();
     assert_eq!(legacy_delete.status(), StatusCode::NO_CONTENT);
 
+    let board_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/boards?page=1&per_page=20&sort_by=bo_table&sort_direction=ASC",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(board_list.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(board_list).await["items"][0]["bo_table"],
+        "notice"
+    );
+
+    let board_create = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/boards",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "bo_table": "audit_board", "bo_subject": "감사 게시판", "gr_id": "staff",
+                "bo_use_category": true, "bo_category_list": "공지|일반",
+                "bo_read_level": 1, "bo_write_level": 2, "bo_comment_level": 2,
+                "bo_download_level": 2, "bo_use_secret": 0,
+                "bo_upload_count": 2, "bo_upload_size": 1048576
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(board_create.status(), StatusCode::CREATED);
+
+    let board_get = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/boards/audit_board",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(board_get).await["bo_subject"], "감사 게시판");
+
+    let board_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/boards/audit_board",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"bo_subject": "감사 게시판 갱신"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(board_update).await["bo_subject"],
+        "감사 게시판 갱신"
+    );
+
+    let board_copy = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/boards/audit_board/copy",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "target_bo_table": "audit_copy", "target_bo_subject": "감사 복제",
+                "copy_posts": false
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(board_copy.status(), StatusCode::CREATED);
+    assert_eq!(json::<Value>(board_copy).await["bo_table"], "audit_copy");
+
+    let new_posts_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/boards/new-posts",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"bn_ids": [101, 102]})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(new_posts_delete).await["deleted_count"], 2);
+
+    for bo_table in ["audit_copy", "audit_board"] {
+        let board_delete = app
+            .clone()
+            .oneshot(json_request(
+                Method::DELETE,
+                &format!("/api/v1/sites/site-a/admin/boards/{bo_table}"),
+                Some(&cookie),
+                Some(&csrf),
+                None,
+            ))
+            .await
+            .unwrap();
+        assert_eq!(board_delete.status(), StatusCode::NO_CONTENT);
+    }
+
     let registry = app
         .clone()
         .oneshot(json_request(
@@ -2033,6 +2169,7 @@ struct MockConnector {
     members: Arc<Mutex<Vec<Value>>>,
     groups: Arc<Mutex<Vec<Value>>>,
     group_members: Arc<Mutex<Vec<Value>>>,
+    boards: Arc<Mutex<Vec<Value>>>,
 }
 
 #[async_trait]
@@ -2319,6 +2456,95 @@ impl ConnectorGateway for MockConnector {
                     .unwrap()
                     .retain(|item| item["mb_id"].as_str() != mb_id);
                 Value::Null
+            }
+            "adminListBoards" => serde_json::json!({
+                "data": self.boards.lock().unwrap().clone(),
+                "pagination": {
+                    "mode": "page", "total": self.boards.lock().unwrap().len(),
+                    "page": 1, "per_page": 20, "last_page": 1,
+                    "cursor": null, "next_cursor": null, "has_next": false, "has_prev": false
+                },
+                "meta": {}
+            }),
+            "adminCreateBoard" => {
+                let body = input.body.as_ref().unwrap();
+                let board = serde_json::json!({
+                    "bo_table": body["bo_table"], "bo_subject": body["bo_subject"],
+                    "gr_id": body["gr_id"],
+                    "bo_use_category": body.get("bo_use_category").cloned().unwrap_or(serde_json::json!(false)),
+                    "bo_category_list": body.get("bo_category_list").cloned().unwrap_or(serde_json::json!("")),
+                    "bo_read_level": body.get("bo_read_level").cloned().unwrap_or(serde_json::json!(1)),
+                    "bo_write_level": body.get("bo_write_level").cloned().unwrap_or(serde_json::json!(2)),
+                    "bo_comment_level": body.get("bo_comment_level").cloned().unwrap_or(serde_json::json!(2)),
+                    "bo_download_level": body.get("bo_download_level").cloned().unwrap_or(serde_json::json!(2)),
+                    "bo_use_secret": body.get("bo_use_secret").cloned().unwrap_or(serde_json::json!(0)),
+                    "bo_upload_count": body.get("bo_upload_count").cloned().unwrap_or(serde_json::json!(2)),
+                    "bo_upload_size": body.get("bo_upload_size").cloned().unwrap_or(serde_json::json!(1048576)),
+                    "bo_count_write": 0, "bo_count_comment": 0
+                });
+                self.boards.lock().unwrap().push(board.clone());
+                serde_json::json!({"data": board, "meta": {}})
+            }
+            "adminGetBoard" => {
+                let bo_table = input.path.get("bo_table").map(String::as_str);
+                let board = self
+                    .boards
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|item| item["bo_table"].as_str() == bo_table)
+                    .cloned()
+                    .unwrap();
+                serde_json::json!({"data": board, "meta": {}})
+            }
+            "adminUpdateBoard" => {
+                let bo_table = input.path.get("bo_table").map(String::as_str);
+                let mut boards = self.boards.lock().unwrap();
+                let board = boards
+                    .iter_mut()
+                    .find(|item| item["bo_table"].as_str() == bo_table)
+                    .unwrap();
+                for (name, value) in input.body.as_ref().unwrap().as_object().unwrap() {
+                    board[name] = value.clone();
+                }
+                serde_json::json!({"data": board.clone(), "meta": {}})
+            }
+            "adminCopyBoard" => {
+                let source_table = input.path.get("bo_table").map(String::as_str);
+                let source = self
+                    .boards
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|item| item["bo_table"].as_str() == source_table)
+                    .cloned()
+                    .unwrap();
+                let body = input.body.as_ref().unwrap();
+                let mut copied = source;
+                copied["bo_table"] = body["target_bo_table"].clone();
+                if let Some(subject) = body.get("target_bo_subject") {
+                    copied["bo_subject"] = subject.clone();
+                }
+                copied["bo_count_write"] = serde_json::json!(0);
+                copied["bo_count_comment"] = serde_json::json!(0);
+                self.boards.lock().unwrap().push(copied.clone());
+                serde_json::json!({"data": copied, "meta": {}})
+            }
+            "adminDeleteBoard" => {
+                let bo_table = input.path.get("bo_table").map(String::as_str);
+                self.boards
+                    .lock()
+                    .unwrap()
+                    .retain(|item| item["bo_table"].as_str() != bo_table);
+                Value::Null
+            }
+            "adminDeleteNewPosts" => {
+                let ids = input.body.as_ref().unwrap()["bn_ids"].clone();
+                serde_json::json!({"data": {
+                    "deleted": true, "deleted_count": ids.as_array().unwrap().len(),
+                    "deleted_posts": ids.as_array().unwrap().len(), "deleted_comments": 0,
+                    "skipped": 0, "bn_ids": ids
+                }, "meta": {}})
             }
             "adminListBoardGroups" | "adminLegacyListGroups" => serde_json::json!({
                 "data": self.groups.lock().unwrap().clone(),

@@ -20,16 +20,18 @@ use axum::{
 };
 use futures_util::{SinkExt, StreamExt, stream};
 use g5_fleet_connector::{
-    AdminAuthListQuery, AdminAuthMember, AdminAuthMemberList, AdminAuthUpsert, AdminBoardGroup,
-    AdminBoardGroupCreate, AdminBoardGroupList, AdminBoardGroupMemberCreate,
-    AdminBoardGroupMemberList, AdminBoardGroupMemberListQuery, AdminBoardGroupMemberResult,
-    AdminBoardGroupUpdate, AdminConfig, AdminConfigUpdate, AdminDashboardData, AdminMember,
+    AdminAuthListQuery, AdminAuthMember, AdminAuthMemberList, AdminAuthUpsert, AdminBoard,
+    AdminBoardCopy, AdminBoardCreate, AdminBoardGroup, AdminBoardGroupCreate, AdminBoardGroupList,
+    AdminBoardGroupMemberCreate, AdminBoardGroupMemberList, AdminBoardGroupMemberListQuery,
+    AdminBoardGroupMemberResult, AdminBoardGroupUpdate, AdminBoardList, AdminBoardListQuery,
+    AdminBoardUpdate, AdminConfig, AdminConfigUpdate, AdminDashboardData, AdminMember,
     AdminMemberLevelUpdate, AdminMemberList, AdminMemberListQuery, AdminMemberMediaDeleteResult,
-    AdminMemberMediaUpload, AdminMemberMediaUploadResult, AdminMemberUpdate, AdminSchemaCatalog,
-    AdminSchemaDetail, AdminSystemPermission, AdminSystemPermissionList,
-    AdminSystemPermissionListQuery, AdminSystemPermissionSave, BasicConfig, ConnectorCredentials,
-    ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse,
-    CoreOperationSpec, MemberProfile, SiteOverview, core_operation, core_operations,
+    AdminMemberMediaUpload, AdminMemberMediaUploadResult, AdminMemberUpdate, AdminNewPostsDelete,
+    AdminNewPostsDeleteResult, AdminSchemaCatalog, AdminSchemaDetail, AdminSystemPermission,
+    AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
+    BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin,
+    CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview,
+    core_operation, core_operations,
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
@@ -399,6 +401,24 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/groups/{gr_id}/members/{mb_id}",
             axum::routing::delete(admin_legacy_group_member_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/boards",
+            get(admin_board_list).post(admin_board_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/boards/new-posts",
+            axum::routing::delete(admin_board_new_posts_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/boards/{bo_table}",
+            get(admin_board_get)
+                .put(admin_board_update)
+                .delete(admin_board_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/boards/{bo_table}/copy",
+            post(admin_board_copy),
         )
         .route(
             "/sites/{site_id}/config/basic",
@@ -2177,6 +2197,236 @@ async fn admin_member_media_delete(
         .await
     {
         Ok(result) => Json::<AdminMemberMediaDeleteResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_board_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Query(query): Query<AdminBoardListQuery>,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_list_boards(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(boards) => Json::<AdminBoardList>(boards).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_board_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(create): Json<AdminBoardCreate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_create_board(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &create,
+        )
+        .await
+    {
+        Ok(board) => (StatusCode::CREATED, Json::<AdminBoard>(board)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_board_get(
+    State(state): State<AppState>,
+    Path((site_id, bo_table)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_get_board(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &bo_table,
+        )
+        .await
+    {
+        Ok(board) => Json::<AdminBoard>(board).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_board_update(
+    State(state): State<AppState>,
+    Path((site_id, bo_table)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminBoardUpdate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_update_board(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &bo_table,
+            &update,
+        )
+        .await
+    {
+        Ok(board) => Json::<AdminBoard>(board).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_board_delete(
+    State(state): State<AppState>,
+    Path((site_id, bo_table)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_delete_board(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &bo_table,
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_board_copy(
+    State(state): State<AppState>,
+    Path((site_id, bo_table)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(copy): Json<AdminBoardCopy>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_copy_board(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &bo_table,
+            &copy,
+        )
+        .await
+    {
+        Ok(board) => (StatusCode::CREATED, Json::<AdminBoard>(board)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_board_new_posts_delete(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(delete): Json<AdminNewPostsDelete>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_delete_new_posts(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &delete,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminNewPostsDeleteResult>(result).into_response(),
         Err(error) => connector_error(error),
     }
 }

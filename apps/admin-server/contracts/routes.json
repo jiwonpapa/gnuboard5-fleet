@@ -535,6 +535,55 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/boards",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_board_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/boards",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_board_create"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/boards/new-posts",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_board_new_posts_delete"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/boards/{bo_table}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_board_detail"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/boards/{bo_table}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_board_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/boards/{bo_table}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_board_delete"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/boards/{bo_table}/copy",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_board_copy"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/config/basic",
       "auth": "session",
       "site_context": true,

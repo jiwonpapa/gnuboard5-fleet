@@ -10,6 +10,10 @@ use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 pub use g5_fleet_core::admin::{
     AdminConfig, AdminConfigUpdate, AdminDashboardData, AdminSchemaCatalog, AdminSchemaDetail,
 };
+pub use g5_fleet_core::boards::{
+    AdminBoard, AdminBoardCopy, AdminBoardCreate, AdminBoardList, AdminBoardListQuery,
+    AdminBoardUpdate, AdminNewPostsDelete, AdminNewPostsDeleteResult, valid_board_table,
+};
 pub use g5_fleet_core::groups::{
     AdminBoardGroup, AdminBoardGroupCreate, AdminBoardGroupList, AdminBoardGroupMember,
     AdminBoardGroupMemberCreate, AdminBoardGroupMemberList, AdminBoardGroupMemberListQuery,
@@ -1078,12 +1082,227 @@ pub trait ConnectorGateway: Send + Sync {
             .await?;
         typed_core_data(operation_id, response)
     }
+
+    async fn admin_list_boards(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminBoardListQuery,
+    ) -> ConnectorResult<AdminBoardList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListBoards",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                        ("gr_id", query.gr_id.as_ref().map(|value| json!(value))),
+                        ("search", query.search.as_ref().map(|value| json!(value))),
+                        ("sort_by", query.sort_by.as_ref().map(|value| json!(value))),
+                        (
+                            "sort_direction",
+                            query.sort_direction.as_ref().map(|value| json!(value)),
+                        ),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<AdminBoard> =
+            typed_core_envelope("adminListBoards", response)?;
+        Ok(AdminBoardList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_create_board(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        create: &AdminBoardCreate,
+    ) -> ConnectorResult<AdminBoard> {
+        if !create.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminCreateBoard",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(create).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminCreateBoard", response)
+    }
+
+    async fn admin_get_board(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        bo_table: &str,
+    ) -> ConnectorResult<AdminBoard> {
+        board_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminGetBoard",
+            bo_table,
+            None,
+            false,
+        )
+        .await
+    }
+
+    async fn admin_update_board(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        bo_table: &str,
+        update: &AdminBoardUpdate,
+    ) -> ConnectorResult<AdminBoard> {
+        if !update.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        board_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminUpdateBoard",
+            bo_table,
+            Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+            false,
+        )
+        .await
+    }
+
+    async fn admin_delete_board(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        bo_table: &str,
+    ) -> ConnectorResult<()> {
+        if !valid_board_table(bo_table) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteBoard",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("bo_table".to_owned(), bo_table.to_owned())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_empty("adminDeleteBoard", response)
+    }
+
+    async fn admin_copy_board(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        bo_table: &str,
+        copy: &AdminBoardCopy,
+    ) -> ConnectorResult<AdminBoard> {
+        if !copy.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        board_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminCopyBoard",
+            bo_table,
+            Some(serde_json::to_value(copy).map_err(|_| ConnectorError::Contract)?),
+            false,
+        )
+        .await
+    }
+
+    async fn admin_delete_new_posts(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        delete: &AdminNewPostsDelete,
+    ) -> ConnectorResult<AdminNewPostsDeleteResult> {
+        if !delete.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteNewPosts",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(delete).map_err(|_| ConnectorError::Contract)?),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminDeleteNewPosts", response)
+    }
 }
 
 #[derive(Deserialize)]
 struct TypedListEnvelope<T> {
     data: Vec<T>,
     pagination: Pagination,
+}
+
+async fn board_detail_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    bo_table: &str,
+    body: Option<Value>,
+    confirm_destructive: bool,
+) -> ConnectorResult<AdminBoard> {
+    if !valid_board_table(bo_table) {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                path: BTreeMap::from([("bo_table".to_owned(), bo_table.to_owned())]),
+                body,
+                confirm_destructive,
+                ..Default::default()
+            },
+        )
+        .await?;
+    typed_core_data(operation_id, response)
 }
 
 async fn board_group_list_operation<T: ConnectorGateway + ?Sized>(
