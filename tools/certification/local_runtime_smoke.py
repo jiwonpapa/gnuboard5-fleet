@@ -216,7 +216,7 @@ def main() -> int:
             "mb_id": member_id,
             "mb_password": member_password,
             "mb_name": "Fleet Certification",
-            "mb_nick": "fleet-cert",
+            "mb_nick": "fleet_cert",
             "mb_email": "fleet-cert@example.invalid",
         },
         expected=(201,),
@@ -321,10 +321,10 @@ def main() -> int:
         fleet_base,
         "PATCH",
         member_path,
-        body={"mb_nick": "fleet-cert-updated", "mb_memo": sentinel},
+        body={"mb_nick": "fleet_cert_updated", "mb_memo": sentinel},
         headers=fleet_headers(admin_cookie, admin_csrf),
     ).json()
-    if updated_member.get("mb_nick") != "fleet-cert-updated":
+    if updated_member.get("mb_nick") != "fleet_cert_updated":
         raise RuntimeError("R12 member update response failed")
     updated_readback = request(
         fleet_base,
