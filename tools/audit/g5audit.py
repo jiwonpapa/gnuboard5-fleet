@@ -3158,9 +3158,14 @@ def check_certification_harness_boundary(root: Path) -> str:
         "--features local-certification" not in local_stack
         or "G5_FLEET_CERTIFICATION_MODE=local" not in local_stack
         or "G5_CERT_G5_IMAGE" not in local_stack
+        or "START TRANSACTION;" not in local_stack
+        or "fleet_cert_member" not in local_stack
         or '"version"] != "5.6.32"' not in local_smoke
-        or '"users": 2' not in local_smoke
-        or '"sites": 2' not in local_smoke
+        or '"/api/v1/install/challenge"' not in local_smoke
+        or '"/api/v1/install/complete"' not in local_smoke
+        or '"otp_install_login_step_up": "passed"' not in local_smoke
+        or '"operations": 10' not in local_smoke
+        or '"member_soft_delete_date_readback": "passed"' not in local_smoke
         or '"external_delivery_attempts": 0' not in local_smoke
     ):
         raise ValueError("local G5/server certification harness contract incomplete")
