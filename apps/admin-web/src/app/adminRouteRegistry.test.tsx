@@ -7,13 +7,13 @@ import {
 } from "./adminRouteRegistry";
 
 describe("adminRouteRegistry", () => {
-  it("preserves the legacy domain navigation without claiming planned pages active", () => {
+  it("preserves legacy navigation and exposes only migrated domains as active", () => {
     expect(resolveRouteMeta("/admin/members")).toMatchObject({
       label: "회원",
-      delivery: "planned",
+      delivery: "active",
     });
     expect(adminRoutes.filter((route) => route.delivery === "active")).toHaveLength(
-      6,
+      7,
     );
     expect(groupedAdminRoutes().get("메시징")?.length).toBeGreaterThanOrEqual(6);
   });

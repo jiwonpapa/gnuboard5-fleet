@@ -245,6 +245,28 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
                 "DELETE",
                 "/api/v1/sites/{site_id}/admin/permissions/{mb_id}/{au_menu}",
             ),
+            ("GET", "/api/v1/sites/{site_id}/admin/members"),
+            ("GET", "/api/v1/sites/{site_id}/admin/members/export"),
+            ("GET", "/api/v1/sites/{site_id}/admin/members/{mb_id}"),
+            ("PATCH", "/api/v1/sites/{site_id}/admin/members/{mb_id}"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/members/{mb_id}"),
+            (
+                "PATCH",
+                "/api/v1/sites/{site_id}/admin/members/{mb_id}/level"
+            ),
+            ("POST", "/api/v1/sites/{site_id}/admin/members/{mb_id}/icon"),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/members/{mb_id}/icon"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/members/{mb_id}/image"
+            ),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/members/{mb_id}/image"
+            ),
             ("GET", "/api/v1/sites/{site_id}/config/basic"),
             ("PUT", "/api/v1/sites/{site_id}/config/basic"),
             ("POST", "/api/v1/sites/{site_id}/core/{operation_id}",),
@@ -578,6 +600,16 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             "mb_name": "관리자",
             "mb_nick": "관리자",
             "auths": [{"au_menu": "100100", "au_auth": "r"}]
+        })])),
+        members: Arc::new(Mutex::new(vec![serde_json::json!({
+            "mb_id": "member01",
+            "mb_name": "회원 이름",
+            "mb_nick": "회원 닉네임",
+            "mb_email": "member@example.test",
+            "mb_level": 2,
+            "mb_point": 1200,
+            "mb_datetime": "2026-08-01 10:00:00",
+            "mb_today_login": "2026-08-12 09:00:00"
         })])),
     };
     let app = build_router(AppConfig {
@@ -1202,6 +1234,156 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap();
     assert_eq!(permission_delete.status(), StatusCode::NO_CONTENT);
 
+    let member_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/members?page=1&per_page=20&search_field=all&sort_by=mb_id&sort_direction=ASC",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(member_list.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(member_list).await["items"][0]["mb_id"],
+        "member01"
+    );
+
+    let member_export = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/members/export?search_field=all",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(member_export.status(), StatusCode::OK);
+
+    let member_get = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/members/member01",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(member_get.status(), StatusCode::OK);
+
+    let member_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PATCH,
+            "/api/v1/sites/site-a/admin/members/member01",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"mb_nick": "변경 닉네임"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(member_update.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(member_update).await["mb_nick"], "변경 닉네임");
+
+    let member_update_readback = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/members/member01",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(member_update_readback).await["mb_nick"],
+        "변경 닉네임"
+    );
+
+    let member_level = app
+        .clone()
+        .oneshot(json_request(
+            Method::PATCH,
+            "/api/v1/sites/site-a/admin/members/member01/level",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"mb_level": 3})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(member_level).await["mb_level"], 3);
+
+    for kind in ["icon", "image"] {
+        let upload = app
+            .clone()
+            .oneshot(json_request(
+                Method::POST,
+                &format!("/api/v1/sites/site-a/admin/members/member01/{kind}"),
+                Some(&cookie),
+                Some(&csrf),
+                Some(serde_json::json!({
+                    "file_name": "member.gif",
+                    "mime_type": "image/gif",
+                    "bytes_base64": "R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+                })),
+            ))
+            .await
+            .unwrap();
+        assert_eq!(upload.status(), StatusCode::OK);
+        assert_eq!(json::<Value>(upload).await["mb_id"], "member01");
+
+        let delete = app
+            .clone()
+            .oneshot(json_request(
+                Method::DELETE,
+                &format!("/api/v1/sites/site-a/admin/members/member01/{kind}"),
+                Some(&cookie),
+                Some(&csrf),
+                None,
+            ))
+            .await
+            .unwrap();
+        assert_eq!(delete.status(), StatusCode::OK);
+        assert_eq!(json::<Value>(delete).await["deleted"], true);
+    }
+
+    let member_rollback = app
+        .clone()
+        .oneshot(json_request(
+            Method::PATCH,
+            "/api/v1/sites/site-a/admin/members/member01",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"mb_nick": "회원 닉네임", "mb_level": 2})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(member_rollback.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(member_rollback).await["mb_nick"],
+        "회원 닉네임"
+    );
+
+    let member_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/members/member01",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(member_delete.status(), StatusCode::NO_CONTENT);
+
     let registry = app
         .clone()
         .oneshot(json_request(
@@ -1227,7 +1409,7 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .clone()
         .oneshot(json_request(
             Method::POST,
-            "/api/v1/sites/site-a/core/adminListMembers",
+            "/api/v1/sites/site-a/core/adminListBoardGroups",
             Some(&cookie),
             Some(&csrf),
             Some(serde_json::json!({
@@ -1241,7 +1423,7 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap();
     assert_eq!(core_read.status(), StatusCode::OK);
     let core_read: CoreExecuteResponse = json(core_read).await;
-    assert_eq!(core_read.operation_id, "adminListMembers");
+    assert_eq!(core_read.operation_id, "adminListBoardGroups");
     assert_eq!(core_read.data.unwrap()["query"]["page"], "1");
 
     let external_effect = app
@@ -1549,6 +1731,7 @@ struct MockConnector {
     cf_10: Arc<Mutex<String>>,
     permissions: Arc<Mutex<Vec<Value>>>,
     auth_members: Arc<Mutex<Vec<Value>>>,
+    members: Arc<Mutex<Vec<Value>>>,
 }
 
 #[async_trait]
@@ -1835,6 +2018,84 @@ impl ConnectorGateway for MockConnector {
                     .unwrap()
                     .retain(|item| item["mb_id"].as_str() != mb_id);
                 Value::Null
+            }
+            "adminListMembers" | "adminExportMembersExcel" => serde_json::json!({
+                "data": self.members.lock().unwrap().clone(),
+                "pagination": {
+                    "mode": "page",
+                    "total": self.members.lock().unwrap().len(),
+                    "page": 1,
+                    "per_page": 20,
+                    "last_page": 1,
+                    "cursor": null,
+                    "next_cursor": null,
+                    "has_next": false,
+                    "has_prev": false
+                },
+                "meta": {}
+            }),
+            "adminGetMember" => {
+                let mb_id = input.path.get("mb_id").map(String::as_str);
+                let member = self
+                    .members
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|item| item["mb_id"].as_str() == mb_id)
+                    .cloned()
+                    .unwrap();
+                serde_json::json!({"data": member, "meta": {}})
+            }
+            "adminUpdateMember" | "adminUpdateMemberLevel" => {
+                let mb_id = input.path.get("mb_id").map(String::as_str);
+                let mut members = self.members.lock().unwrap();
+                let member = members
+                    .iter_mut()
+                    .find(|item| item["mb_id"].as_str() == mb_id)
+                    .unwrap();
+                for (name, value) in input.body.as_ref().unwrap().as_object().unwrap() {
+                    member[name] = value.clone();
+                }
+                serde_json::json!({"data": member.clone(), "meta": {}})
+            }
+            "adminDeleteMember" => {
+                let mb_id = input.path.get("mb_id").map(String::as_str);
+                self.members
+                    .lock()
+                    .unwrap()
+                    .retain(|item| item["mb_id"].as_str() != mb_id);
+                Value::Null
+            }
+            "adminUploadMemberIcon" | "adminUploadMemberImage" => {
+                let mb_id = input.path.get("mb_id").unwrap();
+                let image = operation_id.ends_with("Image");
+                serde_json::json!({
+                    "data": {
+                        "mb_id": mb_id,
+                        "storage": if image { "member_image" } else { "member" },
+                        "relative_path": if image { "member_image/member01.gif" } else { "member/member01.gif" },
+                        "url": if image { "/data/member_image/member01.gif" } else { "/data/member/member01.gif" },
+                        "size": 4,
+                        "width": 20,
+                        "height": 20,
+                        "mime": "image/gif"
+                    },
+                    "meta": {}
+                })
+            }
+            "adminDeleteMemberIcon" | "adminDeleteMemberImage" => {
+                let mb_id = input.path.get("mb_id").unwrap();
+                let image = operation_id.ends_with("Image");
+                serde_json::json!({
+                    "data": {
+                        "mb_id": mb_id,
+                        "storage": if image { "member_image" } else { "member" },
+                        "relative_path": if image { "member_image/member01.gif" } else { "member/member01.gif" },
+                        "url": "",
+                        "deleted": true
+                    },
+                    "meta": {}
+                })
             }
             _ => serde_json::json!({
                 "path": input.path,

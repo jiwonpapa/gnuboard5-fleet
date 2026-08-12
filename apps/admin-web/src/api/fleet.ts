@@ -246,6 +246,109 @@ export interface MemberProfile {
   mb_point: number | null;
 }
 
+export interface AdminMember {
+  mb_id: string;
+  mb_no?: number | null;
+  mb_name?: string | null;
+  mb_nick?: string | null;
+  mb_email?: string | null;
+  mb_homepage?: string | null;
+  mb_level?: number | null;
+  mb_tel?: string | null;
+  mb_hp?: string | null;
+  mb_certify?: string | null;
+  mb_adult?: number | null;
+  mb_zip?: string | null;
+  mb_addr1?: string | null;
+  mb_addr2?: string | null;
+  mb_addr3?: string | null;
+  mb_addr_jibeon?: string | null;
+  mb_signature?: string | null;
+  mb_point?: number | null;
+  mb_today_login?: string | null;
+  mb_datetime?: string | null;
+  mb_leave_date?: string | null;
+  mb_intercept_date?: string | null;
+  mb_memo?: string | null;
+  mb_mailling?: number | null;
+  mb_sms?: number | null;
+  mb_open?: number | null;
+  mb_profile?: string | null;
+  mb_marketing_agree?: number | null;
+  mb_thirdparty_agree?: number | null;
+  mb_1?: string | null;
+  mb_2?: string | null;
+  mb_3?: string | null;
+  mb_4?: string | null;
+  mb_5?: string | null;
+  mb_6?: string | null;
+  mb_7?: string | null;
+  mb_8?: string | null;
+  mb_9?: string | null;
+  mb_10?: string | null;
+}
+
+export interface AdminMemberList {
+  items: AdminMember[];
+  pagination: Pagination;
+}
+
+export type AdminMemberUpdate = Partial<{
+  mb_name: string;
+  mb_nick: string;
+  mb_email: string;
+  mb_level: number;
+  mb_hp: string;
+  mb_tel: string;
+  mb_mailling: number;
+  mb_sms: number;
+  mb_marketing_agree: number;
+  mb_thirdparty_agree: number;
+  mb_homepage: string;
+  mb_zip: string;
+  mb_addr1: string;
+  mb_addr2: string;
+  mb_addr3: string;
+  mb_addr_jibeon: string;
+  mb_memo: string;
+  mb_profile: string;
+  mb_signature: string;
+  mb_adult: number;
+  mb_certify: string;
+  mb_open: number;
+  mb_leave_date: string;
+  mb_intercept_date: string;
+  mb_password: string;
+  mb_1: string;
+  mb_2: string;
+  mb_3: string;
+  mb_4: string;
+  mb_5: string;
+  mb_6: string;
+  mb_7: string;
+  mb_8: string;
+  mb_9: string;
+  mb_10: string;
+}>;
+
+export interface AdminMemberMediaUpload {
+  file_name: string;
+  mime_type: string | null;
+  bytes_base64: string;
+}
+
+export interface AdminMemberMediaResult {
+  mb_id: string;
+  storage: "member" | "member_image";
+  relative_path: string;
+  url: string;
+  size?: number;
+  width?: number;
+  height?: number;
+  mime?: string;
+  deleted?: boolean;
+}
+
 export interface AdminAuthAssignment {
   au_menu: string;
   au_auth: string;
@@ -758,6 +861,104 @@ export function getMyProfile(siteId: string) {
   return transport.request<MemberProfile>({
     method: "GET",
     path: `/sites/${encodeURIComponent(siteId)}/member/me`,
+  });
+}
+
+export function listAdminMembers(
+  siteId: string,
+  query: {
+    page?: number;
+    per_page?: number;
+    search?: string;
+    search_field?: "all" | "mb_id" | "mb_name" | "mb_nick" | "mb_email";
+    sort_by?: "mb_id" | "mb_level" | "mb_point" | "mb_datetime";
+    sort_direction?: "ASC" | "DESC";
+  } = {},
+) {
+  return transport.request<AdminMemberList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/members${fleetQuery(query)}`,
+  });
+}
+
+export function exportAdminMembers(
+  siteId: string,
+  query: { search?: string; search_field?: string } = {},
+) {
+  return transport.request<AdminMemberList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/members/export${fleetQuery(query)}`,
+  });
+}
+
+export function getAdminMember(siteId: string, mbId: string) {
+  return transport.request<AdminMember>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/members/${encodeURIComponent(mbId)}`,
+  });
+}
+
+export function updateAdminMember(
+  siteId: string,
+  mbId: string,
+  update: AdminMemberUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminMember, AdminMemberUpdate>({
+    method: "PATCH",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/members/${encodeURIComponent(mbId)}`,
+    csrfToken,
+    body: update,
+  });
+}
+
+export function deleteAdminMember(siteId: string, mbId: string, csrfToken: string) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/members/${encodeURIComponent(mbId)}`,
+    csrfToken,
+  });
+}
+
+export function updateAdminMemberLevel(
+  siteId: string,
+  mbId: string,
+  mbLevel: number,
+  csrfToken: string,
+) {
+  return transport.request<AdminMember, { mb_level: number }>({
+    method: "PATCH",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/members/${encodeURIComponent(mbId)}/level`,
+    csrfToken,
+    body: { mb_level: mbLevel },
+  });
+}
+
+export function uploadAdminMemberMedia(
+  siteId: string,
+  mbId: string,
+  kind: "icon" | "image",
+  upload: AdminMemberMediaUpload,
+  csrfToken: string,
+) {
+  return transport.request<AdminMemberMediaResult, AdminMemberMediaUpload>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/members/${encodeURIComponent(mbId)}/${kind}`,
+    csrfToken,
+    body: upload,
+  });
+}
+
+export function deleteAdminMemberMedia(
+  siteId: string,
+  mbId: string,
+  kind: "icon" | "image",
+  csrfToken: string,
+) {
+  return transport.request<AdminMemberMediaResult>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/members/${encodeURIComponent(mbId)}/${kind}`,
+    csrfToken,
   });
 }
 

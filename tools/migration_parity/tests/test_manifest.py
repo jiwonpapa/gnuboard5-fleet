@@ -42,6 +42,16 @@ class ManifestTest(unittest.TestCase):
                 "adminSystemListAuths",
                 "adminSystemSaveAuth",
                 "adminSystemDeleteAuth",
+                "adminListMembers",
+                "adminExportMembersExcel",
+                "adminGetMember",
+                "adminUpdateMember",
+                "adminDeleteMember",
+                "adminUpdateMemberLevel",
+                "adminUploadMemberIcon",
+                "adminDeleteMemberIcon",
+                "adminUploadMemberImage",
+                "adminDeleteMemberImage",
             },
             {
                 mapping["operation_id"]

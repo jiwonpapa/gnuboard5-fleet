@@ -181,6 +181,47 @@ def main() -> int:
     if cleaned.get("data", {}).get("cf_10") != baseline:
         raise RuntimeError("direct provider cleanup readback failed")
 
+    media_config_fields = (
+        "cf_use_member_icon",
+        "cf_member_icon_size",
+        "cf_member_icon_width",
+        "cf_member_icon_height",
+        "cf_member_img_size",
+        "cf_member_img_width",
+        "cf_member_img_height",
+    )
+    media_config_baseline = {
+        field: baseline_payload.get("data", {}).get(field)
+        for field in media_config_fields
+    }
+    media_config_enabled = {
+        **media_config_baseline,
+        "cf_use_member_icon": 1,
+    }
+    request(
+        g5_base,
+        "PUT",
+        "/api/v1/admin/config",
+        body=media_config_enabled,
+        headers=authorization,
+    )
+
+    member_id = "fleetcert"
+    member_password = "FleetCert9!"
+    request(
+        g5_base,
+        "POST",
+        "/api/v1/auth/register",
+        body={
+            "mb_id": member_id,
+            "mb_password": member_password,
+            "mb_name": "Fleet Certification",
+            "mb_nick": "fleet-cert",
+            "mb_email": "fleet-cert@example.invalid",
+        },
+        expected=(201,),
+    )
+
     request(
         fleet_base,
         "POST",
@@ -249,6 +290,107 @@ def main() -> int:
         "/api/v1/sites/owner-a-site/config/basic",
         body={"cf_10": sentinel},
         headers=fleet_headers(admin_cookie, admin_csrf),
+    )
+
+    member_path = f"/api/v1/sites/owner-a-site/admin/members/{member_id}"
+    member_list = request(
+        fleet_base,
+        "GET",
+        "/api/v1/sites/owner-a-site/admin/members?search=fleetcert&search_field=mb_id",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if [row.get("mb_id") for row in member_list.get("items", [])] != [member_id]:
+        raise RuntimeError("R12 member list readback failed")
+    exported = request(
+        fleet_base,
+        "GET",
+        "/api/v1/sites/owner-a-site/admin/members/export?search=fleetcert&search_field=mb_id",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if [row.get("mb_id") for row in exported.get("items", [])] != [member_id]:
+        raise RuntimeError("R12 member export readback failed")
+    detail = request(
+        fleet_base,
+        "GET",
+        member_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if detail.get("mb_id") != member_id:
+        raise RuntimeError("R12 member detail readback failed")
+    updated_member = request(
+        fleet_base,
+        "PATCH",
+        member_path,
+        body={"mb_nick": "fleet-cert-updated", "mb_memo": sentinel},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if updated_member.get("mb_nick") != "fleet-cert-updated":
+        raise RuntimeError("R12 member update response failed")
+    updated_readback = request(
+        fleet_base,
+        "GET",
+        member_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if updated_readback.get("mb_memo") != sentinel:
+        raise RuntimeError("R12 member update readback failed")
+    level_readback = request(
+        fleet_base,
+        "PATCH",
+        f"{member_path}/level",
+        body={"mb_level": 3},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if level_readback.get("mb_level") != 3:
+        raise RuntimeError("R12 member level readback failed")
+
+    png_base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z0ecAAAAASUVORK5CYII="
+    for kind in ("icon", "image"):
+        media = request(
+            fleet_base,
+            "POST",
+            f"{member_path}/{kind}",
+            body={
+                "file_name": f"{kind}.png",
+                "mime_type": "image/png",
+                "bytes_base64": png_base64,
+            },
+            headers=fleet_headers(admin_cookie, admin_csrf),
+        ).json()
+        if media.get("mb_id") != member_id or media.get("storage") not in {
+            "member",
+            "member_image",
+        }:
+            raise RuntimeError(f"R12 member {kind} upload readback failed")
+        deleted_media = request(
+            fleet_base,
+            "DELETE",
+            f"{member_path}/{kind}",
+            headers=fleet_headers(admin_cookie, admin_csrf),
+        ).json()
+        if deleted_media.get("mb_id") != member_id or not deleted_media.get("deleted"):
+            raise RuntimeError(f"R12 member {kind} delete readback failed")
+
+    request(
+        fleet_base,
+        "DELETE",
+        member_path,
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(204,),
+    )
+    request(
+        fleet_base,
+        "GET",
+        member_path,
+        headers=fleet_headers(admin_cookie),
+        expected=(404,),
+    )
+    request(
+        g5_base,
+        "PUT",
+        "/api/v1/admin/config",
+        body=media_config_baseline,
+        headers=authorization,
     )
     fleet_readback = request(
         fleet_base,
@@ -371,6 +513,15 @@ def main() -> int:
             "field": "cf_10",
             "update_readback": "passed",
             "cleanup_readback": "passed",
+        },
+        "r12_members": {
+            "operations": 10,
+            "list_export_detail": "passed",
+            "update_readback": "passed",
+            "level_readback": "passed",
+            "icon_upload_delete": "passed",
+            "image_upload_delete": "passed",
+            "member_delete_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,

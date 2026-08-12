@@ -346,6 +346,76 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/members",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_member_list"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/members/export",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_member_export"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/members/{mb_id}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_member_detail"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/sites/{site_id}/admin/members/{mb_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_member_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/members/{mb_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_member_delete"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/sites/{site_id}/admin/members/{mb_id}/level",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_member_level_update"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/members/{mb_id}/icon",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_member_icon_upload"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/members/{mb_id}/icon",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_member_icon_delete"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/members/{mb_id}/image",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_member_image_upload"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/members/{mb_id}/image",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_member_image_delete"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/config/basic",
       "auth": "session",
       "site_context": true,

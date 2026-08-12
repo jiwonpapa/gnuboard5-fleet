@@ -47,6 +47,263 @@ code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+.member-heading-actions,
+.member-pagination,
+.member-search,
+.member-export-form,
+.member-quick-action,
+.member-media > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.member-heading-actions a {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.member-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 24px 0;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.member-summary > div {
+  display: grid;
+  gap: 7px;
+  padding: 18px;
+  background: var(--paper);
+}
+
+.member-summary span,
+.member-editor label,
+.member-export-count {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.member-summary strong {
+  font-family: var(--display);
+  font-size: 1.05rem;
+}
+
+.member-workspace {
+  display: grid;
+  grid-template-columns: minmax(460px, 0.95fr) minmax(420px, 1.05fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.member-list-panel,
+.member-editor,
+.member-export-form + .member-export-count + .admin-table-wrap {
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.member-list-panel,
+.member-editor {
+  padding: 20px;
+}
+
+.member-search,
+.member-export-form {
+  margin-bottom: 18px;
+}
+
+.member-search input,
+.member-export-form input {
+  flex: 1;
+}
+
+.member-search input,
+.member-search select,
+.member-export-form input,
+.member-export-form select,
+.member-editor input,
+.member-editor textarea,
+.member-editor select {
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--paper);
+  font: inherit;
+}
+
+.member-list-panel .admin-table td strong,
+.member-list-panel .admin-table td small {
+  display: block;
+}
+
+.member-list-panel .admin-table td small {
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.member-pagination {
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.member-pagination span {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.member-editor {
+  display: grid;
+  gap: 22px;
+}
+
+.member-editor header h3 {
+  margin: 6px 0;
+  font-size: 1.25rem;
+}
+
+.member-editor header p,
+.member-danger p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.member-editor fieldset {
+  display: grid;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.member-editor legend,
+.member-editor h4 {
+  margin: 0 0 12px;
+  font-size: 0.86rem;
+}
+
+.member-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.member-field-grid label,
+.member-textareas label {
+  display: grid;
+  gap: 6px;
+}
+
+.member-textareas {
+  display: grid;
+  gap: 12px;
+}
+
+.member-textareas textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.member-flags {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.member-flags label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.member-flags input {
+  width: auto;
+}
+
+.member-editor details {
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.member-editor details summary {
+  margin-bottom: 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.member-quick-action,
+.member-media,
+.member-danger {
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.member-quick-action h4 {
+  margin-right: auto;
+}
+
+.member-quick-action input {
+  width: 82px;
+}
+
+.member-media {
+  display: grid;
+  gap: 12px;
+}
+
+.member-media > div label {
+  display: grid;
+  flex: 1;
+  gap: 6px;
+}
+
+.member-danger {
+  border-top-color: #e3b9b1;
+}
+
+.member-danger .danger-action {
+  margin-top: 12px;
+}
+
+.member-export-form {
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+@media (max-width: 1120px) {
+  .member-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .member-summary,
+  .member-field-grid,
+  .member-flags {
+    grid-template-columns: 1fr;
+  }
+
+  .member-search,
+  .member-export-form,
+  .member-heading-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 .app-shell {
   min-height: 100vh;
 }

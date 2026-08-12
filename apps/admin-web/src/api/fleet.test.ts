@@ -4,19 +4,27 @@ import {
   connectorLogin,
   connectorLogout,
   connectorRefresh,
+  deleteAdminMember,
+  deleteAdminMemberMedia,
   deleteAdminAuthByMember,
   deleteAdminSystemPermission,
+  exportAdminMembers,
   getAdminConfig,
   getAdminDashboard,
   getAdminFieldSchema,
+  getAdminMember,
   getMyProfile,
   listAdminAuth,
   listAdminFieldSchemas,
+  listAdminMembers,
   listAdminSystemPermissions,
   openTerminalSocket,
   saveAdminSystemPermission,
   upsertAdminAuth,
   updateAdminConfig,
+  updateAdminMember,
+  updateAdminMemberLevel,
+  uploadAdminMemberMedia,
 } from "./fleet";
 
 describe("remote Fleet transport", () => {
@@ -135,6 +143,61 @@ describe("remote Fleet transport", () => {
       ["http://localhost:3000/api/v1/sites/site-a/admin/permissions/auditor/config_100", "DELETE"],
     ]);
     expect(JSON.stringify(fetcher.mock.calls.slice(3))).not.toContain("secret");
+    for (const [, init] of fetcher.mock.calls.filter(([, call]) =>
+      call?.method !== "GET"
+    )) {
+      expect(new Headers(init?.headers).get("x-csrf-token")).toBe("csrf-1");
+    }
+  });
+
+  it("consumes all ten R12 member operations through explicit site scope", async () => {
+    const fetcher = vi.fn(async (
+      _input: RequestInfo | URL,
+      _init?: RequestInit,
+    ) => {
+      void _input;
+      void _init;
+      return new Response("{}", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetcher);
+
+    await listAdminMembers("site-a", { page: 2, search: "member" });
+    await exportAdminMembers("site-a", { search_field: "mb_id" });
+    await getAdminMember("site-a", "member01");
+    await updateAdminMember("site-a", "member01", { mb_nick: "새 닉네임" }, "csrf-1");
+    await deleteAdminMember("site-a", "member01", "csrf-1");
+    await updateAdminMemberLevel("site-a", "member01", 3, "csrf-1");
+    await uploadAdminMemberMedia("site-a", "member01", "icon", {
+      file_name: "icon.png",
+      mime_type: "image/png",
+      bytes_base64: "aWNvbg==",
+    }, "csrf-1");
+    await deleteAdminMemberMedia("site-a", "member01", "icon", "csrf-1");
+    await uploadAdminMemberMedia("site-a", "member01", "image", {
+      file_name: "image.jpg",
+      mime_type: "image/jpeg",
+      bytes_base64: "aW1hZ2U=",
+    }, "csrf-1");
+    await deleteAdminMemberMedia("site-a", "member01", "image", "csrf-1");
+
+    expect(fetcher.mock.calls.map(([input, init]) => [
+      String(input),
+      init?.method,
+    ])).toEqual([
+      ["http://localhost:3000/api/v1/sites/site-a/admin/members?page=2&search=member", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/members/export?search_field=mb_id", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/members/member01", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/members/member01", "PATCH"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/members/member01", "DELETE"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/members/member01/level", "PATCH"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/members/member01/icon", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/members/member01/icon", "DELETE"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/members/member01/image", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/members/member01/image", "DELETE"],
+    ]);
     for (const [, init] of fetcher.mock.calls.filter(([, call]) =>
       call?.method !== "GET"
     )) {

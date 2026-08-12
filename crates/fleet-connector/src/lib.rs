@@ -10,6 +10,11 @@ use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 pub use g5_fleet_core::admin::{
     AdminConfig, AdminConfigUpdate, AdminDashboardData, AdminSchemaCatalog, AdminSchemaDetail,
 };
+pub use g5_fleet_core::members::{
+    AdminMember, AdminMemberLevelUpdate, AdminMemberList, AdminMemberListQuery,
+    AdminMemberMediaDeleteResult, AdminMemberMediaUpload, AdminMemberMediaUploadResult,
+    AdminMemberUpdate, valid_member_target,
+};
 pub use g5_fleet_core::permissions::{
     AdminAuthListQuery, AdminAuthMember, AdminAuthMemberList, AdminAuthUpsert,
     AdminSystemPermission, AdminSystemPermissionList, AdminSystemPermissionListQuery,
@@ -509,12 +514,288 @@ pub trait ConnectorGateway: Send + Sync {
             .await?;
         typed_core_empty("adminSystemDeleteAuth", response)
     }
+
+    async fn admin_list_members(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminMemberListQuery,
+    ) -> ConnectorResult<AdminMemberList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let input = CoreExecuteRequest {
+            query: query_map([
+                ("page", query.page.map(|value| json!(value))),
+                ("per_page", query.per_page.map(|value| json!(value))),
+                ("search", query.search.as_ref().map(|value| json!(value))),
+                (
+                    "search_field",
+                    query.search_field.as_ref().map(|value| json!(value)),
+                ),
+                ("sort_by", query.sort_by.as_ref().map(|value| json!(value))),
+                (
+                    "sort_direction",
+                    query.sort_direction.as_ref().map(|value| json!(value)),
+                ),
+            ]),
+            ..Default::default()
+        };
+        member_list_from_response(
+            "adminListMembers",
+            self.core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListMembers",
+                &input,
+            )
+            .await?,
+        )
+    }
+
+    async fn admin_export_members(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminMemberListQuery,
+    ) -> ConnectorResult<AdminMemberList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let input = CoreExecuteRequest {
+            query: query_map([
+                ("search", query.search.as_ref().map(|value| json!(value))),
+                (
+                    "search_field",
+                    query.search_field.as_ref().map(|value| json!(value)),
+                ),
+            ]),
+            ..Default::default()
+        };
+        member_list_from_response(
+            "adminExportMembersExcel",
+            self.core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminExportMembersExcel",
+                &input,
+            )
+            .await?,
+        )
+    }
+
+    async fn admin_get_member(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        mb_id: &str,
+    ) -> ConnectorResult<AdminMember> {
+        member_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminGetMember",
+            mb_id,
+            None,
+        )
+        .await
+    }
+
+    async fn admin_update_member(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        mb_id: &str,
+        update: &AdminMemberUpdate,
+    ) -> ConnectorResult<AdminMember> {
+        if !update.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        member_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminUpdateMember",
+            mb_id,
+            Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+        )
+        .await
+    }
+
+    async fn admin_delete_member(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        mb_id: &str,
+    ) -> ConnectorResult<()> {
+        if !valid_member_target(mb_id) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteMember",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("mb_id".to_owned(), mb_id.to_owned())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_empty("adminDeleteMember", response)
+    }
+
+    async fn admin_update_member_level(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        mb_id: &str,
+        update: &AdminMemberLevelUpdate,
+    ) -> ConnectorResult<AdminMember> {
+        if !update.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        member_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminUpdateMemberLevel",
+            mb_id,
+            Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+        )
+        .await
+    }
+
+    async fn admin_upload_member_media(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        mb_id: &str,
+        kind: &str,
+        upload: &AdminMemberMediaUpload,
+    ) -> ConnectorResult<AdminMemberMediaUploadResult> {
+        if !valid_member_target(mb_id) || !upload.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let operation_id = match kind {
+            "icon" => "adminUploadMemberIcon",
+            "image" => "adminUploadMemberImage",
+            _ => return Err(ConnectorError::InvalidCoreRequest),
+        };
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                operation_id,
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("mb_id".to_owned(), mb_id.to_owned())]),
+                    body: Some(json!({
+                        "file": {
+                            "$file": {
+                                "filename": upload.file_name,
+                                "content_type": upload.mime_type,
+                                "base64": upload.bytes_base64,
+                            }
+                        }
+                    })),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data(operation_id, response)
+    }
+
+    async fn admin_delete_member_media(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        mb_id: &str,
+        kind: &str,
+    ) -> ConnectorResult<AdminMemberMediaDeleteResult> {
+        if !valid_member_target(mb_id) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let operation_id = match kind {
+            "icon" => "adminDeleteMemberIcon",
+            "image" => "adminDeleteMemberImage",
+            _ => return Err(ConnectorError::InvalidCoreRequest),
+        };
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                operation_id,
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("mb_id".to_owned(), mb_id.to_owned())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data(operation_id, response)
+    }
 }
 
 #[derive(Deserialize)]
 struct TypedListEnvelope<T> {
     data: Vec<T>,
     pagination: Pagination,
+}
+
+fn member_list_from_response(
+    operation_id: &str,
+    response: CoreExecuteResponse,
+) -> ConnectorResult<AdminMemberList> {
+    let envelope: TypedListEnvelope<AdminMember> = typed_core_envelope(operation_id, response)?;
+    Ok(AdminMemberList {
+        items: envelope.data,
+        pagination: envelope.pagination,
+    })
+}
+
+async fn member_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    mb_id: &str,
+    body: Option<Value>,
+) -> ConnectorResult<AdminMember> {
+    if !valid_member_target(mb_id) {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                path: BTreeMap::from([("mb_id".to_owned(), mb_id.to_owned())]),
+                body,
+                ..Default::default()
+            },
+        )
+        .await?;
+    typed_core_data(operation_id, response)
 }
 
 fn typed_core_data<T: DeserializeOwned>(

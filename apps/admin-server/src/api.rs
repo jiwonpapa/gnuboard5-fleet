@@ -21,7 +21,9 @@ use axum::{
 use futures_util::{SinkExt, StreamExt, stream};
 use g5_fleet_connector::{
     AdminAuthListQuery, AdminAuthMember, AdminAuthMemberList, AdminAuthUpsert, AdminConfig,
-    AdminConfigUpdate, AdminDashboardData, AdminSchemaCatalog, AdminSchemaDetail,
+    AdminConfigUpdate, AdminDashboardData, AdminMember, AdminMemberLevelUpdate, AdminMemberList,
+    AdminMemberListQuery, AdminMemberMediaDeleteResult, AdminMemberMediaUpload,
+    AdminMemberMediaUploadResult, AdminMemberUpdate, AdminSchemaCatalog, AdminSchemaDetail,
     AdminSystemPermission, AdminSystemPermissionList, AdminSystemPermissionListQuery,
     AdminSystemPermissionSave, BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth,
     ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, MemberProfile,
@@ -335,6 +337,29 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/permissions/{mb_id}/{au_menu}",
             axum::routing::delete(admin_permission_delete),
+        )
+        .route("/sites/{site_id}/admin/members", get(admin_member_list))
+        .route(
+            "/sites/{site_id}/admin/members/export",
+            get(admin_member_export),
+        )
+        .route(
+            "/sites/{site_id}/admin/members/{mb_id}",
+            get(admin_member_get)
+                .patch(admin_member_update)
+                .delete(admin_member_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/members/{mb_id}/level",
+            axum::routing::patch(admin_member_level_update),
+        )
+        .route(
+            "/sites/{site_id}/admin/members/{mb_id}/icon",
+            post(admin_member_icon_upload).delete(admin_member_icon_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/members/{mb_id}/image",
+            post(admin_member_image_upload).delete(admin_member_image_delete),
         )
         .route(
             "/sites/{site_id}/config/basic",
@@ -1813,6 +1838,306 @@ async fn admin_permission_delete(
         .await
     {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_member_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminMemberListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_list_members(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(items) => Json::<AdminMemberList>(items).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_member_export(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminMemberListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_export_members(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(items) => Json::<AdminMemberList>(items).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_member_get(
+    State(state): State<AppState>,
+    Path((site_id, mb_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_get_member(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &mb_id,
+        )
+        .await
+    {
+        Ok(member) => Json::<AdminMember>(member).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_member_update(
+    State(state): State<AppState>,
+    Path((site_id, mb_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminMemberUpdate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_update_member(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &mb_id,
+            &update,
+        )
+        .await
+    {
+        Ok(member) => Json::<AdminMember>(member).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_member_delete(
+    State(state): State<AppState>,
+    Path((site_id, mb_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_delete_member(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &mb_id,
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_member_level_update(
+    State(state): State<AppState>,
+    Path((site_id, mb_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminMemberLevelUpdate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_update_member_level(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &mb_id,
+            &update,
+        )
+        .await
+    {
+        Ok(member) => Json::<AdminMember>(member).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_member_icon_upload(
+    State(state): State<AppState>,
+    Path((site_id, mb_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(upload): Json<AdminMemberMediaUpload>,
+) -> Response {
+    admin_member_media_upload(state, headers, site_id, mb_id, "icon", upload).await
+}
+
+async fn admin_member_image_upload(
+    State(state): State<AppState>,
+    Path((site_id, mb_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(upload): Json<AdminMemberMediaUpload>,
+) -> Response {
+    admin_member_media_upload(state, headers, site_id, mb_id, "image", upload).await
+}
+
+async fn admin_member_media_upload(
+    state: AppState,
+    headers: HeaderMap,
+    site_id: String,
+    mb_id: String,
+    kind: &str,
+    upload: AdminMemberMediaUpload,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_upload_member_media(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &mb_id,
+            kind,
+            &upload,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminMemberMediaUploadResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_member_icon_delete(
+    State(state): State<AppState>,
+    Path((site_id, mb_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    admin_member_media_delete(state, headers, site_id, mb_id, "icon").await
+}
+
+async fn admin_member_image_delete(
+    State(state): State<AppState>,
+    Path((site_id, mb_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    admin_member_media_delete(state, headers, site_id, mb_id, "image").await
+}
+
+async fn admin_member_media_delete(
+    state: AppState,
+    headers: HeaderMap,
+    site_id: String,
+    mb_id: String,
+    kind: &str,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_delete_member_media(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &mb_id,
+            kind,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminMemberMediaDeleteResult>(result).into_response(),
         Err(error) => connector_error(error),
     }
 }
