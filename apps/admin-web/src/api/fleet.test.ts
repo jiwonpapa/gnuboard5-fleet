@@ -1,27 +1,44 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  addAdminBoardGroupMember,
+  addAdminLegacyGroupMember,
   connectorLogin,
   connectorLogout,
   connectorRefresh,
+  createAdminBoardGroup,
+  createAdminLegacyGroup,
+  deleteAdminBoardGroup,
+  deleteAdminBoardGroupMember,
+  deleteAdminLegacyGroup,
+  deleteAdminLegacyGroupMember,
   deleteAdminMember,
   deleteAdminMemberMedia,
   deleteAdminAuthByMember,
   deleteAdminSystemPermission,
   exportAdminMembers,
   getAdminConfig,
+  getAdminBoardGroup,
   getAdminDashboard,
   getAdminFieldSchema,
   getAdminMember,
+  getAdminLegacyGroup,
   getMyProfile,
   listAdminAuth,
+  listAdminBoardGroupMembers,
+  listAdminBoardGroups,
   listAdminFieldSchemas,
   listAdminMembers,
+  listAdminLegacyGroupMembers,
+  listAdminLegacyGroups,
   listAdminSystemPermissions,
   openTerminalSocket,
+  patchAdminBoardGroup,
   saveAdminSystemPermission,
   upsertAdminAuth,
   updateAdminConfig,
+  updateAdminBoardGroup,
+  updateAdminLegacyGroup,
   updateAdminMember,
   updateAdminMemberLevel,
   uploadAdminMemberMedia,
@@ -201,6 +218,64 @@ describe("remote Fleet transport", () => {
     for (const [, init] of fetcher.mock.calls.filter(([, call]) =>
       call?.method !== "GET"
     )) {
+      expect(new Headers(init?.headers).get("x-csrf-token")).toBe("csrf-1");
+    }
+  });
+
+  it("consumes all seventeen R13 group operations through explicit site scope", async () => {
+    const fetcher = vi.fn(async (
+      _input: RequestInfo | URL,
+      _init?: RequestInit,
+    ) => {
+      void _input;
+      void _init;
+      return new Response("{}", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetcher);
+
+    const create = { gr_id: "staff", gr_subject: "운영진" };
+    const update = { gr_subject: "운영팀" };
+    await listAdminBoardGroups("site-a");
+    await createAdminBoardGroup("site-a", create, "csrf-1");
+    await getAdminBoardGroup("site-a", "staff");
+    await updateAdminBoardGroup("site-a", "staff", update, "csrf-1");
+    await patchAdminBoardGroup("site-a", "staff", update, "csrf-1");
+    await deleteAdminBoardGroup("site-a", "staff", "csrf-1");
+    await listAdminBoardGroupMembers("site-a", "staff", { page: 2, search: "member" });
+    await addAdminBoardGroupMember("site-a", "staff", "member01", "csrf-1");
+    await deleteAdminBoardGroupMember("site-a", "staff", "member01", "csrf-1");
+    await listAdminLegacyGroups("site-a");
+    await createAdminLegacyGroup("site-a", create, "csrf-1");
+    await getAdminLegacyGroup("site-a", "staff");
+    await updateAdminLegacyGroup("site-a", "staff", update, "csrf-1");
+    await deleteAdminLegacyGroup("site-a", "staff", "csrf-1");
+    await listAdminLegacyGroupMembers("site-a", "staff", { per_page: 20 });
+    await addAdminLegacyGroupMember("site-a", "staff", "member01", "csrf-1");
+    await deleteAdminLegacyGroupMember("site-a", "staff", "member01", "csrf-1");
+
+    expect(fetcher.mock.calls.map(([input, init]) => [String(input), init?.method])).toEqual([
+      ["http://localhost:3000/api/v1/sites/site-a/admin/board-groups", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/board-groups", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/board-groups/staff", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/board-groups/staff", "PUT"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/board-groups/staff", "PATCH"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/board-groups/staff", "DELETE"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/board-groups/staff/members?page=2&search=member", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/board-groups/staff/members", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/board-groups/staff/members/member01", "DELETE"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/groups", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/groups", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/groups/staff", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/groups/staff", "PUT"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/groups/staff", "DELETE"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/groups/staff/members?per_page=20", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/groups/staff/members", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/groups/staff/members/member01", "DELETE"],
+    ]);
+    for (const [, init] of fetcher.mock.calls.filter(([, call]) => call?.method !== "GET")) {
       expect(new Headers(init?.headers).get("x-csrf-token")).toBe("csrf-1");
     }
   });

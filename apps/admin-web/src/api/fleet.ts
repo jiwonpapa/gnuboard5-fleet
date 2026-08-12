@@ -349,6 +349,56 @@ export interface AdminMemberMediaResult {
   deleted?: boolean;
 }
 
+export interface AdminBoardGroup {
+  gr_id: string;
+  gr_subject: string;
+  gr_admin: string;
+  gr_device: "both" | "pc" | "mobile";
+  gr_use_access: 0 | 1;
+}
+
+export interface AdminBoardGroupList {
+  items: AdminBoardGroup[];
+  pagination: Pagination;
+}
+
+export interface AdminBoardGroupCreate {
+  gr_id: string;
+  gr_subject: string;
+  gr_admin?: string;
+  gr_device?: "both" | "pc" | "mobile";
+  gr_use_access?: 0 | 1;
+}
+
+export interface AdminBoardGroupUpdate {
+  gr_subject: string;
+  gr_admin?: string;
+  gr_device?: "both" | "pc" | "mobile";
+  gr_use_access?: 0 | 1;
+}
+
+export interface AdminBoardGroupMember {
+  gm_id: number;
+  gr_id: string;
+  mb_id: string;
+  gm_datetime: string;
+  mb_name: string | null;
+  mb_nick: string | null;
+  mb_level: number | null;
+  mb_today_login: string | null;
+}
+
+export interface AdminBoardGroupMemberList {
+  items: AdminBoardGroupMember[];
+  pagination: Pagination;
+}
+
+export interface AdminBoardGroupMemberResult {
+  gr_id: string;
+  mb_id: string;
+  gm_datetime: string;
+}
+
 export interface AdminAuthAssignment {
   au_menu: string;
   au_auth: string;
@@ -958,6 +1008,194 @@ export function deleteAdminMemberMedia(
   return transport.request<AdminMemberMediaResult>({
     method: "DELETE",
     path: `/sites/${encodeURIComponent(siteId)}/admin/members/${encodeURIComponent(mbId)}/${kind}`,
+    csrfToken,
+  });
+}
+
+export function listAdminBoardGroups(siteId: string) {
+  return transport.request<AdminBoardGroupList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/board-groups`,
+  });
+}
+
+export function createAdminBoardGroup(
+  siteId: string,
+  create: AdminBoardGroupCreate,
+  csrfToken: string,
+) {
+  return transport.request<AdminBoardGroup, AdminBoardGroupCreate>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/board-groups`,
+    csrfToken,
+    body: create,
+  });
+}
+
+export function getAdminBoardGroup(siteId: string, grId: string) {
+  return transport.request<AdminBoardGroup>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/board-groups/${encodeURIComponent(grId)}`,
+  });
+}
+
+export function updateAdminBoardGroup(
+  siteId: string,
+  grId: string,
+  update: AdminBoardGroupUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminBoardGroup, AdminBoardGroupUpdate>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/board-groups/${encodeURIComponent(grId)}`,
+    csrfToken,
+    body: update,
+  });
+}
+
+export function patchAdminBoardGroup(
+  siteId: string,
+  grId: string,
+  update: AdminBoardGroupUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminBoardGroup, AdminBoardGroupUpdate>({
+    method: "PATCH",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/board-groups/${encodeURIComponent(grId)}`,
+    csrfToken,
+    body: update,
+  });
+}
+
+export function deleteAdminBoardGroup(siteId: string, grId: string, csrfToken: string) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/board-groups/${encodeURIComponent(grId)}`,
+    csrfToken,
+  });
+}
+
+export function listAdminBoardGroupMembers(
+  siteId: string,
+  grId: string,
+  query: { page?: number; per_page?: number; search?: string } = {},
+) {
+  return transport.request<AdminBoardGroupMemberList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/board-groups/${encodeURIComponent(grId)}/members${fleetQuery(query)}`,
+  });
+}
+
+export function addAdminBoardGroupMember(
+  siteId: string,
+  grId: string,
+  mbId: string,
+  csrfToken: string,
+) {
+  return transport.request<AdminBoardGroupMemberResult, { mb_id: string }>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/board-groups/${encodeURIComponent(grId)}/members`,
+    csrfToken,
+    body: { mb_id: mbId },
+  });
+}
+
+export function deleteAdminBoardGroupMember(
+  siteId: string,
+  grId: string,
+  mbId: string,
+  csrfToken: string,
+) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/board-groups/${encodeURIComponent(grId)}/members/${encodeURIComponent(mbId)}`,
+    csrfToken,
+  });
+}
+
+export function listAdminLegacyGroups(siteId: string) {
+  return transport.request<AdminBoardGroupList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/groups`,
+  });
+}
+
+export function createAdminLegacyGroup(
+  siteId: string,
+  create: AdminBoardGroupCreate,
+  csrfToken: string,
+) {
+  return transport.request<AdminBoardGroup, AdminBoardGroupCreate>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/groups`,
+    csrfToken,
+    body: create,
+  });
+}
+
+export function getAdminLegacyGroup(siteId: string, grId: string) {
+  return transport.request<AdminBoardGroup>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/groups/${encodeURIComponent(grId)}`,
+  });
+}
+
+export function updateAdminLegacyGroup(
+  siteId: string,
+  grId: string,
+  update: AdminBoardGroupUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminBoardGroup, AdminBoardGroupUpdate>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/groups/${encodeURIComponent(grId)}`,
+    csrfToken,
+    body: update,
+  });
+}
+
+export function deleteAdminLegacyGroup(siteId: string, grId: string, csrfToken: string) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/groups/${encodeURIComponent(grId)}`,
+    csrfToken,
+  });
+}
+
+export function listAdminLegacyGroupMembers(
+  siteId: string,
+  grId: string,
+  query: { page?: number; per_page?: number; search?: string } = {},
+) {
+  return transport.request<AdminBoardGroupMemberList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/groups/${encodeURIComponent(grId)}/members${fleetQuery(query)}`,
+  });
+}
+
+export function addAdminLegacyGroupMember(
+  siteId: string,
+  grId: string,
+  mbId: string,
+  csrfToken: string,
+) {
+  return transport.request<AdminBoardGroupMemberResult, { mb_id: string }>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/groups/${encodeURIComponent(grId)}/members`,
+    csrfToken,
+    body: { mb_id: mbId },
+  });
+}
+
+export function deleteAdminLegacyGroupMember(
+  siteId: string,
+  grId: string,
+  mbId: string,
+  csrfToken: string,
+) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/groups/${encodeURIComponent(grId)}/members/${encodeURIComponent(mbId)}`,
     csrfToken,
   });
 }

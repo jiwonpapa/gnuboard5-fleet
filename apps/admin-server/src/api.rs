@@ -20,14 +20,16 @@ use axum::{
 };
 use futures_util::{SinkExt, StreamExt, stream};
 use g5_fleet_connector::{
-    AdminAuthListQuery, AdminAuthMember, AdminAuthMemberList, AdminAuthUpsert, AdminConfig,
-    AdminConfigUpdate, AdminDashboardData, AdminMember, AdminMemberLevelUpdate, AdminMemberList,
-    AdminMemberListQuery, AdminMemberMediaDeleteResult, AdminMemberMediaUpload,
-    AdminMemberMediaUploadResult, AdminMemberUpdate, AdminSchemaCatalog, AdminSchemaDetail,
-    AdminSystemPermission, AdminSystemPermissionList, AdminSystemPermissionListQuery,
-    AdminSystemPermissionSave, BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth,
-    ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, MemberProfile,
-    SiteOverview, core_operation, core_operations,
+    AdminAuthListQuery, AdminAuthMember, AdminAuthMemberList, AdminAuthUpsert, AdminBoardGroup,
+    AdminBoardGroupCreate, AdminBoardGroupList, AdminBoardGroupMemberCreate,
+    AdminBoardGroupMemberList, AdminBoardGroupMemberListQuery, AdminBoardGroupMemberResult,
+    AdminBoardGroupUpdate, AdminConfig, AdminConfigUpdate, AdminDashboardData, AdminMember,
+    AdminMemberLevelUpdate, AdminMemberList, AdminMemberListQuery, AdminMemberMediaDeleteResult,
+    AdminMemberMediaUpload, AdminMemberMediaUploadResult, AdminMemberUpdate, AdminSchemaCatalog,
+    AdminSchemaDetail, AdminSystemPermission, AdminSystemPermissionList,
+    AdminSystemPermissionListQuery, AdminSystemPermissionSave, BasicConfig, ConnectorCredentials,
+    ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse,
+    CoreOperationSpec, MemberProfile, SiteOverview, core_operation, core_operations,
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
@@ -360,6 +362,43 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/members/{mb_id}/image",
             post(admin_member_image_upload).delete(admin_member_image_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/board-groups",
+            get(admin_board_group_list).post(admin_board_group_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/board-groups/{gr_id}",
+            get(admin_board_group_get)
+                .put(admin_board_group_update)
+                .patch(admin_board_group_patch)
+                .delete(admin_board_group_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/board-groups/{gr_id}/members",
+            get(admin_board_group_member_list).post(admin_board_group_member_add),
+        )
+        .route(
+            "/sites/{site_id}/admin/board-groups/{gr_id}/members/{mb_id}",
+            axum::routing::delete(admin_board_group_member_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/groups",
+            get(admin_legacy_group_list).post(admin_legacy_group_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/groups/{gr_id}",
+            get(admin_legacy_group_get)
+                .put(admin_legacy_group_update)
+                .delete(admin_legacy_group_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/groups/{gr_id}/members",
+            get(admin_legacy_group_member_list).post(admin_legacy_group_member_add),
+        )
+        .route(
+            "/sites/{site_id}/admin/groups/{gr_id}/members/{mb_id}",
+            axum::routing::delete(admin_legacy_group_member_delete),
         )
         .route(
             "/sites/{site_id}/config/basic",
@@ -2138,6 +2177,676 @@ async fn admin_member_media_delete(
         .await
     {
         Ok(result) => Json::<AdminMemberMediaDeleteResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+#[derive(Clone, Copy)]
+enum BoardGroupRouteKind {
+    Canonical,
+    Legacy,
+}
+
+async fn admin_board_group_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    board_group_list(state, headers, site_id, BoardGroupRouteKind::Canonical).await
+}
+
+async fn admin_legacy_group_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    board_group_list(state, headers, site_id, BoardGroupRouteKind::Legacy).await
+}
+
+async fn board_group_list(
+    state: AppState,
+    headers: HeaderMap,
+    site_id: String,
+    kind: BoardGroupRouteKind,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        BoardGroupRouteKind::Canonical => {
+            state
+                .config
+                .connector
+                .admin_list_board_groups(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                )
+                .await
+        }
+        BoardGroupRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_list_groups(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(groups) => Json::<AdminBoardGroupList>(groups).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_board_group_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(create): Json<AdminBoardGroupCreate>,
+) -> Response {
+    board_group_create(
+        state,
+        headers,
+        site_id,
+        create,
+        BoardGroupRouteKind::Canonical,
+    )
+    .await
+}
+
+async fn admin_legacy_group_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(create): Json<AdminBoardGroupCreate>,
+) -> Response {
+    board_group_create(state, headers, site_id, create, BoardGroupRouteKind::Legacy).await
+}
+
+async fn board_group_create(
+    state: AppState,
+    headers: HeaderMap,
+    site_id: String,
+    create: AdminBoardGroupCreate,
+    kind: BoardGroupRouteKind,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        BoardGroupRouteKind::Canonical => {
+            state
+                .config
+                .connector
+                .admin_create_board_group(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &create,
+                )
+                .await
+        }
+        BoardGroupRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_create_group(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &create,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(group) => (StatusCode::CREATED, Json::<AdminBoardGroup>(group)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_board_group_get(
+    State(state): State<AppState>,
+    Path((site_id, gr_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    board_group_get(
+        state,
+        headers,
+        site_id,
+        gr_id,
+        BoardGroupRouteKind::Canonical,
+    )
+    .await
+}
+
+async fn admin_legacy_group_get(
+    State(state): State<AppState>,
+    Path((site_id, gr_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    board_group_get(state, headers, site_id, gr_id, BoardGroupRouteKind::Legacy).await
+}
+
+async fn board_group_get(
+    state: AppState,
+    headers: HeaderMap,
+    site_id: String,
+    gr_id: String,
+    kind: BoardGroupRouteKind,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        BoardGroupRouteKind::Canonical => {
+            state
+                .config
+                .connector
+                .admin_get_board_group(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &gr_id,
+                )
+                .await
+        }
+        BoardGroupRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_get_group(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &gr_id,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(group) => Json::<AdminBoardGroup>(group).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_board_group_update(
+    State(state): State<AppState>,
+    Path((site_id, gr_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminBoardGroupUpdate>,
+) -> Response {
+    board_group_update(
+        state,
+        headers,
+        site_id,
+        gr_id,
+        update,
+        BoardGroupRouteKind::Canonical,
+        false,
+    )
+    .await
+}
+
+async fn admin_board_group_patch(
+    State(state): State<AppState>,
+    Path((site_id, gr_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminBoardGroupUpdate>,
+) -> Response {
+    board_group_update(
+        state,
+        headers,
+        site_id,
+        gr_id,
+        update,
+        BoardGroupRouteKind::Canonical,
+        true,
+    )
+    .await
+}
+
+async fn admin_legacy_group_update(
+    State(state): State<AppState>,
+    Path((site_id, gr_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminBoardGroupUpdate>,
+) -> Response {
+    board_group_update(
+        state,
+        headers,
+        site_id,
+        gr_id,
+        update,
+        BoardGroupRouteKind::Legacy,
+        false,
+    )
+    .await
+}
+
+async fn board_group_update(
+    state: AppState,
+    headers: HeaderMap,
+    site_id: String,
+    gr_id: String,
+    update: AdminBoardGroupUpdate,
+    kind: BoardGroupRouteKind,
+    patch: bool,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match (kind, patch) {
+        (BoardGroupRouteKind::Canonical, true) => {
+            state
+                .config
+                .connector
+                .admin_patch_board_group(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &gr_id,
+                    &update,
+                )
+                .await
+        }
+        (BoardGroupRouteKind::Canonical, false) => {
+            state
+                .config
+                .connector
+                .admin_update_board_group(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &gr_id,
+                    &update,
+                )
+                .await
+        }
+        (BoardGroupRouteKind::Legacy, _) => {
+            state
+                .config
+                .connector
+                .admin_legacy_update_group(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &gr_id,
+                    &update,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(group) => Json::<AdminBoardGroup>(group).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_board_group_delete(
+    State(state): State<AppState>,
+    Path((site_id, gr_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    board_group_delete(
+        state,
+        headers,
+        site_id,
+        gr_id,
+        BoardGroupRouteKind::Canonical,
+    )
+    .await
+}
+
+async fn admin_legacy_group_delete(
+    State(state): State<AppState>,
+    Path((site_id, gr_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    board_group_delete(state, headers, site_id, gr_id, BoardGroupRouteKind::Legacy).await
+}
+
+async fn board_group_delete(
+    state: AppState,
+    headers: HeaderMap,
+    site_id: String,
+    gr_id: String,
+    kind: BoardGroupRouteKind,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        BoardGroupRouteKind::Canonical => {
+            state
+                .config
+                .connector
+                .admin_delete_board_group(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &gr_id,
+                )
+                .await
+        }
+        BoardGroupRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_delete_group(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &gr_id,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_board_group_member_list(
+    State(state): State<AppState>,
+    Path((site_id, gr_id)): Path<(String, String)>,
+    Query(query): Query<AdminBoardGroupMemberListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    board_group_member_list(
+        state,
+        headers,
+        site_id,
+        gr_id,
+        query,
+        BoardGroupRouteKind::Canonical,
+    )
+    .await
+}
+
+async fn admin_legacy_group_member_list(
+    State(state): State<AppState>,
+    Path((site_id, gr_id)): Path<(String, String)>,
+    Query(query): Query<AdminBoardGroupMemberListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    board_group_member_list(
+        state,
+        headers,
+        site_id,
+        gr_id,
+        query,
+        BoardGroupRouteKind::Legacy,
+    )
+    .await
+}
+
+async fn board_group_member_list(
+    state: AppState,
+    headers: HeaderMap,
+    site_id: String,
+    gr_id: String,
+    query: AdminBoardGroupMemberListQuery,
+    kind: BoardGroupRouteKind,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        BoardGroupRouteKind::Canonical => {
+            state
+                .config
+                .connector
+                .admin_list_board_group_members(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &gr_id,
+                    &query,
+                )
+                .await
+        }
+        BoardGroupRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_list_group_members(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &gr_id,
+                    &query,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(members) => Json::<AdminBoardGroupMemberList>(members).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_board_group_member_add(
+    State(state): State<AppState>,
+    Path((site_id, gr_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(create): Json<AdminBoardGroupMemberCreate>,
+) -> Response {
+    board_group_member_add(
+        state,
+        headers,
+        site_id,
+        gr_id,
+        create,
+        BoardGroupRouteKind::Canonical,
+    )
+    .await
+}
+
+async fn admin_legacy_group_member_add(
+    State(state): State<AppState>,
+    Path((site_id, gr_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(create): Json<AdminBoardGroupMemberCreate>,
+) -> Response {
+    board_group_member_add(
+        state,
+        headers,
+        site_id,
+        gr_id,
+        create,
+        BoardGroupRouteKind::Legacy,
+    )
+    .await
+}
+
+async fn board_group_member_add(
+    state: AppState,
+    headers: HeaderMap,
+    site_id: String,
+    gr_id: String,
+    create: AdminBoardGroupMemberCreate,
+    kind: BoardGroupRouteKind,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        BoardGroupRouteKind::Canonical => {
+            state
+                .config
+                .connector
+                .admin_add_board_group_member(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &gr_id,
+                    &create,
+                )
+                .await
+        }
+        BoardGroupRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_add_group_member(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &gr_id,
+                    &create,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(member) => (
+            StatusCode::CREATED,
+            Json::<AdminBoardGroupMemberResult>(member),
+        )
+            .into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_board_group_member_delete(
+    State(state): State<AppState>,
+    Path((site_id, gr_id, mb_id)): Path<(String, String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    board_group_member_delete(
+        state,
+        headers,
+        site_id,
+        gr_id,
+        mb_id,
+        BoardGroupRouteKind::Canonical,
+    )
+    .await
+}
+
+async fn admin_legacy_group_member_delete(
+    State(state): State<AppState>,
+    Path((site_id, gr_id, mb_id)): Path<(String, String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    board_group_member_delete(
+        state,
+        headers,
+        site_id,
+        gr_id,
+        mb_id,
+        BoardGroupRouteKind::Legacy,
+    )
+    .await
+}
+
+async fn board_group_member_delete(
+    state: AppState,
+    headers: HeaderMap,
+    site_id: String,
+    gr_id: String,
+    mb_id: String,
+    kind: BoardGroupRouteKind,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        BoardGroupRouteKind::Canonical => {
+            state
+                .config
+                .connector
+                .admin_delete_board_group_member(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &gr_id,
+                    &mb_id,
+                )
+                .await
+        }
+        BoardGroupRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_delete_group_member(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &gr_id,
+                    &mb_id,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(error) => connector_error(error),
     }
 }

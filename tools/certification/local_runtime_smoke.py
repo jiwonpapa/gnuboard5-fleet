@@ -368,6 +368,174 @@ def main() -> int:
         if deleted_media.get("mb_id") != member_id or not deleted_media.get("deleted"):
             raise RuntimeError(f"R12 member {kind} delete readback failed")
 
+    canonical_groups_path = "/api/v1/sites/owner-a-site/admin/board-groups"
+    initial_groups = request(
+        fleet_base,
+        "GET",
+        canonical_groups_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if not isinstance(initial_groups.get("items"), list):
+        raise RuntimeError("R13 canonical group list failed")
+    canonical_group = request(
+        fleet_base,
+        "POST",
+        canonical_groups_path,
+        body={
+            "gr_id": "fleetgrp",
+            "gr_subject": "Fleet certification",
+            "gr_admin": env["G5_CERT_G5_ADMIN_ID"],
+            "gr_device": "both",
+            "gr_use_access": 0,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(201,),
+    ).json()
+    if canonical_group.get("gr_id") != "fleetgrp":
+        raise RuntimeError("R13 canonical group create failed")
+    canonical_group_path = f"{canonical_groups_path}/fleetgrp"
+    if request(
+        fleet_base,
+        "GET",
+        canonical_group_path,
+        headers=fleet_headers(admin_cookie),
+    ).json().get("gr_subject") != "Fleet certification":
+        raise RuntimeError("R13 canonical group detail failed")
+    updated_group = request(
+        fleet_base,
+        "PUT",
+        canonical_group_path,
+        body={
+            "gr_subject": "Fleet certification updated",
+            "gr_admin": env["G5_CERT_G5_ADMIN_ID"],
+            "gr_device": "pc",
+            "gr_use_access": 1,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if updated_group.get("gr_device") != "pc":
+        raise RuntimeError("R13 canonical group update failed")
+    patched_group = request(
+        fleet_base,
+        "PATCH",
+        canonical_group_path,
+        body={"gr_subject": "Fleet certification patched"},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if patched_group.get("gr_subject") != "Fleet certification patched":
+        raise RuntimeError("R13 canonical group patch failed")
+    canonical_members_path = f"{canonical_group_path}/members"
+    request(
+        fleet_base,
+        "GET",
+        f"{canonical_members_path}?page=1&per_page=20",
+        headers=fleet_headers(admin_cookie),
+    )
+    added_group_member = request(
+        fleet_base,
+        "POST",
+        canonical_members_path,
+        body={"mb_id": member_id},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(201,),
+    ).json()
+    if added_group_member.get("mb_id") != member_id:
+        raise RuntimeError("R13 canonical group member add failed")
+    request(
+        fleet_base,
+        "DELETE",
+        f"{canonical_members_path}/{member_id}",
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(204,),
+    )
+    request(
+        fleet_base,
+        "DELETE",
+        canonical_group_path,
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(204,),
+    )
+    request(
+        fleet_base,
+        "GET",
+        canonical_group_path,
+        headers=fleet_headers(admin_cookie),
+        expected=(404,),
+    )
+
+    legacy_groups_path = "/api/v1/sites/owner-a-site/admin/groups"
+    request(
+        fleet_base,
+        "GET",
+        legacy_groups_path,
+        headers=fleet_headers(admin_cookie),
+    )
+    legacy_group = request(
+        fleet_base,
+        "POST",
+        legacy_groups_path,
+        body={"gr_id": "fleetold", "gr_subject": "Fleet legacy"},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(201,),
+    ).json()
+    if legacy_group.get("gr_id") != "fleetold":
+        raise RuntimeError("R13 legacy group create failed")
+    legacy_group_path = f"{legacy_groups_path}/fleetold"
+    if request(
+        fleet_base,
+        "GET",
+        legacy_group_path,
+        headers=fleet_headers(admin_cookie),
+    ).json().get("gr_subject") != "Fleet legacy":
+        raise RuntimeError("R13 legacy group detail failed")
+    legacy_updated = request(
+        fleet_base,
+        "PUT",
+        legacy_group_path,
+        body={"gr_subject": "Fleet legacy updated"},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if legacy_updated.get("gr_subject") != "Fleet legacy updated":
+        raise RuntimeError("R13 legacy group update failed")
+    legacy_members_path = f"{legacy_group_path}/members"
+    request(
+        fleet_base,
+        "GET",
+        f"{legacy_members_path}?page=1&per_page=20",
+        headers=fleet_headers(admin_cookie),
+    )
+    legacy_added_member = request(
+        fleet_base,
+        "POST",
+        legacy_members_path,
+        body={"mb_id": member_id},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(201,),
+    ).json()
+    if legacy_added_member.get("mb_id") != member_id:
+        raise RuntimeError("R13 legacy group member add failed")
+    request(
+        fleet_base,
+        "DELETE",
+        f"{legacy_members_path}/{member_id}",
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(204,),
+    )
+    request(
+        fleet_base,
+        "DELETE",
+        legacy_group_path,
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(204,),
+    )
+    request(
+        fleet_base,
+        "GET",
+        legacy_group_path,
+        headers=fleet_headers(admin_cookie),
+        expected=(404,),
+    )
+
     request(
         fleet_base,
         "DELETE",
@@ -465,6 +633,14 @@ def main() -> int:
             "icon_upload_delete": "passed",
             "image_upload_delete": "passed",
             "member_soft_delete_date_readback": "passed",
+        },
+        "r13_groups": {
+            "operations": 17,
+            "canonical_group_crud_and_patch": "passed",
+            "canonical_member_list_add_delete": "passed",
+            "legacy_alias_group_crud": "passed",
+            "legacy_alias_member_list_add_delete": "passed",
+            "cleanup_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,

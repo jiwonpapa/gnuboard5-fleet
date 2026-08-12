@@ -10,6 +10,11 @@ use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 pub use g5_fleet_core::admin::{
     AdminConfig, AdminConfigUpdate, AdminDashboardData, AdminSchemaCatalog, AdminSchemaDetail,
 };
+pub use g5_fleet_core::groups::{
+    AdminBoardGroup, AdminBoardGroupCreate, AdminBoardGroupList, AdminBoardGroupMember,
+    AdminBoardGroupMemberCreate, AdminBoardGroupMemberList, AdminBoardGroupMemberListQuery,
+    AdminBoardGroupMemberResult, AdminBoardGroupUpdate, valid_group_id,
+};
 pub use g5_fleet_core::members::{
     AdminMember, AdminMemberLevelUpdate, AdminMemberList, AdminMemberListQuery,
     AdminMemberMediaDeleteResult, AdminMemberMediaUpload, AdminMemberMediaUploadResult,
@@ -515,6 +520,328 @@ pub trait ConnectorGateway: Send + Sync {
         typed_core_empty("adminSystemDeleteAuth", response)
     }
 
+    async fn admin_list_board_groups(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminBoardGroupList> {
+        board_group_list_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminListBoardGroups",
+        )
+        .await
+    }
+
+    async fn admin_create_board_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        create: &AdminBoardGroupCreate,
+    ) -> ConnectorResult<AdminBoardGroup> {
+        board_group_create_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminCreateBoardGroup",
+            create,
+        )
+        .await
+    }
+
+    async fn admin_get_board_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        gr_id: &str,
+    ) -> ConnectorResult<AdminBoardGroup> {
+        board_group_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminGetBoardGroup",
+            gr_id,
+            None,
+        )
+        .await
+    }
+
+    async fn admin_update_board_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        gr_id: &str,
+        update: &AdminBoardGroupUpdate,
+    ) -> ConnectorResult<AdminBoardGroup> {
+        board_group_update_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminUpdateBoardGroup",
+            gr_id,
+            update,
+        )
+        .await
+    }
+
+    async fn admin_patch_board_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        gr_id: &str,
+        update: &AdminBoardGroupUpdate,
+    ) -> ConnectorResult<AdminBoardGroup> {
+        board_group_update_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminPatchBoardGroup",
+            gr_id,
+            update,
+        )
+        .await
+    }
+
+    async fn admin_delete_board_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        gr_id: &str,
+    ) -> ConnectorResult<()> {
+        board_group_delete_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminDeleteBoardGroup",
+            gr_id,
+        )
+        .await
+    }
+
+    async fn admin_list_board_group_members(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        gr_id: &str,
+        query: &AdminBoardGroupMemberListQuery,
+    ) -> ConnectorResult<AdminBoardGroupMemberList> {
+        board_group_member_list_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminListBoardGroupMembers",
+            gr_id,
+            query,
+        )
+        .await
+    }
+
+    async fn admin_add_board_group_member(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        gr_id: &str,
+        create: &AdminBoardGroupMemberCreate,
+    ) -> ConnectorResult<AdminBoardGroupMemberResult> {
+        board_group_member_create_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminAddBoardGroupMember",
+            gr_id,
+            create,
+        )
+        .await
+    }
+
+    async fn admin_delete_board_group_member(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        gr_id: &str,
+        mb_id: &str,
+    ) -> ConnectorResult<()> {
+        board_group_member_delete_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminDeleteBoardGroupMember",
+            gr_id,
+            mb_id,
+        )
+        .await
+    }
+
+    async fn admin_legacy_list_groups(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminBoardGroupList> {
+        board_group_list_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminLegacyListGroups",
+        )
+        .await
+    }
+
+    async fn admin_legacy_create_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        create: &AdminBoardGroupCreate,
+    ) -> ConnectorResult<AdminBoardGroup> {
+        board_group_create_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminLegacyCreateGroup",
+            create,
+        )
+        .await
+    }
+
+    async fn admin_legacy_get_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        gr_id: &str,
+    ) -> ConnectorResult<AdminBoardGroup> {
+        board_group_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminLegacyGetGroup",
+            gr_id,
+            None,
+        )
+        .await
+    }
+
+    async fn admin_legacy_update_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        gr_id: &str,
+        update: &AdminBoardGroupUpdate,
+    ) -> ConnectorResult<AdminBoardGroup> {
+        board_group_update_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminLegacyUpdateGroup",
+            gr_id,
+            update,
+        )
+        .await
+    }
+
+    async fn admin_legacy_delete_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        gr_id: &str,
+    ) -> ConnectorResult<()> {
+        board_group_delete_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminLegacyDeleteGroup",
+            gr_id,
+        )
+        .await
+    }
+
+    async fn admin_legacy_list_group_members(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        gr_id: &str,
+        query: &AdminBoardGroupMemberListQuery,
+    ) -> ConnectorResult<AdminBoardGroupMemberList> {
+        board_group_member_list_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminLegacyListGroupMembers",
+            gr_id,
+            query,
+        )
+        .await
+    }
+
+    async fn admin_legacy_add_group_member(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        gr_id: &str,
+        create: &AdminBoardGroupMemberCreate,
+    ) -> ConnectorResult<AdminBoardGroupMemberResult> {
+        board_group_member_create_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminLegacyAddGroupMember",
+            gr_id,
+            create,
+        )
+        .await
+    }
+
+    async fn admin_legacy_delete_group_member(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        gr_id: &str,
+        mb_id: &str,
+    ) -> ConnectorResult<()> {
+        board_group_member_delete_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminLegacyDeleteGroupMember",
+            gr_id,
+            mb_id,
+        )
+        .await
+    }
+
     async fn admin_list_members(
         &self,
         base_url: &str,
@@ -757,6 +1084,232 @@ pub trait ConnectorGateway: Send + Sync {
 struct TypedListEnvelope<T> {
     data: Vec<T>,
     pagination: Pagination,
+}
+
+async fn board_group_list_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+) -> ConnectorResult<AdminBoardGroupList> {
+    let envelope: TypedListEnvelope<AdminBoardGroup> = typed_core_envelope(
+        operation_id,
+        gateway
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                operation_id,
+                &CoreExecuteRequest::default(),
+            )
+            .await?,
+    )?;
+    Ok(AdminBoardGroupList {
+        items: envelope.data,
+        pagination: envelope.pagination,
+    })
+}
+
+async fn board_group_create_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    create: &AdminBoardGroupCreate,
+) -> ConnectorResult<AdminBoardGroup> {
+    if !create.is_valid() {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                body: Some(serde_json::to_value(create).map_err(|_| ConnectorError::Contract)?),
+                ..Default::default()
+            },
+        )
+        .await?;
+    typed_core_data(operation_id, response)
+}
+
+async fn board_group_detail_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    gr_id: &str,
+    body: Option<Value>,
+) -> ConnectorResult<AdminBoardGroup> {
+    if !valid_group_id(gr_id) {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                path: BTreeMap::from([("gr_id".to_owned(), gr_id.to_owned())]),
+                body,
+                ..Default::default()
+            },
+        )
+        .await?;
+    typed_core_data(operation_id, response)
+}
+
+async fn board_group_update_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    gr_id: &str,
+    update: &AdminBoardGroupUpdate,
+) -> ConnectorResult<AdminBoardGroup> {
+    if !update.is_valid() {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    board_group_detail_operation(
+        gateway,
+        base_url,
+        request_id,
+        access_token,
+        operation_id,
+        gr_id,
+        Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+    )
+    .await
+}
+
+async fn board_group_delete_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    gr_id: &str,
+) -> ConnectorResult<()> {
+    if !valid_group_id(gr_id) {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                path: BTreeMap::from([("gr_id".to_owned(), gr_id.to_owned())]),
+                confirm_destructive: true,
+                ..Default::default()
+            },
+        )
+        .await?;
+    typed_core_empty(operation_id, response)
+}
+
+async fn board_group_member_list_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    gr_id: &str,
+    query: &AdminBoardGroupMemberListQuery,
+) -> ConnectorResult<AdminBoardGroupMemberList> {
+    if !valid_group_id(gr_id) || !query.is_valid() {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                path: BTreeMap::from([("gr_id".to_owned(), gr_id.to_owned())]),
+                query: query_map([
+                    ("page", query.page.map(|value| json!(value))),
+                    ("per_page", query.per_page.map(|value| json!(value))),
+                    ("search", query.search.as_ref().map(|value| json!(value))),
+                ]),
+                ..Default::default()
+            },
+        )
+        .await?;
+    let envelope: TypedListEnvelope<AdminBoardGroupMember> =
+        typed_core_envelope(operation_id, response)?;
+    Ok(AdminBoardGroupMemberList {
+        items: envelope.data,
+        pagination: envelope.pagination,
+    })
+}
+
+async fn board_group_member_create_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    gr_id: &str,
+    create: &AdminBoardGroupMemberCreate,
+) -> ConnectorResult<AdminBoardGroupMemberResult> {
+    if !valid_group_id(gr_id) || !create.is_valid() {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                path: BTreeMap::from([("gr_id".to_owned(), gr_id.to_owned())]),
+                body: Some(serde_json::to_value(create).map_err(|_| ConnectorError::Contract)?),
+                ..Default::default()
+            },
+        )
+        .await?;
+    typed_core_data(operation_id, response)
+}
+
+async fn board_group_member_delete_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    gr_id: &str,
+    mb_id: &str,
+) -> ConnectorResult<()> {
+    if !valid_group_id(gr_id) || !valid_member_id(mb_id) {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                path: BTreeMap::from([
+                    ("gr_id".to_owned(), gr_id.to_owned()),
+                    ("mb_id".to_owned(), mb_id.to_owned()),
+                ]),
+                confirm_destructive: true,
+                ..Default::default()
+            },
+        )
+        .await?;
+    typed_core_empty(operation_id, response)
 }
 
 fn member_list_from_response(

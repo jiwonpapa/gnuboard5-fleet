@@ -416,6 +416,125 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/board-groups",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_board_group_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/board-groups",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_board_group_create"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_board_group_detail"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_board_group_update"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_board_group_patch"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_board_group_delete"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}/members",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_board_group_member_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}/members",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_board_group_member_add"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}/members/{mb_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_board_group_member_delete"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/groups",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_legacy_group_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/groups",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_legacy_group_create"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/groups/{gr_id}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_legacy_group_detail"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/groups/{gr_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_legacy_group_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/groups/{gr_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_legacy_group_delete"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/groups/{gr_id}/members",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_legacy_group_member_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/groups/{gr_id}/members",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_legacy_group_member_add"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/groups/{gr_id}/members/{mb_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_legacy_group_member_delete"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/config/basic",
       "auth": "session",
       "site_context": true,

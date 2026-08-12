@@ -1666,6 +1666,23 @@ def check_server_scaffold_contract(root: Path) -> str:
             "session_csrf_step_up",
             True,
         ),
+        ("GET", "/api/v1/sites/{site_id}/admin/board-groups", "session", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/board-groups", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}", "session", True),
+        ("PUT", "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}", "session_csrf_step_up", True),
+        ("PATCH", "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}", "session_csrf_step_up", True),
+        ("DELETE", "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}/members", "session", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}/members", "session_csrf_step_up", True),
+        ("DELETE", "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}/members/{mb_id}", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/groups", "session", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/groups", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/groups/{gr_id}", "session", True),
+        ("PUT", "/api/v1/sites/{site_id}/admin/groups/{gr_id}", "session_csrf_step_up", True),
+        ("DELETE", "/api/v1/sites/{site_id}/admin/groups/{gr_id}", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/groups/{gr_id}/members", "session", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/groups/{gr_id}/members", "session_csrf_step_up", True),
+        ("DELETE", "/api/v1/sites/{site_id}/admin/groups/{gr_id}/members/{mb_id}", "session_csrf_step_up", True),
         (
             "GET",
             "/api/v1/sites/{site_id}/config/basic",
@@ -3166,6 +3183,9 @@ def check_certification_harness_boundary(root: Path) -> str:
         or '"otp_install_login_step_up": "passed"' not in local_smoke
         or '"operations": 10' not in local_smoke
         or '"member_soft_delete_date_readback": "passed"' not in local_smoke
+        or '"r13_groups"' not in local_smoke
+        or '"operations": 17' not in local_smoke
+        or '"legacy_alias_member_list_add_delete": "passed"' not in local_smoke
         or '"external_delivery_attempts": 0' not in local_smoke
     ):
         raise ValueError("local G5/server certification harness contract incomplete")

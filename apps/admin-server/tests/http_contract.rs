@@ -267,6 +267,47 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
                 "DELETE",
                 "/api/v1/sites/{site_id}/admin/members/{mb_id}/image"
             ),
+            ("GET", "/api/v1/sites/{site_id}/admin/board-groups"),
+            ("POST", "/api/v1/sites/{site_id}/admin/board-groups"),
+            ("GET", "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}"),
+            (
+                "PATCH",
+                "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}"
+            ),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}"
+            ),
+            (
+                "GET",
+                "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}/members"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}/members"
+            ),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/board-groups/{gr_id}/members/{mb_id}"
+            ),
+            ("GET", "/api/v1/sites/{site_id}/admin/groups"),
+            ("POST", "/api/v1/sites/{site_id}/admin/groups"),
+            ("GET", "/api/v1/sites/{site_id}/admin/groups/{gr_id}"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/groups/{gr_id}"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/groups/{gr_id}"),
+            (
+                "GET",
+                "/api/v1/sites/{site_id}/admin/groups/{gr_id}/members"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/groups/{gr_id}/members"
+            ),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/groups/{gr_id}/members/{mb_id}"
+            ),
             ("GET", "/api/v1/sites/{site_id}/config/basic"),
             ("PUT", "/api/v1/sites/{site_id}/config/basic"),
             ("POST", "/api/v1/sites/{site_id}/core/{operation_id}",),
@@ -609,6 +650,23 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             "mb_level": 2,
             "mb_point": 1200,
             "mb_datetime": "2026-08-01 10:00:00",
+            "mb_today_login": "2026-08-12 09:00:00"
+        })])),
+        groups: Arc::new(Mutex::new(vec![serde_json::json!({
+            "gr_id": "staff",
+            "gr_subject": "운영진",
+            "gr_admin": "g5admin",
+            "gr_device": "both",
+            "gr_use_access": 0
+        })])),
+        group_members: Arc::new(Mutex::new(vec![serde_json::json!({
+            "gm_id": 1,
+            "gr_id": "staff",
+            "mb_id": "member01",
+            "gm_datetime": "2026-08-12 10:00:00",
+            "mb_name": "회원 이름",
+            "mb_nick": "회원 닉네임",
+            "mb_level": 2,
             "mb_today_login": "2026-08-12 09:00:00"
         })])),
     };
@@ -1384,6 +1442,247 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap();
     assert_eq!(member_delete.status(), StatusCode::NO_CONTENT);
 
+    let group_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/board-groups",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(group_list.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(group_list).await["items"][0]["gr_id"],
+        "staff"
+    );
+
+    let group_create = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/board-groups",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "gr_id": "audit", "gr_subject": "감사팀", "gr_admin": "g5admin",
+                "gr_device": "both", "gr_use_access": 0
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(group_create.status(), StatusCode::CREATED);
+
+    let group_get = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/board-groups/audit",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(group_get).await["gr_subject"], "감사팀");
+
+    let group_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/board-groups/audit",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "gr_subject": "감사 운영팀", "gr_admin": "g5admin",
+                "gr_device": "pc", "gr_use_access": 1
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(group_update).await["gr_device"], "pc");
+
+    let group_patch = app
+        .clone()
+        .oneshot(json_request(
+            Method::PATCH,
+            "/api/v1/sites/site-a/admin/board-groups/audit",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"gr_subject": "감사팀 확정"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(group_patch).await["gr_subject"],
+        "감사팀 확정"
+    );
+
+    let group_members = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/board-groups/staff/members?page=1&per_page=20",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(group_members).await["items"][0]["mb_id"],
+        "member01"
+    );
+
+    let group_member_add = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/board-groups/audit/members",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"mb_id": "member02"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(group_member_add.status(), StatusCode::CREATED);
+    assert_eq!(json::<Value>(group_member_add).await["mb_id"], "member02");
+
+    let group_member_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/board-groups/audit/members/member02",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(group_member_delete.status(), StatusCode::NO_CONTENT);
+
+    let group_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/board-groups/audit",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(group_delete.status(), StatusCode::NO_CONTENT);
+
+    let legacy_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/groups",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(legacy_list.status(), StatusCode::OK);
+
+    let legacy_create = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/groups",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"gr_id": "legacy", "gr_subject": "레거시"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(legacy_create.status(), StatusCode::CREATED);
+
+    let legacy_get = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/groups/legacy",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(legacy_get).await["gr_id"], "legacy");
+
+    let legacy_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/groups/legacy",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"gr_subject": "레거시 갱신"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(legacy_update).await["gr_subject"],
+        "레거시 갱신"
+    );
+
+    let legacy_members = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/groups/staff/members?page=1&per_page=20",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(legacy_members.status(), StatusCode::OK);
+
+    let legacy_member_add = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/groups/legacy/members",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"mb_id": "member03"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(legacy_member_add.status(), StatusCode::CREATED);
+
+    let legacy_member_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/groups/legacy/members/member03",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(legacy_member_delete.status(), StatusCode::NO_CONTENT);
+
+    let legacy_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/groups/legacy",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(legacy_delete.status(), StatusCode::NO_CONTENT);
+
     let registry = app
         .clone()
         .oneshot(json_request(
@@ -1424,7 +1723,7 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
     assert_eq!(core_read.status(), StatusCode::OK);
     let core_read: CoreExecuteResponse = json(core_read).await;
     assert_eq!(core_read.operation_id, "adminListBoardGroups");
-    assert_eq!(core_read.data.unwrap()["query"]["page"], "1");
+    assert_eq!(core_read.data.unwrap()["data"][0]["gr_id"], "staff");
 
     let external_effect = app
         .clone()
@@ -1732,6 +2031,8 @@ struct MockConnector {
     permissions: Arc<Mutex<Vec<Value>>>,
     auth_members: Arc<Mutex<Vec<Value>>>,
     members: Arc<Mutex<Vec<Value>>>,
+    groups: Arc<Mutex<Vec<Value>>>,
+    group_members: Arc<Mutex<Vec<Value>>>,
 }
 
 #[async_trait]
@@ -2017,6 +2318,119 @@ impl ConnectorGateway for MockConnector {
                     .lock()
                     .unwrap()
                     .retain(|item| item["mb_id"].as_str() != mb_id);
+                Value::Null
+            }
+            "adminListBoardGroups" | "adminLegacyListGroups" => serde_json::json!({
+                "data": self.groups.lock().unwrap().clone(),
+                "pagination": {
+                    "mode": "page",
+                    "total": self.groups.lock().unwrap().len(),
+                    "page": 1,
+                    "per_page": 50,
+                    "last_page": 1,
+                    "cursor": null,
+                    "next_cursor": null,
+                    "has_next": false,
+                    "has_prev": false
+                },
+                "meta": {}
+            }),
+            "adminCreateBoardGroup" | "adminLegacyCreateGroup" => {
+                let body = input.body.as_ref().unwrap();
+                let group = serde_json::json!({
+                    "gr_id": body["gr_id"],
+                    "gr_subject": body["gr_subject"],
+                    "gr_admin": body.get("gr_admin").cloned().unwrap_or(serde_json::json!("")),
+                    "gr_device": body.get("gr_device").cloned().unwrap_or(serde_json::json!("both")),
+                    "gr_use_access": body.get("gr_use_access").cloned().unwrap_or(serde_json::json!(0))
+                });
+                self.groups.lock().unwrap().push(group.clone());
+                serde_json::json!({"data": group, "meta": {}})
+            }
+            "adminGetBoardGroup" | "adminLegacyGetGroup" => {
+                let gr_id = input.path.get("gr_id").map(String::as_str);
+                let group = self
+                    .groups
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|item| item["gr_id"].as_str() == gr_id)
+                    .cloned()
+                    .unwrap();
+                serde_json::json!({"data": group, "meta": {}})
+            }
+            "adminUpdateBoardGroup" | "adminPatchBoardGroup" | "adminLegacyUpdateGroup" => {
+                let gr_id = input.path.get("gr_id").map(String::as_str);
+                let mut groups = self.groups.lock().unwrap();
+                let group = groups
+                    .iter_mut()
+                    .find(|item| item["gr_id"].as_str() == gr_id)
+                    .unwrap();
+                for (name, value) in input.body.as_ref().unwrap().as_object().unwrap() {
+                    group[name] = value.clone();
+                }
+                serde_json::json!({"data": group.clone(), "meta": {}})
+            }
+            "adminDeleteBoardGroup" | "adminLegacyDeleteGroup" => {
+                let gr_id = input.path.get("gr_id").map(String::as_str);
+                self.groups
+                    .lock()
+                    .unwrap()
+                    .retain(|item| item["gr_id"].as_str() != gr_id);
+                self.group_members
+                    .lock()
+                    .unwrap()
+                    .retain(|item| item["gr_id"].as_str() != gr_id);
+                Value::Null
+            }
+            "adminListBoardGroupMembers" | "adminLegacyListGroupMembers" => {
+                let gr_id = input.path.get("gr_id").map(String::as_str);
+                let members = self
+                    .group_members
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .filter(|item| item["gr_id"].as_str() == gr_id)
+                    .cloned()
+                    .collect::<Vec<_>>();
+                serde_json::json!({
+                    "data": members,
+                    "pagination": {
+                        "mode": "page", "total": members.len(), "page": 1, "per_page": 20,
+                        "last_page": 1, "cursor": null, "next_cursor": null,
+                        "has_next": false, "has_prev": false
+                    },
+                    "meta": {}
+                })
+            }
+            "adminAddBoardGroupMember" | "adminLegacyAddGroupMember" => {
+                let gr_id = input.path.get("gr_id").unwrap().clone();
+                let mb_id = input.body.as_ref().unwrap()["mb_id"]
+                    .as_str()
+                    .unwrap()
+                    .to_owned();
+                let member = serde_json::json!({
+                    "gm_id": 2,
+                    "gr_id": gr_id,
+                    "mb_id": mb_id,
+                    "gm_datetime": "2026-08-12 11:00:00",
+                    "mb_name": "추가 회원",
+                    "mb_nick": "추가 회원",
+                    "mb_level": 2,
+                    "mb_today_login": null
+                });
+                self.group_members.lock().unwrap().push(member);
+                serde_json::json!({
+                    "data": {"gr_id": gr_id, "mb_id": mb_id, "gm_datetime": "2026-08-12 11:00:00"},
+                    "meta": {}
+                })
+            }
+            "adminDeleteBoardGroupMember" | "adminLegacyDeleteGroupMember" => {
+                let gr_id = input.path.get("gr_id").map(String::as_str);
+                let mb_id = input.path.get("mb_id").map(String::as_str);
+                self.group_members.lock().unwrap().retain(|item| {
+                    item["gr_id"].as_str() != gr_id || item["mb_id"].as_str() != mb_id
+                });
                 Value::Null
             }
             "adminListMembers" | "adminExportMembersExcel" => serde_json::json!({
