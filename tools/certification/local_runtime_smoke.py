@@ -207,20 +207,6 @@ def main() -> int:
     )
 
     member_id = "fleetcert"
-    member_password = "FleetCert9!"
-    request(
-        g5_base,
-        "POST",
-        "/api/v1/auth/register",
-        body={
-            "mb_id": member_id,
-            "mb_password": member_password,
-            "mb_name": "Fleet Certification",
-            "mb_nick": "fleet_cert",
-            "mb_email": "fleet-cert@example.invalid",
-        },
-        expected=(201,),
-    )
 
     request(
         fleet_base,

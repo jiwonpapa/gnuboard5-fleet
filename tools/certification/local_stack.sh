@@ -162,6 +162,27 @@ grep -q "설치가 완료" "$install_result" || {
 }
 rm -f "$install_result"
 
+compose exec -T db mariadb \
+  --user=root --password="$db_root_value" g5cert <<'SQL'
+START TRANSACTION;
+CREATE TEMPORARY TABLE fleet_cert_member LIKE g5_member;
+INSERT INTO fleet_cert_member SELECT * FROM g5_member WHERE mb_id = 'admin';
+UPDATE fleet_cert_member
+SET mb_no = 0,
+    mb_id = 'fleetcert',
+    mb_name = 'Fleet Certification',
+    mb_nick = 'fleet_cert',
+    mb_email = 'fleet-cert@example.invalid',
+    mb_level = 2,
+    mb_point = 0,
+    mb_datetime = NOW(),
+    mb_today_login = NOW(),
+    mb_nick_date = CURRENT_DATE();
+INSERT INTO g5_member SELECT * FROM fleet_cert_member;
+DROP TEMPORARY TABLE fleet_cert_member;
+COMMIT;
+SQL
+
 (cd "$root/apps/admin-web" && bun run build >/dev/null)
 (cd "$root" && cargo build -p g5-fleet-admin-server \
   --features local-certification --locked --offline >/dev/null)
