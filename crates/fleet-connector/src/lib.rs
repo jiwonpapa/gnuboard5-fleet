@@ -1528,11 +1528,24 @@ fn validate_core_request(
             if body.keys().any(|name| !fields.contains(name.as_str())) {
                 return Err(ConnectorError::InvalidCoreRequest);
             }
-            if operation
-                .request_required_fields
+            let multipart_aliases_are_alternatives = operation
+                .request_media_types
                 .iter()
-                .any(|name| !body.contains_key(name))
-            {
+                .any(|value| value == "multipart/form-data")
+                && !operation.request_required_fields.is_empty()
+                && operation.request_required_fields.len() == operation.request_fields.len();
+            let required_fields_missing = if multipart_aliases_are_alternatives {
+                !operation
+                    .request_required_fields
+                    .iter()
+                    .any(|name| body.contains_key(name))
+            } else {
+                operation
+                    .request_required_fields
+                    .iter()
+                    .any(|name| !body.contains_key(name))
+            };
+            if required_fields_missing {
                 return Err(ConnectorError::InvalidCoreRequest);
             }
         }
@@ -1774,6 +1787,35 @@ mod tests {
             ..Default::default()
         };
         validate_core_request(operation, &request).expect("optional null query");
+    }
+
+    #[test]
+    fn request_validator_accepts_one_multipart_file_alias() {
+        let operation = core_operation("adminUploadMemberIcon").expect("operation");
+        let request = CoreExecuteRequest {
+            path: BTreeMap::from([("mb_id".into(), "fleetcert".into())]),
+            body: Some(json!({
+                "file": {
+                    "$file": {
+                        "filename": "icon.png",
+                        "content_type": "image/png",
+                        "base64": "AA=="
+                    }
+                }
+            })),
+            ..Default::default()
+        };
+        validate_core_request(operation, &request).expect("one multipart alias");
+
+        let missing = CoreExecuteRequest {
+            path: request.path.clone(),
+            body: Some(json!({})),
+            ..Default::default()
+        };
+        assert!(matches!(
+            validate_core_request(operation, &missing),
+            Err(ConnectorError::InvalidCoreRequest)
+        ));
     }
 
     #[test]
