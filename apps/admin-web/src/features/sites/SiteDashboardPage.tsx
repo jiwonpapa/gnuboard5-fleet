@@ -185,6 +185,9 @@ export function SiteDashboardPage() {
           <Link to={`/sites/${encodeURIComponent(siteId)}/admin/boards`}>
             게시판 관리
           </Link>
+          <Link to={`/sites/${encodeURIComponent(siteId)}/admin/contents`}>
+            내용 관리
+          </Link>
           <Link
             className="primary-action"
             to={`/sites/${encodeURIComponent(siteId)}/admin/config`}

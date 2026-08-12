@@ -455,6 +455,39 @@ export interface AdminNewPostsDeleteResult {
   bn_ids: number[];
 }
 
+export interface AdminContent {
+  co_id: string;
+  co_subject: string;
+  co_html: 0 | 1 | 2;
+  co_content: string;
+  co_mobile_content: string;
+  co_include_head: string;
+  co_include_tail: string;
+  co_tag_filter_use: 0 | 1;
+  co_skin: string;
+  co_mobile_skin: string;
+}
+
+export interface AdminContentList {
+  items: AdminContent[];
+  pagination: Pagination;
+}
+
+export interface AdminContentCreate {
+  co_id: string;
+  co_subject: string;
+  co_content: string;
+  co_html?: 0 | 1 | 2;
+  co_mobile_content?: string;
+  co_include_head?: string;
+  co_include_tail?: string;
+  co_tag_filter_use?: 0 | 1;
+  co_skin?: string;
+  co_mobile_skin?: string;
+}
+
+export type AdminContentUpdate = Partial<Omit<AdminContentCreate, "co_id">>;
+
 export interface AdminAuthAssignment {
   au_menu: string;
   au_auth: string;
@@ -1248,6 +1281,58 @@ export function deleteAdminNewPosts(siteId: string, bnIds: number[], csrfToken: 
     path: `/sites/${encodeURIComponent(siteId)}/admin/boards/new-posts`,
     csrfToken,
     body: { bn_ids: bnIds },
+  });
+}
+
+export function listAdminContents(
+  siteId: string,
+  query: { page?: number; per_page?: number; search?: string } = {},
+) {
+  return transport.request<AdminContentList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/contents${fleetQuery(query)}`,
+  });
+}
+
+export function createAdminContent(
+  siteId: string,
+  create: AdminContentCreate,
+  csrfToken: string,
+) {
+  return transport.request<AdminContent, AdminContentCreate>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/contents`,
+    csrfToken,
+    body: create,
+  });
+}
+
+export function getAdminContent(siteId: string, coId: string) {
+  return transport.request<AdminContent>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/contents/${encodeURIComponent(coId)}`,
+  });
+}
+
+export function updateAdminContent(
+  siteId: string,
+  coId: string,
+  update: AdminContentUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminContent, AdminContentUpdate>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/contents/${encodeURIComponent(coId)}`,
+    csrfToken,
+    body: update,
+  });
+}
+
+export function deleteAdminContent(siteId: string, coId: string, csrfToken: string) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/contents/${encodeURIComponent(coId)}`,
+    csrfToken,
   });
 }
 

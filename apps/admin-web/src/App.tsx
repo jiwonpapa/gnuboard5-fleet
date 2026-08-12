@@ -7,6 +7,7 @@ import { FleetAccessGate } from "./features/auth/FleetAccessGate";
 import { BackupPage } from "./features/backup/BackupPage";
 import { AdminBoardsPage } from "./features/boards/AdminBoardsPage";
 import { AdminConfigWorkspacePage } from "./features/config/AdminConfigWorkspacePage";
+import { AdminContentsPage } from "./features/contents/AdminContentsPage";
 import { DiagnosticsPage } from "./features/debug/DiagnosticsPage";
 import { AdminBoardGroupsPage } from "./features/groups/AdminBoardGroupsPage";
 import { AdminMemberFilesPage } from "./features/members/AdminMemberFilesPage";
@@ -64,6 +65,10 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/boards"
               element={<AdminBoardsPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/contents"
+              element={<AdminContentsPage />}
             />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />
