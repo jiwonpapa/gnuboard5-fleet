@@ -3,9 +3,11 @@ import { useEffect, useState, type FormEvent } from "react";
 import {
   changeFleetPassword,
   enableTotp,
+  getFleetSession,
   getSecuritySettings,
   regenerateRecoveryCodes,
   startTotpEnrollment,
+  stepUp,
   updateIdleTimeout,
   type SecuritySettings,
   type TotpChallenge,
@@ -18,6 +20,7 @@ export function SecuritySettingsPage() {
     logout,
     session,
     updateIdleTimeout: updateIdleGuard,
+    updateSession,
   } = useAuthSession();
   const [settings, setSettings] = useState<SecuritySettings | null>(null);
   const [idleMinutes, setIdleMinutes] = useState(idleTimeoutMinutes);
@@ -55,6 +58,22 @@ export function SecuritySettingsPage() {
           : current
       );
       setNotice("자동 로그아웃 시간이 저장되었습니다.");
+    });
+  }
+
+  async function verifyRecentAccess(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    await run(async () => {
+      await stepUp(
+        String(form.get("current_password") ?? ""),
+        session.csrf_token,
+        { totpCode: String(form.get("totp_code") ?? "") },
+      );
+      updateSession(await getFleetSession());
+      formElement.reset();
+      setNotice("최근 본인 확인을 완료했습니다. 보호된 변경 작업을 진행할 수 있습니다.");
     });
   }
 
@@ -147,6 +166,26 @@ export function SecuritySettingsPage() {
       {notice && <p className="flow-notice" role="status">{notice}</p>}
 
       <div className="security-grid">
+        <SecurityPanel
+          title="최근 본인 확인"
+          status={session.step_up_active ? "확인됨" : "필요"}
+        >
+          <p>사이트 비밀·설정·삭제 작업 전에 비밀번호와 OTP를 다시 확인합니다.</p>
+          <form className="security-form" onSubmit={(event) => void verifyRecentAccess(event)}>
+            <label>
+              <span>현재 비밀번호</span>
+              <input required name="current_password" type="password" autoComplete="current-password" />
+            </label>
+            <label>
+              <span>현재 OTP</span>
+              <input required name="totp_code" inputMode="numeric" pattern="[0-9]{6}" autoComplete="one-time-code" />
+            </label>
+            <button className="primary-action" disabled={busy} type="submit">
+              본인 확인
+            </button>
+          </form>
+        </SecurityPanel>
+
         <SecurityPanel title="자동 로그아웃" status={`${idleMinutes}분`}>
           <form className="security-form" onSubmit={(event) => void saveIdleTimeout(event)}>
             <label>
