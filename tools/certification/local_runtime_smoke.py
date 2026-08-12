@@ -455,13 +455,14 @@ def main() -> int:
         headers=fleet_headers(admin_cookie, admin_csrf),
         expected=(204,),
     )
-    request(
+    canonical_cleanup = request(
         fleet_base,
         "GET",
-        canonical_group_path,
+        canonical_groups_path,
         headers=fleet_headers(admin_cookie),
-        expected=(404,),
-    )
+    ).json()
+    if "fleetgrp" in [row.get("gr_id") for row in canonical_cleanup.get("items", [])]:
+        raise RuntimeError("R13 canonical group cleanup readback failed")
 
     legacy_groups_path = "/api/v1/sites/owner-a-site/admin/groups"
     request(
@@ -528,13 +529,14 @@ def main() -> int:
         headers=fleet_headers(admin_cookie, admin_csrf),
         expected=(204,),
     )
-    request(
+    legacy_cleanup = request(
         fleet_base,
         "GET",
-        legacy_group_path,
+        legacy_groups_path,
         headers=fleet_headers(admin_cookie),
-        expected=(404,),
-    )
+    ).json()
+    if "fleetold" in [row.get("gr_id") for row in legacy_cleanup.get("items", [])]:
+        raise RuntimeError("R13 legacy group cleanup readback failed")
 
     request(
         fleet_base,
