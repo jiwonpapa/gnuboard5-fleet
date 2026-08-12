@@ -437,11 +437,34 @@
       "id": "R13",
       "sequence": 8,
       "title": "groups",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R12"],
+      "completion": {
+        "implementation_commit": "8cc1ecbec6d57f7865b05fd4a5bc4735f942ad7f",
+        "evidence_path": "docs/audits/evidence/R13_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-12T03:03:01Z"
+      },
       "core": {
         "domains": ["groups"],
-        "operation_ids": [],
+        "operation_ids": [
+          "adminListBoardGroups",
+          "adminCreateBoardGroup",
+          "adminGetBoardGroup",
+          "adminUpdateBoardGroup",
+          "adminPatchBoardGroup",
+          "adminDeleteBoardGroup",
+          "adminListBoardGroupMembers",
+          "adminAddBoardGroupMember",
+          "adminDeleteBoardGroupMember",
+          "adminLegacyListGroups",
+          "adminLegacyCreateGroup",
+          "adminLegacyGetGroup",
+          "adminLegacyUpdateGroup",
+          "adminLegacyDeleteGroup",
+          "adminLegacyListGroupMembers",
+          "adminLegacyAddGroupMember",
+          "adminLegacyDeleteGroupMember"
+        ],
         "expected_count": 17
       },
       "legacy": {
@@ -470,7 +493,7 @@
       "id": "R14",
       "sequence": 9,
       "title": "boards",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R13"],
       "core": {
         "domains": ["boards"],
