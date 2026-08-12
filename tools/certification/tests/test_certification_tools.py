@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 def load(name: str):
@@ -25,6 +26,13 @@ receipt = load("staging_receipt")
 
 
 class CertificationToolTests(unittest.TestCase):
+    def test_local_totp_matches_rfc6238_sha1_vector(self) -> None:
+        with mock.patch.object(local_runtime.time, "time", return_value=59):
+            self.assertEqual(
+                "287082",
+                local_runtime.current_totp("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"),
+            )
+
     def test_local_session_parser_is_fail_closed(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

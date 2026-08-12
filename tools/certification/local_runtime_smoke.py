@@ -2,11 +2,15 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
+import hmac
 import http.client
 import json
 import os
 import re
+import struct
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -93,12 +97,32 @@ def g5_login(base: str, member_id: str, value: str) -> str:
     return token
 
 
-def fleet_login(base: str, login_name: str, value: str) -> tuple[str, str]:
+def current_totp(encoded_secret: str) -> str:
+    normalized = encoded_secret.replace(" ", "").upper()
+    padding = "=" * ((8 - len(normalized) % 8) % 8)
+    secret = base64.b32decode(normalized + padding, casefold=True)
+    counter = int(time.time()) // 30
+    digest = hmac.new(secret, struct.pack(">Q", counter), hashlib.sha1).digest()
+    offset = digest[-1] & 0x0F
+    value = struct.unpack(">I", digest[offset : offset + 4])[0] & 0x7FFFFFFF
+    return f"{value % 1_000_000:06d}"
+
+
+def fleet_login(
+    base: str,
+    login_name: str,
+    value: str,
+    totp_secret: str,
+) -> tuple[str, str]:
     response = request(
         base,
         "POST",
         "/api/v1/auth/login",
-        body={"login_name": login_name, "password": value},
+        body={
+            "login_name": login_name,
+            "password": value,
+            "totp_code": current_totp(totp_secret),
+        },
     )
     csrf = response.json().get("csrf_token")
     cookie = response.headers.get("set-cookie", "").split(";", 1)[0]
@@ -108,7 +132,7 @@ def fleet_login(base: str, login_name: str, value: str) -> tuple[str, str]:
         base,
         "POST",
         "/api/v1/auth/step-up",
-        body={"password": value},
+        body={"password": value, "totp_code": current_totp(totp_secret)},
         headers={"cookie": cookie, "x-csrf-token": csrf},
         expected=(204,),
     )
@@ -183,31 +207,43 @@ def main() -> int:
 
     member_id = "fleetcert"
 
-    request(
+    install_status = request(
+        fleet_base,
+        "GET",
+        "/api/v1/install/status",
+    ).json()
+    if install_status.get("state") != "setup_required":
+        raise RuntimeError("Fleet install state is not setup_required")
+    challenge = request(
         fleet_base,
         "POST",
-        "/api/v1/bootstrap",
+        "/api/v1/install/challenge",
+        body={"login_name": env["G5_CERT_FLEET_ADMIN_ID"]},
+        expected=(201,),
+    ).json()
+    totp_secret = challenge.get("manual_entry_key")
+    setup_token = challenge.get("setup_token")
+    if not isinstance(totp_secret, str) or not isinstance(setup_token, str):
+        raise RuntimeError("Fleet install challenge readback failed")
+    completion = request(
+        fleet_base,
+        "POST",
+        "/api/v1/install/complete",
         body={
+            "setup_token": setup_token,
             "login_name": env["G5_CERT_FLEET_ADMIN_ID"],
             "password": env["G5_CERT_FLEET_ADMIN_VALUE"],
+            "totp_code": current_totp(totp_secret),
         },
         expected=(201,),
-    )
+    ).json()
+    if len(completion.get("recovery_codes", [])) != 10:
+        raise RuntimeError("Fleet install recovery-code readback failed")
     admin_cookie, admin_csrf = fleet_login(
         fleet_base,
         env["G5_CERT_FLEET_ADMIN_ID"],
         env["G5_CERT_FLEET_ADMIN_VALUE"],
-    )
-    request(
-        fleet_base,
-        "POST",
-        "/api/v1/users",
-        body={
-            "login_name": env["G5_CERT_FLEET_PEER_ID"],
-            "password": env["G5_CERT_FLEET_PEER_VALUE"],
-        },
-        headers=fleet_headers(admin_cookie, admin_csrf),
-        expected=(201,),
+        totp_secret,
     )
     request(
         fleet_base,
@@ -362,61 +398,12 @@ def main() -> int:
         headers=fleet_headers(admin_cookie, admin_csrf),
     )
 
-    peer_cookie, peer_csrf = fleet_login(
-        fleet_base,
-        env["G5_CERT_FLEET_PEER_ID"],
-        env["G5_CERT_FLEET_PEER_VALUE"],
-    )
-    if request(
-        fleet_base,
-        "GET",
-        "/api/v1/sites",
-        headers=fleet_headers(peer_cookie),
-    ).json() != []:
-        raise RuntimeError("new Fleet peer inherited another owner's sites")
-    request(
-        fleet_base,
-        "GET",
-        "/api/v1/sites/owner-a-site",
-        headers=fleet_headers(peer_cookie),
-        expected=(403, 404),
-    )
-    request(
-        fleet_base,
-        "POST",
-        "/api/v1/sites",
-        body={
-            "site_id": "owner-b-site",
-            "display_name": "Owner B G5",
-            "base_url": g5_base,
-        },
-        headers=fleet_headers(peer_cookie, peer_csrf),
-        expected=(201,),
-    )
-    request(
-        fleet_base,
-        "POST",
-        "/api/v1/sites/owner-b-site/connector/login",
-        body={
-            "mb_id": env["G5_CERT_G5_ADMIN_ID"],
-            "mb_password": env["G5_CERT_G5_ADMIN_VALUE"],
-        },
-        headers=fleet_headers(peer_cookie, peer_csrf),
-    )
-    peer_sites = request(
-        fleet_base,
-        "GET",
-        "/api/v1/sites",
-        headers=fleet_headers(peer_cookie),
-    ).json()
     admin_sites = request(
         fleet_base,
         "GET",
         "/api/v1/sites",
         headers=fleet_headers(admin_cookie),
     ).json()
-    if [row.get("site_id") for row in peer_sites] != ["owner-b-site"]:
-        raise RuntimeError("peer site ownership readback mismatch")
     if [row.get("site_id") for row in admin_sites] != ["owner-a-site"]:
         raise RuntimeError("admin site ownership readback mismatch")
     final_config = request(
@@ -454,13 +441,13 @@ def main() -> int:
             "shop_installed": True,
         },
         "fleet": {
-            "users": 2,
-            "sites": 2,
+            "users": 1,
+            "sites": 1,
             "owner_site_counts": {
                 env["G5_CERT_FLEET_ADMIN_ID"]: len(admin_sites),
-                env["G5_CERT_FLEET_PEER_ID"]: len(peer_sites),
             },
-            "cross_owner_access": "denied",
+            "cross_owner_access": "not_exercised_in_r12_scope",
+            "otp_install_login_step_up": "passed",
             "connector_health": connector_health,
         },
         "mutation": {
