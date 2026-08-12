@@ -181,31 +181,6 @@ def main() -> int:
     if cleaned.get("data", {}).get("cf_10") != baseline:
         raise RuntimeError("direct provider cleanup readback failed")
 
-    media_config_fields = (
-        "cf_use_member_icon",
-        "cf_member_icon_size",
-        "cf_member_icon_width",
-        "cf_member_icon_height",
-        "cf_member_img_size",
-        "cf_member_img_width",
-        "cf_member_img_height",
-    )
-    media_config_baseline = {
-        field: baseline_payload.get("data", {}).get(field)
-        for field in media_config_fields
-    }
-    media_config_enabled = {
-        **media_config_baseline,
-        "cf_use_member_icon": 1,
-    }
-    request(
-        g5_base,
-        "PUT",
-        "/api/v1/admin/config",
-        body=media_config_enabled,
-        headers=authorization,
-    )
-
     member_id = "fleetcert"
 
     request(
@@ -370,13 +345,6 @@ def main() -> int:
         member_path,
         headers=fleet_headers(admin_cookie),
         expected=(404,),
-    )
-    request(
-        g5_base,
-        "PUT",
-        "/api/v1/admin/config",
-        body=media_config_baseline,
-        headers=authorization,
     )
     fleet_readback = request(
         fleet_base,

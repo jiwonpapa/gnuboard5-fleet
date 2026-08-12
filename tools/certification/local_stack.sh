@@ -165,6 +165,7 @@ rm -f "$install_result"
 compose exec -T db mariadb \
   --user=root --password="$db_root_value" g5cert <<'SQL'
 START TRANSACTION;
+UPDATE g5_config SET cf_use_member_icon = 1;
 CREATE TEMPORARY TABLE fleet_cert_member LIKE g5_member;
 INSERT INTO fleet_cert_member SELECT * FROM g5_member WHERE mb_id = 'admin';
 UPDATE fleet_cert_member
