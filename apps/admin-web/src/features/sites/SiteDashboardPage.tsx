@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import {
   connectorHealth,
+  connectorLogin,
   deleteSite,
   getSite,
   listSites,
@@ -22,6 +23,7 @@ export function SiteDashboardPage() {
   const [health, setHealth] = useState<ConnectorHealth | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [connectorMessage, setConnectorMessage] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
@@ -88,6 +90,33 @@ export function SiteDashboardPage() {
       setHealth(await connectorHealth(site.site_id));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "G5 API 상태를 확인하지 못했습니다.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function loginToConnector(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!site) return;
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setBusy(true);
+    setError("");
+    setConnectorMessage("");
+    try {
+      const result = await connectorLogin(
+        site.site_id,
+        {
+          mb_id: String(data.get("mb_id") ?? "").trim(),
+          mb_password: String(data.get("mb_password") ?? ""),
+        },
+        session.csrf_token,
+      );
+      if (!result.connected) throw new Error("Connector 연결 상태를 확인하지 못했습니다.");
+      form.reset();
+      setConnectorMessage("G5 관리자 인증을 서버에 안전하게 저장했습니다.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "G5 관리자 인증에 실패했습니다.");
     } finally {
       setBusy(false);
     }
@@ -172,28 +201,45 @@ export function SiteDashboardPage() {
           Connector {health.status} · v{health.version}
         </p>
       ) : null}
+      {connectorMessage ? <p className="success-message" role="status">{connectorMessage}</p> : null}
       {error ? <p className="error-message" role="alert">{error}</p> : null}
       {site ? (
-        <form className="settings-card stacked-form" onSubmit={save}>
-          <label>
-            사이트 식별자
-            <input value={site.site_id} readOnly />
-          </label>
-          <label>
-            표시 이름
-            <input name="display_name" defaultValue={site.display_name} required maxLength={200} />
-          </label>
-          <label>
-            기준 주소
-            <input name="base_url" type="url" defaultValue={site.base_url} required />
-          </label>
-          <div className="action-row">
-            <button className="primary-action" disabled={busy} type="submit">변경 저장</button>
-            <button className="danger-action" disabled={busy} type="button" onClick={() => setDeleteOpen(true)}>
-              사이트 삭제
-            </button>
-          </div>
-        </form>
+        <div className="settings-grid">
+          <form className="settings-card stacked-form" onSubmit={save}>
+            <h3>사이트 설정</h3>
+            <label>
+              사이트 식별자
+              <input value={site.site_id} readOnly />
+            </label>
+            <label>
+              표시 이름
+              <input name="display_name" defaultValue={site.display_name} required maxLength={200} />
+            </label>
+            <label>
+              기준 주소
+              <input name="base_url" type="url" defaultValue={site.base_url} required />
+            </label>
+            <div className="action-row">
+              <button className="primary-action" disabled={busy} type="submit">변경 저장</button>
+              <button className="danger-action" disabled={busy} type="button" onClick={() => setDeleteOpen(true)}>
+                사이트 삭제
+              </button>
+            </div>
+          </form>
+          <form className="settings-card stacked-form" onSubmit={loginToConnector}>
+            <h3>G5 Connector 로그인</h3>
+            <p>G5 JWT는 서버의 암호화 저장소에만 보관되며 브라우저로 전달되지 않습니다.</p>
+            <label>
+              G5 관리자 아이디
+              <input name="mb_id" autoComplete="off" required />
+            </label>
+            <label>
+              G5 관리자 비밀번호
+              <input name="mb_password" type="password" autoComplete="off" required />
+            </label>
+            <button className="primary-action" disabled={busy} type="submit">Connector 로그인</button>
+          </form>
+        </div>
       ) : null}
       <ConfirmActionDialog
         busy={busy}
