@@ -424,6 +424,111 @@ def main() -> int:
     ).json()
     if patched_group.get("gr_subject") != "Fleet certification patched":
         raise RuntimeError("R13 canonical group patch failed")
+
+    boards_path = "/api/v1/sites/owner-a-site/admin/boards"
+    initial_boards = request(
+        fleet_base,
+        "GET",
+        f"{boards_path}?page=1&per_page=20&sort_by=bo_table&sort_direction=ASC",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if not isinstance(initial_boards.get("items"), list):
+        raise RuntimeError("R14 board list failed")
+    created_board = request(
+        fleet_base,
+        "POST",
+        boards_path,
+        body={
+            "bo_table": "fleetboard",
+            "bo_subject": "Fleet board certification",
+            "gr_id": "fleetgrp",
+            "bo_read_level": 1,
+            "bo_write_level": 2,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(201,),
+    ).json()
+    if created_board.get("bo_table") != "fleetboard":
+        raise RuntimeError("R14 board create failed")
+    board_path = f"{boards_path}/fleetboard"
+    board_detail = request(
+        fleet_base,
+        "GET",
+        board_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if board_detail.get("bo_subject") != "Fleet board certification":
+        raise RuntimeError("R14 board detail failed")
+    updated_board = request(
+        fleet_base,
+        "PUT",
+        board_path,
+        body={"bo_subject": "Fleet board certification updated"},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if updated_board.get("bo_subject") != "Fleet board certification updated":
+        raise RuntimeError("R14 board update failed")
+    updated_board_readback = request(
+        fleet_base,
+        "GET",
+        board_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if updated_board_readback.get("bo_subject") != updated_board.get("bo_subject"):
+        raise RuntimeError("R14 board update readback failed")
+    copied_board = request(
+        fleet_base,
+        "POST",
+        f"{board_path}/copy",
+        body={
+            "target_bo_table": "fleetcopy",
+            "target_bo_subject": "Fleet board copy",
+            "copy_posts": False,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(201,),
+    ).json()
+    if copied_board.get("bo_table") != "fleetcopy":
+        raise RuntimeError("R14 board copy failed")
+    copied_board_path = f"{boards_path}/fleetcopy"
+    if request(
+        fleet_base,
+        "GET",
+        copied_board_path,
+        headers=fleet_headers(admin_cookie),
+    ).json().get("bo_subject") != "Fleet board copy":
+        raise RuntimeError("R14 board copy readback failed")
+    new_posts_result = request(
+        fleet_base,
+        "DELETE",
+        f"{boards_path}/new-posts",
+        body={"bn_ids": [2147483646]},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if not new_posts_result.get("deleted") or new_posts_result.get("bn_ids") != [
+        2147483646
+    ]:
+        raise RuntimeError("R14 explicit new-post cleanup failed")
+    for cleanup_path in (copied_board_path, board_path):
+        request(
+            fleet_base,
+            "DELETE",
+            cleanup_path,
+            headers=fleet_headers(admin_cookie, admin_csrf),
+            expected=(204,),
+        )
+    board_cleanup = request(
+        fleet_base,
+        "GET",
+        f"{boards_path}?search=fleet&sort_by=bo_table&sort_direction=ASC",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if any(
+        row.get("bo_table") in {"fleetboard", "fleetcopy"}
+        for row in board_cleanup.get("items", [])
+    ):
+        raise RuntimeError("R14 board cleanup readback failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -643,6 +748,14 @@ def main() -> int:
             "legacy_alias_group_crud": "passed",
             "legacy_alias_member_list_add_delete": "passed",
             "cleanup_readback": "passed",
+        },
+        "r14_boards": {
+            "operations": 7,
+            "list_detail": "passed",
+            "create_update_readback": "passed",
+            "copy_readback": "passed",
+            "explicit_new_post_cleanup": "passed",
+            "board_cleanup_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,
