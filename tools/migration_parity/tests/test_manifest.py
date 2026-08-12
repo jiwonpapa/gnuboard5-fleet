@@ -76,6 +76,11 @@ class ManifestTest(unittest.TestCase):
                 "adminDeleteBoard",
                 "adminCopyBoard",
                 "adminDeleteNewPosts",
+                "adminListContents",
+                "adminCreateContent",
+                "adminGetContent",
+                "adminUpdateContent",
+                "adminDeleteContent",
             },
             {
                 mapping["operation_id"]

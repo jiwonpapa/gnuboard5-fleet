@@ -529,6 +529,85 @@ def main() -> int:
     ):
         raise RuntimeError("R14 board cleanup readback failed")
 
+    contents_path = "/api/v1/sites/owner-a-site/admin/contents"
+    initial_contents = request(
+        fleet_base,
+        "GET",
+        f"{contents_path}?page=1&per_page=20",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if not isinstance(initial_contents.get("items"), list):
+        raise RuntimeError("R15 content list failed")
+    created_content = request(
+        fleet_base,
+        "POST",
+        contents_path,
+        body={
+            "co_id": "fleetcontent",
+            "co_subject": "Fleet content certification",
+            "co_html": 2,
+            "co_content": "<p>fleet content</p>",
+            "co_mobile_content": "mobile fleet content",
+            "co_include_head": "",
+            "co_include_tail": "",
+            "co_tag_filter_use": 1,
+            "co_skin": "basic",
+            "co_mobile_skin": "basic",
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(201,),
+    ).json()
+    if created_content.get("co_id") != "fleetcontent" or created_content.get("co_html") != 2:
+        raise RuntimeError("R15 content create or HTML mode preservation failed")
+    content_path = f"{contents_path}/fleetcontent"
+    content_detail = request(
+        fleet_base,
+        "GET",
+        content_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if content_detail.get("co_content") != "<p>fleet content</p>":
+        raise RuntimeError("R15 content detail failed")
+    updated_content = request(
+        fleet_base,
+        "PUT",
+        content_path,
+        body={
+            "co_subject": "Fleet content certification updated",
+            "co_mobile_content": "",
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if updated_content.get("co_subject") != "Fleet content certification updated":
+        raise RuntimeError("R15 content update failed")
+    updated_content_readback = request(
+        fleet_base,
+        "GET",
+        content_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        updated_content_readback.get("co_subject") != updated_content.get("co_subject")
+        or updated_content_readback.get("co_mobile_content") != ""
+        or updated_content_readback.get("co_html") != 2
+    ):
+        raise RuntimeError("R15 content update readback failed")
+    request(
+        fleet_base,
+        "DELETE",
+        content_path,
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(204,),
+    )
+    content_cleanup = request(
+        fleet_base,
+        "GET",
+        f"{contents_path}?search=fleetcontent",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if any(row.get("co_id") == "fleetcontent" for row in content_cleanup.get("items", [])):
+        raise RuntimeError("R15 content cleanup readback failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -756,6 +835,14 @@ def main() -> int:
             "copy_readback": "passed",
             "explicit_new_post_cleanup": "passed",
             "board_cleanup_readback": "passed",
+        },
+        "r15_contents": {
+            "operations": 5,
+            "list_detail": "passed",
+            "create_update_readback": "passed",
+            "html_mode_2_preserved": "passed",
+            "empty_mobile_content_preserved": "passed",
+            "content_cleanup_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,
