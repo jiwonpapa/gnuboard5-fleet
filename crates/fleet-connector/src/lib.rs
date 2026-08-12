@@ -1162,8 +1162,7 @@ pub trait ConnectorGateway: Send + Sync {
             access_token,
             "adminGetBoard",
             bo_table,
-            None,
-            false,
+            CoreExecuteRequest::default(),
         )
         .await
     }
@@ -1186,8 +1185,10 @@ pub trait ConnectorGateway: Send + Sync {
             access_token,
             "adminUpdateBoard",
             bo_table,
-            Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
-            false,
+            CoreExecuteRequest {
+                body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+                ..Default::default()
+            },
         )
         .await
     }
@@ -1236,8 +1237,10 @@ pub trait ConnectorGateway: Send + Sync {
             access_token,
             "adminCopyBoard",
             bo_table,
-            Some(serde_json::to_value(copy).map_err(|_| ConnectorError::Contract)?),
-            false,
+            CoreExecuteRequest {
+                body: Some(serde_json::to_value(copy).map_err(|_| ConnectorError::Contract)?),
+                ..Default::default()
+            },
         )
         .await
     }
@@ -1282,25 +1285,14 @@ async fn board_detail_operation<T: ConnectorGateway + ?Sized>(
     access_token: &str,
     operation_id: &str,
     bo_table: &str,
-    body: Option<Value>,
-    confirm_destructive: bool,
+    mut request: CoreExecuteRequest,
 ) -> ConnectorResult<AdminBoard> {
     if !valid_board_table(bo_table) {
         return Err(ConnectorError::InvalidCoreRequest);
     }
+    request.path = BTreeMap::from([("bo_table".to_owned(), bo_table.to_owned())]);
     let response = gateway
-        .core_execute(
-            base_url,
-            request_id,
-            access_token,
-            operation_id,
-            &CoreExecuteRequest {
-                path: BTreeMap::from([("bo_table".to_owned(), bo_table.to_owned())]),
-                body,
-                confirm_destructive,
-                ..Default::default()
-            },
-        )
+        .core_execute(base_url, request_id, access_token, operation_id, &request)
         .await?;
     typed_core_data(operation_id, response)
 }
