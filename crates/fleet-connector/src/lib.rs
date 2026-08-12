@@ -14,6 +14,10 @@ pub use g5_fleet_core::boards::{
     AdminBoard, AdminBoardCopy, AdminBoardCreate, AdminBoardList, AdminBoardListQuery,
     AdminBoardUpdate, AdminNewPostsDelete, AdminNewPostsDeleteResult, valid_board_table,
 };
+pub use g5_fleet_core::contents::{
+    AdminContent, AdminContentCreate, AdminContentList, AdminContentListQuery, AdminContentUpdate,
+    valid_content_id,
+};
 pub use g5_fleet_core::groups::{
     AdminBoardGroup, AdminBoardGroupCreate, AdminBoardGroupList, AdminBoardGroupMember,
     AdminBoardGroupMemberCreate, AdminBoardGroupMemberList, AdminBoardGroupMemberListQuery,
@@ -1270,6 +1274,136 @@ pub trait ConnectorGateway: Send + Sync {
             .await?;
         typed_core_data("adminDeleteNewPosts", response)
     }
+
+    async fn admin_list_contents(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminContentListQuery,
+    ) -> ConnectorResult<AdminContentList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListContents",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                        ("search", query.search.as_ref().map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<AdminContent> =
+            typed_core_envelope("adminListContents", response)?;
+        Ok(AdminContentList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_create_content(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        create: &AdminContentCreate,
+    ) -> ConnectorResult<AdminContent> {
+        if !create.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminCreateContent",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(create).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminCreateContent", response)
+    }
+
+    async fn admin_get_content(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        co_id: &str,
+    ) -> ConnectorResult<AdminContent> {
+        content_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminGetContent",
+            co_id,
+            CoreExecuteRequest::default(),
+        )
+        .await
+    }
+
+    async fn admin_update_content(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        co_id: &str,
+        update: &AdminContentUpdate,
+    ) -> ConnectorResult<AdminContent> {
+        if !update.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        content_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminUpdateContent",
+            co_id,
+            CoreExecuteRequest {
+                body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+                ..Default::default()
+            },
+        )
+        .await
+    }
+
+    async fn admin_delete_content(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        co_id: &str,
+    ) -> ConnectorResult<()> {
+        if !valid_content_id(co_id) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteContent",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("co_id".to_owned(), co_id.to_owned())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_empty("adminDeleteContent", response)
+    }
 }
 
 #[derive(Deserialize)]
@@ -1293,6 +1427,26 @@ async fn board_detail_operation<T: ConnectorGateway + ?Sized>(
     request.path = BTreeMap::from([("bo_table".to_owned(), bo_table.to_owned())]);
     let response = gateway
         .core_execute(base_url, request_id, access_token, operation_id, &request)
+        .await?;
+    typed_core_data(operation_id, response)
+}
+
+async fn content_detail_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    co_id: &str,
+    input: CoreExecuteRequest,
+) -> ConnectorResult<AdminContent> {
+    if !valid_content_id(co_id) {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let mut input = input;
+    input.path.insert("co_id".to_owned(), co_id.to_owned());
+    let response = gateway
+        .core_execute(base_url, request_id, access_token, operation_id, &input)
         .await?;
     typed_core_data(operation_id, response)
 }

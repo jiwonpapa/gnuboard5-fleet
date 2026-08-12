@@ -318,6 +318,11 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
                 "POST",
                 "/api/v1/sites/{site_id}/admin/boards/{bo_table}/copy"
             ),
+            ("GET", "/api/v1/sites/{site_id}/admin/contents"),
+            ("POST", "/api/v1/sites/{site_id}/admin/contents"),
+            ("GET", "/api/v1/sites/{site_id}/admin/contents/{co_id}"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/contents/{co_id}"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/contents/{co_id}"),
             ("GET", "/api/v1/sites/{site_id}/config/basic"),
             ("PUT", "/api/v1/sites/{site_id}/config/basic"),
             ("POST", "/api/v1/sites/{site_id}/core/{operation_id}",),
@@ -694,6 +699,18 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             "bo_upload_size": 1048576,
             "bo_count_write": 4,
             "bo_count_comment": 1
+        })])),
+        contents: Arc::new(Mutex::new(vec![serde_json::json!({
+            "co_id": "company",
+            "co_subject": "회사 소개",
+            "co_html": 2,
+            "co_content": "<p>company</p>",
+            "co_mobile_content": "mobile company",
+            "co_include_head": "",
+            "co_include_tail": "",
+            "co_tag_filter_use": 1,
+            "co_skin": "basic",
+            "co_mobile_skin": "basic"
         })])),
     };
     let app = build_router(AppConfig {
@@ -1819,6 +1836,83 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         assert_eq!(board_delete.status(), StatusCode::NO_CONTENT);
     }
 
+    let content_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/contents?page=1&per_page=20&search=company",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(content_list.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(content_list).await["items"][0]["co_html"], 2);
+
+    let content_create = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/contents",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "co_id": "fleet_terms",
+                "co_subject": "Fleet 약관",
+                "co_html": 2,
+                "co_content": "<p>terms</p>",
+                "co_mobile_content": "mobile terms",
+                "co_tag_filter_use": 1
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(content_create.status(), StatusCode::CREATED);
+    assert_eq!(json::<Value>(content_create).await["co_id"], "fleet_terms");
+
+    let content_get = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/contents/fleet_terms",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(content_get).await["co_html"], 2);
+
+    let content_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/contents/fleet_terms",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"co_subject": "Fleet 약관 갱신"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(content_update).await["co_subject"],
+        "Fleet 약관 갱신"
+    );
+
+    let content_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/contents/fleet_terms",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(content_delete.status(), StatusCode::NO_CONTENT);
+
     let registry = app
         .clone()
         .oneshot(json_request(
@@ -2170,6 +2264,7 @@ struct MockConnector {
     groups: Arc<Mutex<Vec<Value>>>,
     group_members: Arc<Mutex<Vec<Value>>>,
     boards: Arc<Mutex<Vec<Value>>>,
+    contents: Arc<Mutex<Vec<Value>>>,
 }
 
 #[async_trait]
@@ -2545,6 +2640,64 @@ impl ConnectorGateway for MockConnector {
                     "deleted_posts": ids.as_array().unwrap().len(), "deleted_comments": 0,
                     "skipped": 0, "bn_ids": ids
                 }, "meta": {}})
+            }
+            "adminListContents" => serde_json::json!({
+                "data": self.contents.lock().unwrap().clone(),
+                "pagination": {
+                    "mode": "page", "total": self.contents.lock().unwrap().len(),
+                    "page": 1, "per_page": 20, "last_page": 1,
+                    "cursor": null, "next_cursor": null, "has_next": false, "has_prev": false
+                },
+                "meta": {}
+            }),
+            "adminCreateContent" => {
+                let body = input.body.as_ref().unwrap();
+                let content = serde_json::json!({
+                    "co_id": body["co_id"],
+                    "co_subject": body["co_subject"],
+                    "co_html": body.get("co_html").cloned().unwrap_or(serde_json::json!(0)),
+                    "co_content": body["co_content"],
+                    "co_mobile_content": body.get("co_mobile_content").cloned().unwrap_or(serde_json::json!("")),
+                    "co_include_head": body.get("co_include_head").cloned().unwrap_or(serde_json::json!("")),
+                    "co_include_tail": body.get("co_include_tail").cloned().unwrap_or(serde_json::json!("")),
+                    "co_tag_filter_use": body.get("co_tag_filter_use").cloned().unwrap_or(serde_json::json!(1)),
+                    "co_skin": body.get("co_skin").cloned().unwrap_or(serde_json::json!("")),
+                    "co_mobile_skin": body.get("co_mobile_skin").cloned().unwrap_or(serde_json::json!(""))
+                });
+                self.contents.lock().unwrap().push(content.clone());
+                serde_json::json!({"data": content, "meta": {}})
+            }
+            "adminGetContent" => {
+                let co_id = input.path.get("co_id").map(String::as_str);
+                let content = self
+                    .contents
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|item| item["co_id"].as_str() == co_id)
+                    .cloned()
+                    .unwrap();
+                serde_json::json!({"data": content, "meta": {}})
+            }
+            "adminUpdateContent" => {
+                let co_id = input.path.get("co_id").map(String::as_str);
+                let mut contents = self.contents.lock().unwrap();
+                let content = contents
+                    .iter_mut()
+                    .find(|item| item["co_id"].as_str() == co_id)
+                    .unwrap();
+                for (name, value) in input.body.as_ref().unwrap().as_object().unwrap() {
+                    content[name] = value.clone();
+                }
+                serde_json::json!({"data": content.clone(), "meta": {}})
+            }
+            "adminDeleteContent" => {
+                let co_id = input.path.get("co_id").map(String::as_str);
+                self.contents
+                    .lock()
+                    .unwrap()
+                    .retain(|item| item["co_id"].as_str() != co_id);
+                Value::Null
             }
             "adminListBoardGroups" | "adminLegacyListGroups" => serde_json::json!({
                 "data": self.groups.lock().unwrap().clone(),

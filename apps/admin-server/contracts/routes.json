@@ -584,6 +584,41 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/contents",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_content_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/contents",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_content_create"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/contents/{co_id}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_content_detail"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/contents/{co_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_content_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/contents/{co_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_content_delete"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/config/basic",
       "auth": "session",
       "site_context": true,
