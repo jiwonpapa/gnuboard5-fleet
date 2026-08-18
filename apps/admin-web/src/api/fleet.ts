@@ -699,6 +699,80 @@ export interface AdminThemeList {
   total: number;
 }
 
+export interface AdminPointItem {
+  po_id: number;
+  mb_id: string;
+  po_point: number;
+  po_datetime: string;
+  po_content: string;
+  po_use_point: number;
+  po_expired: number;
+  po_expire_date: string;
+  po_mb_point: number;
+  po_rel_table: string;
+  po_rel_id: string;
+  po_rel_action: string;
+}
+
+export interface AdminPointList {
+  items: AdminPointItem[];
+  pagination: Pagination;
+}
+
+export interface AdminPointListQuery {
+  page?: number;
+  per_page?: number;
+  mb_id?: string;
+  search_field?: "mb_id" | "po_content";
+  search?: string;
+}
+
+export interface AdminPointChange {
+  mb_id: string;
+  point: number;
+  po_content?: string;
+}
+
+export interface AdminPointChangeResult {
+  mb_id: string;
+  before_point: number;
+  changed_point: number;
+  after_point: number;
+  po_content: string;
+  processed_at: string;
+}
+
+export interface AdminPointExpire {
+  base_date?: string;
+}
+
+export interface AdminPointExpireResult {
+  base_date: string;
+  expired_count: number;
+  synced_members: number;
+}
+
+export type AdminPointAction =
+  | ({ action: "grant" | "deduct" } & AdminPointChange)
+  | ({ action: "expire" } & AdminPointExpire);
+
+export type AdminPointActionResult = AdminPointChangeResult | AdminPointExpireResult;
+
+export interface AdminPointDelete {
+  po_ids: number[];
+}
+
+export interface AdminPointDeleteResult {
+  requested_count: number;
+  deleted_count: number;
+}
+
+export interface AdminPointSummary {
+  mb_id: string | null;
+  total_point: number;
+  total_rows: number;
+}
+
 export interface AdminAuthAssignment {
   au_menu: string;
   au_auth: string;
@@ -1878,6 +1952,93 @@ export function getAdminTheme(siteId: string, theme: string) {
   return transport.request<AdminTheme>({
     method: "GET",
     path: `/sites/${encodeURIComponent(siteId)}/admin/themes/${encodeURIComponent(theme)}`,
+  });
+}
+
+export function listAdminPoints(siteId: string, query: AdminPointListQuery = {}) {
+  const search = new URLSearchParams();
+  if (query.page !== undefined) search.set("page", String(query.page));
+  if (query.per_page !== undefined) search.set("per_page", String(query.per_page));
+  if (query.mb_id) search.set("mb_id", query.mb_id);
+  if (query.search_field) search.set("search_field", query.search_field);
+  if (query.search) search.set("search", query.search);
+  const suffix = search.size ? `?${search.toString()}` : "";
+  return transport.request<AdminPointList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/points${suffix}`,
+  });
+}
+
+export function createAdminPointAction(
+  siteId: string,
+  action: AdminPointAction,
+  csrfToken: string,
+) {
+  return transport.request<AdminPointActionResult, AdminPointAction>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/points`,
+    csrfToken,
+    body: action,
+  });
+}
+
+export function deleteAdminPoints(
+  siteId: string,
+  input: AdminPointDelete,
+  csrfToken: string,
+) {
+  return transport.request<AdminPointDeleteResult, AdminPointDelete>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/points`,
+    csrfToken,
+    body: input,
+  });
+}
+
+export function grantAdminPoint(
+  siteId: string,
+  change: AdminPointChange,
+  csrfToken: string,
+) {
+  return transport.request<AdminPointChangeResult, AdminPointChange>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/points/grant`,
+    csrfToken,
+    body: change,
+  });
+}
+
+export function deductAdminPoint(
+  siteId: string,
+  change: AdminPointChange,
+  csrfToken: string,
+) {
+  return transport.request<AdminPointChangeResult, AdminPointChange>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/points/deduct`,
+    csrfToken,
+    body: change,
+  });
+}
+
+export function getAdminPointSummary(siteId: string, mbId?: string) {
+  const suffix = mbId ? `?mb_id=${encodeURIComponent(mbId)}` : "";
+  return transport.request<AdminPointSummary>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/points/summary${suffix}`,
+  });
+}
+
+export function expireAdminPoints(
+  siteId: string,
+  input: AdminPointExpire,
+  csrfToken: string,
+) {
+  return transport.request<AdminPointExpireResult, AdminPointExpire>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/points/expire`,
+    csrfToken,
+    body: input,
   });
 }
 

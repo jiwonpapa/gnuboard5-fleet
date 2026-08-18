@@ -179,6 +179,9 @@ export function SiteDashboardPage() {
           <Link to={`/sites/${encodeURIComponent(siteId)}/admin/members`}>
             회원 관리
           </Link>
+          <Link to={`/sites/${encodeURIComponent(siteId)}/admin/points`}>
+            포인트 관리
+          </Link>
           <Link to={`/sites/${encodeURIComponent(siteId)}/admin/groups`}>
             게시판 그룹
           </Link>

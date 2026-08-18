@@ -19,6 +19,7 @@ import { AdminThemePage } from "./features/theme/AdminThemePage";
 import { SiteOnboardingPage } from "./features/onboarding/SiteOnboardingPage";
 import { AdminOverviewPage } from "./features/overview/AdminOverviewPage";
 import { AdminPermissionsWorkspacePage } from "./features/permissions/AdminPermissionsWorkspacePage";
+import { AdminPointsPage } from "./features/points/AdminPointsPage";
 import { SecuritySettingsPage } from "./features/security/SecuritySettingsPage";
 import { SiteActivationPage } from "./features/sites/SiteActivationPage";
 import { SiteDashboardPage } from "./features/sites/SiteDashboardPage";
@@ -89,6 +90,10 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/theme"
               element={<AdminThemePage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/points"
+              element={<AdminPointsPage />}
             />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />

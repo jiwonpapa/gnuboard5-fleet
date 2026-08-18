@@ -7,6 +7,7 @@ import {
   connectorLogout,
   connectorRefresh,
   copyAdminBoard,
+  createAdminPointAction,
   createAdminBoard,
   createAdminBoardGroup,
   createAdminLegacyGroup,
@@ -16,17 +17,20 @@ import {
   deleteAdminNewPosts,
   deleteAdminLegacyGroup,
   deleteAdminLegacyGroupMember,
+  deleteAdminPoints,
   deleteAdminMember,
   deleteAdminMemberMedia,
   deleteAdminAuthByMember,
   deleteAdminSystemPermission,
   exportAdminMembers,
+  expireAdminPoints,
   getAdminConfig,
   getAdminBoardGroup,
   getAdminBoard,
   getAdminDashboard,
   getAdminFieldSchema,
   getAdminMember,
+  getAdminPointSummary,
   getAdminLegacyGroup,
   getMyProfile,
   listAdminAuth,
@@ -35,12 +39,15 @@ import {
   listAdminBoards,
   listAdminFieldSchemas,
   listAdminMembers,
+  listAdminPoints,
   listAdminLegacyGroupMembers,
   listAdminLegacyGroups,
   listAdminSystemPermissions,
   openTerminalSocket,
   patchAdminBoardGroup,
   saveAdminSystemPermission,
+  grantAdminPoint,
+  deductAdminPoint,
   upsertAdminAuth,
   updateAdminConfig,
   updateAdminBoardGroup,
@@ -317,6 +324,42 @@ describe("remote Fleet transport", () => {
       ["http://localhost:3000/api/v1/sites/site-a/admin/boards/notice/copy", "POST"],
       ["http://localhost:3000/api/v1/sites/site-a/admin/boards/new-posts", "DELETE"],
       ["http://localhost:3000/api/v1/sites/site-a/admin/boards/notice_copy", "DELETE"],
+    ]);
+    for (const [, init] of fetcher.mock.calls.filter(([, call]) => call?.method !== "GET")) {
+      expect(new Headers(init?.headers).get("x-csrf-token")).toBe("csrf-1");
+    }
+  });
+
+  it("consumes all seven R20 point operations through explicit site scope", async () => {
+    const fetcher = vi.fn(async (
+      _input: RequestInfo | URL,
+      _init?: RequestInit,
+    ) => {
+      void _input;
+      void _init;
+      return new Response("{}", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    const change = { mb_id: "fleetcert", point: 100, po_content: "certification" };
+    await listAdminPoints("site-a", { page: 2, per_page: 20, mb_id: "fleetcert" });
+    await createAdminPointAction("site-a", { action: "grant", ...change }, "csrf-1");
+    await deleteAdminPoints("site-a", { po_ids: [11, 12] }, "csrf-1");
+    await grantAdminPoint("site-a", change, "csrf-1");
+    await deductAdminPoint("site-a", change, "csrf-1");
+    await getAdminPointSummary("site-a", "fleetcert");
+    await expireAdminPoints("site-a", { base_date: "2026-08-18" }, "csrf-1");
+
+    expect(fetcher.mock.calls.map(([input, init]) => [String(input), init?.method])).toEqual([
+      ["http://localhost:3000/api/v1/sites/site-a/admin/points?page=2&per_page=20&mb_id=fleetcert", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/points", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/points", "DELETE"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/points/grant", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/points/deduct", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/points/summary?mb_id=fleetcert", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/points/expire", "POST"],
     ]);
     for (const [, init] of fetcher.mock.calls.filter(([, call]) => call?.method !== "GET")) {
       expect(new Headers(init?.headers).get("x-csrf-token")).toBe("csrf-1");

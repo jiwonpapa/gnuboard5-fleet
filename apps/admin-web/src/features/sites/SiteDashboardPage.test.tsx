@@ -99,5 +99,9 @@ describe("SiteDashboardPage", () => {
       "href",
       "/sites/site-a/admin/theme",
     );
+    expect(screen.getByRole("link", { name: "포인트 관리" })).toHaveAttribute(
+      "href",
+      "/sites/site-a/admin/points",
+    );
   });
 });
