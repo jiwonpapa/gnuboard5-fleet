@@ -1,0 +1,130 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R19",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "90a7852db2bdfa3ce931fdc535a7eea270813e64",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "90a7852db2bdfa3ce931fdc535a7eea270813e64"
+  },
+  "generated_at": "2026-08-18T03:44:24Z",
+  "commands": [
+    "make active-check",
+    "make audit-runtime-prepare",
+    "make audit-server-static",
+    "make test-migration-parity test-audit",
+    "python3 -m tools.migration_parity.batch_cli --batch R19 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R18 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R20 --profile static",
+    "make certification-up",
+    "make certification-local-smoke",
+    "playwright-cli --session g5-r19-proof resize 1440 1000",
+    "playwright-cli --session g5-r19-proof resize 390 844"
+  ],
+  "results": {
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {"passed": 68, "failed": 0, "ignored": 1},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 52,
+      "web_tests": {"passed": 105, "failed": 0},
+      "web_build": "PASS"
+    },
+    "migration_harness_tests": {"passed": 26, "failed": 0},
+    "audit_harness_tests": {"passed": 22, "failed": 0},
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "90a7852db2bdfa3ce931fdc535a7eea270813e64",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "56d62c51585549fc12d7b677c0f7ca937b940348b74e246b1053f811bfc73d1f",
+      "otp_install_login_step_up": "PASS",
+      "theme_operations": 4,
+      "config_list_detail": "PASS",
+      "desktop_disable_apply_readback": "PASS",
+      "detail_active_state_readback": "PASS",
+      "mobile_theme_baseline_preserved": "PASS",
+      "config_rollback_readback": "PASS",
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "PASS",
+      "server_runtime_revision": "90a7852db2bdfa3ce931fdc535a7eea270813e64",
+      "web_revision": "90a7852db2bdfa3ce931fdc535a7eea270813e64",
+      "login_and_recent_identity_step_up": "PASS",
+      "desktop_theme_disable_readback": "PASS",
+      "desktop_theme_restore_readback": "PASS",
+      "unsupported_mobile_theme_readback_mismatch": "FAIL_CLOSED",
+      "console_errors": 0,
+      "desktop_1440x1000": "PASS",
+      "mobile_390x844": "PASS",
+      "screenshots": [
+        {
+          "path": "output/playwright/r19-theme-desktop.png",
+          "sha256": "149c7e5752093e4835b8ad98a3a5ecfac021ca8674440abd55b17122753dcc6c"
+        },
+        {
+          "path": "output/playwright/r19-theme-mobile.png",
+          "sha256": "e18107a4c585d2927874fa1b7ff58b51685ed4ebfecddbca8b5ffc51c2331351"
+        }
+      ]
+    },
+    "typed_operation_consumption": {
+      "operations": [
+        "adminSystemGetTheme",
+        "adminSystemUpdateTheme",
+        "adminSystemListThemes",
+        "adminSystemDetailTheme"
+      ],
+      "new_site_scoped_axum_routes": 4,
+      "browser_same_origin_transport": "PASS",
+      "settings_list_detail_readback": "PASS",
+      "csrf_and_step_up_write_guard": "PASS",
+      "unsupported_provider_field_mismatch": "FAIL_CLOSED",
+      "browser_g5_secret_exposure": "NONE"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 142, "added_r19_routes": 4},
+    "predecessor_regression": {"batch": "R18", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 7, "core_operations": 4, "required_capabilities": 0},
+    "reuse": {"reused": 0, "adapted": 7, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "ownership": {
+      "legacy": {"owned": 510, "total": 510},
+      "core_operations": {"owned": 189, "total": 189},
+      "required_capabilities": {"owned": 13, "total": 13}
+    },
+    "global_migration": {"status": "FAIL", "findings": 259},
+    "next_batch_probe": {
+      "batch": "R20",
+      "status": "FAIL",
+      "scope": {"legacy": 12, "core_operations": 7, "required_capabilities": 0},
+      "findings": 19
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "bb5d53e996746d925b45d2edb421f73c38cf8e8273e7fdab2e69f06d492f6184",
+    "migration_batches_before_closeout": "1a6e10b2258235018b9ff42042df175cb61c37538d0a725e10e152ad6335a402"
+  },
+  "source_reports": [
+    {
+      "path": "output/audit/runs/20260818T034230Z-d7672a54b983/result.json",
+      "sha256": "7ef926a2aa6f426d8c78439d18e74e5466d1b06644f7c93d8e75ea7d10fb227c"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R19-20260818T034349Z-216db2b7/result.json",
+      "sha256": "83a85669ff124b4e865cd0e09d875cd46dfa6a104f1c0a2d243b9f39708ef5ba"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R18-20260818T034349Z-b7eb39fe/result.json",
+      "sha256": "83ceebe270c9e53b013e6f7e7e694a6f8e1a4cde94dc6017a692019519c72b0f"
+    }
+  ],
+  "claim_limit": "R19 테마 4-operation typed DTO, Connector, explicit site_id Axum routes, same-origin responsive React settings/list/detail workflow, official G5 5.6.32 local runtime and browser readback only. Stock G5 5.6.32 does not expose cf_mobile_theme storage, so the web workflow detects the readback mismatch and fails closed instead of claiming success. This is not package, staging or live certification; global migration remains FAIL with 259 findings."
+}

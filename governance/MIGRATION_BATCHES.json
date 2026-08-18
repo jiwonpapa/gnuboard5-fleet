@@ -729,8 +729,13 @@
       "id": "R19",
       "sequence": 14,
       "title": "theme",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R18"],
+      "completion": {
+        "implementation_commit": "90a7852db2bdfa3ce931fdc535a7eea270813e64",
+        "evidence_path": "docs/audits/evidence/R19_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-18T03:44:24Z"
+      },
       "core": {
         "domains": ["theme"],
         "operation_ids": [
@@ -767,11 +772,19 @@
       "id": "R20",
       "sequence": 15,
       "title": "points",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R19"],
       "core": {
         "domains": ["points"],
-        "operation_ids": [],
+        "operation_ids": [
+          "adminCreatePointAction",
+          "adminDeductPoint",
+          "adminDeletePoints",
+          "adminExpirePoints",
+          "adminGrantPoint",
+          "adminListPoints",
+          "adminPointSummary"
+        ],
         "expected_count": 7
       },
       "legacy": {

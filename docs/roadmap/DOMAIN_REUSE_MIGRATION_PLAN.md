@@ -67,9 +67,9 @@ R00에서 `make check-batch BATCH=Rxx`를 구현합니다. 각 배치는 아래
 
 ## 4. 배치 순서
 
-현재 manifest 상태는 R00~R13 `batch_pass`, R14 `active`, 나머지는
-`planned`입니다. R13까지 346개를 닫았으며 제품 기능 이관 완료를
-뜻하지 않습니다.
+현재 manifest 상태는 R00~R19 `batch_pass`, R20 `active`, 나머지는
+`planned`입니다. R19까지 닫았고 전체 감사에는 259개 findings가 남아
+있으므로 제품 기능 이관 완료를 뜻하지 않습니다.
 
 ### 4.1 이관 통제와 공통 기반
 
