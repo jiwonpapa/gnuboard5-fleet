@@ -762,6 +762,49 @@ export interface AdminPollCreate {
 
 export type AdminPollUpdate = Partial<Omit<AdminPollCreate, "po_date">>;
 
+export interface AdminPopup {
+  nw_id: number;
+  nw_division: string | null;
+  nw_device: string | null;
+  nw_begin_time: string | null;
+  nw_end_time: string | null;
+  nw_disable_hours: number | null;
+  nw_left: number | null;
+  nw_top: number | null;
+  nw_height: number | null;
+  nw_width: number | null;
+  nw_subject: string | null;
+  nw_content: string | null;
+  nw_content_html: number | null;
+}
+
+export interface AdminPopupList {
+  items: AdminPopup[];
+  pagination: Pagination;
+}
+
+export interface AdminPopupListQuery {
+  page?: number;
+  per_page?: number;
+}
+
+export interface AdminPopupCreate {
+  nw_division?: string;
+  nw_device?: string;
+  nw_begin_time?: string;
+  nw_end_time?: string;
+  nw_disable_hours?: number;
+  nw_left?: number;
+  nw_top?: number;
+  nw_height?: number;
+  nw_width?: number;
+  nw_subject: string;
+  nw_content: string;
+  nw_content_html?: number;
+}
+
+export type AdminPopupUpdate = Partial<AdminPopupCreate>;
+
 export interface AdminPointItem {
   po_id: number;
   mb_id: string;
@@ -2131,6 +2174,59 @@ export function deleteAdminLegacyPoll(siteId: string, poId: number, csrfToken: s
     path: adminPollPath(siteId, false, poId),
     csrfToken,
   });
+}
+
+function adminPopupPath(siteId: string, system: boolean, nwId?: number): `/${string}` {
+  const base = `/sites/${encodeURIComponent(siteId)}/admin/${system ? "system/" : ""}popups` as const;
+  return (nwId === undefined ? base : `${base}/${nwId}`) as `/${string}`;
+}
+
+function adminPopupListPath(siteId: string, system: boolean, query: AdminPopupListQuery): `/${string}` {
+  const search = new URLSearchParams();
+  if (query.page !== undefined) search.set("page", String(query.page));
+  if (query.per_page !== undefined) search.set("per_page", String(query.per_page));
+  const suffix = search.size ? `?${search.toString()}` : "";
+  return `${adminPopupPath(siteId, system)}${suffix}` as `/${string}`;
+}
+
+export function listAdminSystemPopups(siteId: string, query: AdminPopupListQuery = {}) {
+  return transport.request<AdminPopupList>({ method: "GET", path: adminPopupListPath(siteId, true, query) });
+}
+
+export function createAdminSystemPopup(siteId: string, create: AdminPopupCreate, csrfToken: string) {
+  return transport.request<AdminPopup, AdminPopupCreate>({ method: "POST", path: adminPopupPath(siteId, true), csrfToken, body: create });
+}
+
+export function getAdminSystemPopup(siteId: string, nwId: number) {
+  return transport.request<AdminPopup>({ method: "GET", path: adminPopupPath(siteId, true, nwId) });
+}
+
+export function updateAdminSystemPopup(siteId: string, nwId: number, update: AdminPopupUpdate, csrfToken: string) {
+  return transport.request<AdminPopup, AdminPopupUpdate>({ method: "PUT", path: adminPopupPath(siteId, true, nwId), csrfToken, body: update });
+}
+
+export function deleteAdminSystemPopup(siteId: string, nwId: number, csrfToken: string) {
+  return transport.request<void>({ method: "DELETE", path: adminPopupPath(siteId, true, nwId), csrfToken });
+}
+
+export function listAdminLegacyPopups(siteId: string, query: AdminPopupListQuery = {}) {
+  return transport.request<AdminPopupList>({ method: "GET", path: adminPopupListPath(siteId, false, query) });
+}
+
+export function createAdminLegacyPopup(siteId: string, create: AdminPopupCreate, csrfToken: string) {
+  return transport.request<AdminPopup, AdminPopupCreate>({ method: "POST", path: adminPopupPath(siteId, false), csrfToken, body: create });
+}
+
+export function getAdminLegacyPopup(siteId: string, nwId: number) {
+  return transport.request<AdminPopup>({ method: "GET", path: adminPopupPath(siteId, false, nwId) });
+}
+
+export function updateAdminLegacyPopup(siteId: string, nwId: number, update: AdminPopupUpdate, csrfToken: string) {
+  return transport.request<AdminPopup, AdminPopupUpdate>({ method: "PATCH", path: adminPopupPath(siteId, false, nwId), csrfToken, body: update });
+}
+
+export function deleteAdminLegacyPopup(siteId: string, nwId: number, csrfToken: string) {
+  return transport.request<void>({ method: "DELETE", path: adminPopupPath(siteId, false, nwId), csrfToken });
 }
 
 export function listAdminPoints(siteId: string, query: AdminPointListQuery = {}) {

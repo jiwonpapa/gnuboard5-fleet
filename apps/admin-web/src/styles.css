@@ -3638,17 +3638,37 @@ code {
   margin-top: 16px;
 }
 
+.popups-workspace {
+  grid-template-columns: minmax(0, 0.9fr) minmax(440px, 1.1fr);
+}
+
+.popup-editor fieldset,
+.popup-field-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.popup-field-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.popup-pagination {
+  margin-top: 16px;
+}
+
 @media (max-width: 960px) {
   .points-page .point-filter,
   .points-workspace,
-  .polls-workspace {
+  .polls-workspace,
+  .popups-workspace {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 720px) {
   .poll-choice-grid,
-  .poll-number-grid {
+  .poll-number-grid,
+  .popup-field-grid {
     grid-template-columns: 1fr;
   }
 
