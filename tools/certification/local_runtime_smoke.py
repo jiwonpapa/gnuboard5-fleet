@@ -1404,6 +1404,111 @@ def main() -> int:
     ):
         raise RuntimeError("R21 poll cleanup readback failed")
 
+    system_popups_path = "/api/v1/sites/owner-a-site/admin/system/popups"
+    legacy_popups_path = "/api/v1/sites/owner-a-site/admin/popups"
+    baseline_system_popups = request(
+        fleet_base, "GET", f"{system_popups_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    baseline_legacy_popups = request(
+        fleet_base, "GET", f"{legacy_popups_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    baseline_popup_total = baseline_system_popups.get("pagination", {}).get("total")
+    if (
+        not isinstance(baseline_popup_total, int)
+        or baseline_legacy_popups.get("pagination", {}).get("total") != baseline_popup_total
+    ):
+        raise RuntimeError("R22 popup baseline aliases disagree")
+
+    popup_sentinel = env["G5_CERT_REVISION"][:12]
+    common_popup = {
+        "nw_division": "both", "nw_device": "both",
+        "nw_begin_time": "2026-08-18 09:00:00",
+        "nw_end_time": "2026-08-25 18:00:00",
+        "nw_disable_hours": 24, "nw_left": 100, "nw_top": 100,
+        "nw_height": 400, "nw_width": 600, "nw_content_html": 0,
+    }
+    system_popup_subject = f"R22 system {popup_sentinel}"
+    system_popup = request(
+        fleet_base, "POST", system_popups_path,
+        body={**common_popup, "nw_subject": system_popup_subject, "nw_content": "system popup body"},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    system_popup_id = system_popup.get("nw_id")
+    if not isinstance(system_popup_id, int) or system_popup.get("nw_width") != 600:
+        raise RuntimeError("R22 system popup create failed")
+    system_popup_detail = request(
+        fleet_base, "GET", f"{system_popups_path}/{system_popup_id}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if system_popup_detail.get("nw_subject") != system_popup_subject:
+        raise RuntimeError("R22 system popup detail failed")
+    updated_system_popup = request(
+        fleet_base, "PUT", f"{system_popups_path}/{system_popup_id}",
+        body={"nw_device": "mobile", "nw_subject": f"{system_popup_subject} updated"},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if updated_system_popup.get("nw_device") != "mobile":
+        raise RuntimeError("R22 system popup update failed")
+
+    legacy_popup_subject = f"R22 legacy {popup_sentinel}"
+    legacy_popup = request(
+        fleet_base, "POST", legacy_popups_path,
+        body={**common_popup, "nw_subject": legacy_popup_subject, "nw_content": "legacy popup body"},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    legacy_popup_id = legacy_popup.get("nw_id")
+    if not isinstance(legacy_popup_id, int) or legacy_popup.get("nw_subject") != legacy_popup_subject:
+        raise RuntimeError("R22 legacy popup create failed")
+    legacy_popup_detail = request(
+        fleet_base, "GET", f"{legacy_popups_path}/{legacy_popup_id}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if legacy_popup_detail.get("nw_content") != "legacy popup body":
+        raise RuntimeError("R22 legacy popup detail failed")
+    updated_legacy_popup = request(
+        fleet_base, "PATCH", f"{legacy_popups_path}/{legacy_popup_id}",
+        body={"nw_division": "layer", "nw_content_html": 1},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if updated_legacy_popup.get("nw_division") != "layer" or updated_legacy_popup.get("nw_content_html") != 1:
+        raise RuntimeError("R22 legacy popup update failed")
+
+    system_popup_list = request(
+        fleet_base, "GET", f"{system_popups_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    legacy_popup_list = request(
+        fleet_base, "GET", f"{legacy_popups_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    created_popup_ids = {system_popup_id, legacy_popup_id}
+    if (
+        system_popup_list.get("pagination", {}).get("total") != baseline_popup_total + 2
+        or legacy_popup_list.get("pagination", {}).get("total") != baseline_popup_total + 2
+        or not created_popup_ids.issubset({item.get("nw_id") for item in system_popup_list.get("items", [])})
+        or not created_popup_ids.issubset({item.get("nw_id") for item in legacy_popup_list.get("items", [])})
+    ):
+        raise RuntimeError("R22 popup alias list readback failed")
+
+    request(fleet_base, "DELETE", f"{system_popups_path}/{system_popup_id}", headers=fleet_headers(admin_cookie, admin_csrf), expected=(204,))
+    request(fleet_base, "DELETE", f"{legacy_popups_path}/{legacy_popup_id}", headers=fleet_headers(admin_cookie, admin_csrf), expected=(204,))
+    restored_system_popups = request(
+        fleet_base, "GET", f"{system_popups_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    restored_legacy_popups = request(
+        fleet_base, "GET", f"{legacy_popups_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        restored_system_popups.get("pagination", {}).get("total") != baseline_popup_total
+        or restored_legacy_popups.get("pagination", {}).get("total") != baseline_popup_total
+        or any(item.get("nw_id") in created_popup_ids for item in restored_system_popups.get("items", []) + restored_legacy_popups.get("items", []))
+    ):
+        raise RuntimeError("R22 popup cleanup readback failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -1692,6 +1797,15 @@ def main() -> int:
             "alias_list_readback": "passed",
             "created_polls_deleted": 2,
             "poll_cleanup_readback": "passed",
+        },
+        "r22_popups": {
+            "operations": 10,
+            "system_list_detail_create_update_delete": "passed",
+            "legacy_list_detail_create_update_delete": "passed",
+            "legacy_form_defaults": "passed",
+            "sparse_update_readback": "passed",
+            "created_popups_deleted": 2,
+            "popup_cleanup_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,
