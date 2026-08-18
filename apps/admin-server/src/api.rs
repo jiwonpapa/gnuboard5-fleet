@@ -37,7 +37,8 @@ use g5_fleet_connector::{
     AdminNewPostsDeleteResult, AdminPointAction, AdminPointActionResult, AdminPointChange,
     AdminPointChangeResult, AdminPointDelete, AdminPointDeleteResult, AdminPointExpire,
     AdminPointExpireResult, AdminPointList, AdminPointListQuery, AdminPointSummary, AdminPoll,
-    AdminPollCreate, AdminPollList, AdminPollListQuery, AdminPollUpdate, AdminSchemaCatalog,
+    AdminPollCreate, AdminPollList, AdminPollListQuery, AdminPollUpdate, AdminPopup,
+    AdminPopupCreate, AdminPopupList, AdminPopupListQuery, AdminPopupUpdate, AdminSchemaCatalog,
     AdminSchemaDetail, AdminSystemPermission, AdminSystemPermissionList,
     AdminSystemPermissionListQuery, AdminSystemPermissionSave, AdminTheme, AdminThemeConfig,
     AdminThemeList, AdminThemeUpdate, BasicConfig, ConnectorCredentials, ConnectorError,
@@ -534,6 +535,26 @@ pub(crate) fn router() -> Router<AppState> {
             get(admin_legacy_poll_get)
                 .patch(admin_legacy_poll_update)
                 .delete(admin_legacy_poll_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/popups",
+            get(admin_system_popup_list).post(admin_system_popup_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/popups/{nw_id}",
+            get(admin_system_popup_get)
+                .put(admin_system_popup_update)
+                .delete(admin_system_popup_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/popups",
+            get(admin_legacy_popup_list).post(admin_legacy_popup_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/popups/{nw_id}",
+            get(admin_legacy_popup_get)
+                .patch(admin_legacy_popup_update)
+                .delete(admin_legacy_popup_delete),
         )
         .route(
             "/sites/{site_id}/admin/points",
@@ -4201,6 +4222,364 @@ async fn admin_poll_delete(
                     &context.request_id,
                     &credentials.access_token,
                     po_id,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+#[derive(Clone, Copy)]
+enum PopupRouteKind {
+    System,
+    Legacy,
+}
+
+async fn admin_system_popup_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminPopupListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    admin_popup_list(state, site_id, query, headers, PopupRouteKind::System).await
+}
+
+async fn admin_legacy_popup_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminPopupListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    admin_popup_list(state, site_id, query, headers, PopupRouteKind::Legacy).await
+}
+
+async fn admin_popup_list(
+    state: AppState,
+    site_id: String,
+    query: AdminPopupListQuery,
+    headers: HeaderMap,
+    kind: PopupRouteKind,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        PopupRouteKind::System => {
+            state
+                .config
+                .connector
+                .admin_system_list_popups(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &query,
+                )
+                .await
+        }
+        PopupRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_list_popups(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &query,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(popups) => Json::<AdminPopupList>(popups).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_popup_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(create): Json<AdminPopupCreate>,
+) -> Response {
+    admin_popup_create(state, site_id, headers, create, PopupRouteKind::System).await
+}
+
+async fn admin_legacy_popup_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(create): Json<AdminPopupCreate>,
+) -> Response {
+    admin_popup_create(state, site_id, headers, create, PopupRouteKind::Legacy).await
+}
+
+async fn admin_popup_create(
+    state: AppState,
+    site_id: String,
+    headers: HeaderMap,
+    create: AdminPopupCreate,
+    kind: PopupRouteKind,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        PopupRouteKind::System => {
+            state
+                .config
+                .connector
+                .admin_system_create_popup(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &create,
+                )
+                .await
+        }
+        PopupRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_create_popup(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &create,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(popup) => (StatusCode::CREATED, Json::<AdminPopup>(popup)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_popup_get(
+    State(state): State<AppState>,
+    Path((site_id, nw_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    admin_popup_get(state, site_id, nw_id, headers, PopupRouteKind::System).await
+}
+
+async fn admin_legacy_popup_get(
+    State(state): State<AppState>,
+    Path((site_id, nw_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    admin_popup_get(state, site_id, nw_id, headers, PopupRouteKind::Legacy).await
+}
+
+async fn admin_popup_get(
+    state: AppState,
+    site_id: String,
+    nw_id: i64,
+    headers: HeaderMap,
+    kind: PopupRouteKind,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        PopupRouteKind::System => {
+            state
+                .config
+                .connector
+                .admin_system_get_popup(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    nw_id,
+                )
+                .await
+        }
+        PopupRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_get_popup(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    nw_id,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(popup) => Json::<AdminPopup>(popup).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_popup_update(
+    State(state): State<AppState>,
+    Path((site_id, nw_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminPopupUpdate>,
+) -> Response {
+    admin_popup_update(
+        state,
+        site_id,
+        nw_id,
+        headers,
+        update,
+        PopupRouteKind::System,
+    )
+    .await
+}
+
+async fn admin_legacy_popup_update(
+    State(state): State<AppState>,
+    Path((site_id, nw_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminPopupUpdate>,
+) -> Response {
+    admin_popup_update(
+        state,
+        site_id,
+        nw_id,
+        headers,
+        update,
+        PopupRouteKind::Legacy,
+    )
+    .await
+}
+
+async fn admin_popup_update(
+    state: AppState,
+    site_id: String,
+    nw_id: i64,
+    headers: HeaderMap,
+    update: AdminPopupUpdate,
+    kind: PopupRouteKind,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        PopupRouteKind::System => {
+            state
+                .config
+                .connector
+                .admin_system_update_popup(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    nw_id,
+                    &update,
+                )
+                .await
+        }
+        PopupRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_update_popup(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    nw_id,
+                    &update,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(popup) => Json::<AdminPopup>(popup).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_popup_delete(
+    State(state): State<AppState>,
+    Path((site_id, nw_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    admin_popup_delete(state, site_id, nw_id, headers, PopupRouteKind::System).await
+}
+
+async fn admin_legacy_popup_delete(
+    State(state): State<AppState>,
+    Path((site_id, nw_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    admin_popup_delete(state, site_id, nw_id, headers, PopupRouteKind::Legacy).await
+}
+
+async fn admin_popup_delete(
+    state: AppState,
+    site_id: String,
+    nw_id: i64,
+    headers: HeaderMap,
+    kind: PopupRouteKind,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        PopupRouteKind::System => {
+            state
+                .config
+                .connector
+                .admin_system_delete_popup(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    nw_id,
+                )
+                .await
+        }
+        PopupRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_delete_popup(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    nw_id,
                 )
                 .await
         }

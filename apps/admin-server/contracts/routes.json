@@ -927,6 +927,76 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/system/popups",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_system_popup_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/system/popups",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_system_popup_create"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/system/popups/{nw_id}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_system_popup_detail"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/system/popups/{nw_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_system_popup_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/system/popups/{nw_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_system_popup_delete"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/popups",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_popup_list_legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/popups",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_popup_create_legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/popups/{nw_id}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_popup_detail_legacy"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/sites/{site_id}/admin/popups/{nw_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_popup_update_legacy"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/popups/{nw_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_popup_delete_legacy"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/admin/points",
       "auth": "session",
       "site_context": true,

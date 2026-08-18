@@ -403,6 +403,19 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("GET", "/api/v1/sites/{site_id}/admin/polls/{po_id}"),
             ("PATCH", "/api/v1/sites/{site_id}/admin/polls/{po_id}"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/polls/{po_id}"),
+            ("GET", "/api/v1/sites/{site_id}/admin/system/popups"),
+            ("POST", "/api/v1/sites/{site_id}/admin/system/popups"),
+            ("GET", "/api/v1/sites/{site_id}/admin/system/popups/{nw_id}"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/system/popups/{nw_id}"),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/system/popups/{nw_id}"
+            ),
+            ("GET", "/api/v1/sites/{site_id}/admin/popups"),
+            ("POST", "/api/v1/sites/{site_id}/admin/popups"),
+            ("GET", "/api/v1/sites/{site_id}/admin/popups/{nw_id}"),
+            ("PATCH", "/api/v1/sites/{site_id}/admin/popups/{nw_id}"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/popups/{nw_id}"),
             ("GET", "/api/v1/sites/{site_id}/admin/points"),
             ("POST", "/api/v1/sites/{site_id}/admin/points"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/points"),
@@ -833,6 +846,7 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             mock_theme("modern", false, false),
         ])),
         polls: Arc::new(Mutex::new(Vec::new())),
+        popups: Arc::new(Mutex::new(Vec::new())),
         points: Arc::new(Mutex::new(Vec::new())),
     };
     let app = build_router(AppConfig {
@@ -2641,6 +2655,111 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
     }
     assert!(mock.polls.lock().unwrap().is_empty());
 
+    // All ten R22 popup operations preserve the system and legacy provider aliases.
+    for (path, subject) in [
+        (
+            "/api/v1/sites/site-a/admin/system/popups",
+            "R22 시스템 팝업",
+        ),
+        ("/api/v1/sites/site-a/admin/popups", "R22 레거시 팝업"),
+    ] {
+        let create = app
+            .clone()
+            .oneshot(json_request(
+                Method::POST,
+                path,
+                Some(&cookie),
+                Some(&csrf),
+                Some(serde_json::json!({
+                    "nw_division": "both", "nw_device": "both",
+                    "nw_disable_hours": 24, "nw_left": 100, "nw_top": 100,
+                    "nw_height": 400, "nw_width": 600,
+                    "nw_subject": subject, "nw_content": "팝업 본문", "nw_content_html": 0
+                })),
+            ))
+            .await
+            .unwrap();
+        assert_eq!(create.status(), StatusCode::CREATED);
+    }
+
+    for path in [
+        "/api/v1/sites/site-a/admin/system/popups?page=1&per_page=20",
+        "/api/v1/sites/site-a/admin/popups?page=1&per_page=20",
+    ] {
+        let list = app
+            .clone()
+            .oneshot(json_request(Method::GET, path, Some(&cookie), None, None))
+            .await
+            .unwrap();
+        assert_eq!(
+            json::<Value>(list).await["items"].as_array().map(Vec::len),
+            Some(2)
+        );
+    }
+
+    for path in [
+        "/api/v1/sites/site-a/admin/system/popups/1",
+        "/api/v1/sites/site-a/admin/popups/2",
+    ] {
+        let detail = app
+            .clone()
+            .oneshot(json_request(Method::GET, path, Some(&cookie), None, None))
+            .await
+            .unwrap();
+        assert_eq!(detail.status(), StatusCode::OK);
+    }
+
+    let system_popup_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/system/popups/1",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"nw_subject": "R22 시스템 팝업 수정"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(system_popup_update).await["nw_subject"],
+        "R22 시스템 팝업 수정"
+    );
+
+    let legacy_popup_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PATCH,
+            "/api/v1/sites/site-a/admin/popups/2",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"nw_device": "mobile"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(legacy_popup_update).await["nw_device"],
+        "mobile"
+    );
+
+    for path in [
+        "/api/v1/sites/site-a/admin/system/popups/1",
+        "/api/v1/sites/site-a/admin/popups/2",
+    ] {
+        let delete = app
+            .clone()
+            .oneshot(json_request(
+                Method::DELETE,
+                path,
+                Some(&cookie),
+                Some(&csrf),
+                None,
+            ))
+            .await
+            .unwrap();
+        assert_eq!(delete.status(), StatusCode::NO_CONTENT);
+    }
+    assert!(mock.popups.lock().unwrap().is_empty());
+
     let point_baseline = app
         .clone()
         .oneshot(json_request(
@@ -3177,6 +3296,24 @@ fn mock_poll(po_id: i64, body: &Value) -> Value {
     })
 }
 
+fn mock_popup(nw_id: i64, body: &Value) -> Value {
+    serde_json::json!({
+        "nw_id": nw_id,
+        "nw_division": body.get("nw_division").cloned().unwrap_or(serde_json::json!("both")),
+        "nw_device": body.get("nw_device").cloned().unwrap_or(serde_json::json!("both")),
+        "nw_begin_time": body.get("nw_begin_time").cloned().unwrap_or(Value::Null),
+        "nw_end_time": body.get("nw_end_time").cloned().unwrap_or(Value::Null),
+        "nw_disable_hours": body.get("nw_disable_hours").cloned().unwrap_or(serde_json::json!(24)),
+        "nw_left": body.get("nw_left").cloned().unwrap_or(serde_json::json!(100)),
+        "nw_top": body.get("nw_top").cloned().unwrap_or(serde_json::json!(100)),
+        "nw_height": body.get("nw_height").cloned().unwrap_or(serde_json::json!(400)),
+        "nw_width": body.get("nw_width").cloned().unwrap_or(serde_json::json!(600)),
+        "nw_subject": body["nw_subject"],
+        "nw_content": body["nw_content"],
+        "nw_content_html": body.get("nw_content_html").cloned().unwrap_or(serde_json::json!(0))
+    })
+}
+
 fn mock_point_change(points: &Mutex<Vec<Value>>, body: &Value, deduct: bool) -> Value {
     let member_id = body["mb_id"].as_str().unwrap();
     let requested = body["point"].as_i64().unwrap();
@@ -3243,6 +3380,7 @@ struct MockConnector {
     theme_config: Arc<Mutex<Value>>,
     themes: Arc<Mutex<Vec<Value>>>,
     polls: Arc<Mutex<Vec<Value>>>,
+    popups: Arc<Mutex<Vec<Value>>>,
     points: Arc<Mutex<Vec<Value>>>,
 }
 
@@ -4181,6 +4319,66 @@ impl ConnectorGateway for MockConnector {
                     .lock()
                     .unwrap()
                     .retain(|item| item["po_id"].as_i64() != po_id);
+                Value::Null
+            }
+            "adminSystemListPopups" | "adminListPopups" => {
+                let popups = self.popups.lock().unwrap().clone();
+                serde_json::json!({
+                    "data": popups,
+                    "pagination": {
+                        "mode": "page", "total": popups.len(), "page": 1, "per_page": 20,
+                        "last_page": 1, "cursor": null, "next_cursor": null,
+                        "has_next": false, "has_prev": false
+                    },
+                    "meta": {}
+                })
+            }
+            "adminSystemCreatePopup" | "adminCreatePopup" => {
+                let body = input.body.as_ref().unwrap();
+                let nw_id = self.popups.lock().unwrap().len() as i64 + 1;
+                let popup = mock_popup(nw_id, body);
+                self.popups.lock().unwrap().push(popup.clone());
+                serde_json::json!({"data": popup, "meta": {}})
+            }
+            "adminSystemGetPopup" | "adminGetPopup" => {
+                let nw_id = input
+                    .path
+                    .get("nw_id")
+                    .and_then(|value| value.parse::<i64>().ok());
+                let popup = self
+                    .popups
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|item| item["nw_id"].as_i64() == nw_id)
+                    .cloned()
+                    .unwrap();
+                serde_json::json!({"data": popup, "meta": {}})
+            }
+            "adminSystemUpdatePopup" | "adminUpdatePopup" => {
+                let nw_id = input
+                    .path
+                    .get("nw_id")
+                    .and_then(|value| value.parse::<i64>().ok());
+                let mut popups = self.popups.lock().unwrap();
+                let popup = popups
+                    .iter_mut()
+                    .find(|item| item["nw_id"].as_i64() == nw_id)
+                    .unwrap();
+                for (name, value) in input.body.as_ref().unwrap().as_object().unwrap() {
+                    popup[name] = value.clone();
+                }
+                serde_json::json!({"data": popup.clone(), "meta": {}})
+            }
+            "adminSystemDeletePopup" | "adminDeletePopup" => {
+                let nw_id = input
+                    .path
+                    .get("nw_id")
+                    .and_then(|value| value.parse::<i64>().ok());
+                self.popups
+                    .lock()
+                    .unwrap()
+                    .retain(|item| item["nw_id"].as_i64() != nw_id);
                 Value::Null
             }
             "adminListPoints" => {

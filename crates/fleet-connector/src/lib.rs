@@ -57,6 +57,10 @@ pub use g5_fleet_core::polls::{
     AdminPoll, AdminPollCreate, AdminPollList, AdminPollListQuery, AdminPollSummary,
     AdminPollUpdate, valid_poll_id,
 };
+pub use g5_fleet_core::popups::{
+    AdminPopup, AdminPopupCreate, AdminPopupList, AdminPopupListQuery, AdminPopupUpdate,
+    valid_popup_id,
+};
 pub use g5_fleet_core::theme::{
     AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, valid_theme_id,
 };
@@ -2336,6 +2340,192 @@ pub trait ConnectorGateway: Send + Sync {
         .await
     }
 
+    async fn admin_system_list_popups(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminPopupListQuery,
+    ) -> ConnectorResult<AdminPopupList> {
+        popup_list_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminSystemListPopups",
+            query,
+        )
+        .await
+    }
+
+    async fn admin_system_create_popup(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        create: &AdminPopupCreate,
+    ) -> ConnectorResult<AdminPopup> {
+        popup_create_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminSystemCreatePopup",
+            create,
+        )
+        .await
+    }
+
+    async fn admin_system_get_popup(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        nw_id: i64,
+    ) -> ConnectorResult<AdminPopup> {
+        popup_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminSystemGetPopup",
+            nw_id,
+            CoreExecuteRequest::default(),
+        )
+        .await
+    }
+
+    async fn admin_system_update_popup(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        nw_id: i64,
+        update: &AdminPopupUpdate,
+    ) -> ConnectorResult<AdminPopup> {
+        popup_update_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminSystemUpdatePopup",
+            nw_id,
+            update,
+        )
+        .await
+    }
+
+    async fn admin_system_delete_popup(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        nw_id: i64,
+    ) -> ConnectorResult<()> {
+        popup_delete_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminSystemDeletePopup",
+            nw_id,
+        )
+        .await
+    }
+
+    async fn admin_legacy_list_popups(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminPopupListQuery,
+    ) -> ConnectorResult<AdminPopupList> {
+        popup_list_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminListPopups",
+            query,
+        )
+        .await
+    }
+
+    async fn admin_legacy_create_popup(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        create: &AdminPopupCreate,
+    ) -> ConnectorResult<AdminPopup> {
+        popup_create_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminCreatePopup",
+            create,
+        )
+        .await
+    }
+
+    async fn admin_legacy_get_popup(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        nw_id: i64,
+    ) -> ConnectorResult<AdminPopup> {
+        popup_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminGetPopup",
+            nw_id,
+            CoreExecuteRequest::default(),
+        )
+        .await
+    }
+
+    async fn admin_legacy_update_popup(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        nw_id: i64,
+        update: &AdminPopupUpdate,
+    ) -> ConnectorResult<AdminPopup> {
+        popup_update_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminUpdatePopup",
+            nw_id,
+            update,
+        )
+        .await
+    }
+
+    async fn admin_legacy_delete_popup(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        nw_id: i64,
+    ) -> ConnectorResult<()> {
+        popup_delete_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminDeletePopup",
+            nw_id,
+        )
+        .await
+    }
+
     async fn admin_list_points(
         &self,
         base_url: &str,
@@ -2752,6 +2942,138 @@ async fn poll_delete_operation<T: ConnectorGateway + ?Sized>(
             operation_id,
             &CoreExecuteRequest {
                 path: BTreeMap::from([("po_id".to_owned(), po_id.to_string())]),
+                confirm_destructive: true,
+                ..Default::default()
+            },
+        )
+        .await?;
+    typed_core_empty(operation_id, response)
+}
+
+async fn popup_list_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    query: &AdminPopupListQuery,
+) -> ConnectorResult<AdminPopupList> {
+    if !query.is_valid() {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                query: query_map([
+                    ("page", query.page.map(|value| json!(value))),
+                    ("per_page", query.per_page.map(|value| json!(value))),
+                ]),
+                ..Default::default()
+            },
+        )
+        .await?;
+    let envelope: TypedListEnvelope<AdminPopup> = typed_core_envelope(operation_id, response)?;
+    Ok(AdminPopupList {
+        items: envelope.data,
+        pagination: envelope.pagination,
+    })
+}
+
+async fn popup_create_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    create: &AdminPopupCreate,
+) -> ConnectorResult<AdminPopup> {
+    if !create.is_valid() {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                body: Some(serde_json::to_value(create).map_err(|_| ConnectorError::Contract)?),
+                ..Default::default()
+            },
+        )
+        .await?;
+    typed_core_data(operation_id, response)
+}
+
+async fn popup_detail_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    nw_id: i64,
+    mut input: CoreExecuteRequest,
+) -> ConnectorResult<AdminPopup> {
+    if !valid_popup_id(nw_id) {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    input.path.insert("nw_id".to_owned(), nw_id.to_string());
+    let response = gateway
+        .core_execute(base_url, request_id, access_token, operation_id, &input)
+        .await?;
+    typed_core_data(operation_id, response)
+}
+
+async fn popup_update_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    nw_id: i64,
+    update: &AdminPopupUpdate,
+) -> ConnectorResult<AdminPopup> {
+    if !update.is_valid() {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    popup_detail_operation(
+        gateway,
+        base_url,
+        request_id,
+        access_token,
+        operation_id,
+        nw_id,
+        CoreExecuteRequest {
+            body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+            ..Default::default()
+        },
+    )
+    .await
+}
+
+async fn popup_delete_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    nw_id: i64,
+) -> ConnectorResult<()> {
+    if !valid_popup_id(nw_id) {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                path: BTreeMap::from([("nw_id".to_owned(), nw_id.to_string())]),
                 confirm_destructive: true,
                 ..Default::default()
             },
