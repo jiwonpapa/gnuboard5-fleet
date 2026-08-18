@@ -600,6 +600,65 @@ export interface AdminMenuReorderResult {
   result: "ok";
 }
 
+export type AdminLayoutWidgetType =
+  | "latest_posts"
+  | "notice_banner"
+  | "popular_posts"
+  | "category_grid"
+  | "search_bar"
+  | "image_carousel"
+  | "ad_banner"
+  | "spacer"
+  | "html_block"
+  | "quick_menu";
+
+export interface AdminLayoutWidget {
+  widget_id: string;
+  type: AdminLayoutWidgetType;
+  title: string;
+  order: number;
+  config: Record<string, unknown>;
+  style: Record<string, unknown>;
+}
+
+export interface AdminLayoutSummary {
+  sl_id: number;
+  sl_page_id: string;
+  sl_title: string;
+  sl_active: number;
+  sl_datetime: string;
+  sl_updated: string;
+}
+
+export interface AdminLayoutDetail extends AdminLayoutSummary {
+  sl_schema: string;
+}
+
+export interface AdminLayoutList {
+  items: AdminLayoutSummary[];
+  pagination: Pagination;
+}
+
+export interface AdminLayoutSave {
+  title?: string;
+  widgets: AdminLayoutWidget[];
+}
+
+export interface AdminLayoutWidgetCreate {
+  widget_id?: string;
+  type: AdminLayoutWidgetType;
+  title?: string;
+  order?: number;
+  config?: Record<string, unknown>;
+  style?: Record<string, unknown>;
+}
+
+export type AdminLayoutWidgetUpdate = Partial<Omit<AdminLayoutWidgetCreate, "widget_id">>;
+
+export interface AdminLayoutWidgetReorder {
+  widget_ids: string[];
+}
+
 export interface AdminAuthAssignment {
   au_menu: string;
   au_auth: string;
@@ -1642,6 +1701,107 @@ export function reorderAdminMenusLegacy(
   return transport.request<AdminMenuReorderResult, AdminMenuReorder>({
     method: "PATCH",
     path: `/sites/${encodeURIComponent(siteId)}/admin/menus/reorder`,
+    csrfToken,
+    body: reorder,
+  });
+}
+
+export function listAdminLayouts(
+  siteId: string,
+  query: { page?: number; per_page?: number } = {},
+) {
+  return transport.request<AdminLayoutList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/layouts${fleetQuery(query)}`,
+  });
+}
+
+export function getAdminLayout(siteId: string, pageId: string) {
+  return transport.request<AdminLayoutDetail>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/layouts/${encodeURIComponent(pageId)}`,
+  });
+}
+
+export function saveAdminLayout(
+  siteId: string,
+  pageId: string,
+  save: AdminLayoutSave,
+  csrfToken: string,
+) {
+  return transport.request<AdminLayoutDetail, AdminLayoutSave>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/layouts/${encodeURIComponent(pageId)}`,
+    csrfToken,
+    body: save,
+  });
+}
+
+export function addAdminLayoutWidget(
+  siteId: string,
+  pageId: string,
+  create: AdminLayoutWidgetCreate,
+  csrfToken: string,
+) {
+  return transport.request<AdminLayoutDetail, AdminLayoutWidgetCreate>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/layouts/${encodeURIComponent(pageId)}/widgets`,
+    csrfToken,
+    body: create,
+  });
+}
+
+export function updateAdminLayoutWidget(
+  siteId: string,
+  pageId: string,
+  widgetId: string,
+  update: AdminLayoutWidgetUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminLayoutDetail, AdminLayoutWidgetUpdate>({
+    method: "PATCH",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/layouts/${encodeURIComponent(pageId)}/widgets/${encodeURIComponent(widgetId)}`,
+    csrfToken,
+    body: update,
+  });
+}
+
+export function deleteAdminLayoutWidget(
+  siteId: string,
+  pageId: string,
+  widgetId: string,
+  csrfToken: string,
+) {
+  return transport.request<AdminLayoutDetail>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/layouts/${encodeURIComponent(pageId)}/widgets/${encodeURIComponent(widgetId)}`,
+    csrfToken,
+  });
+}
+
+export function reorderAdminLayoutWidgets(
+  siteId: string,
+  pageId: string,
+  reorder: AdminLayoutWidgetReorder,
+  csrfToken: string,
+) {
+  return transport.request<AdminLayoutDetail, AdminLayoutWidgetReorder>({
+    method: "PATCH",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/layouts/${encodeURIComponent(pageId)}/widgets`,
+    csrfToken,
+    body: reorder,
+  });
+}
+
+export function reorderAdminLayoutWidgetsLegacy(
+  siteId: string,
+  pageId: string,
+  reorder: AdminLayoutWidgetReorder,
+  csrfToken: string,
+) {
+  return transport.request<AdminLayoutDetail, AdminLayoutWidgetReorder>({
+    method: "PATCH",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/layouts/${encodeURIComponent(pageId)}/reorder`,
     csrfToken,
     body: reorder,
   });

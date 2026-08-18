@@ -11,6 +11,7 @@ import { AdminContentsPage } from "./features/contents/AdminContentsPage";
 import { DiagnosticsPage } from "./features/debug/DiagnosticsPage";
 import { AdminFaqsPage } from "./features/faqs/AdminFaqsPage";
 import { AdminBoardGroupsPage } from "./features/groups/AdminBoardGroupsPage";
+import { AdminLayoutsPage } from "./features/layouts/AdminLayoutsPage";
 import { AdminMemberFilesPage } from "./features/members/AdminMemberFilesPage";
 import { AdminMembersPage } from "./features/members/AdminMembersPage";
 import { AdminMenusPage } from "./features/menus/AdminMenusPage";
@@ -79,6 +80,10 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/menus"
               element={<AdminMenusPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/layouts"
+              element={<AdminLayoutsPage />}
             />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />

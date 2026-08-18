@@ -194,6 +194,9 @@ export function SiteDashboardPage() {
           <Link to={`/sites/${encodeURIComponent(siteId)}/admin/menus`}>
             메뉴 관리
           </Link>
+          <Link to={`/sites/${encodeURIComponent(siteId)}/admin/layouts`}>
+            레이아웃 관리
+          </Link>
           <Link
             className="primary-action"
             to={`/sites/${encodeURIComponent(siteId)}/admin/config`}
