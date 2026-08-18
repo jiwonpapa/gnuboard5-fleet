@@ -983,6 +983,94 @@ def main() -> int:
     if reset_schema.get("widgets") != []:
         raise RuntimeError("R18 layout widget cleanup readback failed")
 
+    theme_config_path = "/api/v1/sites/owner-a-site/admin/theme"
+    themes_path = "/api/v1/sites/owner-a-site/admin/themes"
+    initial_theme_config = request(
+        fleet_base,
+        "GET",
+        theme_config_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    initial_theme_values = {
+        "cf_theme": initial_theme_config.get("cf_theme", ""),
+        "cf_mobile_theme": initial_theme_config.get("cf_mobile_theme", ""),
+    }
+    if not all(isinstance(value, str) for value in initial_theme_values.values()):
+        raise RuntimeError("R19 theme config failed")
+    theme_list = request(
+        fleet_base,
+        "GET",
+        themes_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    installed_themes = theme_list.get("items")
+    if not isinstance(installed_themes, list) or not installed_themes:
+        raise RuntimeError("R19 installed theme list is empty")
+    target_theme = installed_themes[0].get("id")
+    if not isinstance(target_theme, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", target_theme):
+        raise RuntimeError("R19 installed theme ID is invalid")
+    theme_detail = request(
+        fleet_base,
+        "GET",
+        f"{themes_path}/{target_theme}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if theme_detail.get("id") != target_theme:
+        raise RuntimeError("R19 theme detail failed")
+    applied_theme = request(
+        fleet_base,
+        "PUT",
+        theme_config_path,
+        body={"cf_theme": target_theme, "cf_mobile_theme": target_theme},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if (
+        applied_theme.get("cf_theme") != target_theme
+        or applied_theme.get("cf_mobile_theme") != target_theme
+    ):
+        raise RuntimeError("R19 theme update failed")
+    theme_config_readback = request(
+        fleet_base,
+        "GET",
+        theme_config_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        theme_config_readback.get("cf_theme") != target_theme
+        or theme_config_readback.get("cf_mobile_theme") != target_theme
+    ):
+        raise RuntimeError("R19 theme config readback failed")
+    active_theme_readback = request(
+        fleet_base,
+        "GET",
+        f"{themes_path}/{target_theme}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if not active_theme_readback.get("is_active") or not active_theme_readback.get(
+        "is_mobile_active"
+    ):
+        raise RuntimeError("R19 theme detail active-state readback failed")
+    restored_theme = request(
+        fleet_base,
+        "PUT",
+        theme_config_path,
+        body=initial_theme_values,
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if any(restored_theme.get(name) != value for name, value in initial_theme_values.items()):
+        raise RuntimeError("R19 theme rollback failed")
+    restored_theme_readback = request(
+        fleet_base,
+        "GET",
+        theme_config_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if any(
+        restored_theme_readback.get(name) != value
+        for name, value in initial_theme_values.items()
+    ):
+        raise RuntimeError("R19 theme rollback readback failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -1243,6 +1331,13 @@ def main() -> int:
             "canonical_reorder_readback": "passed",
             "legacy_reorder_readback": "passed",
             "widget_cleanup_readback": "passed",
+        },
+        "r19_theme": {
+            "operations": 4,
+            "config_list_detail": "passed",
+            "desktop_mobile_apply_readback": "passed",
+            "detail_active_state_readback": "passed",
+            "config_rollback_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,
