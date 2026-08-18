@@ -1,0 +1,152 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R22",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "dc88df599bb358c15642fea139ba5127dbe1f68d",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "dc88df599bb358c15642fea139ba5127dbe1f68d"
+  },
+  "generated_at": "2026-08-18T07:08:16Z",
+  "commands": [
+    "make active-check",
+    "make runtime-verify",
+    "composer test (official G5 composed runtime)",
+    "make audit-runtime-prepare audit-runtime-verify",
+    "make audit-server-static",
+    "make test-migration-parity test-audit",
+    "python3 -m tools.migration_parity.batch_cli --batch R22 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R21 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R23 --profile static",
+    "make certification-clean certification-up",
+    "make certification-local-smoke",
+    "playwright-cli --session r22popup resize 1440 1000 (headless)",
+    "playwright-cli --session r22popup resize 390 844 (headless)"
+  ],
+  "results": {
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {"passed": 73, "failed": 0, "ignored": 1},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 58,
+      "web_tests": {"passed": 123, "failed": 0},
+      "web_build": "PASS"
+    },
+    "php_composed_runtime": {
+      "status": "PASS",
+      "official_g5_version": "5.6.32",
+      "tests": 875,
+      "assertions": 6727,
+      "failed": 0,
+      "skipped": 5
+    },
+    "migration_harness_tests": {"passed": 26, "failed": 0},
+    "audit_harness_tests": {"passed": 25, "failed": 0},
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "7dd504c561e5f95e7ebed36b3ea39c3078ff81b2",
+      "implementation_delta": "dc88df5 only updates audit inventory expectations; runtime product code is identical to 7dd504c",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "eb8ba3576272cd367603b983ac4ebc1dfd7eafa8e49865f5fd95b95b69dc13f3",
+      "otp_install_login_step_up": "PASS",
+      "popup_operations": 10,
+      "system_list_detail_create_update_delete": "PASS",
+      "legacy_list_detail_create_update_delete": "PASS",
+      "legacy_form_defaults": "PASS",
+      "sparse_update_readback": "PASS",
+      "created_popups_deleted": 2,
+      "popup_cleanup_readback": "PASS",
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "PASS",
+      "server_runtime_revision": "7dd504c561e5f95e7ebed36b3ea39c3078ff81b2",
+      "web_revision": "7dd504c561e5f95e7ebed36b3ea39c3078ff81b2",
+      "execution_mode": "headless",
+      "login_and_recent_identity_step_up": "PASS",
+      "create_detail_update_list_readback": "PASS",
+      "legacy_defaults_and_device_change": "PASS",
+      "confirmation_gated_delete": "PASS",
+      "database_cleanup_rows": 0,
+      "console_errors": 0,
+      "desktop_1440x1000": "PASS",
+      "mobile_390x844": "PASS",
+      "screenshots": [
+        {
+          "path": "output/playwright/r22-popups-desktop.png",
+          "sha256": "5e087b029022782fbd5ac537ef53126f95cb3aa45ab546bbd59cb2ba6e5b1c90"
+        },
+        {
+          "path": "output/playwright/r22-popups-mobile.png",
+          "sha256": "96c77a7e9b08cf0cd74f708befc7e68289ce93cd7f06d9067be6e077eb14a3ed"
+        }
+      ]
+    },
+    "typed_operation_consumption": {
+      "operations": [
+        "adminCreatePopup",
+        "adminDeletePopup",
+        "adminGetPopup",
+        "adminListPopups",
+        "adminSystemCreatePopup",
+        "adminSystemDeletePopup",
+        "adminSystemGetPopup",
+        "adminSystemListPopups",
+        "adminSystemUpdatePopup",
+        "adminUpdatePopup"
+      ],
+      "new_site_scoped_axum_routes": 10,
+      "browser_same_origin_transport": "PASS",
+      "list_detail_create_update_delete_readback": "PASS",
+      "csrf_and_step_up_write_guard": "PASS",
+      "browser_g5_secret_exposure": "NONE"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 169, "added_r22_routes": 10},
+    "predecessor_regression": {"batch": "R21", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 13, "core_operations": 10, "required_capabilities": 0},
+    "reuse": {"reused": 1, "adapted": 12, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "global_migration": {"status": "FAIL", "findings": 194},
+    "next_batch_probe": {
+      "batch": "R23",
+      "status": "FAIL",
+      "scope": {"legacy": 5, "core_operations": 3, "required_capabilities": 0},
+      "findings": 8
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "50a6f4fdd85b541e339748c0e3f05e533c219f7946abad86e58e09452e37ab5a",
+    "migration_batches_before_closeout": "b732f1a59ce9cd2775c4d8ad162411cb1347dcf7286719d2fb757183c6c501de"
+  },
+  "source_reports": [
+    {
+      "path": "output/audit/runs/20260818T070453Z-4a574d101747/result.json",
+      "sha256": "dce71133988a5eeecdd004e27a66a3074a1383d0676c05807e2a050fef180e49"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R22-20260818T070649Z-01a4df3b/result.json",
+      "sha256": "8768de5a7a59fbc8d3ae0b2a642096de951e006c8df3ff2e776a057d6ff9c8aa"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R21-20260818T070649Z-e5eaed87/result.json",
+      "sha256": "34c77325c6bb1e3cbca88c47e8c51fcf84462683c4247926c7543880c71f2653"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R23-20260818T070650Z-8494155f/result.json",
+      "sha256": "2790b7bac9866cee7ca5842264273158179cbf43a9f36b29927ce8e215c76873"
+    },
+    {
+      "path": "output/audit/runs/migration-parity-20260818T070556Z-b3563fb2/result.json",
+      "sha256": "0aac8bc21531d833780115a7e960f42b4b9adaf895bc59c5c2e6244f47b335d2"
+    }
+  ],
+  "claim_limit": "R22 팝업 10-operation typed DTO, Connector, explicit site_id Axum routes, same-origin responsive React list·detail·create·update·confirmed delete workflow, official G5 5.6.32 local runtime and headless browser readback only. Legacy both/both, 24-hour, position and size defaults plus sparse update are preserved, and browser-created popup cleanup is confirmed as DB 0 rows. This is not package, staging or live certification; global migration remains FAIL with 194 findings."
+}

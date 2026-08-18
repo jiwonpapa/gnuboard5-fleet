@@ -862,8 +862,13 @@
       "id": "R22",
       "sequence": 17,
       "title": "popups",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R21"],
+      "completion": {
+        "implementation_commit": "dc88df599bb358c15642fea139ba5127dbe1f68d",
+        "evidence_path": "docs/audits/evidence/R22_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-18T07:08:16Z"
+      },
       "core": {
         "domains": ["popups"],
         "operation_ids": [
@@ -901,7 +906,7 @@
       "id": "R23",
       "sequence": 18,
       "title": "popular",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R22"],
       "core": {
         "domains": ["popular"],
