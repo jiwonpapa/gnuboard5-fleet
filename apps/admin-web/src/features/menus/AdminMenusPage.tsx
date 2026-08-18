@@ -219,7 +219,7 @@ export function AdminMenusPage() {
         </form>
       </div>
 
-      <ConfirmActionDialog busy={busy} open={deleteOpen} title="메뉴를 삭제하시겠습니까?" description={`${selected?.me_name ?? "선택 메뉴"}와 연결 정보가 삭제됩니다.`} onCancel={() => setDeleteOpen(false)} onConfirm={() => void removeMenu()} />
+      <ConfirmActionDialog busy={busy} open={deleteOpen} title="메뉴를 삭제하시겠습니까?" description={`선택한 메뉴(${selected?.me_name ?? "이름 없음"})와 연결 정보가 삭제됩니다.`} onCancel={() => setDeleteOpen(false)} onConfirm={() => void removeMenu()} />
     </section>
   );
 }

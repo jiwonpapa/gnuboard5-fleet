@@ -115,7 +115,7 @@ describe("AdminMenusPage", () => {
     renderPage();
     await screen.findByRole("heading", { name: "회사 소개" });
     fireEvent.click(screen.getByRole("button", { name: "메뉴 삭제" }));
-    expect(screen.getByText("회사 소개와 연결 정보가 삭제됩니다.")).toBeVisible();
+    expect(screen.getByText("선택한 메뉴(회사 소개)와 연결 정보가 삭제됩니다.")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "확인" }));
     await waitFor(() => expect(api.deleteAdminMenu).toHaveBeenCalledWith("site-a", 7, "csrf-1"));
   });
