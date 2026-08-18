@@ -390,6 +390,13 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("PUT", "/api/v1/sites/{site_id}/admin/theme"),
             ("GET", "/api/v1/sites/{site_id}/admin/themes"),
             ("GET", "/api/v1/sites/{site_id}/admin/themes/{theme}"),
+            ("GET", "/api/v1/sites/{site_id}/admin/points"),
+            ("POST", "/api/v1/sites/{site_id}/admin/points"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/points"),
+            ("POST", "/api/v1/sites/{site_id}/admin/points/grant"),
+            ("POST", "/api/v1/sites/{site_id}/admin/points/deduct"),
+            ("GET", "/api/v1/sites/{site_id}/admin/points/summary"),
+            ("POST", "/api/v1/sites/{site_id}/admin/points/expire"),
             ("GET", "/api/v1/sites/{site_id}/config/basic"),
             ("PUT", "/api/v1/sites/{site_id}/config/basic"),
             ("POST", "/api/v1/sites/{site_id}/core/{operation_id}",),
@@ -812,6 +819,7 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             mock_theme("basic", true, true),
             mock_theme("modern", false, false),
         ])),
+        points: Arc::new(Mutex::new(Vec::new())),
     };
     let app = build_router(AppConfig {
         web_root: web.path().to_path_buf(),
@@ -2505,6 +2513,146 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
     assert_eq!(theme_readback["is_active"], true);
     assert_eq!(theme_readback["is_mobile_active"], true);
 
+    let point_baseline = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/points/summary?mb_id=member01",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    let point_baseline = json::<Value>(point_baseline).await;
+    assert_eq!(point_baseline["total_point"], 0);
+    assert_eq!(point_baseline["total_rows"], 0);
+
+    let point_action = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/points",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "action": "grant",
+                "mb_id": "member01",
+                "point": 120,
+                "po_content": "canonical grant"
+            })),
+        ))
+        .await
+        .unwrap();
+    let point_action = json::<Value>(point_action).await;
+    assert_eq!(point_action["changed_point"], 120);
+    assert_eq!(point_action["after_point"], 120);
+
+    let point_grant = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/points/grant",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "mb_id": "member01",
+                "point": 30,
+                "po_content": "legacy grant"
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(point_grant).await["after_point"], 150);
+
+    let point_deduct = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/points/deduct",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "mb_id": "member01",
+                "point": 20,
+                "po_content": "legacy deduct"
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(point_deduct).await["after_point"], 130);
+
+    let point_expire = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/points/expire",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"base_date": "2026-08-18"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(point_expire).await["expired_count"], 0);
+
+    let point_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/points?mb_id=member01&page=1&per_page=20",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    let point_list = json::<Value>(point_list).await;
+    assert_eq!(point_list["items"].as_array().map(Vec::len), Some(3));
+    assert_eq!(point_list["pagination"]["total"], 3);
+
+    let point_summary = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/points/summary?mb_id=member01",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    let point_summary = json::<Value>(point_summary).await;
+    assert_eq!(point_summary["total_point"], 130);
+    assert_eq!(point_summary["total_rows"], 3);
+
+    let point_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/points",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"po_ids": [1, 2, 3]})),
+        ))
+        .await
+        .unwrap();
+    let point_delete = json::<Value>(point_delete).await;
+    assert_eq!(point_delete["requested_count"], 3);
+    assert_eq!(point_delete["deleted_count"], 3);
+
+    let point_cleanup = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/points/summary?mb_id=member01",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(point_cleanup).await["total_rows"], 0);
+
     let registry = app
         .clone()
         .oneshot(json_request(
@@ -2876,6 +3024,55 @@ fn mock_theme(id: &str, is_active: bool, is_mobile_active: bool) -> Value {
     })
 }
 
+fn mock_point_change(points: &Mutex<Vec<Value>>, body: &Value, deduct: bool) -> Value {
+    let member_id = body["mb_id"].as_str().unwrap();
+    let requested = body["point"].as_i64().unwrap();
+    let changed = if deduct { -requested } else { requested };
+    let mut items = points.lock().unwrap();
+    let before = items
+        .iter()
+        .filter(|item| item["mb_id"].as_str() == Some(member_id))
+        .filter_map(|item| item["po_point"].as_i64())
+        .sum::<i64>();
+    let after = before + changed;
+    let po_id = items
+        .iter()
+        .filter_map(|item| item["po_id"].as_i64())
+        .max()
+        .unwrap_or(0)
+        + 1;
+    let content = body["po_content"].as_str().unwrap_or(if deduct {
+        "관리자 차감"
+    } else {
+        "관리자 지급"
+    });
+    items.push(serde_json::json!({
+        "po_id": po_id,
+        "mb_id": member_id,
+        "po_point": changed,
+        "po_datetime": "2026-08-18T00:00:00+00:00",
+        "po_content": content,
+        "po_use_point": 0,
+        "po_expired": 0,
+        "po_expire_date": "9999-12-31",
+        "po_mb_point": after,
+        "po_rel_table": "@passive",
+        "po_rel_id": member_id,
+        "po_rel_action": if deduct { "deduct" } else { "grant" }
+    }));
+    serde_json::json!({
+        "data": {
+            "mb_id": member_id,
+            "before_point": before,
+            "changed_point": changed,
+            "after_point": after,
+            "po_content": content,
+            "processed_at": "2026-08-18T00:00:00+00:00"
+        },
+        "meta": {}
+    })
+}
+
 #[derive(Clone, Default)]
 struct MockConnector {
     cf_10: Arc<Mutex<String>>,
@@ -2892,6 +3089,7 @@ struct MockConnector {
     layouts: Arc<Mutex<Vec<Value>>>,
     theme_config: Arc<Mutex<Value>>,
     themes: Arc<Mutex<Vec<Value>>>,
+    points: Arc<Mutex<Vec<Value>>>,
 }
 
 #[async_trait]
@@ -3771,6 +3969,87 @@ impl ConnectorGateway for MockConnector {
                     .unwrap();
                 serde_json::json!({"data": theme, "meta": {}})
             }
+            "adminListPoints" => {
+                let member_id = input.query.get("mb_id").and_then(Value::as_str);
+                let items = self
+                    .points
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .filter(|item| {
+                        member_id.is_none_or(|value| item["mb_id"].as_str() == Some(value))
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>();
+                serde_json::json!({
+                    "data": items,
+                    "pagination": {
+                        "mode": "page", "total": items.len(), "page": 1, "per_page": 20,
+                        "last_page": 1, "cursor": null, "next_cursor": null,
+                        "has_next": false, "has_prev": false
+                    },
+                    "meta": {}
+                })
+            }
+            "adminCreatePointAction" => {
+                let body = input.body.as_ref().unwrap();
+                match body["action"].as_str().unwrap() {
+                    "grant" => mock_point_change(&self.points, body, false),
+                    "deduct" => mock_point_change(&self.points, body, true),
+                    "expire" => serde_json::json!({
+                        "data": {"base_date": body.get("base_date").and_then(Value::as_str).unwrap_or("2026-08-18"), "expired_count": 0, "synced_members": 0},
+                        "meta": {}
+                    }),
+                    _ => unreachable!(),
+                }
+            }
+            "adminGrantPoint" => {
+                mock_point_change(&self.points, input.body.as_ref().unwrap(), false)
+            }
+            "adminDeductPoint" => {
+                mock_point_change(&self.points, input.body.as_ref().unwrap(), true)
+            }
+            "adminDeletePoints" => {
+                let ids = input.body.as_ref().unwrap()["po_ids"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .filter_map(Value::as_i64)
+                    .collect::<Vec<_>>();
+                let mut items = self.points.lock().unwrap();
+                let before = items.len();
+                items.retain(|item| !ids.contains(&item["po_id"].as_i64().unwrap()));
+                serde_json::json!({
+                    "data": {"requested_count": ids.len(), "deleted_count": before - items.len()},
+                    "meta": {}
+                })
+            }
+            "adminPointSummary" => {
+                let member_id = input.query.get("mb_id").and_then(Value::as_str);
+                let items = self.points.lock().unwrap();
+                let matching = items
+                    .iter()
+                    .filter(|item| {
+                        member_id.is_none_or(|value| item["mb_id"].as_str() == Some(value))
+                    })
+                    .collect::<Vec<_>>();
+                let total_point = matching
+                    .iter()
+                    .filter_map(|item| item["po_point"].as_i64())
+                    .sum::<i64>();
+                serde_json::json!({
+                    "data": {"mb_id": member_id, "total_point": total_point, "total_rows": matching.len()},
+                    "meta": {}
+                })
+            }
+            "adminExpirePoints" => serde_json::json!({
+                "data": {
+                    "base_date": input.body.as_ref().and_then(|body| body.get("base_date")).and_then(Value::as_str).unwrap_or("2026-08-18"),
+                    "expired_count": 0,
+                    "synced_members": 0
+                },
+                "meta": {}
+            }),
             "adminListBoardGroups" | "adminLegacyListGroups" => serde_json::json!({
                 "data": self.groups.lock().unwrap().clone(),
                 "pagination": {

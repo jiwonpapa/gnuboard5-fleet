@@ -857,6 +857,55 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/points",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_point_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/points",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_point_action"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/points",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_point_delete"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/points/grant",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_point_grant_legacy"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/points/deduct",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_point_deduct_legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/points/summary",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_point_summary"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/points/expire",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_point_expire_legacy"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/config/basic",
       "auth": "session",
       "site_context": true,

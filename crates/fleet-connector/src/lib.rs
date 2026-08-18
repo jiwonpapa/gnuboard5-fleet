@@ -48,6 +48,11 @@ pub use g5_fleet_core::permissions::{
     AdminSystemPermission, AdminSystemPermissionList, AdminSystemPermissionListQuery,
     AdminSystemPermissionSave, MemberProfile, Pagination, valid_member_id, valid_system_menu,
 };
+pub use g5_fleet_core::points::{
+    AdminPointAction, AdminPointActionResult, AdminPointChange, AdminPointChangeResult,
+    AdminPointDelete, AdminPointDeleteResult, AdminPointExpire, AdminPointExpireResult,
+    AdminPointList, AdminPointListQuery, AdminPointSummary,
+};
 pub use g5_fleet_core::theme::{
     AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, valid_theme_id,
 };
@@ -2134,6 +2139,191 @@ pub trait ConnectorGateway: Send + Sync {
         .await
     }
 
+    async fn admin_list_points(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminPointListQuery,
+    ) -> ConnectorResult<AdminPointList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let mut core_query = BTreeMap::new();
+        if let Some(value) = query.page {
+            core_query.insert("page".to_owned(), json!(value));
+        }
+        if let Some(value) = query.per_page {
+            core_query.insert("per_page".to_owned(), json!(value));
+        }
+        if let Some(value) = &query.mb_id {
+            core_query.insert("mb_id".to_owned(), json!(value));
+        }
+        if let Some(value) = &query.search_field {
+            core_query.insert("search_field".to_owned(), json!(value));
+        }
+        if let Some(value) = &query.search {
+            core_query.insert("search".to_owned(), json!(value));
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListPoints",
+                &CoreExecuteRequest {
+                    query: core_query,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<g5_fleet_core::points::AdminPointItem> =
+            typed_core_envelope("adminListPoints", response)?;
+        Ok(AdminPointList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_create_point_action(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        action: &AdminPointAction,
+    ) -> ConnectorResult<AdminPointActionResult> {
+        if !action.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminCreatePointAction",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(action).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminCreatePointAction", response)
+    }
+
+    async fn admin_delete_points(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        delete: &AdminPointDelete,
+    ) -> ConnectorResult<AdminPointDeleteResult> {
+        if !delete.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeletePoints",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(delete).map_err(|_| ConnectorError::Contract)?),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminDeletePoints", response)
+    }
+
+    async fn admin_grant_point(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        change: &AdminPointChange,
+    ) -> ConnectorResult<AdminPointChangeResult> {
+        point_change_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminGrantPoint",
+            change,
+        )
+        .await
+    }
+
+    async fn admin_deduct_point(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        change: &AdminPointChange,
+    ) -> ConnectorResult<AdminPointChangeResult> {
+        point_change_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminDeductPoint",
+            change,
+        )
+        .await
+    }
+
+    async fn admin_point_summary(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        mb_id: Option<&str>,
+    ) -> ConnectorResult<AdminPointSummary> {
+        if mb_id.is_some_and(|value| value.trim().is_empty() || value.len() > 255) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminPointSummary",
+                &CoreExecuteRequest {
+                    query: mb_id
+                        .map(|value| BTreeMap::from([("mb_id".to_owned(), json!(value))]))
+                        .unwrap_or_default(),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminPointSummary", response)
+    }
+
+    async fn admin_expire_points(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        expire: &AdminPointExpire,
+    ) -> ConnectorResult<AdminPointExpireResult> {
+        if !expire.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminExpirePoints",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(expire).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminExpirePoints", response)
+    }
+
     async fn admin_get_theme_config(
         &self,
         base_url: &str,
@@ -2241,6 +2431,32 @@ struct ThemeListEnvelope {
 #[derive(Default, Deserialize)]
 struct ThemeListMeta {
     total: Option<i64>,
+}
+
+async fn point_change_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    change: &AdminPointChange,
+) -> ConnectorResult<AdminPointChangeResult> {
+    if !change.is_valid() {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                body: Some(serde_json::to_value(change).map_err(|_| ConnectorError::Contract)?),
+                ..Default::default()
+            },
+        )
+        .await?;
+    typed_core_data(operation_id, response)
 }
 
 async fn board_detail_operation<T: ConnectorGateway + ?Sized>(

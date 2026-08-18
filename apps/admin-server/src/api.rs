@@ -34,12 +34,14 @@ use g5_fleet_connector::{
     AdminMemberList, AdminMemberListQuery, AdminMemberMediaDeleteResult, AdminMemberMediaUpload,
     AdminMemberMediaUploadResult, AdminMemberUpdate, AdminMenu, AdminMenuCreate, AdminMenuList,
     AdminMenuReorder, AdminMenuReorderResult, AdminMenuUpdate, AdminNewPostsDelete,
-    AdminNewPostsDeleteResult, AdminSchemaCatalog, AdminSchemaDetail, AdminSystemPermission,
-    AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
-    AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, BasicConfig,
-    ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest,
-    CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview, core_operation,
-    core_operations,
+    AdminNewPostsDeleteResult, AdminPointAction, AdminPointActionResult, AdminPointChange,
+    AdminPointChangeResult, AdminPointDelete, AdminPointDeleteResult, AdminPointExpire,
+    AdminPointExpireResult, AdminPointList, AdminPointListQuery, AdminPointSummary,
+    AdminSchemaCatalog, AdminSchemaDetail, AdminSystemPermission, AdminSystemPermissionList,
+    AdminSystemPermissionListQuery, AdminSystemPermissionSave, AdminTheme, AdminThemeConfig,
+    AdminThemeList, AdminThemeUpdate, BasicConfig, ConnectorCredentials, ConnectorError,
+    ConnectorHealth, ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec,
+    MemberProfile, SiteOverview, core_operation, core_operations,
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
@@ -511,6 +513,28 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/themes/{theme}",
             get(admin_theme_get),
+        )
+        .route(
+            "/sites/{site_id}/admin/points",
+            get(admin_point_list)
+                .post(admin_point_action)
+                .delete(admin_point_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/points/grant",
+            post(admin_point_grant),
+        )
+        .route(
+            "/sites/{site_id}/admin/points/deduct",
+            post(admin_point_deduct),
+        )
+        .route(
+            "/sites/{site_id}/admin/points/summary",
+            get(admin_point_summary),
+        )
+        .route(
+            "/sites/{site_id}/admin/points/expire",
+            post(admin_point_expire),
         )
         .route(
             "/sites/{site_id}/config/basic",
@@ -3804,6 +3828,240 @@ async fn admin_theme_get(
         .await
     {
         Ok(theme) => Json::<AdminTheme>(theme).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_point_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminPointListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_list_points(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(points) => Json::<AdminPointList>(points).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_point_action(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(action): Json<AdminPointAction>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_create_point_action(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &action,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminPointActionResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_point_delete(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(delete): Json<AdminPointDelete>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_delete_points(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &delete,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminPointDeleteResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_point_grant(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(change): Json<AdminPointChange>,
+) -> Response {
+    admin_point_change(state, site_id, headers, change, true).await
+}
+
+async fn admin_point_deduct(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(change): Json<AdminPointChange>,
+) -> Response {
+    admin_point_change(state, site_id, headers, change, false).await
+}
+
+async fn admin_point_change(
+    state: AppState,
+    site_id: String,
+    headers: HeaderMap,
+    change: AdminPointChange,
+    grant: bool,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = if grant {
+        state
+            .config
+            .connector
+            .admin_grant_point(
+                &site.base_url,
+                &context.request_id,
+                &credentials.access_token,
+                &change,
+            )
+            .await
+    } else {
+        state
+            .config
+            .connector
+            .admin_deduct_point(
+                &site.base_url,
+                &context.request_id,
+                &credentials.access_token,
+                &change,
+            )
+            .await
+    };
+    match result {
+        Ok(result) => Json::<AdminPointChangeResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+#[derive(Deserialize)]
+struct AdminPointSummaryQuery {
+    mb_id: Option<String>,
+}
+
+async fn admin_point_summary(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminPointSummaryQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_point_summary(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            query.mb_id.as_deref(),
+        )
+        .await
+    {
+        Ok(summary) => Json::<AdminPointSummary>(summary).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_point_expire(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    payload: Option<Json<AdminPointExpire>>,
+) -> Response {
+    let expire = payload.map(|Json(value)| value).unwrap_or_default();
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_expire_points(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &expire,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminPointExpireResult>(result).into_response(),
         Err(error) => connector_error(error),
     }
 }
