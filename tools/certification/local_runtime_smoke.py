@@ -1080,6 +1080,145 @@ def main() -> int:
     ):
         raise RuntimeError("R19 theme rollback readback failed")
 
+    points_path = "/api/v1/sites/owner-a-site/admin/points"
+    point_summary_path = f"{points_path}/summary?mb_id={member_id}"
+    baseline_point_summary = request(
+        fleet_base,
+        "GET",
+        point_summary_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if baseline_point_summary.get("mb_id") != member_id:
+        raise RuntimeError("R20 point baseline summary failed")
+    baseline_point_total = baseline_point_summary.get("total_point")
+    baseline_point_rows = baseline_point_summary.get("total_rows")
+    if not isinstance(baseline_point_total, int) or not isinstance(baseline_point_rows, int):
+        raise RuntimeError("R20 point baseline summary types are invalid")
+    baseline_point_list = request(
+        fleet_base,
+        "GET",
+        f"{points_path}?page=1&per_page=100&mb_id={member_id}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if not isinstance(baseline_point_list.get("items"), list):
+        raise RuntimeError("R20 point baseline list failed")
+
+    point_sentinel = f"R20 local {env['G5_CERT_REVISION'][:12]}"
+    canonical_reason = f"{point_sentinel} canonical grant"
+    legacy_grant_reason = f"{point_sentinel} legacy grant"
+    legacy_deduct_reason = f"{point_sentinel} legacy deduct"
+    canonical_point = request(
+        fleet_base,
+        "POST",
+        points_path,
+        body={
+            "action": "grant",
+            "mb_id": member_id,
+            "point": 41,
+            "po_content": canonical_reason,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if canonical_point.get("changed_point") != 41:
+        raise RuntimeError("R20 canonical point grant failed")
+    legacy_grant_point = request(
+        fleet_base,
+        "POST",
+        f"{points_path}/grant",
+        body={"mb_id": member_id, "point": 23, "po_content": legacy_grant_reason},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if legacy_grant_point.get("changed_point") != 23:
+        raise RuntimeError("R20 legacy point grant failed")
+    legacy_deduct_point = request(
+        fleet_base,
+        "POST",
+        f"{points_path}/deduct",
+        body={"mb_id": member_id, "point": 17, "po_content": legacy_deduct_reason},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if legacy_deduct_point.get("changed_point") != -17:
+        raise RuntimeError("R20 legacy point deduct failed")
+
+    point_list_readback = request(
+        fleet_base,
+        "GET",
+        f"{points_path}?page=1&per_page=100&mb_id={member_id}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    created_point_items = [
+        item
+        for item in point_list_readback.get("items", [])
+        if item.get("po_content")
+        in {canonical_reason, legacy_grant_reason, legacy_deduct_reason}
+    ]
+    created_point_ids = [item.get("po_id") for item in created_point_items]
+    if len(created_point_items) != 3 or not all(
+        isinstance(po_id, int) and po_id > 0 for po_id in created_point_ids
+    ):
+        raise RuntimeError("R20 point list readback did not find all created rows")
+    changed_point_summary = request(
+        fleet_base,
+        "GET",
+        point_summary_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        changed_point_summary.get("total_point") != baseline_point_total + 47
+        or changed_point_summary.get("total_rows") != baseline_point_rows + 3
+    ):
+        raise RuntimeError("R20 point summary mutation readback failed")
+
+    safe_expiration = request(
+        fleet_base,
+        "POST",
+        f"{points_path}/expire",
+        body={"base_date": "1970-01-01"},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if (
+        safe_expiration.get("base_date") != "1970-01-01"
+        or safe_expiration.get("expired_count") != 0
+        or safe_expiration.get("synced_members") != 0
+    ):
+        raise RuntimeError("R20 zero-effect point expiration failed closed")
+
+    deleted_points = request(
+        fleet_base,
+        "DELETE",
+        points_path,
+        body={"po_ids": created_point_ids},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if (
+        deleted_points.get("requested_count") != 3
+        or deleted_points.get("deleted_count") != 3
+    ):
+        raise RuntimeError("R20 point cleanup delete failed")
+    restored_point_summary = request(
+        fleet_base,
+        "GET",
+        point_summary_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        restored_point_summary.get("total_point") != baseline_point_total
+        or restored_point_summary.get("total_rows") != baseline_point_rows
+    ):
+        raise RuntimeError("R20 point cleanup summary readback failed")
+    restored_point_list = request(
+        fleet_base,
+        "GET",
+        f"{points_path}?page=1&per_page=100&mb_id={member_id}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if any(
+        item.get("po_content")
+        in {canonical_reason, legacy_grant_reason, legacy_deduct_reason}
+        for item in restored_point_list.get("items", [])
+    ):
+        raise RuntimeError("R20 point cleanup list readback failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -1348,6 +1487,16 @@ def main() -> int:
             "detail_active_state_readback": "passed",
             "mobile_theme_baseline_preserved": "passed",
             "config_rollback_readback": "passed",
+        },
+        "r20_points": {
+            "operations": 7,
+            "baseline_list_summary": "passed",
+            "canonical_grant": "passed",
+            "legacy_grant_deduct": "passed",
+            "list_summary_readback": "passed",
+            "zero_effect_expiration_1970_01_01": "passed",
+            "created_rows_deleted": 3,
+            "list_summary_rollback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,
