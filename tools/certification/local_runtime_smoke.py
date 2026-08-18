@@ -1243,6 +1243,167 @@ def main() -> int:
     ):
         raise RuntimeError("R20 point cleanup list readback failed")
 
+    system_polls_path = "/api/v1/sites/owner-a-site/admin/system/polls"
+    legacy_polls_path = "/api/v1/sites/owner-a-site/admin/polls"
+    baseline_system_polls = request(
+        fleet_base,
+        "GET",
+        f"{system_polls_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    baseline_legacy_polls = request(
+        fleet_base,
+        "GET",
+        f"{legacy_polls_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    baseline_poll_total = baseline_system_polls.get("pagination", {}).get("total")
+    if (
+        not isinstance(baseline_poll_total, int)
+        or baseline_legacy_polls.get("pagination", {}).get("total") != baseline_poll_total
+    ):
+        raise RuntimeError("R21 poll baseline aliases disagree")
+
+    poll_sentinel = env["G5_CERT_REVISION"][:12]
+    system_poll_subject = f"R21 system {poll_sentinel}"
+    legacy_poll_subject = f"R21 legacy {poll_sentinel}"
+    system_poll = request(
+        fleet_base,
+        "POST",
+        system_polls_path,
+        body={
+            "po_subject": system_poll_subject,
+            "po_poll1": "찬성",
+            "po_poll2": "반대",
+            "po_level": 1,
+            "po_point": 0,
+            "po_use": 1,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(201,),
+    ).json()
+    system_poll_id = system_poll.get("po_id")
+    if not isinstance(system_poll_id, int) or system_poll.get("po_subject") != system_poll_subject:
+        raise RuntimeError("R21 system poll create failed")
+    system_poll_detail = request(
+        fleet_base,
+        "GET",
+        f"{system_polls_path}/{system_poll_id}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if system_poll_detail.get("po_poll1") != "찬성":
+        raise RuntimeError("R21 system poll detail failed")
+    updated_system_subject = f"{system_poll_subject} updated"
+    updated_system_poll = request(
+        fleet_base,
+        "PUT",
+        f"{system_polls_path}/{system_poll_id}",
+        body={"po_subject": updated_system_subject, "po_poll3": "보류"},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if (
+        updated_system_poll.get("po_subject") != updated_system_subject
+        or updated_system_poll.get("po_poll3") != "보류"
+    ):
+        raise RuntimeError("R21 system poll update failed")
+
+    legacy_poll = request(
+        fleet_base,
+        "POST",
+        legacy_polls_path,
+        body={
+            "po_subject": legacy_poll_subject,
+            "po_poll1": "예",
+            "po_poll2": "아니오",
+            "po_date": "2026-08-18",
+            "po_use": 1,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(201,),
+    ).json()
+    legacy_poll_id = legacy_poll.get("po_id")
+    if not isinstance(legacy_poll_id, int) or legacy_poll.get("po_date") != "2026-08-18":
+        raise RuntimeError("R21 legacy poll create failed")
+    legacy_poll_detail = request(
+        fleet_base,
+        "GET",
+        f"{legacy_polls_path}/{legacy_poll_id}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if legacy_poll_detail.get("po_subject") != legacy_poll_subject:
+        raise RuntimeError("R21 legacy poll detail failed")
+    updated_legacy_poll = request(
+        fleet_base,
+        "PATCH",
+        f"{legacy_polls_path}/{legacy_poll_id}",
+        body={"po_use": 0},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if updated_legacy_poll.get("po_use") != 0:
+        raise RuntimeError("R21 legacy poll update failed")
+
+    system_poll_list = request(
+        fleet_base,
+        "GET",
+        f"{system_polls_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    legacy_poll_list = request(
+        fleet_base,
+        "GET",
+        f"{legacy_polls_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    created_poll_ids = {system_poll_id, legacy_poll_id}
+    if (
+        system_poll_list.get("pagination", {}).get("total") != baseline_poll_total + 2
+        or legacy_poll_list.get("pagination", {}).get("total") != baseline_poll_total + 2
+        or not created_poll_ids.issubset(
+            {item.get("po_id") for item in system_poll_list.get("items", [])}
+        )
+        or not created_poll_ids.issubset(
+            {item.get("po_id") for item in legacy_poll_list.get("items", [])}
+        )
+    ):
+        raise RuntimeError("R21 poll alias list readback failed")
+
+    request(
+        fleet_base,
+        "DELETE",
+        f"{system_polls_path}/{system_poll_id}",
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(204,),
+    )
+    request(
+        fleet_base,
+        "DELETE",
+        f"{legacy_polls_path}/{legacy_poll_id}",
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(204,),
+    )
+    restored_system_polls = request(
+        fleet_base,
+        "GET",
+        f"{system_polls_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    restored_legacy_polls = request(
+        fleet_base,
+        "GET",
+        f"{legacy_polls_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        restored_system_polls.get("pagination", {}).get("total") != baseline_poll_total
+        or restored_legacy_polls.get("pagination", {}).get("total") != baseline_poll_total
+        or any(
+            item.get("po_id") in created_poll_ids
+            for item in restored_system_polls.get("items", [])
+            + restored_legacy_polls.get("items", [])
+        )
+    ):
+        raise RuntimeError("R21 poll cleanup readback failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -1522,6 +1683,15 @@ def main() -> int:
             "created_rows_deleted": 3,
             "list_summary_rollback": "passed",
             "member_balance_rollback": "passed",
+        },
+        "r21_polls": {
+            "operations": 10,
+            "system_list_detail_create_update_delete": "passed",
+            "legacy_list_detail_create_update_delete": "passed",
+            "nine_choice_form_contract": "passed",
+            "alias_list_readback": "passed",
+            "created_polls_deleted": 2,
+            "poll_cleanup_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,
