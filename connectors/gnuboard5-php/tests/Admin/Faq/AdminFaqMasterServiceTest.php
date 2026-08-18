@@ -163,6 +163,35 @@ final class AdminFaqMasterServiceTest extends TestCase
         $this->assertFileDoesNotExist($faqDir . '/9_t');
     }
 
+    public function testDeleteHeaderImageReportsPostDeleteAbsence(): void
+    {
+        $dataPath = $this->createDataPath();
+        $faqDir = $dataPath . '/faq';
+        mkdir($faqDir, 0777, true);
+        file_put_contents($faqDir . '/7_h', 'header');
+
+        $repository = $this->createMock(AdminFaqMasterRepository::class);
+        $repository->method('find')
+            ->with(7)
+            ->willReturn([
+                'fm_id' => 7,
+                'fm_subject' => '안내',
+                'fm_head_html' => '',
+                'fm_tail_html' => '',
+                'fm_mobile_head_html' => '',
+                'fm_mobile_tail_html' => '',
+                'fm_order' => 1,
+                'faq_count' => 0,
+            ]);
+
+        $service = new AdminFaqMasterService($repository, EnvConfig::fromEnv());
+        $result = $service->deleteHeaderImage(7);
+
+        $this->assertFalse($result['exists']);
+        $this->assertNull($result['mime']);
+        $this->assertFileDoesNotExist($faqDir . '/7_h');
+    }
+
     public function testListEnrichesSummaryWithImagePresence(): void
     {
         $dataPath = $this->createDataPath();

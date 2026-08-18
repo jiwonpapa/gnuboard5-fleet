@@ -35,9 +35,9 @@ final class AdminFaqMasterImageManager
 
     public function delete(int $masterId, string $suffix): array
     {
-        $deleted = $this->deleteArtifact($masterId, $suffix);
+        $this->deleteArtifact($masterId, $suffix);
 
-        return $this->buildImageResponse($masterId, $suffix, $deleted, null);
+        return $this->buildImageResponse($masterId, $suffix, false, null);
     }
 
     public function deleteArtifact(int $masterId, string $suffix): bool
