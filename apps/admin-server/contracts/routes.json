@@ -724,6 +724,55 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/menus",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_menu_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/menus",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_menu_create"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/sites/{site_id}/admin/menus",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_menu_reorder"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/menus/{me_id}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_menu_detail"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/menus/{me_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_menu_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/menus/{me_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_menu_delete"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/sites/{site_id}/admin/menus/reorder",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_menu_reorder_legacy"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/config/basic",
       "auth": "session",
       "site_context": true,

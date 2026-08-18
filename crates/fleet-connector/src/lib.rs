@@ -34,6 +34,10 @@ pub use g5_fleet_core::members::{
     AdminMemberMediaDeleteResult, AdminMemberMediaUpload, AdminMemberMediaUploadResult,
     AdminMemberUpdate, valid_member_target,
 };
+pub use g5_fleet_core::menus::{
+    AdminMenu, AdminMenuCreate, AdminMenuList, AdminMenuReorder, AdminMenuReorderResult,
+    AdminMenuUpdate, valid_menu_id,
+};
 pub use g5_fleet_core::permissions::{
     AdminAuthListQuery, AdminAuthMember, AdminAuthMemberList, AdminAuthUpsert,
     AdminSystemPermission, AdminSystemPermissionList, AdminSystemPermissionListQuery,
@@ -1757,6 +1761,161 @@ pub trait ConnectorGateway: Send + Sync {
             .await?;
         typed_core_empty("adminDeleteFaq", response)
     }
+
+    async fn admin_list_menus(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminMenuList> {
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListMenus",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        let envelope: TypedListEnvelope<AdminMenu> =
+            typed_core_envelope("adminListMenus", response)?;
+        Ok(AdminMenuList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_create_menu(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        create: &AdminMenuCreate,
+    ) -> ConnectorResult<AdminMenu> {
+        if !create.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminCreateMenu",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(create).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminCreateMenu", response)
+    }
+
+    async fn admin_get_menu(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        me_id: i64,
+    ) -> ConnectorResult<AdminMenu> {
+        menu_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminGetMenu",
+            me_id,
+            CoreExecuteRequest::default(),
+        )
+        .await
+    }
+
+    async fn admin_update_menu(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        me_id: i64,
+        update: &AdminMenuUpdate,
+    ) -> ConnectorResult<AdminMenu> {
+        if !update.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        menu_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminUpdateMenu",
+            me_id,
+            CoreExecuteRequest {
+                body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+                ..Default::default()
+            },
+        )
+        .await
+    }
+
+    async fn admin_delete_menu(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        me_id: i64,
+    ) -> ConnectorResult<()> {
+        if !valid_menu_id(me_id) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteMenu",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("me_id".to_owned(), me_id.to_string())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_empty("adminDeleteMenu", response)
+    }
+
+    async fn admin_reorder_menus(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        reorder: &AdminMenuReorder,
+    ) -> ConnectorResult<AdminMenuReorderResult> {
+        menu_reorder_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminReorderMenus",
+            reorder,
+        )
+        .await
+    }
+
+    async fn admin_reorder_menus_legacy(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        reorder: &AdminMenuReorder,
+    ) -> ConnectorResult<AdminMenuReorderResult> {
+        menu_reorder_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminReorderMenusLegacy",
+            reorder,
+        )
+        .await
+    }
 }
 
 #[derive(Deserialize)]
@@ -1838,6 +1997,51 @@ async fn faq_detail_operation<T: ConnectorGateway + ?Sized>(
     input.path.insert("fa_id".to_owned(), fa_id.to_string());
     let response = gateway
         .core_execute(base_url, request_id, access_token, operation_id, &input)
+        .await?;
+    typed_core_data(operation_id, response)
+}
+
+async fn menu_detail_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    me_id: i64,
+    mut input: CoreExecuteRequest,
+) -> ConnectorResult<AdminMenu> {
+    if !valid_menu_id(me_id) {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    input.path.insert("me_id".to_owned(), me_id.to_string());
+    let response = gateway
+        .core_execute(base_url, request_id, access_token, operation_id, &input)
+        .await?;
+    typed_core_data(operation_id, response)
+}
+
+async fn menu_reorder_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    reorder: &AdminMenuReorder,
+) -> ConnectorResult<AdminMenuReorderResult> {
+    if !reorder.is_valid() {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                body: Some(serde_json::to_value(reorder).map_err(|_| ConnectorError::Contract)?),
+                ..Default::default()
+            },
+        )
         .await?;
     typed_core_data(operation_id, response)
 }

@@ -30,12 +30,13 @@ use g5_fleet_connector::{
     AdminFaqListQuery, AdminFaqMasterCreate, AdminFaqMasterDetail, AdminFaqMasterList,
     AdminFaqMasterListQuery, AdminFaqMasterUpdate, AdminFaqUpdate, AdminMember,
     AdminMemberLevelUpdate, AdminMemberList, AdminMemberListQuery, AdminMemberMediaDeleteResult,
-    AdminMemberMediaUpload, AdminMemberMediaUploadResult, AdminMemberUpdate, AdminNewPostsDelete,
-    AdminNewPostsDeleteResult, AdminSchemaCatalog, AdminSchemaDetail, AdminSystemPermission,
-    AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
-    BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin,
-    CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview,
-    core_operation, core_operations,
+    AdminMemberMediaUpload, AdminMemberMediaUploadResult, AdminMemberUpdate, AdminMenu,
+    AdminMenuCreate, AdminMenuList, AdminMenuReorder, AdminMenuReorderResult, AdminMenuUpdate,
+    AdminNewPostsDelete, AdminNewPostsDeleteResult, AdminSchemaCatalog, AdminSchemaDetail,
+    AdminSystemPermission, AdminSystemPermissionList, AdminSystemPermissionListQuery,
+    AdminSystemPermissionSave, BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth,
+    ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, MemberProfile,
+    SiteOverview, core_operation, core_operations,
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
@@ -465,6 +466,22 @@ pub(crate) fn router() -> Router<AppState> {
             get(admin_faq_get)
                 .put(admin_faq_update)
                 .delete(admin_faq_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/menus",
+            get(admin_menu_list)
+                .post(admin_menu_create)
+                .patch(admin_menu_reorder),
+        )
+        .route(
+            "/sites/{site_id}/admin/menus/{me_id}",
+            get(admin_menu_get)
+                .put(admin_menu_update)
+                .delete(admin_menu_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/menus/reorder",
+            axum::routing::patch(admin_menu_reorder_legacy),
         )
         .route(
             "/sites/{site_id}/config/basic",
@@ -3146,6 +3163,231 @@ async fn admin_faq_delete(
         .await
     {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_menu_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_list_menus(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(items) => Json::<AdminMenuList>(items).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_menu_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(create): Json<AdminMenuCreate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_create_menu(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &create,
+        )
+        .await
+    {
+        Ok(menu) => (StatusCode::CREATED, Json::<AdminMenu>(menu)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_menu_get(
+    State(state): State<AppState>,
+    Path((site_id, me_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_get_menu(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            me_id,
+        )
+        .await
+    {
+        Ok(menu) => Json::<AdminMenu>(menu).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_menu_update(
+    State(state): State<AppState>,
+    Path((site_id, me_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminMenuUpdate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_update_menu(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            me_id,
+            &update,
+        )
+        .await
+    {
+        Ok(menu) => Json::<AdminMenu>(menu).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_menu_delete(
+    State(state): State<AppState>,
+    Path((site_id, me_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_delete_menu(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            me_id,
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_menu_reorder(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(reorder): Json<AdminMenuReorder>,
+) -> Response {
+    menu_reorder(state, headers, site_id, reorder, false).await
+}
+
+async fn admin_menu_reorder_legacy(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(reorder): Json<AdminMenuReorder>,
+) -> Response {
+    menu_reorder(state, headers, site_id, reorder, true).await
+}
+
+async fn menu_reorder(
+    state: AppState,
+    headers: HeaderMap,
+    site_id: String,
+    reorder: AdminMenuReorder,
+    legacy: bool,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = if legacy {
+        state
+            .config
+            .connector
+            .admin_reorder_menus_legacy(
+                &site.base_url,
+                &context.request_id,
+                &credentials.access_token,
+                &reorder,
+            )
+            .await
+    } else {
+        state
+            .config
+            .connector
+            .admin_reorder_menus(
+                &site.base_url,
+                &context.request_id,
+                &credentials.access_token,
+                &reorder,
+            )
+            .await
+    };
+    match result {
+        Ok(value) => Json::<AdminMenuReorderResult>(value).into_response(),
         Err(error) => connector_error(error),
     }
 }

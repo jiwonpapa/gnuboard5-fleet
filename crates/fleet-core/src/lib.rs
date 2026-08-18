@@ -7,6 +7,7 @@ pub mod contents;
 pub mod faqs;
 pub mod groups;
 pub mod members;
+pub mod menus;
 pub mod permissions;
 
 pub type FleetResult<T> = Result<T, AppErrorPayload>;

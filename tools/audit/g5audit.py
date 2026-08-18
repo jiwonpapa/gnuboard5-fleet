@@ -1715,6 +1715,13 @@ def check_server_scaffold_contract(root: Path) -> str:
         ("GET", "/api/v1/sites/{site_id}/admin/faqs/{fa_id}", "session", True),
         ("PUT", "/api/v1/sites/{site_id}/admin/faqs/{fa_id}", "session_csrf_step_up", True),
         ("DELETE", "/api/v1/sites/{site_id}/admin/faqs/{fa_id}", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/menus", "session", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/menus", "session_csrf_step_up", True),
+        ("PATCH", "/api/v1/sites/{site_id}/admin/menus", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/menus/{me_id}", "session", True),
+        ("PUT", "/api/v1/sites/{site_id}/admin/menus/{me_id}", "session_csrf_step_up", True),
+        ("DELETE", "/api/v1/sites/{site_id}/admin/menus/{me_id}", "session_csrf_step_up", True),
+        ("PATCH", "/api/v1/sites/{site_id}/admin/menus/reorder", "session_csrf_step_up", True),
         (
             "GET",
             "/api/v1/sites/{site_id}/config/basic",

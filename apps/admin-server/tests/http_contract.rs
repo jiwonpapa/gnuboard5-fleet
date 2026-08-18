@@ -356,6 +356,13 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("GET", "/api/v1/sites/{site_id}/admin/faqs/{fa_id}"),
             ("PUT", "/api/v1/sites/{site_id}/admin/faqs/{fa_id}"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/faqs/{fa_id}"),
+            ("GET", "/api/v1/sites/{site_id}/admin/menus"),
+            ("POST", "/api/v1/sites/{site_id}/admin/menus"),
+            ("PATCH", "/api/v1/sites/{site_id}/admin/menus"),
+            ("GET", "/api/v1/sites/{site_id}/admin/menus/{me_id}"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/menus/{me_id}"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/menus/{me_id}"),
+            ("PATCH", "/api/v1/sites/{site_id}/admin/menus/reorder"),
             ("GET", "/api/v1/sites/{site_id}/config/basic"),
             ("PUT", "/api/v1/sites/{site_id}/config/basic"),
             ("POST", "/api/v1/sites/{site_id}/core/{operation_id}",),
@@ -765,6 +772,7 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             "fa_content": "<p>Fleet 서비스입니다.</p>",
             "fa_order": 0
         })])),
+        menus: Arc::new(Mutex::new(Vec::new())),
     };
     let app = build_router(AppConfig {
         web_root: web.path().to_path_buf(),
@@ -2148,6 +2156,100 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap();
     assert_eq!(faq_master_delete.status(), StatusCode::NO_CONTENT);
 
+    let menu_create = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/menus",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "me_code": "100100", "me_name": "Fleet 메뉴",
+                "me_link": "/fleet", "me_target": "_self",
+                "me_order": 10, "me_use": 1, "me_mobile_use": 1
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(menu_create.status(), StatusCode::CREATED);
+    assert_eq!(json::<Value>(menu_create).await["me_id"], 1);
+
+    let menu_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/menus",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(menu_list).await["items"][0]["me_code"],
+        "100100"
+    );
+
+    let menu_get = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/menus/1",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(menu_get).await["me_name"], "Fleet 메뉴");
+
+    let menu_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/menus/1",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"me_name": "Fleet 메뉴 갱신"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(menu_update).await["me_name"],
+        "Fleet 메뉴 갱신"
+    );
+
+    for path in [
+        "/api/v1/sites/site-a/admin/menus",
+        "/api/v1/sites/site-a/admin/menus/reorder",
+    ] {
+        let reorder = app
+            .clone()
+            .oneshot(json_request(
+                Method::PATCH,
+                path,
+                Some(&cookie),
+                Some(&csrf),
+                Some(serde_json::json!({"orders": [{"me_id": 1, "me_order": 20}]})),
+            ))
+            .await
+            .unwrap();
+        assert_eq!(json::<Value>(reorder).await["result"], "ok");
+    }
+
+    let menu_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/menus/1",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(menu_delete.status(), StatusCode::NO_CONTENT);
+
     let registry = app
         .clone()
         .oneshot(json_request(
@@ -2502,6 +2604,7 @@ struct MockConnector {
     contents: Arc<Mutex<Vec<Value>>>,
     faq_masters: Arc<Mutex<Vec<Value>>>,
     faqs: Arc<Mutex<Vec<Value>>>,
+    menus: Arc<Mutex<Vec<Value>>>,
 }
 
 #[async_trait]
@@ -3129,6 +3232,74 @@ impl ConnectorGateway for MockConnector {
                     .unwrap()
                     .retain(|item| item["fa_id"].as_i64() != Some(fa_id));
                 Value::Null
+            }
+            "adminListMenus" => serde_json::json!({
+                "data": self.menus.lock().unwrap().clone(),
+                "pagination": {
+                    "mode": "page", "total": self.menus.lock().unwrap().len(),
+                    "page": 1, "per_page": 100, "last_page": 1,
+                    "cursor": null, "next_cursor": null, "has_next": false, "has_prev": false
+                },
+                "meta": {}
+            }),
+            "adminCreateMenu" => {
+                let body = input.body.as_ref().unwrap();
+                let menu = serde_json::json!({
+                    "me_id": self.menus.lock().unwrap().len() as i64 + 1,
+                    "me_code": body["me_code"], "me_name": body["me_name"],
+                    "me_link": body["me_link"],
+                    "me_target": body.get("me_target").cloned().unwrap_or(serde_json::json!("_self")),
+                    "me_order": body.get("me_order").cloned().unwrap_or(serde_json::json!(0)),
+                    "me_use": body.get("me_use").cloned().unwrap_or(serde_json::json!(1)),
+                    "me_mobile_use": body.get("me_mobile_use").cloned().unwrap_or(serde_json::json!(1))
+                });
+                self.menus.lock().unwrap().push(menu.clone());
+                serde_json::json!({"data": menu, "meta": {}})
+            }
+            "adminGetMenu" => {
+                let me_id = input.path.get("me_id").unwrap().parse::<i64>().unwrap();
+                let menu = self
+                    .menus
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|item| item["me_id"].as_i64() == Some(me_id))
+                    .cloned()
+                    .unwrap();
+                serde_json::json!({"data": menu, "meta": {}})
+            }
+            "adminUpdateMenu" => {
+                let me_id = input.path.get("me_id").unwrap().parse::<i64>().unwrap();
+                let mut menus = self.menus.lock().unwrap();
+                let menu = menus
+                    .iter_mut()
+                    .find(|item| item["me_id"].as_i64() == Some(me_id))
+                    .unwrap();
+                for (name, value) in input.body.as_ref().unwrap().as_object().unwrap() {
+                    menu[name] = value.clone();
+                }
+                serde_json::json!({"data": menu.clone(), "meta": {}})
+            }
+            "adminDeleteMenu" => {
+                let me_id = input.path.get("me_id").unwrap().parse::<i64>().unwrap();
+                self.menus
+                    .lock()
+                    .unwrap()
+                    .retain(|item| item["me_id"].as_i64() != Some(me_id));
+                Value::Null
+            }
+            "adminReorderMenus" | "adminReorderMenusLegacy" => {
+                let orders = input.body.as_ref().unwrap()["orders"].as_array().unwrap();
+                let mut menus = self.menus.lock().unwrap();
+                for order in orders {
+                    if let Some(menu) = menus
+                        .iter_mut()
+                        .find(|item| item["me_id"] == order["me_id"])
+                    {
+                        menu["me_order"] = order["me_order"].clone();
+                    }
+                }
+                serde_json::json!({"data": {"result": "ok"}, "meta": {}})
             }
             "adminListBoardGroups" | "adminLegacyListGroups" => serde_json::json!({
                 "data": self.groups.lock().unwrap().clone(),
