@@ -138,9 +138,15 @@ def schema_required_fields(
             document, document["components"]["schemas"][name], seen
         )
     required = {str(value) for value in schema.get("required", [])}
-    for composition in ("allOf", "oneOf", "anyOf"):
-        for child in schema.get(composition, []):
-            required.update(schema_required_fields(document, child, seen))
+    for child in schema.get("allOf", []):
+        required.update(schema_required_fields(document, child, set(seen)))
+    for composition in ("oneOf", "anyOf"):
+        alternatives = [
+            schema_required_fields(document, child, set(seen))
+            for child in schema.get(composition, [])
+        ]
+        if alternatives:
+            required.update(set.intersection(*alternatives))
     return required
 
 

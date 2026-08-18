@@ -171,11 +171,7 @@
         "au_menu",
         "auths"
       ],
-      "request_required_fields": [
-        "au_auth",
-        "au_menu",
-        "auths"
-      ],
+      "request_required_fields": [],
       "response_fields": [
         "data",
         "meta"
@@ -1400,12 +1396,7 @@
         "footer_image",
         "image"
       ],
-      "request_required_fields": [
-        "file",
-        "fm_timg",
-        "footer_image",
-        "image"
-      ],
+      "request_required_fields": [],
       "response_fields": [
         "data",
         "meta"
@@ -1480,12 +1471,7 @@
         "header_image",
         "image"
       ],
-      "request_required_fields": [
-        "file",
-        "fm_himg",
-        "header_image",
-        "image"
-      ],
+      "request_required_fields": [],
       "response_fields": [
         "data",
         "meta"
@@ -2663,9 +2649,6 @@
         "to"
       ],
       "request_required_fields": [
-        "content",
-        "ma_id",
-        "subject",
         "to"
       ],
       "response_fields": [
@@ -2752,9 +2735,6 @@
         "target_type"
       ],
       "request_required_fields": [
-        "content",
-        "ma_id",
-        "subject",
         "target_type"
       ],
       "response_fields": [
@@ -2880,12 +2860,7 @@
         "ma_subject",
         "subject"
       ],
-      "request_required_fields": [
-        "content",
-        "ma_content",
-        "ma_subject",
-        "subject"
-      ],
+      "request_required_fields": [],
       "response_fields": [
         "data",
         "meta"
@@ -2921,9 +2896,6 @@
         "to"
       ],
       "request_required_fields": [
-        "content",
-        "ma_id",
-        "subject",
         "to"
       ],
       "response_fields": [
@@ -3026,12 +2998,7 @@
         "ma_subject",
         "subject"
       ],
-      "request_required_fields": [
-        "content",
-        "ma_content",
-        "ma_subject",
-        "subject"
-      ],
+      "request_required_fields": [],
       "response_fields": [
         "data",
         "meta"
@@ -3371,11 +3338,7 @@
         "icon",
         "mb_icon"
       ],
-      "request_required_fields": [
-        "file",
-        "icon",
-        "mb_icon"
-      ],
+      "request_required_fields": [],
       "response_fields": [
         "data",
         "meta"
@@ -3449,11 +3412,7 @@
         "image",
         "mb_img"
       ],
-      "request_required_fields": [
-        "file",
-        "image",
-        "mb_img"
-      ],
+      "request_required_fields": [],
       "response_fields": [
         "data",
         "meta"
@@ -3862,9 +3821,7 @@
         "point"
       ],
       "request_required_fields": [
-        "action",
-        "mb_id",
-        "point"
+        "action"
       ],
       "response_fields": [
         "data",
@@ -4090,9 +4047,6 @@
         "po_use"
       ],
       "request_required_fields": [
-        "options",
-        "po_poll1",
-        "po_poll2",
         "po_subject"
       ],
       "response_fields": [
@@ -4572,8 +4526,6 @@
       ],
       "request_required_fields": [
         "body",
-        "member_ids",
-        "target",
         "title"
       ],
       "response_fields": [
@@ -4612,8 +4564,6 @@
       ],
       "request_required_fields": [
         "body",
-        "member_ids",
-        "target",
         "title"
       ],
       "response_fields": [
@@ -5313,9 +5263,7 @@
         "target_bg_no"
       ],
       "request_required_fields": [
-        "action",
-        "bk_no",
-        "contact_ids"
+        "action"
       ],
       "response_fields": [
         "data",
@@ -5416,9 +5364,7 @@
         "upload_bg_no"
       ],
       "request_required_fields": [
-        "bg_no",
-        "contacts",
-        "upload_bg_no"
+        "contacts"
       ],
       "response_fields": [
         "data",
@@ -5840,16 +5786,7 @@
         "wr_message",
         "wr_reply"
       ],
-      "request_required_fields": [
-        "contact_ids",
-        "fo_no",
-        "group_ids",
-        "manual_targets",
-        "member_levels",
-        "message",
-        "template_id",
-        "wr_message"
-      ],
+      "request_required_fields": [],
       "response_fields": [
         "data",
         "meta"
@@ -6224,9 +6161,7 @@
         "template_ids"
       ],
       "request_required_fields": [
-        "action",
-        "fo_no",
-        "template_ids"
+        "action"
       ],
       "response_fields": [
         "data",
