@@ -125,4 +125,13 @@ describe("AdminThemePage", () => {
       "csrf-1",
     ));
   });
+
+  it("fails closed when the provider does not persist a requested mobile theme", async () => {
+    renderPage();
+    await screen.findByRole("heading", { name: "Basic" });
+    fireEvent.click(screen.getAllByText("Modern")[0]!);
+    await waitFor(() => expect(api.getAdminTheme).toHaveBeenCalledWith("site-a", "modern"));
+    fireEvent.click(screen.getByRole("button", { name: "모바일 적용" }));
+    expect(await screen.findByText("서버가 테마 설정(cf_mobile_theme)을 반영하지 않았습니다.")).toBeVisible();
+  });
 });

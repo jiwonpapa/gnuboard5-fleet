@@ -99,6 +99,12 @@ export function AdminThemePage() {
       setThemes(list.items);
       setTotal(list.total);
       if (selected) setSelected(await getAdminTheme(siteId, selected.id));
+      const mismatched = Object.entries(update)
+        .filter(([name, value]) => readback[name as keyof AdminThemeConfig] !== value)
+        .map(([name]) => name);
+      if (mismatched.length > 0) {
+        throw new Error(`서버가 테마 설정(${mismatched.join(", ")})을 반영하지 않았습니다.`);
+      }
       setMessage("테마 설정을 저장하고 설정·목록·상세를 재조회했습니다.");
     } catch (caught) {
       setError(errorMessage(caught, "테마 설정을 저장하지 못했습니다."));

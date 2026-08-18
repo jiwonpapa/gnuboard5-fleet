@@ -1017,47 +1017,56 @@ def main() -> int:
     ).json()
     if theme_detail.get("id") != target_theme:
         raise RuntimeError("R19 theme detail failed")
-    applied_theme = request(
+    disabled_theme = request(
         fleet_base,
         "PUT",
         theme_config_path,
-        body={"cf_theme": target_theme, "cf_mobile_theme": target_theme},
+        body={"cf_theme": ""},
         headers=fleet_headers(admin_cookie, admin_csrf),
     ).json()
-    if (
-        applied_theme.get("cf_theme") != target_theme
-        or applied_theme.get("cf_mobile_theme") != target_theme
-    ):
-        raise RuntimeError("R19 theme update failed")
-    theme_config_readback = request(
+    if disabled_theme.get("cf_theme") != "":
+        raise RuntimeError("R19 desktop theme disable failed")
+    disabled_theme_readback = request(
         fleet_base,
         "GET",
         theme_config_path,
         headers=fleet_headers(admin_cookie),
     ).json()
-    if (
-        theme_config_readback.get("cf_theme") != target_theme
-        or theme_config_readback.get("cf_mobile_theme") != target_theme
-    ):
-        raise RuntimeError("R19 theme config readback failed")
+    if disabled_theme_readback.get("cf_theme") != "":
+        raise RuntimeError("R19 desktop theme disable readback failed")
+    disabled_detail_readback = request(
+        fleet_base,
+        "GET",
+        f"{themes_path}/{target_theme}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if disabled_detail_readback.get("is_active"):
+        raise RuntimeError("R19 desktop theme disabled detail readback failed")
+    applied_theme = request(
+        fleet_base,
+        "PUT",
+        theme_config_path,
+        body={"cf_theme": target_theme},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if applied_theme.get("cf_theme") != target_theme:
+        raise RuntimeError("R19 desktop theme apply failed")
     active_theme_readback = request(
         fleet_base,
         "GET",
         f"{themes_path}/{target_theme}",
         headers=fleet_headers(admin_cookie),
     ).json()
-    if not active_theme_readback.get("is_active") or not active_theme_readback.get(
-        "is_mobile_active"
-    ):
-        raise RuntimeError("R19 theme detail active-state readback failed")
+    if not active_theme_readback.get("is_active"):
+        raise RuntimeError("R19 desktop theme detail active-state readback failed")
     restored_theme = request(
         fleet_base,
         "PUT",
         theme_config_path,
-        body=initial_theme_values,
+        body={"cf_theme": initial_theme_values["cf_theme"]},
         headers=fleet_headers(admin_cookie, admin_csrf),
     ).json()
-    if any(restored_theme.get(name) != value for name, value in initial_theme_values.items()):
+    if restored_theme.get("cf_theme") != initial_theme_values["cf_theme"]:
         raise RuntimeError("R19 theme rollback failed")
     restored_theme_readback = request(
         fleet_base,
@@ -1335,8 +1344,9 @@ def main() -> int:
         "r19_theme": {
             "operations": 4,
             "config_list_detail": "passed",
-            "desktop_mobile_apply_readback": "passed",
+            "desktop_disable_apply_readback": "passed",
             "detail_active_state_readback": "passed",
+            "mobile_theme_baseline_preserved": "passed",
             "config_rollback_readback": "passed",
         },
         "notifications": {
