@@ -217,6 +217,12 @@ export function CoreDomainConsole(props: {
               {operation.request_required_fields.length > 0
                 ? ` · 필수: ${operation.request_required_fields.join(", ")}`
                 : ""}
+              {operation.request_required_alternatives.length > 0
+                ? ` · 대안 중 하나: ${operation.request_required_alternatives
+                    .map((constraint) =>
+                      constraint.map((group) => group.join(" + ")).join(" / "))
+                    .join(" 그리고 ")}`
+                : ""}
             </small>
           </label>
         )}
@@ -284,7 +290,12 @@ function defaultBody(operation: CoreOperation | undefined) {
   if (!operation || operation.request_fields.length === 0) return "{}";
   return JSON.stringify(
     Object.fromEntries(
-      operation.request_required_fields.map((field) => [field, ""]),
+      [
+        ...operation.request_required_fields,
+        ...operation.request_required_alternatives.flatMap(
+          (constraint) => constraint[0] ?? [],
+        ),
+      ].map((field) => [field, ""]),
     ),
     null,
     2,

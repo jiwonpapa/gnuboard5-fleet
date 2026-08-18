@@ -23,6 +23,7 @@ export interface CoreOperation {
   request_media_types: string[];
   request_fields: string[];
   request_required_fields: string[];
+  request_required_alternatives: string[][][];
   response_fields: string[];
   schema_refs: string[];
 }

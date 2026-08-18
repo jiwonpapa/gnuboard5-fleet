@@ -159,6 +159,7 @@ pub struct CoreOperationSpec {
     pub request_media_types: Vec<String>,
     pub request_fields: Vec<String>,
     pub request_required_fields: Vec<String>,
+    pub request_required_alternatives: Vec<Vec<Vec<String>>>,
     pub response_fields: Vec<String>,
     pub schema_refs: Vec<String>,
 }
@@ -4021,24 +4022,23 @@ fn validate_core_request(
             if body.keys().any(|name| !fields.contains(name.as_str())) {
                 return Err(ConnectorError::InvalidCoreRequest);
             }
-            let multipart_aliases_are_alternatives = operation
-                .request_media_types
+            let required_fields_missing = operation
+                .request_required_fields
                 .iter()
-                .any(|value| value == "multipart/form-data")
-                && !operation.request_required_fields.is_empty()
-                && operation.request_required_fields.len() == operation.request_fields.len();
-            let required_fields_missing = if multipart_aliases_are_alternatives {
-                !operation
-                    .request_required_fields
-                    .iter()
-                    .any(|name| body.contains_key(name))
-            } else {
-                operation
-                    .request_required_fields
-                    .iter()
-                    .any(|name| !body.contains_key(name))
-            };
+                .any(|name| !body.contains_key(name));
             if required_fields_missing {
+                return Err(ConnectorError::InvalidCoreRequest);
+            }
+            if !operation.request_required_alternatives.is_empty()
+                && !operation
+                    .request_required_alternatives
+                    .iter()
+                    .all(|constraint| {
+                        constraint
+                            .iter()
+                            .any(|group| group.iter().all(|name| body.contains_key(name)))
+                    })
+            {
                 return Err(ConnectorError::InvalidCoreRequest);
             }
         }
@@ -4303,6 +4303,33 @@ mod tests {
         let missing = CoreExecuteRequest {
             path: request.path.clone(),
             body: Some(json!({})),
+            ..Default::default()
+        };
+        assert!(matches!(
+            validate_core_request(operation, &missing),
+            Err(ConnectorError::InvalidCoreRequest)
+        ));
+    }
+
+    #[test]
+    fn request_validator_enforces_poll_required_alternatives() {
+        let operation = core_operation("adminCreatePoll").expect("operation");
+        for body in [
+            json!({"po_subject": "poll", "options": ["one", "two"]}),
+            json!({"po_subject": "poll", "po_poll1": "one", "po_poll2": "two"}),
+        ] {
+            validate_core_request(
+                operation,
+                &CoreExecuteRequest {
+                    body: Some(body),
+                    ..Default::default()
+                },
+            )
+            .expect("valid poll alternative");
+        }
+
+        let missing = CoreExecuteRequest {
+            body: Some(json!({"po_subject": "poll"})),
             ..Default::default()
         };
         assert!(matches!(

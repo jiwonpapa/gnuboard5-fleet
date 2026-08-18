@@ -39,6 +39,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -104,6 +105,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -140,6 +142,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -172,6 +175,17 @@
         "auths"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [
+        [
+          [
+            "auths"
+          ],
+          [
+            "au_auth",
+            "au_menu"
+          ]
+        ]
+      ],
       "response_fields": [
         "data",
         "meta"
@@ -209,6 +223,7 @@
         "mb_id",
         "mb_password"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -239,6 +254,7 @@
         "refresh_token"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -273,6 +289,7 @@
       "request_required_fields": [
         "refresh_token"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -336,6 +353,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -466,6 +484,7 @@
         "bo_table",
         "gr_id"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -499,6 +518,7 @@
       "request_required_fields": [
         "bn_ids"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -533,6 +553,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -559,6 +580,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -687,6 +709,7 @@
         "gr_id"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -729,6 +752,7 @@
       "request_required_fields": [
         "target_bo_table"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -756,6 +780,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -938,6 +963,7 @@
         "cf_write_point"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -988,6 +1014,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -1033,6 +1060,7 @@
         "co_id",
         "co_subject"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1067,6 +1095,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -1093,6 +1122,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1138,6 +1168,7 @@
         "co_tag_filter_use"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1178,6 +1209,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -1218,6 +1250,7 @@
       "request_required_fields": [
         "fm_subject"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1253,6 +1286,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -1279,6 +1313,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1322,6 +1357,7 @@
         "fm_tail_html"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1357,6 +1393,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1397,6 +1434,22 @@
         "image"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [
+        [
+          [
+            "file"
+          ],
+          [
+            "image"
+          ],
+          [
+            "footer_image"
+          ],
+          [
+            "fm_timg"
+          ]
+        ]
+      ],
       "response_fields": [
         "data",
         "meta"
@@ -1432,6 +1485,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1472,6 +1526,22 @@
         "image"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [
+        [
+          [
+            "file"
+          ],
+          [
+            "image"
+          ],
+          [
+            "header_image"
+          ],
+          [
+            "fm_himg"
+          ]
+        ]
+      ],
       "response_fields": [
         "data",
         "meta"
@@ -1519,6 +1589,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -1558,6 +1629,7 @@
         "fa_subject",
         "fm_id"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1592,6 +1664,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -1618,6 +1691,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1658,6 +1732,7 @@
         "fm_id"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1685,6 +1760,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -1724,6 +1800,7 @@
         "gr_id",
         "gr_subject"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1758,6 +1835,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -1784,6 +1862,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1826,6 +1905,7 @@
       "request_required_fields": [
         "gr_subject"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1869,6 +1949,7 @@
       "request_required_fields": [
         "gr_subject"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -1921,6 +2002,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -1962,6 +2044,7 @@
       "request_required_fields": [
         "mb_id"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -2002,6 +2085,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -2021,6 +2105,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -2060,6 +2145,7 @@
         "gr_id",
         "gr_subject"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -2094,6 +2180,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -2120,6 +2207,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -2162,6 +2250,7 @@
       "request_required_fields": [
         "gr_subject"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -2214,6 +2303,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -2255,6 +2345,7 @@
       "request_required_fields": [
         "mb_id"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -2295,6 +2386,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -2327,6 +2419,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -2362,6 +2455,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -2402,6 +2496,7 @@
       "request_required_fields": [
         "widgets"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -2443,6 +2538,7 @@
       "request_required_fields": [
         "widget_ids"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -2483,6 +2579,7 @@
       "request_required_fields": [
         "widget_ids"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -2528,6 +2625,7 @@
       "request_required_fields": [
         "type"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -2568,6 +2666,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -2615,6 +2714,7 @@
         "type"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -2650,6 +2750,17 @@
       ],
       "request_required_fields": [
         "to"
+      ],
+      "request_required_alternatives": [
+        [
+          [
+            "ma_id"
+          ],
+          [
+            "content",
+            "subject"
+          ]
+        ]
       ],
       "response_fields": [
         "data",
@@ -2691,6 +2802,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -2736,6 +2848,17 @@
       ],
       "request_required_fields": [
         "target_type"
+      ],
+      "request_required_alternatives": [
+        [
+          [
+            "ma_id"
+          ],
+          [
+            "content",
+            "subject"
+          ]
+        ]
       ],
       "response_fields": [
         "data",
@@ -2826,6 +2949,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -2861,6 +2985,18 @@
         "subject"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [
+        [
+          [
+            "ma_content",
+            "ma_subject"
+          ],
+          [
+            "content",
+            "subject"
+          ]
+        ]
+      ],
       "response_fields": [
         "data",
         "meta"
@@ -2898,6 +3034,17 @@
       "request_required_fields": [
         "to"
       ],
+      "request_required_alternatives": [
+        [
+          [
+            "ma_id"
+          ],
+          [
+            "content",
+            "subject"
+          ]
+        ]
+      ],
       "response_fields": [
         "data",
         "meta"
@@ -2932,6 +3079,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -2958,6 +3106,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -2999,6 +3148,18 @@
         "subject"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [
+        [
+          [
+            "ma_content",
+            "ma_subject"
+          ],
+          [
+            "content",
+            "subject"
+          ]
+        ]
+      ],
       "response_fields": [
         "data",
         "meta"
@@ -3027,6 +3188,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3090,6 +3252,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -3131,6 +3294,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -3166,6 +3330,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -3192,6 +3357,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3266,6 +3432,7 @@
         "mb_zip2"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3300,6 +3467,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3339,6 +3507,19 @@
         "mb_icon"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [
+        [
+          [
+            "file"
+          ],
+          [
+            "icon"
+          ],
+          [
+            "mb_icon"
+          ]
+        ]
+      ],
       "response_fields": [
         "data",
         "meta"
@@ -3374,6 +3555,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3413,6 +3595,19 @@
         "mb_img"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [
+        [
+          [
+            "file"
+          ],
+          [
+            "image"
+          ],
+          [
+            "mb_img"
+          ]
+        ]
+      ],
       "response_fields": [
         "data",
         "meta"
@@ -3454,6 +3649,7 @@
       "request_required_fields": [
         "mb_level"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3481,6 +3677,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -3515,6 +3712,7 @@
       "request_required_fields": [
         "orders"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3557,6 +3755,7 @@
         "me_link",
         "me_name"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3590,6 +3789,7 @@
       "request_required_fields": [
         "orders"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3625,6 +3825,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -3651,6 +3852,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3694,6 +3896,7 @@
         "me_use"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3727,6 +3930,7 @@
       "request_required_fields": [
         "po_ids"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3785,6 +3989,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -3823,6 +4028,23 @@
       "request_required_fields": [
         "action"
       ],
+      "request_required_alternatives": [
+        [
+          [
+            "action",
+            "mb_id",
+            "point"
+          ],
+          [
+            "action",
+            "mb_id",
+            "point"
+          ],
+          [
+            "action"
+          ]
+        ]
+      ],
       "response_fields": [
         "data",
         "meta"
@@ -3860,6 +4082,7 @@
         "mb_id",
         "point"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3891,6 +4114,7 @@
         "base_date"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3927,6 +4151,7 @@
         "mb_id",
         "point"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -3961,6 +4186,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4000,6 +4226,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -4049,6 +4276,17 @@
       "request_required_fields": [
         "po_subject"
       ],
+      "request_required_alternatives": [
+        [
+          [
+            "options"
+          ],
+          [
+            "po_poll1",
+            "po_poll2"
+          ]
+        ]
+      ],
       "response_fields": [
         "data",
         "meta"
@@ -4085,6 +4323,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -4111,6 +4350,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4162,6 +4402,7 @@
         "po_use"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4196,6 +4437,7 @@
         "date_to"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4248,6 +4490,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -4295,6 +4538,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -4336,6 +4580,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -4382,6 +4627,7 @@
         "nw_content",
         "nw_subject"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4416,6 +4662,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -4442,6 +4689,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4490,6 +4738,7 @@
         "nw_width"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4527,6 +4776,16 @@
       "request_required_fields": [
         "body",
         "title"
+      ],
+      "request_required_alternatives": [
+        [
+          [
+            "target"
+          ],
+          [
+            "member_ids"
+          ]
+        ]
       ],
       "response_fields": [
         "data",
@@ -4566,6 +4825,16 @@
         "body",
         "title"
       ],
+      "request_required_alternatives": [
+        [
+          [
+            "target"
+          ],
+          [
+            "member_ids"
+          ]
+        ]
+      ],
       "response_fields": [
         "data",
         "meta"
@@ -4599,6 +4868,7 @@
       "request_required_fields": [
         "qa_ids"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4651,6 +4921,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -4679,6 +4950,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4719,6 +4991,7 @@
       "request_required_fields": [
         "status"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4746,6 +5019,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4780,6 +5054,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4811,6 +5086,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4848,6 +5124,7 @@
         "cf_sms_use"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4875,6 +5152,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4902,6 +5180,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4934,6 +5213,7 @@
       "request_required_fields": [
         "bg_name"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -4968,6 +5248,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -4994,6 +5275,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5033,6 +5315,7 @@
       "request_required_fields": [
         "bg_name"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5067,6 +5350,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5106,6 +5390,7 @@
       "request_required_fields": [
         "target_bg_no"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5188,6 +5473,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -5229,6 +5515,7 @@
         "bk_hp",
         "bk_name"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5264,6 +5551,16 @@
       ],
       "request_required_fields": [
         "action"
+      ],
+      "request_required_alternatives": [
+        [
+          [
+            "contact_ids"
+          ],
+          [
+            "bk_no"
+          ]
+        ]
       ],
       "response_fields": [
         "data",
@@ -5329,6 +5626,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5366,6 +5664,16 @@
       "request_required_fields": [
         "contacts"
       ],
+      "request_required_alternatives": [
+        [
+          [
+            "bg_no"
+          ],
+          [
+            "upload_bg_no"
+          ]
+        ]
+      ],
       "response_fields": [
         "data",
         "meta"
@@ -5401,6 +5709,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -5427,6 +5736,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5468,6 +5778,7 @@
         "bk_receipt"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5520,6 +5831,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -5598,6 +5910,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5640,6 +5953,7 @@
         "wr_renum"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5680,6 +5994,7 @@
         "wr_renum"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5745,6 +6060,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -5787,6 +6103,36 @@
         "wr_reply"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [
+        [
+          [
+            "message"
+          ],
+          [
+            "wr_message"
+          ],
+          [
+            "template_id"
+          ],
+          [
+            "fo_no"
+          ]
+        ],
+        [
+          [
+            "group_ids"
+          ],
+          [
+            "contact_ids"
+          ],
+          [
+            "member_levels"
+          ],
+          [
+            "manual_targets"
+          ]
+        ]
+      ],
       "response_fields": [
         "data",
         "meta"
@@ -5816,6 +6162,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5849,6 +6196,7 @@
       "request_required_fields": [
         "fg_name"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5883,6 +6231,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -5909,6 +6258,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5947,6 +6297,7 @@
         "fg_name"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -5987,6 +6338,7 @@
       "request_required_fields": [
         "target_fg_no"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6021,6 +6373,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6090,6 +6443,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -6127,6 +6481,7 @@
         "fo_content",
         "fo_name"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6163,6 +6518,16 @@
       "request_required_fields": [
         "action"
       ],
+      "request_required_alternatives": [
+        [
+          [
+            "template_ids"
+          ],
+          [
+            "fo_no"
+          ]
+        ]
+      ],
       "response_fields": [
         "data",
         "meta"
@@ -6197,6 +6562,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -6223,6 +6589,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6262,6 +6629,7 @@
         "fo_name"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6308,6 +6676,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -6346,6 +6715,7 @@
         "au_menu",
         "mb_id"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6386,6 +6756,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -6405,6 +6776,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6442,6 +6814,7 @@
         "rows"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6469,6 +6842,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6514,6 +6888,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -6555,6 +6930,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -6594,6 +6970,7 @@
       "request_required_fields": [
         "mb_ids"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6632,6 +7009,7 @@
         "subject",
         "to"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6659,6 +7037,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6685,6 +7064,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6711,6 +7091,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6737,6 +7118,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6763,6 +7145,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6789,6 +7172,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6828,6 +7212,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -6877,6 +7262,7 @@
         "po_poll2",
         "po_subject"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6911,6 +7297,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -6937,6 +7324,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -6987,6 +7375,7 @@
         "po_use"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -7027,6 +7416,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -7073,6 +7463,7 @@
         "nw_content",
         "nw_subject"
       ],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -7107,6 +7498,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [],
       "schema_refs": []
     },
@@ -7133,6 +7525,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -7181,6 +7574,7 @@
         "nw_width"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -7208,6 +7602,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -7273,6 +7668,7 @@
         "qa_use_sms"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -7300,6 +7696,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "meta",
         "status",
@@ -7327,6 +7724,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -7358,6 +7756,7 @@
         "cf_theme"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -7385,6 +7784,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -7418,6 +7818,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -7458,6 +7859,7 @@
         "ip"
       ],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -7528,6 +7930,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta",
@@ -7581,6 +7984,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"
@@ -7634,6 +8038,7 @@
       "request_media_types": [],
       "request_fields": [],
       "request_required_fields": [],
+      "request_required_alternatives": [],
       "response_fields": [
         "data",
         "meta"

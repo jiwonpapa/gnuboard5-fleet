@@ -150,6 +150,37 @@ def schema_required_fields(
     return required
 
 
+def schema_required_alternatives(
+    document: dict[str, Any], schema: Any, seen: set[str] | None = None
+) -> list[list[list[str]]]:
+    if not isinstance(schema, dict):
+        return []
+    seen = set() if seen is None else seen
+    ref = schema.get("$ref")
+    if isinstance(ref, str) and ref.startswith("#/components/schemas/"):
+        name = ref.rsplit("/", 1)[-1]
+        if name in seen:
+            return []
+        seen.add(name)
+        return schema_required_alternatives(
+            document, document["components"]["schemas"][name], seen
+        )
+    alternatives: list[list[list[str]]] = []
+    for child in schema.get("allOf", []):
+        alternatives.extend(
+            schema_required_alternatives(document, child, set(seen))
+        )
+    for composition in ("oneOf", "anyOf"):
+        groups: list[list[str]] = []
+        for child in schema.get(composition, []):
+            fields = sorted(schema_required_fields(document, child, set(seen)))
+            if fields:
+                groups.append(fields)
+        if groups:
+            alternatives.append(groups)
+    return alternatives
+
+
 def schema_type(document: dict[str, Any], schema: Any) -> str:
     if not isinstance(schema, dict):
         return "any"
@@ -364,6 +395,9 @@ def build_registry() -> dict[str, Any]:
                     "request_fields": request_fields,
                     "request_required_fields": sorted(
                         schema_required_fields(document, request_schema)
+                    ),
+                    "request_required_alternatives": schema_required_alternatives(
+                        document, request_schema
                     ),
                     "response_fields": response_fields,
                     "schema_refs": sorted(complete_refs),
