@@ -1,0 +1,156 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R21",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "f8fdda00d03a1aafbd71938ee2dd686442465a6e",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "f8fdda00d03a1aafbd71938ee2dd686442465a6e"
+  },
+  "generated_at": "2026-08-18T06:35:43Z",
+  "commands": [
+    "make active-check",
+    "make runtime-verify",
+    "composer test (official G5 composed runtime)",
+    "make audit-runtime-prepare audit-runtime-verify",
+    "make audit-server-static",
+    "make test-migration-parity test-audit",
+    "python3 -m tools.migration_parity.batch_cli --batch R21 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R20 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R22 --profile static",
+    "make certification-clean certification-up",
+    "make certification-local-smoke",
+    "playwright-cli --session r21current resize 1440 1000 (headless)",
+    "playwright-cli --session r21current resize 390 844 (headless)"
+  ],
+  "results": {
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {"passed": 73, "failed": 0, "ignored": 1},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 56,
+      "web_tests": {"passed": 118, "failed": 0},
+      "web_build": "PASS"
+    },
+    "php_composed_runtime": {
+      "status": "PASS",
+      "official_g5_version": "5.6.32",
+      "tests": 875,
+      "assertions": 6727,
+      "failed": 0,
+      "skipped": 5
+    },
+    "migration_harness_tests": {"passed": 26, "failed": 0},
+    "audit_harness_tests": {"passed": 25, "failed": 0},
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "f8fdda00d03a1aafbd71938ee2dd686442465a6e",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "04a314aa383fa506fa82ef996c12af72937dfe08e3d78339d73220ac02f90d4c",
+      "otp_install_login_step_up": "PASS",
+      "poll_operations": 10,
+      "system_list_detail_create_update_delete": "PASS",
+      "legacy_list_detail_create_update_delete": "PASS",
+      "nine_choice_form_contract": "PASS",
+      "alias_list_readback": "PASS",
+      "created_polls_deleted": 2,
+      "poll_cleanup_readback": "PASS",
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "PASS",
+      "server_runtime_revision": "f8fdda00d03a1aafbd71938ee2dd686442465a6e",
+      "web_revision": "f8fdda00d03a1aafbd71938ee2dd686442465a6e",
+      "execution_mode": "headless",
+      "login_and_recent_identity_step_up": "PASS",
+      "nine_choice_create_detail_readback": "PASS",
+      "confirmation_gated_delete": "PASS",
+      "database_cleanup_rows": 0,
+      "console_errors": 0,
+      "desktop_1440x1000": "PASS",
+      "mobile_390x844": "PASS",
+      "screenshots": [
+        {
+          "path": "output/playwright/r21-polls-desktop.png",
+          "sha256": "785f4663b5fa335a79d44f60a669414fdbc768d3773d49a278e1e9e2c5a2bbd8"
+        },
+        {
+          "path": "output/playwright/r21-polls-mobile.png",
+          "sha256": "07de614676ce2fa8e7abea091e6e3ba07e8b52d23f7514b912e0a77a03c6a2c7"
+        }
+      ]
+    },
+    "typed_operation_consumption": {
+      "operations": [
+        "adminCreatePoll",
+        "adminDeletePoll",
+        "adminGetPoll",
+        "adminListPolls",
+        "adminSystemCreatePoll",
+        "adminSystemDeletePoll",
+        "adminSystemGetPoll",
+        "adminSystemListPolls",
+        "adminSystemUpdatePoll",
+        "adminUpdatePoll"
+      ],
+      "new_site_scoped_axum_routes": 10,
+      "browser_same_origin_transport": "PASS",
+      "list_detail_create_update_delete_readback": "PASS",
+      "csrf_and_step_up_write_guard": "PASS",
+      "openapi_required_alternative_groups": "PASS",
+      "browser_g5_secret_exposure": "NONE"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 159, "added_r21_routes": 10},
+    "predecessor_regression": {"batch": "R20", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 13, "core_operations": 10, "required_capabilities": 0},
+    "reuse": {"reused": 0, "adapted": 13, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "ownership": {
+      "legacy": {"owned": 510, "total": 510},
+      "core_operations": {"owned": 189, "total": 189},
+      "required_capabilities": {"owned": 13, "total": 13}
+    },
+    "global_migration": {"status": "FAIL", "findings": 217},
+    "next_batch_probe": {
+      "batch": "R22",
+      "status": "FAIL",
+      "scope": {"legacy": 13, "core_operations": 10, "required_capabilities": 0},
+      "findings": 23
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "25b978db9f48ca7b34054fbcd11b3139509c613eeb21a49604856c9965606a75",
+    "migration_batches_before_closeout": "cd371c9dd666fd1b37485f25f5556fb47b5edc0f418652bf5217f130d5f4635e"
+  },
+  "source_reports": [
+    {
+      "path": "output/audit/runs/20260818T062959Z-1be5913654fb/result.json",
+      "sha256": "f0ef30003d70481d2241db69af523f73d63f3d371f737f6e6376336bd13b1e59"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R21-20260818T062905Z-0b954caf/result.json",
+      "sha256": "4b3e70ce3baa56a9b4d5be95a19ca31d02d1030f7e1b4d7d75b0ab9c73b50f89"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R20-20260818T062906Z-75b3c4ef/result.json",
+      "sha256": "d829a6622d0e0f24953214bc1106caa833c1de6eb873ea485c3f8e2981965a07"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R22-20260818T062907Z-61c175fb/result.json",
+      "sha256": "f9357667344c9882b8305e302933a17ed4cd57fb0f75595d41fc7e07d8e27d13"
+    },
+    {
+      "path": "output/audit/runs/migration-parity-20260818T062907Z-ea3a3e97/result.json",
+      "sha256": "6d3a598470f539d6fa3884983ecc62a61e447e4e4bc0d03d960c70e469cd6d0b"
+    }
+  ],
+  "claim_limit": "R21 투표 10-operation typed DTO, Connector, explicit site_id Axum routes, same-origin responsive React list·detail·9-choice create·update·confirmed delete workflow, official G5 5.6.32 local runtime and headless browser readback only. OpenAPI anyOf required alternatives are preserved as independent groups, and browser-created poll cleanup is confirmed as DB 0 rows. This is not package, staging or live certification; global migration remains FAIL with 217 findings."
+}
