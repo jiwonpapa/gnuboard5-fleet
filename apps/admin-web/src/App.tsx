@@ -9,6 +9,7 @@ import { AdminBoardsPage } from "./features/boards/AdminBoardsPage";
 import { AdminConfigWorkspacePage } from "./features/config/AdminConfigWorkspacePage";
 import { AdminContentsPage } from "./features/contents/AdminContentsPage";
 import { DiagnosticsPage } from "./features/debug/DiagnosticsPage";
+import { AdminFaqsPage } from "./features/faqs/AdminFaqsPage";
 import { AdminBoardGroupsPage } from "./features/groups/AdminBoardGroupsPage";
 import { AdminMemberFilesPage } from "./features/members/AdminMemberFilesPage";
 import { AdminMembersPage } from "./features/members/AdminMembersPage";
@@ -69,6 +70,10 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/contents"
               element={<AdminContentsPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/faqs"
+              element={<AdminFaqsPage />}
             />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />

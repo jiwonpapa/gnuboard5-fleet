@@ -488,6 +488,77 @@ export interface AdminContentCreate {
 
 export type AdminContentUpdate = Partial<Omit<AdminContentCreate, "co_id">>;
 
+export interface AdminFaqImage {
+  exists: boolean;
+  relative_path: string;
+  url: string;
+  width: number | null;
+  height: number | null;
+  mime: string | null;
+  size: number | null;
+}
+
+export interface AdminFaqMasterSummary {
+  fm_id: number;
+  fm_subject: string;
+  fm_order: number;
+  faq_count: number;
+  header_image: AdminFaqImage;
+  footer_image: AdminFaqImage;
+}
+
+export interface AdminFaqMasterDetail extends AdminFaqMasterSummary {
+  fm_head_html: string;
+  fm_tail_html: string;
+  fm_mobile_head_html: string;
+  fm_mobile_tail_html: string;
+}
+
+export interface AdminFaqMasterList {
+  items: AdminFaqMasterSummary[];
+  pagination: Pagination;
+}
+
+export interface AdminFaqMasterCreate {
+  fm_subject: string;
+  fm_order?: number;
+  fm_head_html?: string;
+  fm_tail_html?: string;
+  fm_mobile_head_html?: string;
+  fm_mobile_tail_html?: string;
+}
+
+export type AdminFaqMasterUpdate = Partial<AdminFaqMasterCreate>;
+
+export interface AdminFaqItem {
+  fa_id: number;
+  fm_id: number;
+  fm_subject: string | null;
+  fa_subject: string;
+  fa_content: string;
+  fa_order: number;
+}
+
+export interface AdminFaqList {
+  items: AdminFaqItem[];
+  pagination: Pagination;
+}
+
+export interface AdminFaqCreate {
+  fm_id: number;
+  fa_subject: string;
+  fa_content: string;
+  fa_order?: number;
+}
+
+export type AdminFaqUpdate = Partial<AdminFaqCreate>;
+
+export interface AdminFaqImageUpload {
+  file_name: string;
+  mime_type: string | null;
+  bytes_base64: string;
+}
+
 export interface AdminAuthAssignment {
   au_menu: string;
   au_auth: string;
@@ -1332,6 +1403,134 @@ export function deleteAdminContent(siteId: string, coId: string, csrfToken: stri
   return transport.request<null>({
     method: "DELETE",
     path: `/sites/${encodeURIComponent(siteId)}/admin/contents/${encodeURIComponent(coId)}`,
+    csrfToken,
+  });
+}
+
+export function listAdminFaqMasters(
+  siteId: string,
+  query: { page?: number; per_page?: number } = {},
+) {
+  return transport.request<AdminFaqMasterList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/faq-masters${fleetQuery(query)}`,
+  });
+}
+
+export function createAdminFaqMaster(
+  siteId: string,
+  create: AdminFaqMasterCreate,
+  csrfToken: string,
+) {
+  return transport.request<AdminFaqMasterDetail, AdminFaqMasterCreate>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/faq-masters`,
+    csrfToken,
+    body: create,
+  });
+}
+
+export function getAdminFaqMaster(siteId: string, fmId: number) {
+  return transport.request<AdminFaqMasterDetail>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/faq-masters/${fmId}`,
+  });
+}
+
+export function updateAdminFaqMaster(
+  siteId: string,
+  fmId: number,
+  update: AdminFaqMasterUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminFaqMasterDetail, AdminFaqMasterUpdate>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/faq-masters/${fmId}`,
+    csrfToken,
+    body: update,
+  });
+}
+
+export function deleteAdminFaqMaster(siteId: string, fmId: number, csrfToken: string) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/faq-masters/${fmId}`,
+    csrfToken,
+  });
+}
+
+export function uploadAdminFaqMasterImage(
+  siteId: string,
+  fmId: number,
+  kind: "header" | "footer",
+  upload: AdminFaqImageUpload,
+  csrfToken: string,
+) {
+  return transport.request<AdminFaqImage, AdminFaqImageUpload>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/faq-masters/${fmId}/${kind}-image`,
+    csrfToken,
+    body: upload,
+  });
+}
+
+export function deleteAdminFaqMasterImage(
+  siteId: string,
+  fmId: number,
+  kind: "header" | "footer",
+  csrfToken: string,
+) {
+  return transport.request<AdminFaqImage>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/faq-masters/${fmId}/${kind}-image`,
+    csrfToken,
+  });
+}
+
+export function listAdminFaqs(
+  siteId: string,
+  query: { page?: number; per_page?: number; fm_id?: number } = {},
+) {
+  return transport.request<AdminFaqList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/faqs${fleetQuery(query)}`,
+  });
+}
+
+export function createAdminFaq(siteId: string, create: AdminFaqCreate, csrfToken: string) {
+  return transport.request<AdminFaqItem, AdminFaqCreate>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/faqs`,
+    csrfToken,
+    body: create,
+  });
+}
+
+export function getAdminFaq(siteId: string, faId: number) {
+  return transport.request<AdminFaqItem>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/faqs/${faId}`,
+  });
+}
+
+export function updateAdminFaq(
+  siteId: string,
+  faId: number,
+  update: AdminFaqUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminFaqItem, AdminFaqUpdate>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/faqs/${faId}`,
+    csrfToken,
+    body: update,
+  });
+}
+
+export function deleteAdminFaq(siteId: string, faId: number, csrfToken: string) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/faqs/${faId}`,
     csrfToken,
   });
 }

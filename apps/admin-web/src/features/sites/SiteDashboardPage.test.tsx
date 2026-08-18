@@ -87,5 +87,9 @@ describe("SiteDashboardPage", () => {
     );
     expect(await screen.findByText(/서버에 안전하게 저장/)).toBeVisible();
     expect(screen.getByLabelText("G5 관리자 비밀번호")).toHaveValue("");
+    expect(screen.getByRole("link", { name: "FAQ 관리" })).toHaveAttribute(
+      "href",
+      "/sites/site-a/admin/faqs",
+    );
   });
 });
