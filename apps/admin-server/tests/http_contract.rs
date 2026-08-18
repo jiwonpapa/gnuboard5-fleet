@@ -390,6 +390,19 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("PUT", "/api/v1/sites/{site_id}/admin/theme"),
             ("GET", "/api/v1/sites/{site_id}/admin/themes"),
             ("GET", "/api/v1/sites/{site_id}/admin/themes/{theme}"),
+            ("GET", "/api/v1/sites/{site_id}/admin/system/polls"),
+            ("POST", "/api/v1/sites/{site_id}/admin/system/polls"),
+            ("GET", "/api/v1/sites/{site_id}/admin/system/polls/{po_id}"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/system/polls/{po_id}"),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/system/polls/{po_id}"
+            ),
+            ("GET", "/api/v1/sites/{site_id}/admin/polls"),
+            ("POST", "/api/v1/sites/{site_id}/admin/polls"),
+            ("GET", "/api/v1/sites/{site_id}/admin/polls/{po_id}"),
+            ("PATCH", "/api/v1/sites/{site_id}/admin/polls/{po_id}"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/polls/{po_id}"),
             ("GET", "/api/v1/sites/{site_id}/admin/points"),
             ("POST", "/api/v1/sites/{site_id}/admin/points"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/points"),
@@ -819,6 +832,7 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             mock_theme("basic", true, true),
             mock_theme("modern", false, false),
         ])),
+        polls: Arc::new(Mutex::new(Vec::new())),
         points: Arc::new(Mutex::new(Vec::new())),
     };
     let app = build_router(AppConfig {
@@ -2513,6 +2527,120 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
     assert_eq!(theme_readback["is_active"], true);
     assert_eq!(theme_readback["is_mobile_active"], true);
 
+    // All ten R21 poll operations: system and legacy aliases share typed site scope.
+    let system_poll_create = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/system/polls",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "po_subject": "R21 시스템 투표",
+                "po_poll1": "찬성",
+                "po_poll2": "반대",
+                "po_level": 1,
+                "po_point": 0,
+                "po_use": 1
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(system_poll_create.status(), StatusCode::CREATED);
+    let system_poll_create = json::<Value>(system_poll_create).await;
+    assert_eq!(system_poll_create["po_id"], 1);
+
+    let legacy_poll_create = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/polls",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "po_subject": "R21 레거시 투표",
+                "po_poll1": "예",
+                "po_poll2": "아니오",
+                "po_date": "2026-08-18"
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(legacy_poll_create.status(), StatusCode::CREATED);
+
+    for path in [
+        "/api/v1/sites/site-a/admin/system/polls?page=1&per_page=20",
+        "/api/v1/sites/site-a/admin/polls?page=1&per_page=20",
+    ] {
+        let list = app
+            .clone()
+            .oneshot(json_request(Method::GET, path, Some(&cookie), None, None))
+            .await
+            .unwrap();
+        let list = json::<Value>(list).await;
+        assert_eq!(list["items"].as_array().map(Vec::len), Some(2));
+    }
+
+    for path in [
+        "/api/v1/sites/site-a/admin/system/polls/1",
+        "/api/v1/sites/site-a/admin/polls/2",
+    ] {
+        let detail = app
+            .clone()
+            .oneshot(json_request(Method::GET, path, Some(&cookie), None, None))
+            .await
+            .unwrap();
+        assert_eq!(detail.status(), StatusCode::OK);
+    }
+
+    let system_poll_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/system/polls/1",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"po_subject": "R21 시스템 투표 수정"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(system_poll_update).await["po_subject"],
+        "R21 시스템 투표 수정"
+    );
+
+    let legacy_poll_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PATCH,
+            "/api/v1/sites/site-a/admin/polls/2",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"po_use": 0})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(legacy_poll_update).await["po_use"], 0);
+
+    for path in [
+        "/api/v1/sites/site-a/admin/system/polls/1",
+        "/api/v1/sites/site-a/admin/polls/2",
+    ] {
+        let delete = app
+            .clone()
+            .oneshot(json_request(
+                Method::DELETE,
+                path,
+                Some(&cookie),
+                Some(&csrf),
+                None,
+            ))
+            .await
+            .unwrap();
+        assert_eq!(delete.status(), StatusCode::NO_CONTENT);
+    }
+    assert!(mock.polls.lock().unwrap().is_empty());
+
     let point_baseline = app
         .clone()
         .oneshot(json_request(
@@ -3024,6 +3152,31 @@ fn mock_theme(id: &str, is_active: bool, is_mobile_active: bool) -> Value {
     })
 }
 
+fn mock_poll(po_id: i64, body: &Value) -> Value {
+    serde_json::json!({
+        "po_id": po_id,
+        "po_subject": body["po_subject"],
+        "po_poll1": body["po_poll1"],
+        "po_poll2": body["po_poll2"],
+        "po_poll3": body.get("po_poll3").cloned().unwrap_or(serde_json::json!("")),
+        "po_poll4": body.get("po_poll4").cloned().unwrap_or(serde_json::json!("")),
+        "po_poll5": body.get("po_poll5").cloned().unwrap_or(serde_json::json!("")),
+        "po_poll6": body.get("po_poll6").cloned().unwrap_or(serde_json::json!("")),
+        "po_poll7": body.get("po_poll7").cloned().unwrap_or(serde_json::json!("")),
+        "po_poll8": body.get("po_poll8").cloned().unwrap_or(serde_json::json!("")),
+        "po_poll9": body.get("po_poll9").cloned().unwrap_or(serde_json::json!("")),
+        "po_cnt1": 0, "po_cnt2": 0, "po_cnt3": 0, "po_cnt4": 0, "po_cnt5": 0,
+        "po_cnt6": 0, "po_cnt7": 0, "po_cnt8": 0, "po_cnt9": 0,
+        "po_etc": body.get("po_etc").cloned().unwrap_or(serde_json::json!("")),
+        "po_level": body.get("po_level").cloned().unwrap_or(serde_json::json!(1)),
+        "po_point": body.get("po_point").cloned().unwrap_or(serde_json::json!(0)),
+        "po_date": body.get("po_date").cloned().unwrap_or(serde_json::json!("2026-08-18")),
+        "po_ips": "",
+        "mb_ids": "",
+        "po_use": body.get("po_use").cloned().unwrap_or(serde_json::json!(1))
+    })
+}
+
 fn mock_point_change(points: &Mutex<Vec<Value>>, body: &Value, deduct: bool) -> Value {
     let member_id = body["mb_id"].as_str().unwrap();
     let requested = body["point"].as_i64().unwrap();
@@ -3089,6 +3242,7 @@ struct MockConnector {
     layouts: Arc<Mutex<Vec<Value>>>,
     theme_config: Arc<Mutex<Value>>,
     themes: Arc<Mutex<Vec<Value>>>,
+    polls: Arc<Mutex<Vec<Value>>>,
     points: Arc<Mutex<Vec<Value>>>,
 }
 
@@ -3968,6 +4122,66 @@ impl ConnectorGateway for MockConnector {
                     .cloned()
                     .unwrap();
                 serde_json::json!({"data": theme, "meta": {}})
+            }
+            "adminSystemListPolls" | "adminListPolls" => {
+                let polls = self.polls.lock().unwrap().clone();
+                serde_json::json!({
+                    "data": polls,
+                    "pagination": {
+                        "mode": "page", "total": polls.len(), "page": 1, "per_page": 20,
+                        "last_page": 1, "cursor": null, "next_cursor": null,
+                        "has_next": false, "has_prev": false
+                    },
+                    "meta": {}
+                })
+            }
+            "adminSystemCreatePoll" | "adminCreatePoll" => {
+                let body = input.body.as_ref().unwrap();
+                let po_id = self.polls.lock().unwrap().len() as i64 + 1;
+                let poll = mock_poll(po_id, body);
+                self.polls.lock().unwrap().push(poll.clone());
+                serde_json::json!({"data": poll, "meta": {}})
+            }
+            "adminSystemGetPoll" | "adminGetPoll" => {
+                let po_id = input
+                    .path
+                    .get("po_id")
+                    .and_then(|value| value.parse::<i64>().ok());
+                let poll = self
+                    .polls
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|item| item["po_id"].as_i64() == po_id)
+                    .cloned()
+                    .unwrap();
+                serde_json::json!({"data": poll, "meta": {}})
+            }
+            "adminSystemUpdatePoll" | "adminUpdatePoll" => {
+                let po_id = input
+                    .path
+                    .get("po_id")
+                    .and_then(|value| value.parse::<i64>().ok());
+                let mut polls = self.polls.lock().unwrap();
+                let poll = polls
+                    .iter_mut()
+                    .find(|item| item["po_id"].as_i64() == po_id)
+                    .unwrap();
+                for (name, value) in input.body.as_ref().unwrap().as_object().unwrap() {
+                    poll[name] = value.clone();
+                }
+                serde_json::json!({"data": poll.clone(), "meta": {}})
+            }
+            "adminSystemDeletePoll" | "adminDeletePoll" => {
+                let po_id = input
+                    .path
+                    .get("po_id")
+                    .and_then(|value| value.parse::<i64>().ok());
+                self.polls
+                    .lock()
+                    .unwrap()
+                    .retain(|item| item["po_id"].as_i64() != po_id);
+                Value::Null
             }
             "adminListPoints" => {
                 let member_id = input.query.get("mb_id").and_then(Value::as_str);

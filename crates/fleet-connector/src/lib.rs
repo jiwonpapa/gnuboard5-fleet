@@ -53,6 +53,10 @@ pub use g5_fleet_core::points::{
     AdminPointDelete, AdminPointDeleteResult, AdminPointExpire, AdminPointExpireResult,
     AdminPointList, AdminPointListQuery, AdminPointSummary,
 };
+pub use g5_fleet_core::polls::{
+    AdminPoll, AdminPollCreate, AdminPollList, AdminPollListQuery, AdminPollSummary,
+    AdminPollUpdate, valid_poll_id,
+};
 pub use g5_fleet_core::theme::{
     AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, valid_theme_id,
 };
@@ -2139,6 +2143,198 @@ pub trait ConnectorGateway: Send + Sync {
         .await
     }
 
+    async fn admin_system_list_polls(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminPollListQuery,
+    ) -> ConnectorResult<AdminPollList> {
+        poll_list_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminSystemListPolls",
+            query,
+        )
+        .await
+    }
+
+    async fn admin_system_create_poll(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        create: &AdminPollCreate,
+    ) -> ConnectorResult<AdminPoll> {
+        if !create.is_valid_system() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        poll_create_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminSystemCreatePoll",
+            create,
+        )
+        .await
+    }
+
+    async fn admin_system_get_poll(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        po_id: i64,
+    ) -> ConnectorResult<AdminPoll> {
+        poll_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminSystemGetPoll",
+            po_id,
+            CoreExecuteRequest::default(),
+        )
+        .await
+    }
+
+    async fn admin_system_update_poll(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        po_id: i64,
+        update: &AdminPollUpdate,
+    ) -> ConnectorResult<AdminPoll> {
+        poll_update_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminSystemUpdatePoll",
+            po_id,
+            update,
+        )
+        .await
+    }
+
+    async fn admin_system_delete_poll(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        po_id: i64,
+    ) -> ConnectorResult<()> {
+        poll_delete_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminSystemDeletePoll",
+            po_id,
+        )
+        .await
+    }
+
+    async fn admin_legacy_list_polls(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminPollListQuery,
+    ) -> ConnectorResult<AdminPollList> {
+        poll_list_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminListPolls",
+            query,
+        )
+        .await
+    }
+
+    async fn admin_legacy_create_poll(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        create: &AdminPollCreate,
+    ) -> ConnectorResult<AdminPoll> {
+        if !create.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        poll_create_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminCreatePoll",
+            create,
+        )
+        .await
+    }
+
+    async fn admin_legacy_get_poll(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        po_id: i64,
+    ) -> ConnectorResult<AdminPoll> {
+        poll_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminGetPoll",
+            po_id,
+            CoreExecuteRequest::default(),
+        )
+        .await
+    }
+
+    async fn admin_legacy_update_poll(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        po_id: i64,
+        update: &AdminPollUpdate,
+    ) -> ConnectorResult<AdminPoll> {
+        poll_update_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminUpdatePoll",
+            po_id,
+            update,
+        )
+        .await
+    }
+
+    async fn admin_legacy_delete_poll(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        po_id: i64,
+    ) -> ConnectorResult<()> {
+        poll_delete_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminDeletePoll",
+            po_id,
+        )
+        .await
+    }
+
     async fn admin_list_points(
         &self,
         base_url: &str,
@@ -2431,6 +2627,136 @@ struct ThemeListEnvelope {
 #[derive(Default, Deserialize)]
 struct ThemeListMeta {
     total: Option<i64>,
+}
+
+async fn poll_list_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    query: &AdminPollListQuery,
+) -> ConnectorResult<AdminPollList> {
+    if !query.is_valid() {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                query: query_map([
+                    ("page", query.page.map(|value| json!(value))),
+                    ("per_page", query.per_page.map(|value| json!(value))),
+                ]),
+                ..Default::default()
+            },
+        )
+        .await?;
+    let envelope: TypedListEnvelope<AdminPollSummary> =
+        typed_core_envelope(operation_id, response)?;
+    Ok(AdminPollList {
+        items: envelope.data,
+        pagination: envelope.pagination,
+    })
+}
+
+async fn poll_create_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    create: &AdminPollCreate,
+) -> ConnectorResult<AdminPoll> {
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                body: Some(serde_json::to_value(create).map_err(|_| ConnectorError::Contract)?),
+                ..Default::default()
+            },
+        )
+        .await?;
+    typed_core_data(operation_id, response)
+}
+
+async fn poll_detail_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    po_id: i64,
+    mut input: CoreExecuteRequest,
+) -> ConnectorResult<AdminPoll> {
+    if !valid_poll_id(po_id) {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    input.path.insert("po_id".to_owned(), po_id.to_string());
+    let response = gateway
+        .core_execute(base_url, request_id, access_token, operation_id, &input)
+        .await?;
+    typed_core_data(operation_id, response)
+}
+
+async fn poll_update_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    po_id: i64,
+    update: &AdminPollUpdate,
+) -> ConnectorResult<AdminPoll> {
+    if !update.is_valid() {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    poll_detail_operation(
+        gateway,
+        base_url,
+        request_id,
+        access_token,
+        operation_id,
+        po_id,
+        CoreExecuteRequest {
+            body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+            ..Default::default()
+        },
+    )
+    .await
+}
+
+async fn poll_delete_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    po_id: i64,
+) -> ConnectorResult<()> {
+    if !valid_poll_id(po_id) {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    let response = gateway
+        .core_execute(
+            base_url,
+            request_id,
+            access_token,
+            operation_id,
+            &CoreExecuteRequest {
+                path: BTreeMap::from([("po_id".to_owned(), po_id.to_string())]),
+                confirm_destructive: true,
+                ..Default::default()
+            },
+        )
+        .await?;
+    typed_core_empty(operation_id, response)
 }
 
 async fn point_change_operation<T: ConnectorGateway + ?Sized>(

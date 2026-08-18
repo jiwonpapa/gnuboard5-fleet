@@ -36,8 +36,9 @@ use g5_fleet_connector::{
     AdminMenuReorder, AdminMenuReorderResult, AdminMenuUpdate, AdminNewPostsDelete,
     AdminNewPostsDeleteResult, AdminPointAction, AdminPointActionResult, AdminPointChange,
     AdminPointChangeResult, AdminPointDelete, AdminPointDeleteResult, AdminPointExpire,
-    AdminPointExpireResult, AdminPointList, AdminPointListQuery, AdminPointSummary,
-    AdminSchemaCatalog, AdminSchemaDetail, AdminSystemPermission, AdminSystemPermissionList,
+    AdminPointExpireResult, AdminPointList, AdminPointListQuery, AdminPointSummary, AdminPoll,
+    AdminPollCreate, AdminPollList, AdminPollListQuery, AdminPollUpdate, AdminSchemaCatalog,
+    AdminSchemaDetail, AdminSystemPermission, AdminSystemPermissionList,
     AdminSystemPermissionListQuery, AdminSystemPermissionSave, AdminTheme, AdminThemeConfig,
     AdminThemeList, AdminThemeUpdate, BasicConfig, ConnectorCredentials, ConnectorError,
     ConnectorHealth, ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec,
@@ -513,6 +514,26 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/themes/{theme}",
             get(admin_theme_get),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/polls",
+            get(admin_system_poll_list).post(admin_system_poll_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/polls/{po_id}",
+            get(admin_system_poll_get)
+                .put(admin_system_poll_update)
+                .delete(admin_system_poll_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/polls",
+            get(admin_legacy_poll_list).post(admin_legacy_poll_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/polls/{po_id}",
+            get(admin_legacy_poll_get)
+                .patch(admin_legacy_poll_update)
+                .delete(admin_legacy_poll_delete),
         )
         .route(
             "/sites/{site_id}/admin/points",
@@ -3828,6 +3849,364 @@ async fn admin_theme_get(
         .await
     {
         Ok(theme) => Json::<AdminTheme>(theme).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+#[derive(Clone, Copy)]
+enum PollRouteKind {
+    System,
+    Legacy,
+}
+
+async fn admin_system_poll_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminPollListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    admin_poll_list(state, site_id, query, headers, PollRouteKind::System).await
+}
+
+async fn admin_legacy_poll_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminPollListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    admin_poll_list(state, site_id, query, headers, PollRouteKind::Legacy).await
+}
+
+async fn admin_poll_list(
+    state: AppState,
+    site_id: String,
+    query: AdminPollListQuery,
+    headers: HeaderMap,
+    kind: PollRouteKind,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        PollRouteKind::System => {
+            state
+                .config
+                .connector
+                .admin_system_list_polls(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &query,
+                )
+                .await
+        }
+        PollRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_list_polls(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &query,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(polls) => Json::<AdminPollList>(polls).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_poll_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(create): Json<AdminPollCreate>,
+) -> Response {
+    admin_poll_create(state, site_id, headers, create, PollRouteKind::System).await
+}
+
+async fn admin_legacy_poll_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(create): Json<AdminPollCreate>,
+) -> Response {
+    admin_poll_create(state, site_id, headers, create, PollRouteKind::Legacy).await
+}
+
+async fn admin_poll_create(
+    state: AppState,
+    site_id: String,
+    headers: HeaderMap,
+    create: AdminPollCreate,
+    kind: PollRouteKind,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        PollRouteKind::System => {
+            state
+                .config
+                .connector
+                .admin_system_create_poll(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &create,
+                )
+                .await
+        }
+        PollRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_create_poll(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    &create,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(poll) => (StatusCode::CREATED, Json::<AdminPoll>(poll)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_poll_get(
+    State(state): State<AppState>,
+    Path((site_id, po_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    admin_poll_get(state, site_id, po_id, headers, PollRouteKind::System).await
+}
+
+async fn admin_legacy_poll_get(
+    State(state): State<AppState>,
+    Path((site_id, po_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    admin_poll_get(state, site_id, po_id, headers, PollRouteKind::Legacy).await
+}
+
+async fn admin_poll_get(
+    state: AppState,
+    site_id: String,
+    po_id: i64,
+    headers: HeaderMap,
+    kind: PollRouteKind,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        PollRouteKind::System => {
+            state
+                .config
+                .connector
+                .admin_system_get_poll(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    po_id,
+                )
+                .await
+        }
+        PollRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_get_poll(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    po_id,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(poll) => Json::<AdminPoll>(poll).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_poll_update(
+    State(state): State<AppState>,
+    Path((site_id, po_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminPollUpdate>,
+) -> Response {
+    admin_poll_update(
+        state,
+        site_id,
+        po_id,
+        headers,
+        update,
+        PollRouteKind::System,
+    )
+    .await
+}
+
+async fn admin_legacy_poll_update(
+    State(state): State<AppState>,
+    Path((site_id, po_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminPollUpdate>,
+) -> Response {
+    admin_poll_update(
+        state,
+        site_id,
+        po_id,
+        headers,
+        update,
+        PollRouteKind::Legacy,
+    )
+    .await
+}
+
+async fn admin_poll_update(
+    state: AppState,
+    site_id: String,
+    po_id: i64,
+    headers: HeaderMap,
+    update: AdminPollUpdate,
+    kind: PollRouteKind,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        PollRouteKind::System => {
+            state
+                .config
+                .connector
+                .admin_system_update_poll(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    po_id,
+                    &update,
+                )
+                .await
+        }
+        PollRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_update_poll(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    po_id,
+                    &update,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(poll) => Json::<AdminPoll>(poll).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_poll_delete(
+    State(state): State<AppState>,
+    Path((site_id, po_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    admin_poll_delete(state, site_id, po_id, headers, PollRouteKind::System).await
+}
+
+async fn admin_legacy_poll_delete(
+    State(state): State<AppState>,
+    Path((site_id, po_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    admin_poll_delete(state, site_id, po_id, headers, PollRouteKind::Legacy).await
+}
+
+async fn admin_poll_delete(
+    state: AppState,
+    site_id: String,
+    po_id: i64,
+    headers: HeaderMap,
+    kind: PollRouteKind,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = match kind {
+        PollRouteKind::System => {
+            state
+                .config
+                .connector
+                .admin_system_delete_poll(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    po_id,
+                )
+                .await
+        }
+        PollRouteKind::Legacy => {
+            state
+                .config
+                .connector
+                .admin_legacy_delete_poll(
+                    &site.base_url,
+                    &context.request_id,
+                    &credentials.access_token,
+                    po_id,
+                )
+                .await
+        }
+    };
+    match result {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(error) => connector_error(error),
     }
 }

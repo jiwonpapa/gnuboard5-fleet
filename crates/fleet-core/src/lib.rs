@@ -11,6 +11,7 @@ pub mod members;
 pub mod menus;
 pub mod permissions;
 pub mod points;
+pub mod polls;
 pub mod theme;
 
 pub type FleetResult<T> = Result<T, AppErrorPayload>;
