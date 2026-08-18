@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 pub mod admin;
 pub mod boards;
 pub mod contents;
+pub mod faqs;
 pub mod groups;
 pub mod members;
 pub mod permissions;

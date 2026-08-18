@@ -619,6 +619,104 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/faq-masters",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_faq_master_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/faq-masters",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_faq_master_create"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_faq_master_detail"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_faq_master_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_faq_master_delete"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/header-image",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_faq_master_header_image_upload"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/header-image",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_faq_master_header_image_delete"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/footer-image",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_faq_master_footer_image_upload"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/footer-image",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_faq_master_footer_image_delete"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/faqs",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_faq_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/faqs",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_faq_create"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/faqs/{fa_id}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_faq_detail"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/faqs/{fa_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_faq_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/faqs/{fa_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_faq_delete"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/config/basic",
       "auth": "session",
       "site_context": true,

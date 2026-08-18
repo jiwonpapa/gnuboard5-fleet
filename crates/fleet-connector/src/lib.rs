@@ -18,6 +18,12 @@ pub use g5_fleet_core::contents::{
     AdminContent, AdminContentCreate, AdminContentList, AdminContentListQuery, AdminContentUpdate,
     valid_content_id,
 };
+pub use g5_fleet_core::faqs::{
+    AdminFaqCreate, AdminFaqImage, AdminFaqImageUpload, AdminFaqItem, AdminFaqList,
+    AdminFaqListQuery, AdminFaqMasterCreate, AdminFaqMasterDetail, AdminFaqMasterList,
+    AdminFaqMasterListQuery, AdminFaqMasterSummary, AdminFaqMasterUpdate, AdminFaqUpdate,
+    valid_faq_id,
+};
 pub use g5_fleet_core::groups::{
     AdminBoardGroup, AdminBoardGroupCreate, AdminBoardGroupList, AdminBoardGroupMember,
     AdminBoardGroupMemberCreate, AdminBoardGroupMemberList, AdminBoardGroupMemberListQuery,
@@ -1404,6 +1410,338 @@ pub trait ConnectorGateway: Send + Sync {
             .await?;
         typed_core_empty("adminDeleteContent", response)
     }
+
+    async fn admin_list_faq_masters(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminFaqMasterListQuery,
+    ) -> ConnectorResult<AdminFaqMasterList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListFaqMasters",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<AdminFaqMasterSummary> =
+            typed_core_envelope("adminListFaqMasters", response)?;
+        Ok(AdminFaqMasterList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_create_faq_master(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        create: &AdminFaqMasterCreate,
+    ) -> ConnectorResult<AdminFaqMasterDetail> {
+        if !create.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminCreateFaqMaster",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(create).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminCreateFaqMaster", response)
+    }
+
+    async fn admin_get_faq_master(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fm_id: i64,
+    ) -> ConnectorResult<AdminFaqMasterDetail> {
+        faq_master_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminGetFaqMaster",
+            fm_id,
+            CoreExecuteRequest::default(),
+        )
+        .await
+    }
+
+    async fn admin_update_faq_master(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fm_id: i64,
+        update: &AdminFaqMasterUpdate,
+    ) -> ConnectorResult<AdminFaqMasterDetail> {
+        if !update.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        faq_master_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminUpdateFaqMaster",
+            fm_id,
+            CoreExecuteRequest {
+                body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+                ..Default::default()
+            },
+        )
+        .await
+    }
+
+    async fn admin_delete_faq_master(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fm_id: i64,
+    ) -> ConnectorResult<()> {
+        if !valid_faq_id(fm_id) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteFaqMaster",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("fm_id".to_owned(), fm_id.to_string())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_empty("adminDeleteFaqMaster", response)
+    }
+
+    async fn admin_upload_faq_master_image(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fm_id: i64,
+        kind: &str,
+        upload: &AdminFaqImageUpload,
+    ) -> ConnectorResult<AdminFaqImage> {
+        if !valid_faq_id(fm_id) || !upload.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let operation_id = match kind {
+            "header" => "adminUploadFaqMasterHeaderImage",
+            "footer" => "adminUploadFaqMasterFooterImage",
+            _ => return Err(ConnectorError::InvalidCoreRequest),
+        };
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                operation_id,
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("fm_id".to_owned(), fm_id.to_string())]),
+                    body: Some(json!({
+                        "file": {
+                            "$file": {
+                                "filename": upload.file_name,
+                                "content_type": upload.mime_type,
+                                "base64": upload.bytes_base64,
+                            }
+                        }
+                    })),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data(operation_id, response)
+    }
+
+    async fn admin_delete_faq_master_image(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fm_id: i64,
+        kind: &str,
+    ) -> ConnectorResult<AdminFaqImage> {
+        if !valid_faq_id(fm_id) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let operation_id = match kind {
+            "header" => "adminDeleteFaqMasterHeaderImage",
+            "footer" => "adminDeleteFaqMasterFooterImage",
+            _ => return Err(ConnectorError::InvalidCoreRequest),
+        };
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                operation_id,
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("fm_id".to_owned(), fm_id.to_string())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data(operation_id, response)
+    }
+
+    async fn admin_list_faqs(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminFaqListQuery,
+    ) -> ConnectorResult<AdminFaqList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListFaqs",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                        ("fm_id", query.fm_id.map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<AdminFaqItem> =
+            typed_core_envelope("adminListFaqs", response)?;
+        Ok(AdminFaqList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_create_faq(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        create: &AdminFaqCreate,
+    ) -> ConnectorResult<AdminFaqItem> {
+        if !create.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminCreateFaq",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(create).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminCreateFaq", response)
+    }
+
+    async fn admin_get_faq(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fa_id: i64,
+    ) -> ConnectorResult<AdminFaqItem> {
+        faq_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminGetFaq",
+            fa_id,
+            CoreExecuteRequest::default(),
+        )
+        .await
+    }
+
+    async fn admin_update_faq(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fa_id: i64,
+        update: &AdminFaqUpdate,
+    ) -> ConnectorResult<AdminFaqItem> {
+        if !update.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        faq_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminUpdateFaq",
+            fa_id,
+            CoreExecuteRequest {
+                body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+                ..Default::default()
+            },
+        )
+        .await
+    }
+
+    async fn admin_delete_faq(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fa_id: i64,
+    ) -> ConnectorResult<()> {
+        if !valid_faq_id(fa_id) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteFaq",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("fa_id".to_owned(), fa_id.to_string())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_empty("adminDeleteFaq", response)
+    }
 }
 
 #[derive(Deserialize)]
@@ -1445,6 +1783,44 @@ async fn content_detail_operation<T: ConnectorGateway + ?Sized>(
     }
     let mut input = input;
     input.path.insert("co_id".to_owned(), co_id.to_owned());
+    let response = gateway
+        .core_execute(base_url, request_id, access_token, operation_id, &input)
+        .await?;
+    typed_core_data(operation_id, response)
+}
+
+async fn faq_master_detail_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    fm_id: i64,
+    mut input: CoreExecuteRequest,
+) -> ConnectorResult<AdminFaqMasterDetail> {
+    if !valid_faq_id(fm_id) {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    input.path.insert("fm_id".to_owned(), fm_id.to_string());
+    let response = gateway
+        .core_execute(base_url, request_id, access_token, operation_id, &input)
+        .await?;
+    typed_core_data(operation_id, response)
+}
+
+async fn faq_detail_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    fa_id: i64,
+    mut input: CoreExecuteRequest,
+) -> ConnectorResult<AdminFaqItem> {
+    if !valid_faq_id(fa_id) {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    input.path.insert("fa_id".to_owned(), fa_id.to_string());
     let response = gateway
         .core_execute(base_url, request_id, access_token, operation_id, &input)
         .await?;

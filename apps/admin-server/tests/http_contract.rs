@@ -323,6 +323,35 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("GET", "/api/v1/sites/{site_id}/admin/contents/{co_id}"),
             ("PUT", "/api/v1/sites/{site_id}/admin/contents/{co_id}"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/contents/{co_id}"),
+            ("GET", "/api/v1/sites/{site_id}/admin/faq-masters"),
+            ("POST", "/api/v1/sites/{site_id}/admin/faq-masters"),
+            ("GET", "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}"),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/header-image"
+            ),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/header-image"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/footer-image"
+            ),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/footer-image"
+            ),
+            ("GET", "/api/v1/sites/{site_id}/admin/faqs"),
+            ("POST", "/api/v1/sites/{site_id}/admin/faqs"),
+            ("GET", "/api/v1/sites/{site_id}/admin/faqs/{fa_id}"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/faqs/{fa_id}"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/faqs/{fa_id}"),
             ("GET", "/api/v1/sites/{site_id}/config/basic"),
             ("PUT", "/api/v1/sites/{site_id}/config/basic"),
             ("POST", "/api/v1/sites/{site_id}/core/{operation_id}",),
@@ -711,6 +740,26 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             "co_tag_filter_use": 1,
             "co_skin": "basic",
             "co_mobile_skin": "basic"
+        })])),
+        faq_masters: Arc::new(Mutex::new(vec![serde_json::json!({
+            "fm_id": 1,
+            "fm_subject": "서비스 안내",
+            "fm_head_html": "<p>head</p>",
+            "fm_tail_html": "",
+            "fm_mobile_head_html": "",
+            "fm_mobile_tail_html": "",
+            "fm_order": 0,
+            "faq_count": 1,
+            "header_image": {"exists": false, "relative_path": "", "url": "", "width": null, "height": null, "mime": null, "size": null},
+            "footer_image": {"exists": false, "relative_path": "", "url": "", "width": null, "height": null, "mime": null, "size": null}
+        })])),
+        faqs: Arc::new(Mutex::new(vec![serde_json::json!({
+            "fa_id": 1,
+            "fm_id": 1,
+            "fm_subject": "서비스 안내",
+            "fa_subject": "서비스는 무엇인가요?",
+            "fa_content": "<p>Fleet 서비스입니다.</p>",
+            "fa_order": 0
         })])),
     };
     let app = build_router(AppConfig {
@@ -1913,6 +1962,161 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap();
     assert_eq!(content_delete.status(), StatusCode::NO_CONTENT);
 
+    let faq_master_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/faq-masters?page=1&per_page=20",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(faq_master_list.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(faq_master_list).await["items"][0]["fm_id"], 1);
+
+    let faq_master_create = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/faq-masters",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "fm_subject": "Fleet FAQ",
+                "fm_order": 2,
+                "fm_head_html": "<p>head</p>",
+                "fm_mobile_head_html": ""
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(faq_master_create.status(), StatusCode::CREATED);
+    assert_eq!(json::<Value>(faq_master_create).await["fm_id"], 2);
+
+    let faq_master_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/faq-masters/2",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"fm_subject": "Fleet FAQ 갱신"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(faq_master_update).await["fm_subject"],
+        "Fleet FAQ 갱신"
+    );
+
+    let faq_header_upload = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/faq-masters/2/header-image",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "file_name": "header.png",
+                "mime_type": "image/png",
+                "bytes_base64": "aGVsbG8="
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(faq_header_upload).await["exists"], true);
+
+    let faq_header_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/faq-masters/2/header-image",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(faq_header_delete).await["exists"], false);
+
+    let faq_create = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/faqs",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "fm_id": 2,
+                "fa_subject": "Fleet은 무엇인가요?",
+                "fa_content": "<p>통합 관리자입니다.</p>",
+                "fa_order": 1
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(faq_create.status(), StatusCode::CREATED);
+    assert_eq!(json::<Value>(faq_create).await["fa_id"], 2);
+
+    let faq_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/faqs?page=1&per_page=20&fm_id=2",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    let faq_list: Value = json(faq_list).await;
+    assert_eq!(faq_list["items"].as_array().map(Vec::len), Some(1));
+    assert_eq!(faq_list["items"][0]["fm_id"], 2);
+
+    let faq_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/faqs/2",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"fa_subject": "Fleet FAQ 수정"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(faq_update).await["fa_subject"],
+        "Fleet FAQ 수정"
+    );
+
+    let faq_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/faqs/2",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(faq_delete.status(), StatusCode::NO_CONTENT);
+
+    let faq_master_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/faq-masters/2",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(faq_master_delete.status(), StatusCode::NO_CONTENT);
+
     let registry = app
         .clone()
         .oneshot(json_request(
@@ -2265,6 +2469,8 @@ struct MockConnector {
     group_members: Arc<Mutex<Vec<Value>>>,
     boards: Arc<Mutex<Vec<Value>>>,
     contents: Arc<Mutex<Vec<Value>>>,
+    faq_masters: Arc<Mutex<Vec<Value>>>,
+    faqs: Arc<Mutex<Vec<Value>>>,
 }
 
 #[async_trait]
@@ -2697,6 +2903,186 @@ impl ConnectorGateway for MockConnector {
                     .lock()
                     .unwrap()
                     .retain(|item| item["co_id"].as_str() != co_id);
+                Value::Null
+            }
+            "adminListFaqMasters" => serde_json::json!({
+                "data": self.faq_masters.lock().unwrap().clone(),
+                "pagination": {
+                    "mode": "page", "total": self.faq_masters.lock().unwrap().len(),
+                    "page": 1, "per_page": 20, "last_page": 1,
+                    "cursor": null, "next_cursor": null, "has_next": false, "has_prev": false
+                },
+                "meta": {}
+            }),
+            "adminCreateFaqMaster" => {
+                let body = input.body.as_ref().unwrap();
+                let fm_id = self.faq_masters.lock().unwrap().len() as i64 + 1;
+                let image = serde_json::json!({
+                    "exists": false, "relative_path": "", "url": "", "width": null,
+                    "height": null, "mime": null, "size": null
+                });
+                let master = serde_json::json!({
+                    "fm_id": fm_id,
+                    "fm_subject": body["fm_subject"],
+                    "fm_head_html": body.get("fm_head_html").cloned().unwrap_or(serde_json::json!("")),
+                    "fm_tail_html": body.get("fm_tail_html").cloned().unwrap_or(serde_json::json!("")),
+                    "fm_mobile_head_html": body.get("fm_mobile_head_html").cloned().unwrap_or(serde_json::json!("")),
+                    "fm_mobile_tail_html": body.get("fm_mobile_tail_html").cloned().unwrap_or(serde_json::json!("")),
+                    "fm_order": body.get("fm_order").cloned().unwrap_or(serde_json::json!(0)),
+                    "faq_count": 0,
+                    "header_image": image.clone(),
+                    "footer_image": image
+                });
+                self.faq_masters.lock().unwrap().push(master.clone());
+                serde_json::json!({"data": master, "meta": {}})
+            }
+            "adminGetFaqMaster" => {
+                let fm_id = input.path.get("fm_id").unwrap().parse::<i64>().unwrap();
+                let master = self
+                    .faq_masters
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|item| item["fm_id"].as_i64() == Some(fm_id))
+                    .cloned()
+                    .unwrap();
+                serde_json::json!({"data": master, "meta": {}})
+            }
+            "adminUpdateFaqMaster" => {
+                let fm_id = input.path.get("fm_id").unwrap().parse::<i64>().unwrap();
+                let mut masters = self.faq_masters.lock().unwrap();
+                let master = masters
+                    .iter_mut()
+                    .find(|item| item["fm_id"].as_i64() == Some(fm_id))
+                    .unwrap();
+                for (name, value) in input.body.as_ref().unwrap().as_object().unwrap() {
+                    master[name] = value.clone();
+                }
+                serde_json::json!({"data": master.clone(), "meta": {}})
+            }
+            "adminDeleteFaqMaster" => {
+                let fm_id = input.path.get("fm_id").unwrap().parse::<i64>().unwrap();
+                self.faq_masters
+                    .lock()
+                    .unwrap()
+                    .retain(|item| item["fm_id"].as_i64() != Some(fm_id));
+                self.faqs
+                    .lock()
+                    .unwrap()
+                    .retain(|item| item["fm_id"].as_i64() != Some(fm_id));
+                Value::Null
+            }
+            "adminUploadFaqMasterHeaderImage" | "adminUploadFaqMasterFooterImage" => {
+                let fm_id = input.path.get("fm_id").unwrap().parse::<i64>().unwrap();
+                let header = operation_id.contains("Header");
+                let image = serde_json::json!({
+                    "exists": true,
+                    "relative_path": if header { format!("faq/{fm_id}/header.png") } else { format!("faq/{fm_id}/footer.png") },
+                    "url": if header { format!("/data/faq/{fm_id}/header.png") } else { format!("/data/faq/{fm_id}/footer.png") },
+                    "width": 32, "height": 32, "mime": "image/png", "size": 4
+                });
+                let mut masters = self.faq_masters.lock().unwrap();
+                let master = masters
+                    .iter_mut()
+                    .find(|item| item["fm_id"].as_i64() == Some(fm_id))
+                    .unwrap();
+                master[if header {
+                    "header_image"
+                } else {
+                    "footer_image"
+                }] = image.clone();
+                serde_json::json!({"data": image, "meta": {}})
+            }
+            "adminDeleteFaqMasterHeaderImage" | "adminDeleteFaqMasterFooterImage" => {
+                let fm_id = input.path.get("fm_id").unwrap().parse::<i64>().unwrap();
+                let header = operation_id.contains("Header");
+                let image = serde_json::json!({
+                    "exists": false, "relative_path": "", "url": "", "width": null,
+                    "height": null, "mime": null, "size": null
+                });
+                let mut masters = self.faq_masters.lock().unwrap();
+                let master = masters
+                    .iter_mut()
+                    .find(|item| item["fm_id"].as_i64() == Some(fm_id))
+                    .unwrap();
+                master[if header {
+                    "header_image"
+                } else {
+                    "footer_image"
+                }] = image.clone();
+                serde_json::json!({"data": image, "meta": {}})
+            }
+            "adminListFaqs" => {
+                let fm_id = input.query.get("fm_id").and_then(Value::as_i64);
+                let items = self
+                    .faqs
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .filter(|item| fm_id.is_none_or(|id| item["fm_id"].as_i64() == Some(id)))
+                    .cloned()
+                    .collect::<Vec<_>>();
+                serde_json::json!({
+                    "data": items,
+                    "pagination": {
+                        "mode": "page", "total": items.len(), "page": 1, "per_page": 20,
+                        "last_page": 1, "cursor": null, "next_cursor": null,
+                        "has_next": false, "has_prev": false
+                    },
+                    "meta": {}
+                })
+            }
+            "adminCreateFaq" => {
+                let body = input.body.as_ref().unwrap();
+                let fa_id = self.faqs.lock().unwrap().len() as i64 + 1;
+                let fm_id = body["fm_id"].as_i64().unwrap();
+                let fm_subject = self
+                    .faq_masters
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|item| item["fm_id"].as_i64() == Some(fm_id))
+                    .and_then(|item| item["fm_subject"].as_str())
+                    .unwrap()
+                    .to_owned();
+                let faq = serde_json::json!({
+                    "fa_id": fa_id, "fm_id": fm_id, "fm_subject": fm_subject,
+                    "fa_subject": body["fa_subject"], "fa_content": body["fa_content"],
+                    "fa_order": body.get("fa_order").cloned().unwrap_or(serde_json::json!(0))
+                });
+                self.faqs.lock().unwrap().push(faq.clone());
+                serde_json::json!({"data": faq, "meta": {}})
+            }
+            "adminGetFaq" => {
+                let fa_id = input.path.get("fa_id").unwrap().parse::<i64>().unwrap();
+                let faq = self
+                    .faqs
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|item| item["fa_id"].as_i64() == Some(fa_id))
+                    .cloned()
+                    .unwrap();
+                serde_json::json!({"data": faq, "meta": {}})
+            }
+            "adminUpdateFaq" => {
+                let fa_id = input.path.get("fa_id").unwrap().parse::<i64>().unwrap();
+                let mut faqs = self.faqs.lock().unwrap();
+                let faq = faqs
+                    .iter_mut()
+                    .find(|item| item["fa_id"].as_i64() == Some(fa_id))
+                    .unwrap();
+                for (name, value) in input.body.as_ref().unwrap().as_object().unwrap() {
+                    faq[name] = value.clone();
+                }
+                serde_json::json!({"data": faq.clone(), "meta": {}})
+            }
+            "adminDeleteFaq" => {
+                let fa_id = input.path.get("fa_id").unwrap().parse::<i64>().unwrap();
+                self.faqs
+                    .lock()
+                    .unwrap()
+                    .retain(|item| item["fa_id"].as_i64() != Some(fa_id));
                 Value::Null
             }
             "adminListBoardGroups" | "adminLegacyListGroups" => serde_json::json!({

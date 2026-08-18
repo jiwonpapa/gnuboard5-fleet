@@ -25,7 +25,10 @@ use g5_fleet_connector::{
     AdminBoardGroupMemberCreate, AdminBoardGroupMemberList, AdminBoardGroupMemberListQuery,
     AdminBoardGroupMemberResult, AdminBoardGroupUpdate, AdminBoardList, AdminBoardListQuery,
     AdminBoardUpdate, AdminConfig, AdminConfigUpdate, AdminContent, AdminContentCreate,
-    AdminContentList, AdminContentListQuery, AdminContentUpdate, AdminDashboardData, AdminMember,
+    AdminContentList, AdminContentListQuery, AdminContentUpdate, AdminDashboardData,
+    AdminFaqCreate, AdminFaqImage, AdminFaqImageUpload, AdminFaqItem, AdminFaqList,
+    AdminFaqListQuery, AdminFaqMasterCreate, AdminFaqMasterDetail, AdminFaqMasterList,
+    AdminFaqMasterListQuery, AdminFaqMasterUpdate, AdminFaqUpdate, AdminMember,
     AdminMemberLevelUpdate, AdminMemberList, AdminMemberListQuery, AdminMemberMediaDeleteResult,
     AdminMemberMediaUpload, AdminMemberMediaUploadResult, AdminMemberUpdate, AdminNewPostsDelete,
     AdminNewPostsDeleteResult, AdminSchemaCatalog, AdminSchemaDetail, AdminSystemPermission,
@@ -430,6 +433,34 @@ pub(crate) fn router() -> Router<AppState> {
             get(admin_content_get)
                 .put(admin_content_update)
                 .delete(admin_content_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/faq-masters",
+            get(admin_faq_master_list).post(admin_faq_master_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/faq-masters/{fm_id}",
+            get(admin_faq_master_get)
+                .put(admin_faq_master_update)
+                .delete(admin_faq_master_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/faq-masters/{fm_id}/header-image",
+            post(admin_faq_master_header_image_upload).delete(admin_faq_master_header_image_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/faq-masters/{fm_id}/footer-image",
+            post(admin_faq_master_footer_image_upload).delete(admin_faq_master_footer_image_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/faqs",
+            get(admin_faq_list).post(admin_faq_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/faqs/{fa_id}",
+            get(admin_faq_get)
+                .put(admin_faq_update)
+                .delete(admin_faq_delete),
         )
         .route(
             "/sites/{site_id}/config/basic",
@@ -2595,6 +2626,436 @@ async fn admin_content_delete(
             &context.request_id,
             &credentials.access_token,
             &co_id,
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_faq_master_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminFaqMasterListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_list_faq_masters(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(items) => Json::<AdminFaqMasterList>(items).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_faq_master_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(create): Json<AdminFaqMasterCreate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_create_faq_master(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &create,
+        )
+        .await
+    {
+        Ok(item) => (StatusCode::CREATED, Json::<AdminFaqMasterDetail>(item)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_faq_master_get(
+    State(state): State<AppState>,
+    Path((site_id, fm_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_get_faq_master(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fm_id,
+        )
+        .await
+    {
+        Ok(item) => Json::<AdminFaqMasterDetail>(item).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_faq_master_update(
+    State(state): State<AppState>,
+    Path((site_id, fm_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminFaqMasterUpdate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_update_faq_master(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fm_id,
+            &update,
+        )
+        .await
+    {
+        Ok(item) => Json::<AdminFaqMasterDetail>(item).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_faq_master_delete(
+    State(state): State<AppState>,
+    Path((site_id, fm_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_delete_faq_master(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fm_id,
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_faq_master_header_image_upload(
+    State(state): State<AppState>,
+    Path((site_id, fm_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(upload): Json<AdminFaqImageUpload>,
+) -> Response {
+    admin_faq_master_image_upload(state, headers, site_id, fm_id, "header", upload).await
+}
+
+async fn admin_faq_master_footer_image_upload(
+    State(state): State<AppState>,
+    Path((site_id, fm_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(upload): Json<AdminFaqImageUpload>,
+) -> Response {
+    admin_faq_master_image_upload(state, headers, site_id, fm_id, "footer", upload).await
+}
+
+async fn admin_faq_master_image_upload(
+    state: AppState,
+    headers: HeaderMap,
+    site_id: String,
+    fm_id: i64,
+    kind: &str,
+    upload: AdminFaqImageUpload,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_upload_faq_master_image(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fm_id,
+            kind,
+            &upload,
+        )
+        .await
+    {
+        Ok(image) => Json::<AdminFaqImage>(image).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_faq_master_header_image_delete(
+    State(state): State<AppState>,
+    Path((site_id, fm_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    admin_faq_master_image_delete(state, headers, site_id, fm_id, "header").await
+}
+
+async fn admin_faq_master_footer_image_delete(
+    State(state): State<AppState>,
+    Path((site_id, fm_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    admin_faq_master_image_delete(state, headers, site_id, fm_id, "footer").await
+}
+
+async fn admin_faq_master_image_delete(
+    state: AppState,
+    headers: HeaderMap,
+    site_id: String,
+    fm_id: i64,
+    kind: &str,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_delete_faq_master_image(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fm_id,
+            kind,
+        )
+        .await
+    {
+        Ok(image) => Json::<AdminFaqImage>(image).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_faq_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminFaqListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_list_faqs(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(items) => Json::<AdminFaqList>(items).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_faq_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(create): Json<AdminFaqCreate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_create_faq(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &create,
+        )
+        .await
+    {
+        Ok(item) => (StatusCode::CREATED, Json::<AdminFaqItem>(item)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_faq_get(
+    State(state): State<AppState>,
+    Path((site_id, fa_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_get_faq(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fa_id,
+        )
+        .await
+    {
+        Ok(item) => Json::<AdminFaqItem>(item).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_faq_update(
+    State(state): State<AppState>,
+    Path((site_id, fa_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminFaqUpdate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_update_faq(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fa_id,
+            &update,
+        )
+        .await
+    {
+        Ok(item) => Json::<AdminFaqItem>(item).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_faq_delete(
+    State(state): State<AppState>,
+    Path((site_id, fa_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_delete_faq(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fa_id,
         )
         .await
     {
