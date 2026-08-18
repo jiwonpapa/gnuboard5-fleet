@@ -363,6 +363,29 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("PUT", "/api/v1/sites/{site_id}/admin/menus/{me_id}"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/menus/{me_id}"),
             ("PATCH", "/api/v1/sites/{site_id}/admin/menus/reorder"),
+            ("GET", "/api/v1/sites/{site_id}/admin/layouts"),
+            ("GET", "/api/v1/sites/{site_id}/admin/layouts/{page_id}"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/layouts/{page_id}"),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/layouts/{page_id}/widgets"
+            ),
+            (
+                "PATCH",
+                "/api/v1/sites/{site_id}/admin/layouts/{page_id}/widgets"
+            ),
+            (
+                "PATCH",
+                "/api/v1/sites/{site_id}/admin/layouts/{page_id}/widgets/{widget_id}"
+            ),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/layouts/{page_id}/widgets/{widget_id}"
+            ),
+            (
+                "PATCH",
+                "/api/v1/sites/{site_id}/admin/layouts/{page_id}/reorder"
+            ),
             ("GET", "/api/v1/sites/{site_id}/config/basic"),
             ("PUT", "/api/v1/sites/{site_id}/config/basic"),
             ("POST", "/api/v1/sites/{site_id}/core/{operation_id}",),
@@ -773,6 +796,7 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             "fa_order": 0
         })])),
         menus: Arc::new(Mutex::new(Vec::new())),
+        layouts: Arc::new(Mutex::new(Vec::new())),
     };
     let app = build_router(AppConfig {
         web_root: web.path().to_path_buf(),
@@ -2250,6 +2274,148 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap();
     assert_eq!(menu_delete.status(), StatusCode::NO_CONTENT);
 
+    let layout_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/layouts",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        json::<Value>(layout_list).await["items"],
+        serde_json::json!([])
+    );
+
+    let layout_save = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/layouts/fleet-dashboard",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "title": "Fleet 대시보드",
+                "widgets": [{
+                    "widget_id": "fleet_one", "type": "latest_posts",
+                    "title": "최근 글", "order": 1, "config": {}, "style": {}
+                }]
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(layout_save.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(layout_save).await["sl_page_id"],
+        "fleet-dashboard"
+    );
+
+    let layout_get = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/layouts/fleet-dashboard",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert!(
+        json::<Value>(layout_get).await["sl_schema"]
+            .as_str()
+            .unwrap()
+            .contains("fleet_one")
+    );
+
+    let layout_widget_add = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/layouts/fleet-dashboard/widgets",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "widget_id": "fleet_two", "type": "notice_banner",
+                "title": "알림", "order": 2, "config": {}, "style": {}
+            })),
+        ))
+        .await
+        .unwrap();
+    assert!(
+        json::<Value>(layout_widget_add).await["sl_schema"]
+            .as_str()
+            .unwrap()
+            .contains("fleet_two")
+    );
+
+    let layout_widget_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PATCH,
+            "/api/v1/sites/site-a/admin/layouts/fleet-dashboard/widgets/fleet_two",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"title": "중요 알림"})),
+        ))
+        .await
+        .unwrap();
+    assert!(
+        json::<Value>(layout_widget_update).await["sl_schema"]
+            .as_str()
+            .unwrap()
+            .contains("중요 알림")
+    );
+
+    for path in [
+        "/api/v1/sites/site-a/admin/layouts/fleet-dashboard/widgets",
+        "/api/v1/sites/site-a/admin/layouts/fleet-dashboard/reorder",
+    ] {
+        let reorder = app
+            .clone()
+            .oneshot(json_request(
+                Method::PATCH,
+                path,
+                Some(&cookie),
+                Some(&csrf),
+                Some(serde_json::json!({"widget_ids": ["fleet_two", "fleet_one"]})),
+            ))
+            .await
+            .unwrap();
+        let reordered = json::<Value>(reorder).await;
+        let schema: Value = serde_json::from_str(reordered["sl_schema"].as_str().unwrap()).unwrap();
+        assert_eq!(schema["widgets"][0]["widget_id"], "fleet_two");
+        assert_eq!(schema["widgets"][0]["order"], 1);
+    }
+
+    let layout_widget_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/layouts/fleet-dashboard/widgets/fleet_two",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    let layout_widget_delete = json::<Value>(layout_widget_delete).await;
+    assert!(
+        layout_widget_delete["sl_schema"]
+            .as_str()
+            .unwrap()
+            .contains("fleet_one")
+    );
+    assert!(
+        !layout_widget_delete["sl_schema"]
+            .as_str()
+            .unwrap()
+            .contains("fleet_two")
+    );
+
     let registry = app
         .clone()
         .oneshot(json_request(
@@ -2605,6 +2771,7 @@ struct MockConnector {
     faq_masters: Arc<Mutex<Vec<Value>>>,
     faqs: Arc<Mutex<Vec<Value>>>,
     menus: Arc<Mutex<Vec<Value>>>,
+    layouts: Arc<Mutex<Vec<Value>>>,
 }
 
 #[async_trait]
@@ -3300,6 +3467,150 @@ impl ConnectorGateway for MockConnector {
                     }
                 }
                 serde_json::json!({"data": {"result": "ok"}, "meta": {}})
+            }
+            "adminListLayouts" => serde_json::json!({
+                "data": self.layouts.lock().unwrap().clone(),
+                "pagination": {
+                    "mode": "page", "total": self.layouts.lock().unwrap().len(),
+                    "page": 1, "per_page": 20, "last_page": 1,
+                    "cursor": null, "next_cursor": null, "has_next": false, "has_prev": false
+                },
+                "meta": {}
+            }),
+            "adminGetLayout" => {
+                let page_id = input.path.get("page_id").map(String::as_str);
+                let layout = self
+                    .layouts
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|item| item["sl_page_id"].as_str() == page_id)
+                    .cloned()
+                    .unwrap();
+                serde_json::json!({"data": layout, "meta": {}})
+            }
+            "adminSaveLayout" => {
+                let page_id = input.path.get("page_id").unwrap();
+                let body = input.body.as_ref().unwrap();
+                let widgets = body["widgets"].clone();
+                let schema = serde_json::json!({"widgets": widgets}).to_string();
+                let mut layouts = self.layouts.lock().unwrap();
+                if let Some(layout) = layouts
+                    .iter_mut()
+                    .find(|item| item["sl_page_id"].as_str() == Some(page_id))
+                {
+                    layout["sl_title"] = body
+                        .get("title")
+                        .cloned()
+                        .unwrap_or_else(|| serde_json::json!(page_id));
+                    layout["widgets"] = widgets;
+                    layout["sl_schema"] = serde_json::json!(schema);
+                    layout["sl_updated"] = serde_json::json!("2026-08-18 00:01:00");
+                    serde_json::json!({"data": layout.clone(), "meta": {}})
+                } else {
+                    let layout = serde_json::json!({
+                        "sl_id": layouts.len() as i64 + 1,
+                        "sl_page_id": page_id,
+                        "sl_title": body.get("title").cloned().unwrap_or_else(|| serde_json::json!(page_id)),
+                        "sl_schema": schema,
+                        "sl_active": 1,
+                        "sl_datetime": "2026-08-18 00:00:00",
+                        "sl_updated": "2026-08-18 00:00:00",
+                        "widgets": widgets
+                    });
+                    layouts.push(layout.clone());
+                    serde_json::json!({"data": layout, "meta": {}})
+                }
+            }
+            "adminAddWidget" => {
+                let page_id = input.path.get("page_id").map(String::as_str);
+                let body = input.body.as_ref().unwrap();
+                let mut layouts = self.layouts.lock().unwrap();
+                let layout = layouts
+                    .iter_mut()
+                    .find(|item| item["sl_page_id"].as_str() == page_id)
+                    .unwrap();
+                let widget_count = layout["widgets"].as_array().unwrap().len();
+                let widget = serde_json::json!({
+                    "widget_id": body.get("widget_id").cloned().unwrap_or_else(|| serde_json::json!(format!("widget-{}", widget_count + 1))),
+                    "type": body["type"],
+                    "title": body.get("title").cloned().unwrap_or_else(|| serde_json::json!("")),
+                    "order": body.get("order").cloned().unwrap_or_else(|| serde_json::json!(widget_count + 1)),
+                    "config": body.get("config").cloned().unwrap_or_else(|| serde_json::json!({})),
+                    "style": body.get("style").cloned().unwrap_or_else(|| serde_json::json!({}))
+                });
+                layout["widgets"].as_array_mut().unwrap().push(widget);
+                layout["sl_schema"] = serde_json::json!(
+                    serde_json::json!({"widgets": layout["widgets"].clone()}).to_string()
+                );
+                serde_json::json!({"data": layout.clone(), "meta": {}})
+            }
+            "adminUpdateWidget" => {
+                let page_id = input.path.get("page_id").map(String::as_str);
+                let widget_id = input.path.get("widget_id").map(String::as_str);
+                let body = input.body.as_ref().unwrap();
+                let mut layouts = self.layouts.lock().unwrap();
+                let layout = layouts
+                    .iter_mut()
+                    .find(|item| item["sl_page_id"].as_str() == page_id)
+                    .unwrap();
+                let widget = layout["widgets"]
+                    .as_array_mut()
+                    .unwrap()
+                    .iter_mut()
+                    .find(|item| item["widget_id"].as_str() == widget_id)
+                    .unwrap();
+                for (name, value) in body.as_object().unwrap() {
+                    widget[name] = value.clone();
+                }
+                layout["sl_schema"] = serde_json::json!(
+                    serde_json::json!({"widgets": layout["widgets"].clone()}).to_string()
+                );
+                serde_json::json!({"data": layout.clone(), "meta": {}})
+            }
+            "adminDeleteWidget" => {
+                let page_id = input.path.get("page_id").map(String::as_str);
+                let widget_id = input.path.get("widget_id").map(String::as_str);
+                let mut layouts = self.layouts.lock().unwrap();
+                let layout = layouts
+                    .iter_mut()
+                    .find(|item| item["sl_page_id"].as_str() == page_id)
+                    .unwrap();
+                layout["widgets"]
+                    .as_array_mut()
+                    .unwrap()
+                    .retain(|item| item["widget_id"].as_str() != widget_id);
+                layout["sl_schema"] = serde_json::json!(
+                    serde_json::json!({"widgets": layout["widgets"].clone()}).to_string()
+                );
+                serde_json::json!({"data": layout.clone(), "meta": {}})
+            }
+            "adminReorderWidgetCollection" | "adminReorderWidget" => {
+                let page_id = input.path.get("page_id").map(String::as_str);
+                let widget_ids = input.body.as_ref().unwrap()["widget_ids"]
+                    .as_array()
+                    .unwrap();
+                let mut layouts = self.layouts.lock().unwrap();
+                let layout = layouts
+                    .iter_mut()
+                    .find(|item| item["sl_page_id"].as_str() == page_id)
+                    .unwrap();
+                let widgets = layout["widgets"].as_array().unwrap().clone();
+                let mut ordered = Vec::new();
+                for (index, widget_id) in widget_ids.iter().enumerate() {
+                    let mut widget = widgets
+                        .iter()
+                        .find(|item| item["widget_id"] == *widget_id)
+                        .cloned()
+                        .unwrap();
+                    widget["order"] = serde_json::json!(index + 1);
+                    ordered.push(widget);
+                }
+                layout["widgets"] = serde_json::json!(ordered);
+                layout["sl_schema"] = serde_json::json!(
+                    serde_json::json!({"widgets": layout["widgets"].clone()}).to_string()
+                );
+                serde_json::json!({"data": layout.clone(), "meta": {}})
             }
             "adminListBoardGroups" | "adminLegacyListGroups" => serde_json::json!({
                 "data": self.groups.lock().unwrap().clone(),

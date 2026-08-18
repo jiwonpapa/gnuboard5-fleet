@@ -773,6 +773,62 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/layouts",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_layout_list"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/layouts/{page_id}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_layout_detail"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/layouts/{page_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_layout_save"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/layouts/{page_id}/widgets",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_layout_widget_add"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/sites/{site_id}/admin/layouts/{page_id}/widgets",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_layout_widget_reorder"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/sites/{site_id}/admin/layouts/{page_id}/widgets/{widget_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_layout_widget_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/layouts/{page_id}/widgets/{widget_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_layout_widget_delete"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/sites/{site_id}/admin/layouts/{page_id}/reorder",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_layout_widget_reorder_legacy"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/config/basic",
       "auth": "session",
       "site_context": true,

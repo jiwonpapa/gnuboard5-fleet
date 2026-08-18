@@ -6,6 +6,7 @@ pub mod boards;
 pub mod contents;
 pub mod faqs;
 pub mod groups;
+pub mod layouts;
 pub mod members;
 pub mod menus;
 pub mod permissions;

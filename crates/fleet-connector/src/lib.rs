@@ -29,6 +29,11 @@ pub use g5_fleet_core::groups::{
     AdminBoardGroupMemberCreate, AdminBoardGroupMemberList, AdminBoardGroupMemberListQuery,
     AdminBoardGroupMemberResult, AdminBoardGroupUpdate, valid_group_id,
 };
+pub use g5_fleet_core::layouts::{
+    AdminLayoutDetail, AdminLayoutList, AdminLayoutListQuery, AdminLayoutSave, AdminLayoutWidget,
+    AdminLayoutWidgetCreate, AdminLayoutWidgetReorder, AdminLayoutWidgetUpdate,
+    valid_layout_page_id, valid_widget_id,
+};
 pub use g5_fleet_core::members::{
     AdminMember, AdminMemberLevelUpdate, AdminMemberList, AdminMemberListQuery,
     AdminMemberMediaDeleteResult, AdminMemberMediaUpload, AdminMemberMediaUploadResult,
@@ -1916,6 +1921,215 @@ pub trait ConnectorGateway: Send + Sync {
         )
         .await
     }
+
+    async fn admin_list_layouts(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminLayoutListQuery,
+    ) -> ConnectorResult<AdminLayoutList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let mut core_query = BTreeMap::new();
+        if let Some(page) = query.page {
+            core_query.insert("page".to_owned(), json!(page));
+        }
+        if let Some(per_page) = query.per_page {
+            core_query.insert("per_page".to_owned(), json!(per_page));
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListLayouts",
+                &CoreExecuteRequest {
+                    query: core_query,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<g5_fleet_core::layouts::AdminLayoutSummary> =
+            typed_core_envelope("adminListLayouts", response)?;
+        Ok(AdminLayoutList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_get_layout(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        page_id: &str,
+    ) -> ConnectorResult<AdminLayoutDetail> {
+        layout_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminGetLayout",
+            page_id,
+            CoreExecuteRequest::default(),
+        )
+        .await
+    }
+
+    async fn admin_save_layout(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        page_id: &str,
+        save: &AdminLayoutSave,
+    ) -> ConnectorResult<AdminLayoutDetail> {
+        if !save.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        layout_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminSaveLayout",
+            page_id,
+            CoreExecuteRequest {
+                body: Some(serde_json::to_value(save).map_err(|_| ConnectorError::Contract)?),
+                ..Default::default()
+            },
+        )
+        .await
+    }
+
+    async fn admin_add_layout_widget(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        page_id: &str,
+        create: &AdminLayoutWidgetCreate,
+    ) -> ConnectorResult<AdminLayoutDetail> {
+        if !create.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        layout_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminAddWidget",
+            page_id,
+            CoreExecuteRequest {
+                body: Some(serde_json::to_value(create).map_err(|_| ConnectorError::Contract)?),
+                ..Default::default()
+            },
+        )
+        .await
+    }
+
+    async fn admin_update_layout_widget(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        page_id: &str,
+        widget_id: &str,
+        update: &AdminLayoutWidgetUpdate,
+    ) -> ConnectorResult<AdminLayoutDetail> {
+        if !update.is_valid() || !valid_widget_id(widget_id) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let mut input = CoreExecuteRequest {
+            body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+            ..Default::default()
+        };
+        input
+            .path
+            .insert("widget_id".to_owned(), widget_id.to_owned());
+        layout_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminUpdateWidget",
+            page_id,
+            input,
+        )
+        .await
+    }
+
+    async fn admin_delete_layout_widget(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        page_id: &str,
+        widget_id: &str,
+    ) -> ConnectorResult<AdminLayoutDetail> {
+        if !valid_widget_id(widget_id) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let mut input = CoreExecuteRequest {
+            confirm_destructive: true,
+            ..Default::default()
+        };
+        input
+            .path
+            .insert("widget_id".to_owned(), widget_id.to_owned());
+        layout_detail_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminDeleteWidget",
+            page_id,
+            input,
+        )
+        .await
+    }
+
+    async fn admin_reorder_layout_widgets(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        page_id: &str,
+        reorder: &AdminLayoutWidgetReorder,
+    ) -> ConnectorResult<AdminLayoutDetail> {
+        layout_reorder_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminReorderWidgetCollection",
+            page_id,
+            reorder,
+        )
+        .await
+    }
+
+    async fn admin_reorder_layout_widgets_legacy(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        page_id: &str,
+        reorder: &AdminLayoutWidgetReorder,
+    ) -> ConnectorResult<AdminLayoutDetail> {
+        layout_reorder_operation(
+            self,
+            base_url,
+            request_id,
+            access_token,
+            "adminReorderWidget",
+            page_id,
+            reorder,
+        )
+        .await
+    }
 }
 
 #[derive(Deserialize)]
@@ -2044,6 +2258,52 @@ async fn menu_reorder_operation<T: ConnectorGateway + ?Sized>(
         )
         .await?;
     typed_core_data(operation_id, response)
+}
+
+async fn layout_detail_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    page_id: &str,
+    mut input: CoreExecuteRequest,
+) -> ConnectorResult<AdminLayoutDetail> {
+    if !valid_layout_page_id(page_id) {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    input.path.insert("page_id".to_owned(), page_id.to_owned());
+    let response = gateway
+        .core_execute(base_url, request_id, access_token, operation_id, &input)
+        .await?;
+    typed_core_data(operation_id, response)
+}
+
+async fn layout_reorder_operation<T: ConnectorGateway + ?Sized>(
+    gateway: &T,
+    base_url: &str,
+    request_id: &str,
+    access_token: &str,
+    operation_id: &str,
+    page_id: &str,
+    reorder: &AdminLayoutWidgetReorder,
+) -> ConnectorResult<AdminLayoutDetail> {
+    if !reorder.is_valid() {
+        return Err(ConnectorError::InvalidCoreRequest);
+    }
+    layout_detail_operation(
+        gateway,
+        base_url,
+        request_id,
+        access_token,
+        operation_id,
+        page_id,
+        CoreExecuteRequest {
+            body: Some(serde_json::to_value(reorder).map_err(|_| ConnectorError::Contract)?),
+            ..Default::default()
+        },
+    )
+    .await
 }
 
 async fn board_group_list_operation<T: ConnectorGateway + ?Sized>(

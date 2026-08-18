@@ -28,15 +28,17 @@ use g5_fleet_connector::{
     AdminContentList, AdminContentListQuery, AdminContentUpdate, AdminDashboardData,
     AdminFaqCreate, AdminFaqImage, AdminFaqImageUpload, AdminFaqItem, AdminFaqList,
     AdminFaqListQuery, AdminFaqMasterCreate, AdminFaqMasterDetail, AdminFaqMasterList,
-    AdminFaqMasterListQuery, AdminFaqMasterUpdate, AdminFaqUpdate, AdminMember,
-    AdminMemberLevelUpdate, AdminMemberList, AdminMemberListQuery, AdminMemberMediaDeleteResult,
-    AdminMemberMediaUpload, AdminMemberMediaUploadResult, AdminMemberUpdate, AdminMenu,
-    AdminMenuCreate, AdminMenuList, AdminMenuReorder, AdminMenuReorderResult, AdminMenuUpdate,
-    AdminNewPostsDelete, AdminNewPostsDeleteResult, AdminSchemaCatalog, AdminSchemaDetail,
-    AdminSystemPermission, AdminSystemPermissionList, AdminSystemPermissionListQuery,
-    AdminSystemPermissionSave, BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth,
-    ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, MemberProfile,
-    SiteOverview, core_operation, core_operations,
+    AdminFaqMasterListQuery, AdminFaqMasterUpdate, AdminFaqUpdate, AdminLayoutDetail,
+    AdminLayoutList, AdminLayoutListQuery, AdminLayoutSave, AdminLayoutWidgetCreate,
+    AdminLayoutWidgetReorder, AdminLayoutWidgetUpdate, AdminMember, AdminMemberLevelUpdate,
+    AdminMemberList, AdminMemberListQuery, AdminMemberMediaDeleteResult, AdminMemberMediaUpload,
+    AdminMemberMediaUploadResult, AdminMemberUpdate, AdminMenu, AdminMenuCreate, AdminMenuList,
+    AdminMenuReorder, AdminMenuReorderResult, AdminMenuUpdate, AdminNewPostsDelete,
+    AdminNewPostsDeleteResult, AdminSchemaCatalog, AdminSchemaDetail, AdminSystemPermission,
+    AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
+    BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin,
+    CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview,
+    core_operation, core_operations,
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
@@ -482,6 +484,23 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/menus/reorder",
             axum::routing::patch(admin_menu_reorder_legacy),
+        )
+        .route("/sites/{site_id}/admin/layouts", get(admin_layout_list))
+        .route(
+            "/sites/{site_id}/admin/layouts/{page_id}",
+            get(admin_layout_get).put(admin_layout_save),
+        )
+        .route(
+            "/sites/{site_id}/admin/layouts/{page_id}/widgets",
+            post(admin_layout_widget_add).patch(admin_layout_widget_reorder),
+        )
+        .route(
+            "/sites/{site_id}/admin/layouts/{page_id}/widgets/{widget_id}",
+            axum::routing::patch(admin_layout_widget_update).delete(admin_layout_widget_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/layouts/{page_id}/reorder",
+            axum::routing::patch(admin_layout_widget_reorder_legacy),
         )
         .route(
             "/sites/{site_id}/config/basic",
@@ -3388,6 +3407,274 @@ async fn menu_reorder(
     };
     match result {
         Ok(value) => Json::<AdminMenuReorderResult>(value).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_layout_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Query(query): Query<AdminLayoutListQuery>,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_list_layouts(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(layouts) => Json::<AdminLayoutList>(layouts).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_layout_get(
+    State(state): State<AppState>,
+    Path((site_id, page_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_get_layout(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &page_id,
+        )
+        .await
+    {
+        Ok(layout) => Json::<AdminLayoutDetail>(layout).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_layout_save(
+    State(state): State<AppState>,
+    Path((site_id, page_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(save): Json<AdminLayoutSave>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_save_layout(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &page_id,
+            &save,
+        )
+        .await
+    {
+        Ok(layout) => Json::<AdminLayoutDetail>(layout).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_layout_widget_add(
+    State(state): State<AppState>,
+    Path((site_id, page_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(create): Json<AdminLayoutWidgetCreate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_add_layout_widget(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &page_id,
+            &create,
+        )
+        .await
+    {
+        Ok(layout) => (StatusCode::CREATED, Json::<AdminLayoutDetail>(layout)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_layout_widget_update(
+    State(state): State<AppState>,
+    Path((site_id, page_id, widget_id)): Path<(String, String, String)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminLayoutWidgetUpdate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_update_layout_widget(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &page_id,
+            &widget_id,
+            &update,
+        )
+        .await
+    {
+        Ok(layout) => Json::<AdminLayoutDetail>(layout).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_layout_widget_delete(
+    State(state): State<AppState>,
+    Path((site_id, page_id, widget_id)): Path<(String, String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_delete_layout_widget(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &page_id,
+            &widget_id,
+        )
+        .await
+    {
+        Ok(layout) => Json::<AdminLayoutDetail>(layout).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_layout_widget_reorder(
+    State(state): State<AppState>,
+    Path((site_id, page_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(reorder): Json<AdminLayoutWidgetReorder>,
+) -> Response {
+    layout_widget_reorder(state, headers, site_id, page_id, reorder, false).await
+}
+
+async fn admin_layout_widget_reorder_legacy(
+    State(state): State<AppState>,
+    Path((site_id, page_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(reorder): Json<AdminLayoutWidgetReorder>,
+) -> Response {
+    layout_widget_reorder(state, headers, site_id, page_id, reorder, true).await
+}
+
+async fn layout_widget_reorder(
+    state: AppState,
+    headers: HeaderMap,
+    site_id: String,
+    page_id: String,
+    reorder: AdminLayoutWidgetReorder,
+    legacy: bool,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = if legacy {
+        state
+            .config
+            .connector
+            .admin_reorder_layout_widgets_legacy(
+                &site.base_url,
+                &context.request_id,
+                &credentials.access_token,
+                &page_id,
+                &reorder,
+            )
+            .await
+    } else {
+        state
+            .config
+            .connector
+            .admin_reorder_layout_widgets(
+                &site.base_url,
+                &context.request_id,
+                &credentials.access_token,
+                &page_id,
+                &reorder,
+            )
+            .await
+    };
+    match result {
+        Ok(layout) => Json::<AdminLayoutDetail>(layout).into_response(),
         Err(error) => connector_error(error),
     }
 }
