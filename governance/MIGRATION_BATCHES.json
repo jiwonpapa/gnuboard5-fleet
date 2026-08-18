@@ -733,7 +733,12 @@
       "depends_on": ["R18"],
       "core": {
         "domains": ["theme"],
-        "operation_ids": [],
+        "operation_ids": [
+          "adminSystemGetTheme",
+          "adminSystemUpdateTheme",
+          "adminSystemListThemes",
+          "adminSystemDetailTheme"
+        ],
         "expected_count": 4
       },
       "legacy": {

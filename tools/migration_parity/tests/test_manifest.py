@@ -110,6 +110,10 @@ class ManifestTest(unittest.TestCase):
                 "adminDeleteWidget",
                 "adminReorderWidgetCollection",
                 "adminReorderWidget",
+                "adminSystemGetTheme",
+                "adminSystemUpdateTheme",
+                "adminSystemListThemes",
+                "adminSystemDetailTheme",
             },
             {
                 mapping["operation_id"]

@@ -36,5 +36,5 @@ class InventoryTest(unittest.TestCase):
         self.assertEqual(142, len(inventory.categories["server_routes"]))
         self.assertEqual(189, len(inventory.categories["core_operations"]))
         self.assertEqual(7, len(inventory.categories["active_workspace_members"]))
-        self.assertEqual(50, len(inventory.categories["web_tests"]))
+        self.assertEqual(52, len(inventory.categories["web_tests"]))
         self.assertGreaterEqual(len(inventory.categories["rust_tests"]), 52)
