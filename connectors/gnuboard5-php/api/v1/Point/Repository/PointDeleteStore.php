@@ -20,7 +20,6 @@ use Throwable;
 final class PointDeleteStore extends PointRepositorySupport
 {
     public function __construct(
-        private readonly PointQueryRepository $queryRepository,
         ?QueryBuilder $qb = null,
         ?TableRegistry $tables = null
     ) {
@@ -69,7 +68,13 @@ final class PointDeleteStore extends PointRepositorySupport
                         ]
                     );
 
-                    $sum = $this->queryRepository->sumMemberPoints($normalizedMemberId);
+                    $sumRow = $this->fetchAssociative(
+                        "SELECT COALESCE(SUM(po_point), 0) AS sum_point
+                         FROM {$pointTable}
+                         WHERE mb_id = :mb_id",
+                        ['mb_id' => $normalizedMemberId]
+                    );
+                    $sum = (int)($sumRow['sum_point'] ?? 0);
                     $this->executeStatement(
                         "UPDATE {$memberTable}
                          SET mb_point = :mb_point

@@ -1092,8 +1092,16 @@ def main() -> int:
         raise RuntimeError("R20 point baseline summary failed")
     baseline_point_total = baseline_point_summary.get("total_point")
     baseline_point_rows = baseline_point_summary.get("total_rows")
+    baseline_member_point = request(
+        fleet_base,
+        "GET",
+        member_path,
+        headers=fleet_headers(admin_cookie),
+    ).json().get("mb_point")
     if not isinstance(baseline_point_total, int) or not isinstance(baseline_point_rows, int):
         raise RuntimeError("R20 point baseline summary types are invalid")
+    if not isinstance(baseline_member_point, int):
+        raise RuntimeError("R20 member point baseline type is invalid")
     baseline_point_list = request(
         fleet_base,
         "GET",
@@ -1168,6 +1176,14 @@ def main() -> int:
         or changed_point_summary.get("total_rows") != baseline_point_rows + 3
     ):
         raise RuntimeError("R20 point summary mutation readback failed")
+    changed_member_point = request(
+        fleet_base,
+        "GET",
+        member_path,
+        headers=fleet_headers(admin_cookie),
+    ).json().get("mb_point")
+    if changed_member_point != baseline_member_point + 47:
+        raise RuntimeError("R20 member balance mutation readback failed")
 
     safe_expiration = request(
         fleet_base,
@@ -1206,6 +1222,14 @@ def main() -> int:
         or restored_point_summary.get("total_rows") != baseline_point_rows
     ):
         raise RuntimeError("R20 point cleanup summary readback failed")
+    restored_member_point = request(
+        fleet_base,
+        "GET",
+        member_path,
+        headers=fleet_headers(admin_cookie),
+    ).json().get("mb_point")
+    if restored_member_point != baseline_member_point:
+        raise RuntimeError("R20 member balance cleanup readback failed")
     restored_point_list = request(
         fleet_base,
         "GET",
@@ -1497,6 +1521,7 @@ def main() -> int:
             "zero_effect_expiration_1970_01_01": "passed",
             "created_rows_deleted": 3,
             "list_summary_rollback": "passed",
+            "member_balance_rollback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,

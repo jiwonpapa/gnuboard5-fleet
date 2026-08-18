@@ -96,6 +96,34 @@ final class PointRepositoryTest extends TestCase
         $repository->syncTotal('user1');
     }
 
+    public function testDeleteRecalculatesMemberTotalInsideTheMutationTransaction(): void
+    {
+        $qb = $this->createMock(QueryBuilder::class);
+        $qb->expects($this->exactly(4))
+            ->method('executeQuery')
+            ->willReturnOnConsecutiveCalls(
+                $this->createResult(['lock_state' => 1]),
+                $this->createResult(['po_id' => 9]),
+                $this->createResult(['sum_point' => 31]),
+                $this->createResult(['released' => 1])
+            );
+        $qb->expects($this->once())->method('beginTransaction');
+        $qb->expects($this->exactly(2))
+            ->method('executeStatement')
+            ->willReturnCallback(static function (string $sql, array $params): int {
+                if (str_contains($sql, 'UPDATE g5_member')) {
+                    self::assertSame(['mb_id' => 'user1', 'mb_point' => 31], $params);
+                }
+
+                return 1;
+            });
+        $qb->expects($this->once())->method('commit');
+        $qb->expects($this->never())->method('rollback');
+
+        $repository = $this->createRepository($qb);
+        $repository->deleteById(9, 'user1');
+    }
+
     /**
      * @param array<string, mixed>|false $assoc
      * @param array<int, array<string, mixed>> $all

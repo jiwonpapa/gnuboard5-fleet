@@ -25,7 +25,7 @@ final class PointMutationRepository
         ?TableRegistry $tables = null
     ) {
         $this->grantStore = new PointGrantStore($queryRepository, $qb, $tables);
-        $this->deleteStore = new PointDeleteStore($queryRepository, $qb, $tables);
+        $this->deleteStore = new PointDeleteStore($qb, $tables);
     }
 
     public function grant(
