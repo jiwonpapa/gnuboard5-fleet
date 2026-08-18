@@ -1,0 +1,112 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R16",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "3ed384571e2198d2c2cffe5c34a6fb81beed0f34",
+  "verified_remote": {"ref": "origin/main", "commit": "3ed384571e2198d2c2cffe5c34a6fb81beed0f34"},
+  "generated_at": "2026-08-18T01:59:17Z",
+  "commands": [
+    "make active-check",
+    "make audit-runtime-prepare",
+    "make audit-server-static",
+    "make check-batch BATCH=R16",
+    "python3 -m tools.migration_parity.batch_cli --batch R15 --profile static",
+    "python3 tools/certification/local_runtime_smoke.py",
+    "python3 tools/certification/write_browser_evidence.py --admin-screenshot output/playwright/r16-faqs-desktop.png --peer-screenshot output/playwright/r16-faqs-mobile.png --trace .playwright-cli/traces/trace-1787017671269.trace --local-runtime .cache/evidence/local-runtime.json",
+    "python3 -m tools.migration_parity.batch_cli --batch R17 --profile static",
+    "playwright-cli --session g5-r16-browser resize 1280 900",
+    "playwright-cli --session g5-r16-browser resize 390 844"
+  ],
+  "results": {
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {"passed": 64, "failed": 0, "ignored": 1},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 46,
+      "web_tests": {"passed": 85, "failed": 0},
+      "web_build": "PASS"
+    },
+    "migration_harness_tests": {"passed": 26, "failed": 0},
+    "audit_harness_tests": {"passed": 22, "failed": 0},
+    "server_static": {"status": "PASS", "proof_level": "SERVER_STATIC_PASS", "checks": {"passed": 35, "failed": 0}},
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "36aa324e402c74dfe10c4dc6b4b8d0adf0ad3de1",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "4b41b50b41c3a47883ede7bec9710eeeafb786311ddce0e409b73c64d48eec8c",
+      "otp_install_login_step_up": "PASS",
+      "faq_operations": 14,
+      "master_crud_readback": "PASS",
+      "item_crud_readback": "PASS",
+      "empty_pc_mobile_html_preserved": "PASS",
+      "header_footer_image_upload_delete": "PASS",
+      "faq_cleanup_readback": "PASS",
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "PASS",
+      "revision": "36aa324e402c74dfe10c4dc6b4b8d0adf0ad3de1",
+      "install_otp_site_connector_login": "PASS",
+      "recent_identity_step_up": "PASS",
+      "master_create_update_delete_readback": "PASS",
+      "item_create_update_delete_readback": "PASS",
+      "empty_mobile_tail_preserved": "PASS",
+      "authenticated_image_proxy": "200 image/png",
+      "image_upload_delete_readback": "PASS",
+      "cleanup_default_master_only": "PASS",
+      "console_errors": 0,
+      "desktop_responsive": "PASS",
+      "mobile_390x844": "PASS",
+      "screenshots": [
+        {"path": "output/playwright/r16-faqs-desktop.png", "sha256": "9d5a0540868145cae21ef48027f18990b5bc784ed8ab4504ed50b8c8e15afc59"},
+        {"path": "output/playwright/r16-faqs-mobile.png", "sha256": "bb9d5de9f1de03065989d08daac96c82af605403ef8d2729019d6bef2833b955"}
+      ]
+    },
+    "typed_operation_consumption": {
+      "operations": [
+        "adminListFaqs", "adminCreateFaq", "adminGetFaq", "adminUpdateFaq", "adminDeleteFaq",
+        "adminListFaqMasters", "adminCreateFaqMaster", "adminGetFaqMaster", "adminUpdateFaqMaster", "adminDeleteFaqMaster",
+        "adminUploadFaqMasterHeaderImage", "adminDeleteFaqMasterHeaderImage",
+        "adminUploadFaqMasterFooterImage", "adminDeleteFaqMasterFooterImage"
+      ],
+      "new_site_scoped_axum_routes": 15,
+      "browser_same_origin_transport": "PASS",
+      "save_delete_readback": "PASS",
+      "destructive_confirmation": "PASS",
+      "csrf_and_step_up_write_guard": "PASS",
+      "authenticated_image_proxy": "PASS",
+      "browser_g5_secret_exposure": "NONE"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 123, "added_r16_routes": 15},
+    "predecessor_regression": {"batch": "R15", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 17, "core_operations": 14, "required_capabilities": 0},
+    "reuse": {"reused": 0, "adapted": 17, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "ownership": {
+      "legacy": {"owned": 510, "total": 510},
+      "core_operations": {"owned": 189, "total": 189},
+      "required_capabilities": {"owned": 13, "total": 13}
+    },
+    "global_migration": {"status": "FAIL", "findings": 305},
+    "next_batch_probe": {
+      "batch": "R17",
+      "status": "FAIL",
+      "scope": {"legacy": 10, "core_operations": 7, "required_capabilities": 0},
+      "findings": 17
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "ca6f7c1571dc98cc00ec7aea0afe6ea094868616af9f405adf0bd58b76e92330",
+    "migration_batches_before_closeout": "63908c58efb2df9a9d77c773b3e6742854cb0041ddf72c61ad1eea180c97437c"
+  },
+  "source_reports": [
+    {"path": "output/audit/runs/20260818T015550Z-02242662cbe9/result.json", "sha256": "620322a907ac7ed87e1d8e94abee95ffe378269e6ad64781a7650602ea2397eb"},
+    {"path": "output/audit/runs/migration-batch-R16-20260818T015751Z-61a5f476/result.json", "sha256": "b0fa991c9a3f5e9642ee19b89af352f55131c6af0dc6a6c313d0f222e627cb62"},
+    {"path": "output/audit/runs/migration-batch-R15-20260818T015752Z-5fce0962/result.json", "sha256": "f35116eae603a781aee92c696daae9dd9f3644ce39afdf6ec3841eb59dd863e9"},
+    {"path": "output/audit/runs/migration-batch-R17-20260818T015752Z-d230c253/result.json", "sha256": "6a1538a488d21eff7a525cdfe1012cd389a747fc97cc63c0ee02b61a3247228a"}
+  ],
+  "claim_limit": "R16 FAQ 14-operation typed DTO, Connector, explicit site_id Axum routes, authenticated image proxy, same-origin responsive React workflow, official G5 5.6.32 local runtime and browser readback only. Product runtime evidence is bound to 36aa324; 3ed3845 changes only the audit route contract. This is not package, staging or live certification; global migration remains FAIL with 305 findings."
+}

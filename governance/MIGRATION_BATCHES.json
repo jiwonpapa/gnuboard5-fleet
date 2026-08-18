@@ -583,8 +583,13 @@
       "id": "R16",
       "sequence": 11,
       "title": "faq-masters·faqs",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R15"],
+      "completion": {
+        "implementation_commit": "3ed384571e2198d2c2cffe5c34a6fb81beed0f34",
+        "evidence_path": "docs/audits/evidence/R16_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-18T01:59:17Z"
+      },
       "core": {
         "domains": ["faq-masters", "faqs"],
         "operation_ids": [
@@ -631,7 +636,7 @@
       "id": "R17",
       "sequence": 12,
       "title": "menus",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R16"],
       "core": {
         "domains": ["menus"],
