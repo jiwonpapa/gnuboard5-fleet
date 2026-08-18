@@ -877,6 +877,112 @@ def main() -> int:
     if any(row.get("me_id") == menu_id for row in menu_cleanup.get("items", [])):
         raise RuntimeError("R17 menu cleanup readback failed")
 
+    layouts_path = "/api/v1/sites/owner-a-site/admin/layouts"
+    initial_layouts = request(
+        fleet_base,
+        "GET",
+        f"{layouts_path}?page=1&per_page=20",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if not isinstance(initial_layouts.get("items"), list):
+        raise RuntimeError("R18 layout list failed")
+    layout_page_id = "fleet-certification"
+    layout_path = f"{layouts_path}/{layout_page_id}"
+    saved_layout = request(
+        fleet_base,
+        "PUT",
+        layout_path,
+        body={
+            "title": "Fleet certification layout",
+            "widgets": [
+                {
+                    "widget_id": "fleet_one",
+                    "type": "latest_posts",
+                    "title": "Latest",
+                    "order": 1,
+                    "config": {},
+                    "style": {},
+                }
+            ],
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if saved_layout.get("sl_page_id") != layout_page_id:
+        raise RuntimeError("R18 layout save failed")
+    layout_detail = request(
+        fleet_base,
+        "GET",
+        layout_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    layout_schema = json.loads(layout_detail.get("sl_schema", "{}"))
+    if layout_schema.get("widgets", [{}])[0].get("widget_id") != "fleet_one":
+        raise RuntimeError("R18 layout detail failed")
+    added_widget_layout = request(
+        fleet_base,
+        "POST",
+        f"{layout_path}/widgets",
+        body={
+            "widget_id": "fleet_two",
+            "type": "notice_banner",
+            "title": "Notice",
+            "order": 2,
+            "config": {},
+            "style": {},
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(201,),
+    ).json()
+    if "fleet_two" not in added_widget_layout.get("sl_schema", ""):
+        raise RuntimeError("R18 layout widget add failed")
+    updated_widget_layout = request(
+        fleet_base,
+        "PATCH",
+        f"{layout_path}/widgets/fleet_two",
+        body={"title": "Notice updated"},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if "Notice updated" not in updated_widget_layout.get("sl_schema", ""):
+        raise RuntimeError("R18 layout widget update failed")
+    canonical_layout_reorder = request(
+        fleet_base,
+        "PATCH",
+        f"{layout_path}/widgets",
+        body={"widget_ids": ["fleet_two", "fleet_one"]},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    canonical_schema = json.loads(canonical_layout_reorder.get("sl_schema", "{}"))
+    if canonical_schema.get("widgets", [{}])[0].get("widget_id") != "fleet_two":
+        raise RuntimeError("R18 canonical layout reorder failed")
+    legacy_layout_reorder = request(
+        fleet_base,
+        "PATCH",
+        f"{layout_path}/reorder",
+        body={"widget_ids": ["fleet_one", "fleet_two"]},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    legacy_schema = json.loads(legacy_layout_reorder.get("sl_schema", "{}"))
+    if legacy_schema.get("widgets", [{}])[0].get("widget_id") != "fleet_one":
+        raise RuntimeError("R18 legacy layout reorder failed")
+    deleted_widget_layout = request(
+        fleet_base,
+        "DELETE",
+        f"{layout_path}/widgets/fleet_two",
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if "fleet_two" in deleted_widget_layout.get("sl_schema", ""):
+        raise RuntimeError("R18 layout widget delete failed")
+    reset_layout = request(
+        fleet_base,
+        "PUT",
+        layout_path,
+        body={"title": "Fleet certification layout", "widgets": []},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    reset_schema = json.loads(reset_layout.get("sl_schema", "{}"))
+    if reset_schema.get("widgets") != []:
+        raise RuntimeError("R18 layout widget cleanup readback failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -1128,6 +1234,15 @@ def main() -> int:
             "canonical_reorder_readback": "passed",
             "legacy_reorder_readback": "passed",
             "menu_cleanup_readback": "passed",
+        },
+        "r18_layouts": {
+            "operations": 8,
+            "list_detail": "passed",
+            "save_readback": "passed",
+            "widget_add_update_delete": "passed",
+            "canonical_reorder_readback": "passed",
+            "legacy_reorder_readback": "passed",
+            "widget_cleanup_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,
