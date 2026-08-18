@@ -166,6 +166,18 @@ compose exec -T db mariadb \
   --user=root --password="$db_root_value" g5cert <<'SQL'
 START TRANSACTION;
 UPDATE g5_config SET cf_use_member_icon = 1;
+CREATE TABLE IF NOT EXISTS g5_sdui_layout (
+  sl_id int(11) NOT NULL AUTO_INCREMENT,
+  sl_page_id varchar(50) NOT NULL,
+  sl_title varchar(255) NOT NULL,
+  sl_schema longtext NOT NULL,
+  sl_active tinyint(4) NOT NULL DEFAULT 1,
+  sl_datetime datetime NOT NULL,
+  sl_updated datetime NOT NULL,
+  PRIMARY KEY (sl_id),
+  UNIQUE KEY uk_page_id (sl_page_id),
+  KEY idx_active_updated (sl_active, sl_updated)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE TEMPORARY TABLE fleet_cert_member LIKE g5_member;
 INSERT INTO fleet_cert_member SELECT * FROM g5_member WHERE mb_id = 'admin';
 UPDATE fleet_cert_member
