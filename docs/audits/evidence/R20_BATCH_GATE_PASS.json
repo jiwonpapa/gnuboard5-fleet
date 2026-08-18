@@ -1,0 +1,150 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R20",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "f853f3b436f090dca4d8a648583ecd8189177f26",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "f853f3b436f090dca4d8a648583ecd8189177f26"
+  },
+  "generated_at": "2026-08-18T04:34:47Z",
+  "commands": [
+    "make active-check",
+    "make runtime-prepare",
+    "composer test (official G5 composed runtime)",
+    "make audit-runtime-prepare",
+    "make audit-server-static",
+    "make test-migration-parity test-audit",
+    "python3 -m tools.migration_parity.batch_cli --batch R20 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R19 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R21 --profile static",
+    "make certification-up",
+    "make certification-local-smoke",
+    "playwright-cli --session r20head resize 1440 1000",
+    "playwright-cli --session r20head resize 390 844"
+  ],
+  "results": {
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {"passed": 70, "failed": 0, "ignored": 1},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 54,
+      "web_tests": {"passed": 111, "failed": 0},
+      "web_build": "PASS"
+    },
+    "php_composed_runtime": {
+      "status": "PASS",
+      "official_g5_version": "5.6.32",
+      "tests": 875,
+      "assertions": 6727,
+      "failed": 0,
+      "skipped": 5
+    },
+    "migration_harness_tests": {"passed": 26, "failed": 0},
+    "audit_harness_tests": {"passed": 22, "failed": 0},
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "f853f3b436f090dca4d8a648583ecd8189177f26",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "9f98c2e1fcdcaab712e9ec2090bade1227825b239f1fdef243a085c9f8c382a6",
+      "otp_install_login_step_up": "PASS",
+      "point_operations": 7,
+      "canonical_grant": "PASS",
+      "legacy_grant_deduct": "PASS",
+      "list_summary_readback": "PASS",
+      "zero_effect_expiration_1970_01_01": "PASS",
+      "created_rows_deleted": 3,
+      "list_summary_rollback": "PASS",
+      "member_balance_rollback": "PASS",
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "PASS",
+      "server_runtime_revision": "f853f3b436f090dca4d8a648583ecd8189177f26",
+      "web_revision": "f853f3b436f090dca4d8a648583ecd8189177f26",
+      "login_and_recent_identity_step_up": "PASS",
+      "canonical_grant_readback": "PASS",
+      "ledger_and_member_balance_after_grant": "17/17",
+      "confirmation_gated_delete": "PASS",
+      "database_cleanup_member_ledger_rows": "0/0/0",
+      "console_errors": 0,
+      "desktop_1440x1000": "PASS",
+      "mobile_390x844": "PASS",
+      "screenshots": [
+        {
+          "path": "output/playwright/r20-points-desktop.png",
+          "sha256": "494d25c69c9f14688a758a042bc103b2fccea79952a19527518d999bfb2bb42e"
+        },
+        {
+          "path": "output/playwright/r20-points-mobile.png",
+          "sha256": "7363d5735f8020c1027cd41c7f11b989a39f88a999f67cdc93e6ce491d5dca4a"
+        }
+      ]
+    },
+    "typed_operation_consumption": {
+      "operations": [
+        "adminCreatePointAction",
+        "adminDeductPoint",
+        "adminDeletePoints",
+        "adminExpirePoints",
+        "adminGrantPoint",
+        "adminListPoints",
+        "adminPointSummary"
+      ],
+      "new_site_scoped_axum_routes": 7,
+      "browser_same_origin_transport": "PASS",
+      "list_summary_mutation_delete_readback": "PASS",
+      "csrf_and_step_up_write_guard": "PASS",
+      "point_delete_same_transaction_balance_recalculation": "PASS",
+      "browser_g5_secret_exposure": "NONE"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 149, "added_r20_routes": 7},
+    "predecessor_regression": {"batch": "R19", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 12, "core_operations": 7, "required_capabilities": 0},
+    "reuse": {"reused": 0, "adapted": 12, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "ownership": {
+      "legacy": {"owned": 510, "total": 510},
+      "core_operations": {"owned": 189, "total": 189},
+      "required_capabilities": {"owned": 13, "total": 13}
+    },
+    "global_migration": {"status": "FAIL", "findings": 240},
+    "next_batch_probe": {
+      "batch": "R21",
+      "status": "FAIL",
+      "scope": {"legacy": 13, "core_operations": 10, "required_capabilities": 0},
+      "findings": 23
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "ead537f1ac4850112db2626333a29b50645cf5b45c4bdf066639f704723e6c10",
+    "migration_batches_before_closeout": "bec7a4710d410d4928e15d2cf025849729308e55923d131083898544a498a0fc"
+  },
+  "source_reports": [
+    {
+      "path": "output/audit/runs/20260818T043256Z-eed80c5d145a/result.json",
+      "sha256": "f4cbc4327ce6175a5e3f2aca51007ea2f663deceb770cb5e6dedf1e54f1f44aa"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R20-20260818T043418Z-f0a75864/result.json",
+      "sha256": "b94c45d9fc2d716a4b66cf30c3084f16907812af6fa0e75cb510eb27568edfe4"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R19-20260818T043419Z-935edfb7/result.json",
+      "sha256": "0b943c5c7f90420901bb7d5e6fc4e54f8f3fffe4946986d0e6254f717b69c594"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R21-20260818T043423Z-bb0e236c/result.json",
+      "sha256": "1bc4f7ae4026c77371f7cef84086d442d026a8e2833a7f03fc06906df466cb33"
+    }
+  ],
+  "claim_limit": "R20 포인트 7-operation typed DTO, Connector, explicit site_id Axum routes, same-origin responsive React list·summary·grant·deduct·expire·confirmed delete workflow, official G5 5.6.32 local runtime and browser readback only. 포인트 삭제 후 원장과 회원 잔액은 동일 DB transaction에서 재계산되고 실제 DB 0/0/0 cleanup으로 확인했습니다. 이 증거는 package, staging 또는 live 인증이 아니며 전체 이관은 240 findings로 계속 FAIL입니다."
+}

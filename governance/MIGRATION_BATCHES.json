@@ -772,8 +772,13 @@
       "id": "R20",
       "sequence": 15,
       "title": "points",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R19"],
+      "completion": {
+        "implementation_commit": "f853f3b436f090dca4d8a648583ecd8189177f26",
+        "evidence_path": "docs/audits/evidence/R20_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-18T04:34:47Z"
+      },
       "core": {
         "domains": ["points"],
         "operation_ids": [
@@ -813,7 +818,7 @@
       "id": "R21",
       "sequence": 16,
       "title": "polls",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R20"],
       "core": {
         "domains": ["polls"],
