@@ -3607,14 +3607,51 @@ code {
   margin-top: 16px;
 }
 
+.polls-workspace {
+  grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
+}
+
+.poll-editor fieldset,
+.poll-choice-grid,
+.poll-number-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.poll-choice-grid,
+.poll-number-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.poll-toggle {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.poll-toggle input {
+  width: auto;
+}
+
+.poll-pagination {
+  margin-top: 16px;
+}
+
 @media (max-width: 960px) {
   .points-page .point-filter,
-  .points-workspace {
+  .points-workspace,
+  .polls-workspace {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 720px) {
+  .poll-choice-grid,
+  .poll-number-grid {
+    grid-template-columns: 1fr;
+  }
+
   .points-page .admin-table,
   .points-page .admin-table tbody {
     display: block;

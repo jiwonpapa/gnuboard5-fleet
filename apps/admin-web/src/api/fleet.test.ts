@@ -8,6 +8,8 @@ import {
   connectorRefresh,
   copyAdminBoard,
   createAdminPointAction,
+  createAdminLegacyPoll,
+  createAdminSystemPoll,
   createAdminBoard,
   createAdminBoardGroup,
   createAdminLegacyGroup,
@@ -18,6 +20,8 @@ import {
   deleteAdminLegacyGroup,
   deleteAdminLegacyGroupMember,
   deleteAdminPoints,
+  deleteAdminLegacyPoll,
+  deleteAdminSystemPoll,
   deleteAdminMember,
   deleteAdminMemberMedia,
   deleteAdminAuthByMember,
@@ -31,6 +35,8 @@ import {
   getAdminFieldSchema,
   getAdminMember,
   getAdminPointSummary,
+  getAdminLegacyPoll,
+  getAdminSystemPoll,
   getAdminLegacyGroup,
   getMyProfile,
   listAdminAuth,
@@ -40,6 +46,8 @@ import {
   listAdminFieldSchemas,
   listAdminMembers,
   listAdminPoints,
+  listAdminLegacyPolls,
+  listAdminSystemPolls,
   listAdminLegacyGroupMembers,
   listAdminLegacyGroups,
   listAdminSystemPermissions,
@@ -55,6 +63,8 @@ import {
   updateAdminLegacyGroup,
   updateAdminMember,
   updateAdminMemberLevel,
+  updateAdminLegacyPoll,
+  updateAdminSystemPoll,
   uploadAdminMemberMedia,
 } from "./fleet";
 
@@ -360,6 +370,48 @@ describe("remote Fleet transport", () => {
       ["http://localhost:3000/api/v1/sites/site-a/admin/points/deduct", "POST"],
       ["http://localhost:3000/api/v1/sites/site-a/admin/points/summary?mb_id=fleetcert", "GET"],
       ["http://localhost:3000/api/v1/sites/site-a/admin/points/expire", "POST"],
+    ]);
+    for (const [, init] of fetcher.mock.calls.filter(([, call]) => call?.method !== "GET")) {
+      expect(new Headers(init?.headers).get("x-csrf-token")).toBe("csrf-1");
+    }
+  });
+
+  it("consumes all ten R21 poll operations through explicit site scope", async () => {
+    const fetcher = vi.fn(async (
+      _input: RequestInfo | URL,
+      _init?: RequestInit,
+    ) => {
+      void _input;
+      void _init;
+      return new Response("{}", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    const create = { po_subject: "R21", po_poll1: "찬성", po_poll2: "반대" };
+    await listAdminSystemPolls("site-a", { page: 2, per_page: 20 });
+    await createAdminSystemPoll("site-a", create, "csrf-1");
+    await getAdminSystemPoll("site-a", 11);
+    await updateAdminSystemPoll("site-a", 11, { po_subject: "R21 수정" }, "csrf-1");
+    await deleteAdminSystemPoll("site-a", 11, "csrf-1");
+    await listAdminLegacyPolls("site-a", { page: 3 });
+    await createAdminLegacyPoll("site-a", { ...create, po_date: "2026-08-18" }, "csrf-1");
+    await getAdminLegacyPoll("site-a", 12);
+    await updateAdminLegacyPoll("site-a", 12, { po_use: 0 }, "csrf-1");
+    await deleteAdminLegacyPoll("site-a", 12, "csrf-1");
+
+    expect(fetcher.mock.calls.map(([input, init]) => [String(input), init?.method])).toEqual([
+      ["http://localhost:3000/api/v1/sites/site-a/admin/system/polls?page=2&per_page=20", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/system/polls", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/system/polls/11", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/system/polls/11", "PUT"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/system/polls/11", "DELETE"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/polls?page=3", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/polls", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/polls/12", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/polls/12", "PATCH"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/polls/12", "DELETE"],
     ]);
     for (const [, init] of fetcher.mock.calls.filter(([, call]) => call?.method !== "GET")) {
       expect(new Headers(init?.headers).get("x-csrf-token")).toBe("csrf-1");

@@ -699,6 +699,69 @@ export interface AdminThemeList {
   total: number;
 }
 
+export interface AdminPollSummary {
+  po_id: number;
+  po_subject: string;
+  po_date: string;
+  po_level: number;
+  po_point: number;
+  po_use: number;
+}
+
+export interface AdminPoll extends AdminPollSummary {
+  po_poll1: string;
+  po_poll2: string;
+  po_poll3: string;
+  po_poll4: string;
+  po_poll5: string;
+  po_poll6: string;
+  po_poll7: string;
+  po_poll8: string;
+  po_poll9: string;
+  po_cnt1: number;
+  po_cnt2: number;
+  po_cnt3: number;
+  po_cnt4: number;
+  po_cnt5: number;
+  po_cnt6: number;
+  po_cnt7: number;
+  po_cnt8: number;
+  po_cnt9: number;
+  po_etc: string;
+  po_ips: string;
+  mb_ids: string;
+}
+
+export interface AdminPollList {
+  items: AdminPollSummary[];
+  pagination: Pagination;
+}
+
+export interface AdminPollListQuery {
+  page?: number;
+  per_page?: number;
+}
+
+export interface AdminPollCreate {
+  po_subject: string;
+  po_poll1: string;
+  po_poll2: string;
+  po_poll3?: string;
+  po_poll4?: string;
+  po_poll5?: string;
+  po_poll6?: string;
+  po_poll7?: string;
+  po_poll8?: string;
+  po_poll9?: string;
+  po_etc?: string;
+  po_level?: number;
+  po_point?: number;
+  po_use?: number;
+  po_date?: string;
+}
+
+export type AdminPollUpdate = Partial<Omit<AdminPollCreate, "po_date">>;
+
 export interface AdminPointItem {
   po_id: number;
   mb_id: string;
@@ -1952,6 +2015,121 @@ export function getAdminTheme(siteId: string, theme: string) {
   return transport.request<AdminTheme>({
     method: "GET",
     path: `/sites/${encodeURIComponent(siteId)}/admin/themes/${encodeURIComponent(theme)}`,
+  });
+}
+
+function adminPollPath(siteId: string, system: boolean, poId?: number): `/${string}` {
+  const base = `/sites/${encodeURIComponent(siteId)}/admin/${system ? "system/" : ""}polls` as const;
+  return (poId === undefined ? base : `${base}/${poId}`) as `/${string}`;
+}
+
+function adminPollListPath(
+  siteId: string,
+  system: boolean,
+  query: AdminPollListQuery,
+) : `/${string}` {
+  const search = new URLSearchParams();
+  if (query.page !== undefined) search.set("page", String(query.page));
+  if (query.per_page !== undefined) search.set("per_page", String(query.per_page));
+  const suffix = search.size ? `?${search.toString()}` : "";
+  return `${adminPollPath(siteId, system)}${suffix}` as `/${string}`;
+}
+
+export function listAdminSystemPolls(siteId: string, query: AdminPollListQuery = {}) {
+  return transport.request<AdminPollList>({
+    method: "GET",
+    path: adminPollListPath(siteId, true, query),
+  });
+}
+
+export function createAdminSystemPoll(
+  siteId: string,
+  create: AdminPollCreate,
+  csrfToken: string,
+) {
+  return transport.request<AdminPoll, AdminPollCreate>({
+    method: "POST",
+    path: adminPollPath(siteId, true),
+    csrfToken,
+    body: create,
+  });
+}
+
+export function getAdminSystemPoll(siteId: string, poId: number) {
+  return transport.request<AdminPoll>({
+    method: "GET",
+    path: adminPollPath(siteId, true, poId),
+  });
+}
+
+export function updateAdminSystemPoll(
+  siteId: string,
+  poId: number,
+  update: AdminPollUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminPoll, AdminPollUpdate>({
+    method: "PUT",
+    path: adminPollPath(siteId, true, poId),
+    csrfToken,
+    body: update,
+  });
+}
+
+export function deleteAdminSystemPoll(siteId: string, poId: number, csrfToken: string) {
+  return transport.request<void>({
+    method: "DELETE",
+    path: adminPollPath(siteId, true, poId),
+    csrfToken,
+  });
+}
+
+export function listAdminLegacyPolls(siteId: string, query: AdminPollListQuery = {}) {
+  return transport.request<AdminPollList>({
+    method: "GET",
+    path: adminPollListPath(siteId, false, query),
+  });
+}
+
+export function createAdminLegacyPoll(
+  siteId: string,
+  create: AdminPollCreate,
+  csrfToken: string,
+) {
+  return transport.request<AdminPoll, AdminPollCreate>({
+    method: "POST",
+    path: adminPollPath(siteId, false),
+    csrfToken,
+    body: create,
+  });
+}
+
+export function getAdminLegacyPoll(siteId: string, poId: number) {
+  return transport.request<AdminPoll>({
+    method: "GET",
+    path: adminPollPath(siteId, false, poId),
+  });
+}
+
+export function updateAdminLegacyPoll(
+  siteId: string,
+  poId: number,
+  update: AdminPollUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminPoll, AdminPollUpdate>({
+    method: "PATCH",
+    path: adminPollPath(siteId, false, poId),
+    csrfToken,
+    body: update,
+  });
+}
+
+export function deleteAdminLegacyPoll(siteId: string, poId: number, csrfToken: string) {
+  return transport.request<void>({
+    method: "DELETE",
+    path: adminPollPath(siteId, false, poId),
+    csrfToken,
   });
 }
 

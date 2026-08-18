@@ -36,8 +36,12 @@ describe("adminRouteRegistry", () => {
       label: "포인트",
       delivery: "active",
     });
+    expect(resolveRouteMeta("/admin/polls")).toMatchObject({
+      label: "투표",
+      delivery: "active",
+    });
     expect(adminRoutes.filter((route) => route.delivery === "active")).toHaveLength(
-      13,
+      14,
     );
     expect(groupedAdminRoutes().get("메시징")?.length).toBeGreaterThanOrEqual(6);
   });
