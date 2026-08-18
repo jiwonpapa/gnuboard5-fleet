@@ -30,6 +30,9 @@ describe("admin layout form", () => {
       sl_updated: "2026-08-18 00:00:00",
     };
     expect(parseAdminLayoutSchema(detail.sl_schema)).toEqual([widget]);
+    expect(parseAdminLayoutSchema(JSON.stringify({
+      widgets: [{ ...widget, config: [], style: [] }],
+    }))).toEqual([{ ...widget, config: {} }]);
     expect(buildAdminLayoutSave(layoutToDraft(detail))).toEqual({
       title: "대시보드",
       widgets: [widget],

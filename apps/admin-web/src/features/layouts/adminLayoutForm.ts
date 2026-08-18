@@ -73,11 +73,41 @@ export function parseAdminLayoutSchema(schemaJson: string): AdminLayoutWidget[] 
   try {
     const parsed = JSON.parse(schemaJson) as { widgets?: unknown };
     return Array.isArray(parsed.widgets)
-      ? parsed.widgets.filter(isAdminLayoutWidget)
+      ? parsed.widgets.flatMap((widget) => {
+          const normalized = normalizeStoredWidget(widget);
+          return normalized ? [normalized] : [];
+        })
       : [];
   } catch {
     return [];
   }
+}
+
+function normalizeStoredWidget(value: unknown): AdminLayoutWidget | null {
+  if (!value || typeof value !== "object") return null;
+  const widget = value as Partial<AdminLayoutWidget>;
+  if (typeof widget.widget_id !== "string"
+    || !validSlug(widget.widget_id, 80)
+    || typeof widget.type !== "string"
+    || !ADMIN_LAYOUT_WIDGET_TYPES.includes(widget.type as AdminLayoutWidgetType)) {
+    return null;
+  }
+  const config = normalizeStoredObject(widget.config);
+  const style = normalizeStoredObject(widget.style);
+  if (!config || !style) return null;
+  return {
+    widget_id: widget.widget_id,
+    type: widget.type as AdminLayoutWidgetType,
+    title: typeof widget.title === "string" ? widget.title : "",
+    order: Number.isInteger(widget.order) && (widget.order ?? 0) >= 1 ? widget.order! : 1,
+    config,
+    style,
+  };
+}
+
+function normalizeStoredObject(value: unknown): Record<string, unknown> | null {
+  if (isRecord(value)) return value;
+  return Array.isArray(value) && value.length === 0 ? {} : null;
 }
 
 export function validateAdminLayoutDraft(draft: AdminLayoutDraft): string[] {
