@@ -188,8 +188,8 @@ final class AdminFaqServiceCoverageTest extends TestCase
         self::assertSame('일반', $service->updateMaster(3, ['fm_subject' => '업데이트 마스터'])['fm_subject']);
         self::assertTrue($service->uploadMasterHeaderImage(3, $uploadedFile)['exists']);
         self::assertTrue($service->uploadMasterFooterImage(3, $uploadedFile)['exists']);
-        self::assertTrue($service->deleteMasterHeaderImage(3)['exists']);
-        self::assertTrue($service->deleteMasterFooterImage(3)['exists']);
+        self::assertFalse($service->deleteMasterHeaderImage(3)['exists']);
+        self::assertFalse($service->deleteMasterFooterImage(3)['exists']);
         $service->deleteMaster(3);
         self::assertTrue(true);
     }
