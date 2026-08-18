@@ -3614,6 +3614,55 @@ code {
   }
 }
 
+@media (max-width: 720px) {
+  .points-page .admin-table,
+  .points-page .admin-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .points-page .admin-table thead {
+    display: none;
+  }
+
+  .points-page .admin-table tr {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    gap: 6px 12px;
+    align-items: center;
+    padding: 14px 12px;
+  }
+
+  .points-page .admin-table td {
+    min-width: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .points-page .admin-table td:first-child {
+    grid-row: 1 / span 2;
+  }
+
+  .points-page .admin-table td:nth-child(2) {
+    grid-column: 2;
+    overflow-wrap: anywhere;
+  }
+
+  .points-page .admin-table td:nth-child(3) {
+    grid-column: 3;
+    grid-row: 1;
+    text-align: right;
+  }
+
+  .points-page .admin-table td:nth-child(4) {
+    grid-column: 2 / span 2;
+    grid-row: 2;
+    color: var(--muted);
+    font-size: 0.72rem;
+    overflow-wrap: anywhere;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
