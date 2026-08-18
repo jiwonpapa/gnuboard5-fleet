@@ -640,7 +640,15 @@
       "depends_on": ["R16"],
       "core": {
         "domains": ["menus"],
-        "operation_ids": [],
+        "operation_ids": [
+          "adminListMenus",
+          "adminCreateMenu",
+          "adminReorderMenus",
+          "adminGetMenu",
+          "adminUpdateMenu",
+          "adminDeleteMenu",
+          "adminReorderMenusLegacy"
+        ],
         "expected_count": 7
       },
       "legacy": {

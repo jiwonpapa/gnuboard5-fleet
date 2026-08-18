@@ -95,6 +95,13 @@ class ManifestTest(unittest.TestCase):
                 "adminDeleteFaqMasterHeaderImage",
                 "adminUploadFaqMasterFooterImage",
                 "adminDeleteFaqMasterFooterImage",
+                "adminListMenus",
+                "adminCreateMenu",
+                "adminGetMenu",
+                "adminUpdateMenu",
+                "adminDeleteMenu",
+                "adminReorderMenus",
+                "adminReorderMenusLegacy",
             },
             {
                 mapping["operation_id"]
