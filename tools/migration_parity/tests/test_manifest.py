@@ -102,6 +102,14 @@ class ManifestTest(unittest.TestCase):
                 "adminDeleteMenu",
                 "adminReorderMenus",
                 "adminReorderMenusLegacy",
+                "adminListLayouts",
+                "adminGetLayout",
+                "adminSaveLayout",
+                "adminAddWidget",
+                "adminUpdateWidget",
+                "adminDeleteWidget",
+                "adminReorderWidgetCollection",
+                "adminReorderWidget",
             },
             {
                 mapping["operation_id"]

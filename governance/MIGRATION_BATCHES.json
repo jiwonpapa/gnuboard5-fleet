@@ -686,7 +686,16 @@
       "depends_on": ["R17"],
       "core": {
         "domains": ["layouts"],
-        "operation_ids": [],
+        "operation_ids": [
+          "adminListLayouts",
+          "adminGetLayout",
+          "adminSaveLayout",
+          "adminAddWidget",
+          "adminUpdateWidget",
+          "adminDeleteWidget",
+          "adminReorderWidgetCollection",
+          "adminReorderWidget"
+        ],
         "expected_count": 8
       },
       "legacy": {
