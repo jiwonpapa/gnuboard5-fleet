@@ -1,0 +1,139 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R17",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "48bda8d4fe4591dc97f78314d28e290334d06b79",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "48bda8d4fe4591dc97f78314d28e290334d06b79"
+  },
+  "generated_at": "2026-08-18T02:35:02Z",
+  "commands": [
+    "make active-check",
+    "make audit-runtime-prepare",
+    "make audit-server-static",
+    "python3 -m tools.migration_parity.batch_cli --batch R17 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R16 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R18 --profile static",
+    "make certification-up",
+    "make certification-local-smoke",
+    "playwright-cli --session g5-r17-browser resize 1440 1000",
+    "playwright-cli --session g5-r17-browser resize 390 844"
+  ],
+  "results": {
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {"passed": 65, "failed": 0, "ignored": 1},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 48,
+      "web_tests": {"passed": 92, "failed": 0},
+      "web_build": "PASS"
+    },
+    "migration_harness_tests": {"passed": 26, "failed": 0},
+    "audit_harness_tests": {"passed": 22, "failed": 0},
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "9ca4693f952dfb2f5ba4d31d67d68308b11e52de",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "68862d33b39ad5bb349954ec6477292d74241f739d3d58f6282a988ce21b372f",
+      "otp_install_login_step_up": "PASS",
+      "menu_operations": 7,
+      "create_update_readback": "PASS",
+      "canonical_reorder_readback": "PASS",
+      "legacy_reorder_readback": "PASS",
+      "cleanup_readback": "PASS",
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "PASS",
+      "server_runtime_revision": "9ca4693f952dfb2f5ba4d31d67d68308b11e52de",
+      "web_revision": "a7ead09ac190eb4463a58c031aacf39cb3fb5f13",
+      "login_and_recent_identity_step_up": "PASS",
+      "create_update_readback": "PASS",
+      "canonical_reorder_readback": "PASS",
+      "delete_cleanup_readback": "PASS",
+      "console_errors": 0,
+      "desktop_1440x1000": "PASS",
+      "mobile_390x844": "PASS",
+      "screenshots": [
+        {
+          "path": "output/playwright/r17-menus-desktop.png",
+          "sha256": "266ca311329d70a107b3312017cf29d424af43ccd609f61073061772855ec036"
+        },
+        {
+          "path": "output/playwright/r17-menus-mobile.png",
+          "sha256": "3ad5712a6ce55eb8863e3c1f9a56ed37df0b24369f9b5dbbf0e6594146ec763d"
+        }
+      ]
+    },
+    "typed_operation_consumption": {
+      "operations": [
+        "adminListMenus",
+        "adminCreateMenu",
+        "adminGetMenu",
+        "adminUpdateMenu",
+        "adminDeleteMenu",
+        "adminReorderMenus",
+        "adminReorderMenusLegacy"
+      ],
+      "new_site_scoped_axum_routes": 7,
+      "browser_same_origin_transport": "PASS",
+      "save_delete_readback": "PASS",
+      "destructive_confirmation": "PASS",
+      "csrf_and_step_up_write_guard": "PASS",
+      "browser_g5_secret_exposure": "NONE"
+    },
+    "route_registry": {
+      "status": "PASS",
+      "tracked_routes": 130,
+      "added_r17_routes": 7
+    },
+    "predecessor_regression": {"batch": "R16", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 10, "core_operations": 7, "required_capabilities": 0},
+    "reuse": {"reused": 1, "adapted": 9, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "ownership": {
+      "legacy": {"owned": 510, "total": 510},
+      "core_operations": {"owned": 189, "total": 189},
+      "required_capabilities": {"owned": 13, "total": 13}
+    },
+    "global_migration": {"status": "FAIL", "findings": 288},
+    "next_batch_probe": {
+      "batch": "R18",
+      "status": "FAIL",
+      "scope": {"legacy": 10, "core_operations": 8, "required_capabilities": 0},
+      "findings": 18
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "92607bdde1129199c177601eb9b0d3de3926966f746a872ad8cab27141165a02",
+    "migration_batches_before_closeout": "7d538741a5636c226a3b864ce393e6cbb908e3297850d54896a5ed71bd6799d1"
+  },
+  "source_reports": [
+    {
+      "path": "output/audit/runs/20260818T023313Z-625dd7817cec/result.json",
+      "sha256": "745549ed0e30baa5a1741a3caa6ae481ae37deafcec5e35c905e8cd27ea96a08"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R17-20260818T023428Z-25583c87/result.json",
+      "sha256": "dd87201ae69ad3d7caaac47162a073b11b3a5e3aba732a6362f02d02b0068b3c"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R16-20260818T023428Z-bec6c58a/result.json",
+      "sha256": "b7f3c90aa1b74ad84a0c9af27ebef8b50e4ea0c6418bc119977ba6ce7ee922d7"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R18-20260818T023429Z-e27333c5/result.json",
+      "sha256": "ddb3d4436c82f2b1b2347322ead35a5c6aa75e54013de58d18dc09fc0e9a2963"
+    }
+  ],
+  "claim_limit": "R17 메뉴 7-operation typed DTO, Connector, explicit site_id Axum routes, same-origin responsive React CRUD/reorder workflow, official G5 5.6.32 local runtime and browser readback only. Product local runtime is bound to 9ca4693, browser web rendering to a7ead09, and final static gate to 48bda8d. This is not package, staging or live certification; global migration remains FAIL with 288 findings."
+}

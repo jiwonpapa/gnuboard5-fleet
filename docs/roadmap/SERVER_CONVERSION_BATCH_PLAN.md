@@ -349,13 +349,13 @@ HTTPS origin은 내부 CA로 검증합니다.
 
 ## 4. 현재 바로 시작할 배치
 
-현재 시작점은 새 실행 정본의 **R17 menus**입니다.
+현재 시작점은 새 실행 정본의 **R18 layouts**입니다.
 R00 배치 통제, R01 공통 기반 49개, R02 설치·인증·보안 66개와
 R03 사이트·활동·backup 57개, R04 SSH·SFTP·terminal 73개,
 R10 admin·config·schema 19개, R11 auth·member self·system auth 19개,
 R12 members 26개, R13 groups 37개, R14 boards 17개,
-R15 contents 13개와 R16 faq-masters·faqs 31개는 tracked 증거로 닫았고,
-남은 305개는
+R15 contents 13개, R16 faq-masters·faqs 31개와 R17 menus 17개는 tracked 증거로 닫았고,
+남은 288개는
 `DOMAIN_REUSE_MIGRATION_PLAN.md`의 단일 활성 배치 순서로 실제
 target·회귀 test·symbol check를 채웁니다.
 

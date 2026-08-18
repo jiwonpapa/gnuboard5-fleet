@@ -636,8 +636,13 @@
       "id": "R17",
       "sequence": 12,
       "title": "menus",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R16"],
+      "completion": {
+        "implementation_commit": "48bda8d4fe4591dc97f78314d28e290334d06b79",
+        "evidence_path": "docs/audits/evidence/R17_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-18T02:35:02Z"
+      },
       "core": {
         "domains": ["menus"],
         "operation_ids": [
@@ -677,7 +682,7 @@
       "id": "R18",
       "sequence": 13,
       "title": "layouts",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R17"],
       "core": {
         "domains": ["layouts"],
