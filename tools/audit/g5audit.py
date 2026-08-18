@@ -1730,6 +1730,10 @@ def check_server_scaffold_contract(root: Path) -> str:
         ("PATCH", "/api/v1/sites/{site_id}/admin/layouts/{page_id}/widgets/{widget_id}", "session_csrf_step_up", True),
         ("DELETE", "/api/v1/sites/{site_id}/admin/layouts/{page_id}/widgets/{widget_id}", "session_csrf_step_up", True),
         ("PATCH", "/api/v1/sites/{site_id}/admin/layouts/{page_id}/reorder", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/theme", "session", True),
+        ("PUT", "/api/v1/sites/{site_id}/admin/theme", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/themes", "session", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/themes/{theme}", "session", True),
         (
             "GET",
             "/api/v1/sites/{site_id}/config/basic",
