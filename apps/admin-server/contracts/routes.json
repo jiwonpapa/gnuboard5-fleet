@@ -829,6 +829,34 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/theme",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_theme_config_get"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/theme",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_theme_config_update"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/themes",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_theme_list"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/themes/{theme}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_theme_detail"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/config/basic",
       "auth": "session",
       "site_context": true,

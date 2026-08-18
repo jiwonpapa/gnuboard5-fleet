@@ -386,6 +386,10 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
                 "PATCH",
                 "/api/v1/sites/{site_id}/admin/layouts/{page_id}/reorder"
             ),
+            ("GET", "/api/v1/sites/{site_id}/admin/theme"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/theme"),
+            ("GET", "/api/v1/sites/{site_id}/admin/themes"),
+            ("GET", "/api/v1/sites/{site_id}/admin/themes/{theme}"),
             ("GET", "/api/v1/sites/{site_id}/config/basic"),
             ("PUT", "/api/v1/sites/{site_id}/config/basic"),
             ("POST", "/api/v1/sites/{site_id}/core/{operation_id}",),
@@ -797,6 +801,17 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         })])),
         menus: Arc::new(Mutex::new(Vec::new())),
         layouts: Arc::new(Mutex::new(Vec::new())),
+        theme_config: Arc::new(Mutex::new(serde_json::json!({
+            "cf_theme": "basic",
+            "cf_mobile_theme": "basic",
+            "cf_theme_installed": true,
+            "cf_mobile_theme_installed": true,
+            "installed_count": 2
+        }))),
+        themes: Arc::new(Mutex::new(vec![
+            mock_theme("basic", true, true),
+            mock_theme("modern", false, false),
+        ])),
     };
     let app = build_router(AppConfig {
         web_root: web.path().to_path_buf(),
@@ -2416,6 +2431,80 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             .contains("fleet_two")
     );
 
+    let theme_config = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/theme",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(theme_config).await["cf_theme"], "basic");
+
+    let theme_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/themes",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    let theme_list = json::<Value>(theme_list).await;
+    assert_eq!(theme_list["total"], 2);
+    assert_eq!(theme_list["items"][1]["id"], "modern");
+
+    let theme_detail = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/themes/modern",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(json::<Value>(theme_detail).await["theme_name"], "Modern");
+
+    let theme_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/theme",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "cf_theme": "modern",
+                "cf_mobile_theme": "modern"
+            })),
+        ))
+        .await
+        .unwrap();
+    let theme_update = json::<Value>(theme_update).await;
+    assert_eq!(theme_update["cf_theme"], "modern");
+    assert_eq!(theme_update["cf_mobile_theme"], "modern");
+
+    let theme_readback = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/themes/modern",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    let theme_readback = json::<Value>(theme_readback).await;
+    assert_eq!(theme_readback["is_active"], true);
+    assert_eq!(theme_readback["is_mobile_active"], true);
+
     let registry = app
         .clone()
         .oneshot(json_request(
@@ -2758,6 +2847,35 @@ fn json_request(
     request.body(body).unwrap()
 }
 
+fn mock_theme(id: &str, is_active: bool, is_mobile_active: bool) -> Value {
+    let title = match id {
+        "basic" => "Basic",
+        "modern" => "Modern",
+        _ => id,
+    };
+    serde_json::json!({
+        "id": id,
+        "path": format!("/var/www/html/theme/{id}"),
+        "theme_name": title,
+        "theme_uri": "https://example.test/theme",
+        "maker": "G5 Fleet",
+        "maker_uri": "https://example.test",
+        "version": "1.0.0",
+        "detail": format!("{title} theme"),
+        "license": "MIT",
+        "license_uri": "https://opensource.org/license/mit",
+        "readme_path": format!("/var/www/html/theme/{id}/README.md"),
+        "theme_config_path": format!("/var/www/html/theme/{id}/theme.config.php"),
+        "screenshot_path": null,
+        "set_default_skin": true,
+        "preview_board_skin": "basic",
+        "preview_mobile_board_skin": "basic",
+        "is_active": is_active,
+        "is_mobile_active": is_mobile_active,
+        "theme_config": {}
+    })
+}
+
 #[derive(Clone, Default)]
 struct MockConnector {
     cf_10: Arc<Mutex<String>>,
@@ -2772,6 +2890,8 @@ struct MockConnector {
     faqs: Arc<Mutex<Vec<Value>>>,
     menus: Arc<Mutex<Vec<Value>>>,
     layouts: Arc<Mutex<Vec<Value>>>,
+    theme_config: Arc<Mutex<Value>>,
+    themes: Arc<Mutex<Vec<Value>>>,
 }
 
 #[async_trait]
@@ -3611,6 +3731,45 @@ impl ConnectorGateway for MockConnector {
                     serde_json::json!({"widgets": layout["widgets"].clone()}).to_string()
                 );
                 serde_json::json!({"data": layout.clone(), "meta": {}})
+            }
+            "adminSystemGetTheme" => serde_json::json!({
+                "data": self.theme_config.lock().unwrap().clone(),
+                "meta": {}
+            }),
+            "adminSystemUpdateTheme" => {
+                let body = input.body.as_ref().unwrap();
+                let mut config = self.theme_config.lock().unwrap();
+                for (name, value) in body.as_object().unwrap() {
+                    config[name] = value.clone();
+                }
+                let active = config["cf_theme"].as_str().unwrap_or_default().to_owned();
+                let mobile = config["cf_mobile_theme"]
+                    .as_str()
+                    .unwrap_or_default()
+                    .to_owned();
+                for theme in self.themes.lock().unwrap().iter_mut() {
+                    theme["is_active"] =
+                        serde_json::json!(theme["id"].as_str() == Some(active.as_str()));
+                    theme["is_mobile_active"] =
+                        serde_json::json!(theme["id"].as_str() == Some(mobile.as_str()));
+                }
+                serde_json::json!({"data": config.clone(), "meta": {}})
+            }
+            "adminSystemListThemes" => serde_json::json!({
+                "data": self.themes.lock().unwrap().clone(),
+                "meta": {"total": self.themes.lock().unwrap().len()}
+            }),
+            "adminSystemDetailTheme" => {
+                let theme_id = input.path.get("theme").map(String::as_str);
+                let theme = self
+                    .themes
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|item| item["id"].as_str() == theme_id)
+                    .cloned()
+                    .unwrap();
+                serde_json::json!({"data": theme, "meta": {}})
             }
             "adminListBoardGroups" | "adminLegacyListGroups" => serde_json::json!({
                 "data": self.groups.lock().unwrap().clone(),

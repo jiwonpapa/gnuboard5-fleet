@@ -36,9 +36,10 @@ use g5_fleet_connector::{
     AdminMenuReorder, AdminMenuReorderResult, AdminMenuUpdate, AdminNewPostsDelete,
     AdminNewPostsDeleteResult, AdminSchemaCatalog, AdminSchemaDetail, AdminSystemPermission,
     AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
-    BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin,
-    CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview,
-    core_operation, core_operations,
+    AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, BasicConfig,
+    ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest,
+    CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview, core_operation,
+    core_operations,
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
@@ -501,6 +502,15 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/layouts/{page_id}/reorder",
             axum::routing::patch(admin_layout_widget_reorder_legacy),
+        )
+        .route(
+            "/sites/{site_id}/admin/theme",
+            get(admin_theme_config_get).put(admin_theme_config_update),
+        )
+        .route("/sites/{site_id}/admin/themes", get(admin_theme_list))
+        .route(
+            "/sites/{site_id}/admin/themes/{theme}",
+            get(admin_theme_get),
         )
         .route(
             "/sites/{site_id}/config/basic",
@@ -3675,6 +3685,125 @@ async fn layout_widget_reorder(
     };
     match result {
         Ok(layout) => Json::<AdminLayoutDetail>(layout).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_theme_config_get(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_get_theme_config(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(config) => Json::<AdminThemeConfig>(config).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_theme_config_update(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(update): Json<AdminThemeUpdate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_update_theme_config(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &update,
+        )
+        .await
+    {
+        Ok(config) => Json::<AdminThemeConfig>(config).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_theme_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_list_themes(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(themes) => Json::<AdminThemeList>(themes).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_theme_get(
+    State(state): State<AppState>,
+    Path((site_id, theme)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_get_theme(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &theme,
+        )
+        .await
+    {
+        Ok(theme) => Json::<AdminTheme>(theme).into_response(),
         Err(error) => connector_error(error),
     }
 }

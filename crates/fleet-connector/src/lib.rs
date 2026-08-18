@@ -48,6 +48,9 @@ pub use g5_fleet_core::permissions::{
     AdminSystemPermission, AdminSystemPermissionList, AdminSystemPermissionListQuery,
     AdminSystemPermissionSave, MemberProfile, Pagination, valid_member_id, valid_system_menu,
 };
+pub use g5_fleet_core::theme::{
+    AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, valid_theme_id,
+};
 use g5_fleet_security::{SystemResolver, UrlGuard};
 use reqwest::{
     Method,
@@ -2130,12 +2133,114 @@ pub trait ConnectorGateway: Send + Sync {
         )
         .await
     }
+
+    async fn admin_get_theme_config(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminThemeConfig> {
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemGetTheme",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        typed_core_data("adminSystemGetTheme", response)
+    }
+
+    async fn admin_update_theme_config(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        update: &AdminThemeUpdate,
+    ) -> ConnectorResult<AdminThemeConfig> {
+        if !update.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemUpdateTheme",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminSystemUpdateTheme", response)
+    }
+
+    async fn admin_list_themes(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminThemeList> {
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemListThemes",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        let envelope: ThemeListEnvelope = typed_core_envelope("adminSystemListThemes", response)?;
+        Ok(AdminThemeList {
+            total: envelope.meta.total.unwrap_or(envelope.data.len() as i64),
+            items: envelope.data,
+        })
+    }
+
+    async fn admin_get_theme(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        theme: &str,
+    ) -> ConnectorResult<AdminTheme> {
+        if !valid_theme_id(theme) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemDetailTheme",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("theme".to_owned(), theme.to_owned())]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminSystemDetailTheme", response)
+    }
 }
 
 #[derive(Deserialize)]
 struct TypedListEnvelope<T> {
     data: Vec<T>,
     pagination: Pagination,
+}
+
+#[derive(Deserialize)]
+struct ThemeListEnvelope {
+    data: Vec<AdminTheme>,
+    #[serde(default)]
+    meta: ThemeListMeta,
+}
+
+#[derive(Default, Deserialize)]
+struct ThemeListMeta {
+    total: Option<i64>,
 }
 
 async fn board_detail_operation<T: ConnectorGateway + ?Sized>(
