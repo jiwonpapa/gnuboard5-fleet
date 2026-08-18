@@ -559,6 +559,47 @@ export interface AdminFaqImageUpload {
   bytes_base64: string;
 }
 
+export interface AdminMenu {
+  me_id: number;
+  me_code: string;
+  me_name: string;
+  me_link: string;
+  me_target: string;
+  me_order: number;
+  me_use: 0 | 1;
+  me_mobile_use: 0 | 1;
+}
+
+export interface AdminMenuList {
+  items: AdminMenu[];
+  pagination: Pagination;
+}
+
+export interface AdminMenuCreate {
+  me_code: string;
+  me_name: string;
+  me_link: string;
+  me_target?: string;
+  me_order?: number;
+  me_use?: 0 | 1;
+  me_mobile_use?: 0 | 1;
+}
+
+export type AdminMenuUpdate = Partial<AdminMenuCreate>;
+
+export interface AdminMenuReorderItem {
+  me_id: number;
+  me_order: number;
+}
+
+export interface AdminMenuReorder {
+  orders: AdminMenuReorderItem[];
+}
+
+export interface AdminMenuReorderResult {
+  result: "ok";
+}
+
 export interface AdminAuthAssignment {
   au_menu: string;
   au_auth: string;
@@ -1532,6 +1573,77 @@ export function deleteAdminFaq(siteId: string, faId: number, csrfToken: string) 
     method: "DELETE",
     path: `/sites/${encodeURIComponent(siteId)}/admin/faqs/${faId}`,
     csrfToken,
+  });
+}
+
+export function listAdminMenus(siteId: string) {
+  return transport.request<AdminMenuList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/menus`,
+  });
+}
+
+export function createAdminMenu(siteId: string, create: AdminMenuCreate, csrfToken: string) {
+  return transport.request<AdminMenu, AdminMenuCreate>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/menus`,
+    csrfToken,
+    body: create,
+  });
+}
+
+export function getAdminMenu(siteId: string, meId: number) {
+  return transport.request<AdminMenu>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/menus/${meId}`,
+  });
+}
+
+export function updateAdminMenu(
+  siteId: string,
+  meId: number,
+  update: AdminMenuUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminMenu, AdminMenuUpdate>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/menus/${meId}`,
+    csrfToken,
+    body: update,
+  });
+}
+
+export function deleteAdminMenu(siteId: string, meId: number, csrfToken: string) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/menus/${meId}`,
+    csrfToken,
+  });
+}
+
+export function reorderAdminMenus(
+  siteId: string,
+  reorder: AdminMenuReorder,
+  csrfToken: string,
+) {
+  return transport.request<AdminMenuReorderResult, AdminMenuReorder>({
+    method: "PATCH",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/menus`,
+    csrfToken,
+    body: reorder,
+  });
+}
+
+export function reorderAdminMenusLegacy(
+  siteId: string,
+  reorder: AdminMenuReorder,
+  csrfToken: string,
+) {
+  return transport.request<AdminMenuReorderResult, AdminMenuReorder>({
+    method: "PATCH",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/menus/reorder`,
+    csrfToken,
+    body: reorder,
   });
 }
 

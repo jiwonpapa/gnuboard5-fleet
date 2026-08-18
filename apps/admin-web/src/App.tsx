@@ -13,6 +13,7 @@ import { AdminFaqsPage } from "./features/faqs/AdminFaqsPage";
 import { AdminBoardGroupsPage } from "./features/groups/AdminBoardGroupsPage";
 import { AdminMemberFilesPage } from "./features/members/AdminMemberFilesPage";
 import { AdminMembersPage } from "./features/members/AdminMembersPage";
+import { AdminMenusPage } from "./features/menus/AdminMenusPage";
 import { SiteOnboardingPage } from "./features/onboarding/SiteOnboardingPage";
 import { AdminOverviewPage } from "./features/overview/AdminOverviewPage";
 import { AdminPermissionsWorkspacePage } from "./features/permissions/AdminPermissionsWorkspacePage";
@@ -74,6 +75,10 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/faqs"
               element={<AdminFaqsPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/menus"
+              element={<AdminMenusPage />}
             />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />

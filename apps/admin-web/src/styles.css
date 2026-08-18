@@ -208,6 +208,28 @@ code {
   font-size: 0.75rem;
 }
 
+.menu-reorder-actions {
+  justify-content: flex-end;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.menu-reorder-actions > span {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.menu-order-input {
+  width: 5rem;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+}
+
 .member-editor {
   display: grid;
   gap: 22px;
