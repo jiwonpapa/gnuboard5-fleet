@@ -764,6 +764,105 @@ def main() -> int:
     if any(row.get("fm_id") == faq_master_id for row in faq_cleanup.get("items", [])):
         raise RuntimeError("R16 FAQ cleanup readback failed")
 
+    menus_path = "/api/v1/sites/owner-a-site/admin/menus"
+    initial_menus = request(
+        fleet_base,
+        "GET",
+        menus_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if not isinstance(initial_menus.get("items"), list):
+        raise RuntimeError("R17 menu list failed")
+    created_menu = request(
+        fleet_base,
+        "POST",
+        menus_path,
+        body={
+            "me_code": "900900",
+            "me_name": "Fleet certification menu",
+            "me_link": "/fleet-certification",
+            "me_target": "_self",
+            "me_order": 30,
+            "me_use": 1,
+            "me_mobile_use": 1,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(201,),
+    ).json()
+    menu_id = created_menu.get("me_id")
+    if not isinstance(menu_id, int) or created_menu.get("me_code") != "900900":
+        raise RuntimeError("R17 menu create failed")
+    menu_path = f"{menus_path}/{menu_id}"
+    menu_detail = request(
+        fleet_base,
+        "GET",
+        menu_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if menu_detail.get("me_name") != "Fleet certification menu":
+        raise RuntimeError("R17 menu detail failed")
+    updated_menu = request(
+        fleet_base,
+        "PUT",
+        menu_path,
+        body={"me_name": "Fleet certification menu updated", "me_mobile_use": 0},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if (
+        updated_menu.get("me_name") != "Fleet certification menu updated"
+        or updated_menu.get("me_mobile_use") != 0
+    ):
+        raise RuntimeError("R17 menu update failed")
+    menu_readback = request(
+        fleet_base,
+        "GET",
+        menu_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if menu_readback.get("me_name") != "Fleet certification menu updated":
+        raise RuntimeError("R17 menu update readback failed")
+    canonical_reorder = request(
+        fleet_base,
+        "PATCH",
+        menus_path,
+        body={"orders": [{"me_id": menu_id, "me_order": 31}]},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if canonical_reorder.get("result") != "ok":
+        raise RuntimeError("R17 canonical menu reorder failed")
+    legacy_reorder = request(
+        fleet_base,
+        "PATCH",
+        f"{menus_path}/reorder",
+        body={"orders": [{"me_id": menu_id, "me_order": 32}]},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if legacy_reorder.get("result") != "ok":
+        raise RuntimeError("R17 legacy menu reorder failed")
+    reordered_menu = request(
+        fleet_base,
+        "GET",
+        menu_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if reordered_menu.get("me_order") != 32:
+        raise RuntimeError("R17 menu reorder readback failed")
+    request(
+        fleet_base,
+        "DELETE",
+        menu_path,
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(204,),
+    )
+    menu_cleanup = request(
+        fleet_base,
+        "GET",
+        menus_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if any(row.get("me_id") == menu_id for row in menu_cleanup.get("items", [])):
+        raise RuntimeError("R17 menu cleanup readback failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -1007,6 +1106,14 @@ def main() -> int:
             "empty_pc_mobile_html_preserved": "passed",
             "header_footer_image_upload_delete": "passed",
             "faq_cleanup_readback": "passed",
+        },
+        "r17_menus": {
+            "operations": 7,
+            "list_detail": "passed",
+            "create_update_readback": "passed",
+            "canonical_reorder_readback": "passed",
+            "legacy_reorder_readback": "passed",
+            "menu_cleanup_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,
