@@ -93,6 +93,58 @@ code {
   font-size: 1.05rem;
 }
 
+.theme-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 24px 0;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.theme-summary-grid article {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding: 18px;
+  background: var(--paper);
+}
+
+.theme-summary-grid span,
+.theme-meta-grid dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.theme-summary-grid strong {
+  overflow-wrap: anywhere;
+  font-family: var(--display);
+  font-size: 1.05rem;
+}
+
+.theme-editor-stack,
+.theme-meta-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.theme-meta-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 18px 0 0;
+}
+
+.theme-meta-grid > div {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.theme-meta-grid dd {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+}
+
 .member-workspace {
   display: grid;
   grid-template-columns: minmax(460px, 0.95fr) minmax(420px, 1.05fr);
@@ -459,6 +511,8 @@ code {
 
 @media (max-width: 720px) {
   .member-summary,
+  .theme-summary-grid,
+  .theme-meta-grid,
   .member-field-grid,
   .member-flags,
   .form-grid-two,

@@ -15,6 +15,7 @@ import { AdminLayoutsPage } from "./features/layouts/AdminLayoutsPage";
 import { AdminMemberFilesPage } from "./features/members/AdminMemberFilesPage";
 import { AdminMembersPage } from "./features/members/AdminMembersPage";
 import { AdminMenusPage } from "./features/menus/AdminMenusPage";
+import { AdminThemePage } from "./features/theme/AdminThemePage";
 import { SiteOnboardingPage } from "./features/onboarding/SiteOnboardingPage";
 import { AdminOverviewPage } from "./features/overview/AdminOverviewPage";
 import { AdminPermissionsWorkspacePage } from "./features/permissions/AdminPermissionsWorkspacePage";
@@ -84,6 +85,10 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/layouts"
               element={<AdminLayoutsPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/theme"
+              element={<AdminThemePage />}
             />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />

@@ -659,6 +659,46 @@ export interface AdminLayoutWidgetReorder {
   widget_ids: string[];
 }
 
+export interface AdminThemeConfig {
+  cf_theme: string;
+  cf_mobile_theme: string;
+  cf_theme_installed: boolean;
+  cf_mobile_theme_installed: boolean;
+  installed_count: number;
+}
+
+export interface AdminThemeUpdate {
+  cf_theme?: string;
+  cf_mobile_theme?: string;
+}
+
+export interface AdminTheme {
+  id: string;
+  path: string;
+  theme_name: string;
+  theme_uri: string;
+  maker: string;
+  maker_uri: string;
+  version: string;
+  detail: string;
+  license: string;
+  license_uri: string;
+  readme_path: string | null;
+  theme_config_path: string | null;
+  screenshot_path: string | null;
+  set_default_skin: boolean;
+  preview_board_skin: string;
+  preview_mobile_board_skin: string;
+  is_active: boolean;
+  is_mobile_active: boolean;
+  theme_config: Record<string, unknown>;
+}
+
+export interface AdminThemeList {
+  items: AdminTheme[];
+  total: number;
+}
+
 export interface AdminAuthAssignment {
   au_menu: string;
   au_auth: string;
@@ -1804,6 +1844,40 @@ export function reorderAdminLayoutWidgetsLegacy(
     path: `/sites/${encodeURIComponent(siteId)}/admin/layouts/${encodeURIComponent(pageId)}/reorder`,
     csrfToken,
     body: reorder,
+  });
+}
+
+export function getAdminThemeConfig(siteId: string) {
+  return transport.request<AdminThemeConfig>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/theme`,
+  });
+}
+
+export function updateAdminThemeConfig(
+  siteId: string,
+  update: AdminThemeUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminThemeConfig, AdminThemeUpdate>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/theme`,
+    csrfToken,
+    body: update,
+  });
+}
+
+export function listAdminThemes(siteId: string) {
+  return transport.request<AdminThemeList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/themes`,
+  });
+}
+
+export function getAdminTheme(siteId: string, theme: string) {
+  return transport.request<AdminTheme>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/themes/${encodeURIComponent(theme)}`,
   });
 }
 

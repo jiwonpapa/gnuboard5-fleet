@@ -95,5 +95,9 @@ describe("SiteDashboardPage", () => {
       "href",
       "/sites/site-a/admin/menus",
     );
+    expect(screen.getByRole("link", { name: "테마 설정" })).toHaveAttribute(
+      "href",
+      "/sites/site-a/admin/theme",
+    );
   });
 });

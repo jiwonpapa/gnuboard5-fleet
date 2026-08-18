@@ -28,8 +28,12 @@ describe("adminRouteRegistry", () => {
       label: "레이아웃",
       delivery: "active",
     });
+    expect(resolveRouteMeta("/admin/theme")).toMatchObject({
+      label: "테마",
+      delivery: "active",
+    });
     expect(adminRoutes.filter((route) => route.delivery === "active")).toHaveLength(
-      11,
+      12,
     );
     expect(groupedAdminRoutes().get("메시징")?.length).toBeGreaterThanOrEqual(6);
   });
