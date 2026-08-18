@@ -1734,6 +1734,13 @@ def check_server_scaffold_contract(root: Path) -> str:
         ("PUT", "/api/v1/sites/{site_id}/admin/theme", "session_csrf_step_up", True),
         ("GET", "/api/v1/sites/{site_id}/admin/themes", "session", True),
         ("GET", "/api/v1/sites/{site_id}/admin/themes/{theme}", "session", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/points", "session", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/points", "session_csrf_step_up", True),
+        ("DELETE", "/api/v1/sites/{site_id}/admin/points", "session_csrf_step_up", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/points/grant", "session_csrf_step_up", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/points/deduct", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/points/summary", "session", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/points/expire", "session_csrf_step_up", True),
         (
             "GET",
             "/api/v1/sites/{site_id}/config/basic",

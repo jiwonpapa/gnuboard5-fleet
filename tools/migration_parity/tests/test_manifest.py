@@ -114,6 +114,13 @@ class ManifestTest(unittest.TestCase):
                 "adminSystemUpdateTheme",
                 "adminSystemListThemes",
                 "adminSystemDetailTheme",
+                "adminCreatePointAction",
+                "adminDeductPoint",
+                "adminDeletePoints",
+                "adminExpirePoints",
+                "adminGrantPoint",
+                "adminListPoints",
+                "adminPointSummary",
             },
             {
                 mapping["operation_id"]
