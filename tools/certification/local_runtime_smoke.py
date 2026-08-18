@@ -608,6 +608,162 @@ def main() -> int:
     if any(row.get("co_id") == "fleetcontent" for row in content_cleanup.get("items", [])):
         raise RuntimeError("R15 content cleanup readback failed")
 
+    faq_masters_path = "/api/v1/sites/owner-a-site/admin/faq-masters"
+    initial_faq_masters = request(
+        fleet_base,
+        "GET",
+        f"{faq_masters_path}?page=1&per_page=20",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if not isinstance(initial_faq_masters.get("items"), list):
+        raise RuntimeError("R16 FAQ master list failed")
+    created_faq_master = request(
+        fleet_base,
+        "POST",
+        faq_masters_path,
+        body={
+            "fm_subject": "Fleet FAQ certification",
+            "fm_order": 17,
+            "fm_head_html": "<p>fleet faq head</p>",
+            "fm_tail_html": "",
+            "fm_mobile_head_html": "",
+            "fm_mobile_tail_html": "<p>fleet mobile tail</p>",
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(201,),
+    ).json()
+    faq_master_id = created_faq_master.get("fm_id")
+    if not isinstance(faq_master_id, int) or faq_master_id < 1:
+        raise RuntimeError("R16 FAQ master create failed")
+    faq_master_path = f"{faq_masters_path}/{faq_master_id}"
+    faq_master_detail = request(
+        fleet_base,
+        "GET",
+        faq_master_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        faq_master_detail.get("fm_head_html") != "<p>fleet faq head</p>"
+        or faq_master_detail.get("fm_mobile_head_html") != ""
+        or faq_master_detail.get("fm_tail_html") != ""
+    ):
+        raise RuntimeError("R16 FAQ master detail or empty HTML preservation failed")
+    updated_faq_master = request(
+        fleet_base,
+        "PUT",
+        faq_master_path,
+        body={"fm_subject": "Fleet FAQ certification updated", "fm_mobile_tail_html": ""},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if updated_faq_master.get("fm_subject") != "Fleet FAQ certification updated":
+        raise RuntimeError("R16 FAQ master update failed")
+    updated_faq_master_readback = request(
+        fleet_base,
+        "GET",
+        faq_master_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        updated_faq_master_readback.get("fm_subject")
+        != "Fleet FAQ certification updated"
+        or updated_faq_master_readback.get("fm_mobile_tail_html") != ""
+    ):
+        raise RuntimeError("R16 FAQ master update readback failed")
+    for kind in ("header", "footer"):
+        uploaded_faq_image = request(
+            fleet_base,
+            "POST",
+            f"{faq_master_path}/{kind}-image",
+            body={
+                "file_name": f"faq-{kind}.png",
+                "mime_type": "image/png",
+                "bytes_base64": png_base64,
+            },
+            headers=fleet_headers(admin_cookie, admin_csrf),
+        ).json()
+        if not uploaded_faq_image.get("exists") or uploaded_faq_image.get("mime") != "image/png":
+            raise RuntimeError(f"R16 FAQ {kind} image upload readback failed")
+        deleted_faq_image = request(
+            fleet_base,
+            "DELETE",
+            f"{faq_master_path}/{kind}-image",
+            headers=fleet_headers(admin_cookie, admin_csrf),
+        ).json()
+        if deleted_faq_image.get("exists"):
+            raise RuntimeError(f"R16 FAQ {kind} image delete readback failed")
+
+    faqs_path = "/api/v1/sites/owner-a-site/admin/faqs"
+    initial_faqs = request(
+        fleet_base,
+        "GET",
+        f"{faqs_path}?page=1&per_page=20&fm_id={faq_master_id}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if not isinstance(initial_faqs.get("items"), list):
+        raise RuntimeError("R16 FAQ item list failed")
+    created_faq = request(
+        fleet_base,
+        "POST",
+        faqs_path,
+        body={
+            "fm_id": faq_master_id,
+            "fa_subject": "Fleet FAQ question",
+            "fa_content": "Fleet FAQ answer",
+            "fa_order": 9,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(201,),
+    ).json()
+    faq_id = created_faq.get("fa_id")
+    if not isinstance(faq_id, int) or created_faq.get("fm_id") != faq_master_id:
+        raise RuntimeError("R16 FAQ item create failed")
+    faq_path = f"{faqs_path}/{faq_id}"
+    if request(
+        fleet_base,
+        "GET",
+        faq_path,
+        headers=fleet_headers(admin_cookie),
+    ).json().get("fa_content") != "Fleet FAQ answer":
+        raise RuntimeError("R16 FAQ item detail failed")
+    updated_faq = request(
+        fleet_base,
+        "PUT",
+        faq_path,
+        body={"fa_content": "Fleet FAQ answer updated"},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if updated_faq.get("fa_content") != "Fleet FAQ answer updated":
+        raise RuntimeError("R16 FAQ item update failed")
+    if request(
+        fleet_base,
+        "GET",
+        faq_path,
+        headers=fleet_headers(admin_cookie),
+    ).json().get("fa_content") != "Fleet FAQ answer updated":
+        raise RuntimeError("R16 FAQ item update readback failed")
+    request(
+        fleet_base,
+        "DELETE",
+        faq_path,
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(204,),
+    )
+    request(
+        fleet_base,
+        "DELETE",
+        faq_master_path,
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(204,),
+    )
+    faq_cleanup = request(
+        fleet_base,
+        "GET",
+        f"{faq_masters_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if any(row.get("fm_id") == faq_master_id for row in faq_cleanup.get("items", [])):
+        raise RuntimeError("R16 FAQ cleanup readback failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -843,6 +999,14 @@ def main() -> int:
             "html_mode_2_preserved": "passed",
             "empty_mobile_content_preserved": "passed",
             "content_cleanup_readback": "passed",
+        },
+        "r16_faqs": {
+            "operations": 14,
+            "master_list_detail_create_update_delete": "passed",
+            "item_list_detail_create_update_delete": "passed",
+            "empty_pc_mobile_html_preserved": "passed",
+            "header_footer_image_upload_delete": "passed",
+            "faq_cleanup_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,

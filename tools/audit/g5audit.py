@@ -1695,6 +1695,20 @@ def check_server_scaffold_contract(root: Path) -> str:
         ("GET", "/api/v1/sites/{site_id}/admin/contents/{co_id}", "session", True),
         ("PUT", "/api/v1/sites/{site_id}/admin/contents/{co_id}", "session_csrf_step_up", True),
         ("DELETE", "/api/v1/sites/{site_id}/admin/contents/{co_id}", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/faq-masters", "session", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/faq-masters", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}", "session", True),
+        ("PUT", "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}", "session_csrf_step_up", True),
+        ("DELETE", "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}", "session_csrf_step_up", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/header-image", "session_csrf_step_up", True),
+        ("DELETE", "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/header-image", "session_csrf_step_up", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/footer-image", "session_csrf_step_up", True),
+        ("DELETE", "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/footer-image", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/faqs", "session", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/faqs", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/faqs/{fa_id}", "session", True),
+        ("PUT", "/api/v1/sites/{site_id}/admin/faqs/{fa_id}", "session_csrf_step_up", True),
+        ("DELETE", "/api/v1/sites/{site_id}/admin/faqs/{fa_id}", "session_csrf_step_up", True),
         (
             "GET",
             "/api/v1/sites/{site_id}/config/basic",
@@ -3201,6 +3215,11 @@ def check_certification_harness_boundary(root: Path) -> str:
         or '"r15_contents"' not in local_smoke
         or '"html_mode_2_preserved": "passed"' not in local_smoke
         or '"content_cleanup_readback": "passed"' not in local_smoke
+        or '"r16_faqs"' not in local_smoke
+        or '"operations": 14' not in local_smoke
+        or '"empty_pc_mobile_html_preserved": "passed"' not in local_smoke
+        or '"header_footer_image_upload_delete": "passed"' not in local_smoke
+        or '"faq_cleanup_readback": "passed"' not in local_smoke
         or '"external_delivery_attempts": 0' not in local_smoke
     ):
         raise ValueError("local G5/server certification harness contract incomplete")

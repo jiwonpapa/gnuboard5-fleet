@@ -587,7 +587,22 @@
       "depends_on": ["R15"],
       "core": {
         "domains": ["faq-masters", "faqs"],
-        "operation_ids": [],
+        "operation_ids": [
+          "adminListFaqs",
+          "adminCreateFaq",
+          "adminGetFaq",
+          "adminUpdateFaq",
+          "adminDeleteFaq",
+          "adminListFaqMasters",
+          "adminCreateFaqMaster",
+          "adminGetFaqMaster",
+          "adminUpdateFaqMaster",
+          "adminDeleteFaqMaster",
+          "adminUploadFaqMasterHeaderImage",
+          "adminDeleteFaqMasterHeaderImage",
+          "adminUploadFaqMasterFooterImage",
+          "adminDeleteFaqMasterFooterImage"
+        ],
         "expected_count": 14
       },
       "legacy": {
