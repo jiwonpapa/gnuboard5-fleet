@@ -11,8 +11,8 @@ use axum::{
         ws::{Message, WebSocket, WebSocketUpgrade},
     },
     http::{
-        HeaderMap, HeaderValue, Method, Request, StatusCode,
-        header::{CONTENT_TYPE, COOKIE, SET_COOKIE},
+        HeaderMap, HeaderName, HeaderValue, Method, Request, StatusCode,
+        header::{CACHE_CONTROL, CONTENT_TYPE, COOKIE, SET_COOKIE},
     },
     middleware::Next,
     response::{IntoResponse, Response},
@@ -451,6 +451,10 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/faq-masters/{fm_id}/footer-image",
             post(admin_faq_master_footer_image_upload).delete(admin_faq_master_footer_image_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/faq-masters/{fm_id}/images/{kind}",
+            get(admin_faq_master_image_content),
         )
         .route(
             "/sites/{site_id}/admin/faqs",
@@ -2865,6 +2869,88 @@ async fn admin_faq_master_footer_image_delete(
     headers: HeaderMap,
 ) -> Response {
     admin_faq_master_image_delete(state, headers, site_id, fm_id, "footer").await
+}
+
+async fn admin_faq_master_image_content(
+    State(state): State<AppState>,
+    Path((site_id, fm_id, kind)): Path<(String, i64, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let detail = match state
+        .config
+        .connector
+        .admin_get_faq_master(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fm_id,
+        )
+        .await
+    {
+        Ok(value) => value,
+        Err(error) => return connector_error(error),
+    };
+    let (image, suffix) = match kind.as_str() {
+        "header" => (&detail.header_image, "h"),
+        "footer" => (&detail.footer_image, "t"),
+        _ => return api_error(StatusCode::NOT_FOUND, "route_not_found", "Route not found."),
+    };
+    if !image.exists {
+        return api_error(
+            StatusCode::NOT_FOUND,
+            "faq_image_not_found",
+            "FAQ image not found.",
+        );
+    }
+    if image.relative_path != format!("faq/{fm_id}_{suffix}") {
+        return connector_error(ConnectorError::Contract);
+    }
+    let mime = match image.mime.as_deref() {
+        Some(value @ ("image/png" | "image/jpeg" | "image/gif")) => value,
+        _ => return connector_error(ConnectorError::Contract),
+    };
+    let content = match state
+        .config
+        .connector
+        .admin_get_faq_master_image_content(&site.base_url, &context.request_id, fm_id, &kind)
+        .await
+    {
+        Ok(value) => value,
+        Err(error) => return connector_error(error),
+    };
+    if !matches_faq_image_signature(mime, &content.bytes) {
+        return connector_error(ConnectorError::Contract);
+    }
+    let mut response = Response::new(Body::from(content.bytes));
+    response.headers_mut().insert(
+        CONTENT_TYPE,
+        HeaderValue::from_str(mime).expect("fixed image MIME"),
+    );
+    response
+        .headers_mut()
+        .insert(CACHE_CONTROL, HeaderValue::from_static("private, no-store"));
+    response.headers_mut().insert(
+        HeaderName::from_static("x-content-type-options"),
+        HeaderValue::from_static("nosniff"),
+    );
+    response
+}
+
+fn matches_faq_image_signature(mime: &str, bytes: &[u8]) -> bool {
+    match mime {
+        "image/png" => bytes.starts_with(&[0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a]),
+        "image/jpeg" => bytes.starts_with(&[0xff, 0xd8, 0xff]),
+        "image/gif" => bytes.starts_with(b"GIF87a") || bytes.starts_with(b"GIF89a"),
+        _ => false,
+    }
 }
 
 async fn admin_faq_master_image_delete(

@@ -57,24 +57,24 @@ export function AdminFaqsPage() {
   const [deleteMasterOpen, setDeleteMasterOpen] = useState(false);
   const [deleteFaqOpen, setDeleteFaqOpen] = useState(false);
 
-  async function selectMaster(fmId: number) {
+  async function selectMaster(fmId: number, preferredFaqId?: number) {
     const detail = await getAdminFaqMaster(siteId, fmId);
     setSelectedMaster(detail);
     setMasterDraft(faqMasterToDraft(detail));
     setSelectedFaq(null);
     setFaqDraft({ ...emptyAdminFaqDraft, fm_id: String(detail.fm_id) });
     setFaqPage(1);
-    await reloadFaqs(detail.fm_id, 1);
+    await reloadFaqs(detail.fm_id, 1, preferredFaqId);
   }
 
-  async function reloadMasters(preferredId?: number) {
+  async function reloadMasters(preferredId?: number, preferredFaqId?: number) {
     const result = await listAdminFaqMasters(siteId, { page: masterPage, per_page: 20 });
     setMasters(result.items);
     setMasterLastPage(result.pagination.last_page ?? 1);
     const target = result.items.find((item) => item.fm_id === preferredId)
       ?? result.items.find((item) => item.fm_id === selectedMaster?.fm_id)
       ?? result.items[0];
-    if (target) await selectMaster(target.fm_id);
+    if (target) await selectMaster(target.fm_id, preferredFaqId);
     else newMaster();
   }
 
@@ -199,7 +199,7 @@ export function AdminFaqsPage() {
         ? await updateAdminFaq(siteId, selectedFaq.fa_id, update!, session.csrf_token)
         : await createAdminFaq(siteId, buildAdminFaqCreate(faqDraft), session.csrf_token);
       const readback = await getAdminFaq(siteId, saved.fa_id);
-      await reloadFaqs(readback.fm_id, faqPage, readback.fa_id);
+      await reloadMasters(readback.fm_id, readback.fa_id);
       setMessage("FAQ 문항을 저장하고 상세를 재조회했습니다.");
     });
   }
@@ -217,11 +217,12 @@ export function AdminFaqsPage() {
 
   async function removeFaq() {
     if (!selectedFaq || !selectedMaster) return;
+    const fmId = selectedMaster.fm_id;
     await runMutation(async () => {
       await deleteAdminFaq(siteId, selectedFaq.fa_id, session.csrf_token);
       setDeleteFaqOpen(false);
       setSelectedFaq(null);
-      await reloadFaqs(selectedMaster.fm_id);
+      await reloadMasters(fmId);
       setMessage("FAQ 문항을 삭제하고 목록을 재조회했습니다.");
     });
   }
@@ -236,9 +237,7 @@ export function AdminFaqsPage() {
         await fileUpload(file),
         session.csrf_token,
       );
-      const readback = await getAdminFaqMaster(siteId, selectedMaster.fm_id);
-      setSelectedMaster(readback);
-      setMasterDraft(faqMasterToDraft(readback));
+      await reloadMasters(selectedMaster.fm_id, selectedFaq?.fa_id);
       setMessage(`${kind === "header" ? "상단" : "하단"} 이미지를 업로드하고 재조회했습니다.`);
     });
   }
@@ -252,9 +251,7 @@ export function AdminFaqsPage() {
         kind,
         session.csrf_token,
       );
-      const readback = await getAdminFaqMaster(siteId, selectedMaster.fm_id);
-      setSelectedMaster(readback);
-      setMasterDraft(faqMasterToDraft(readback));
+      await reloadMasters(selectedMaster.fm_id, selectedFaq?.fa_id);
       setMessage(`${kind === "header" ? "상단" : "하단"} 이미지를 삭제하고 재조회했습니다.`);
     });
   }
@@ -319,8 +316,8 @@ export function AdminFaqsPage() {
             </div>
             {selectedMaster ? (
               <div className="faq-image-grid">
-                <FaqImagePanel label="상단 이미지" image={selectedMaster.header_image} busy={busy} onDelete={() => void removeImage("header")} onFile={(file) => void changeImage("header", file)} />
-                <FaqImagePanel label="하단 이미지" image={selectedMaster.footer_image} busy={busy} onDelete={() => void removeImage("footer")} onFile={(file) => void changeImage("footer", file)} />
+                <FaqImagePanel siteId={siteId} fmId={selectedMaster.fm_id} kind="header" label="상단 이미지" image={selectedMaster.header_image} busy={busy} onDelete={() => void removeImage("header")} onFile={(file) => void changeImage("header", file)} />
+                <FaqImagePanel siteId={siteId} fmId={selectedMaster.fm_id} kind="footer" label="하단 이미지" image={selectedMaster.footer_image} busy={busy} onDelete={() => void removeImage("footer")} onFile={(file) => void changeImage("footer", file)} />
               </div>
             ) : null}
           </fieldset>
@@ -383,8 +380,9 @@ function TextArea(props: { label: string; value: string; rows?: number; onChange
   return <label>{props.label}<textarea aria-label={props.label} rows={props.rows ?? 4} value={props.value} onChange={(event) => props.onChange(event.currentTarget.value)} /></label>;
 }
 
-function FaqImagePanel(props: { label: string; image: AdminFaqImage; busy: boolean; onFile: (file: File) => void; onDelete: () => void }) {
-  return <div className="faq-image-panel"><strong>{props.label}</strong><small>{props.image.exists ? `${props.image.width ?? "-"}×${props.image.height ?? "-"} · ${props.image.size ?? 0} bytes` : "등록된 이미지가 없습니다."}</small>{props.image.exists && props.image.url ? <img src={props.image.url} alt={`${props.label} 미리보기`} /> : null}<input aria-label={`${props.label} 파일`} type="file" accept="image/png,image/jpeg,image/gif" disabled={props.busy} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) props.onFile(file); }} /><button type="button" className="danger-action" disabled={props.busy || !props.image.exists} onClick={props.onDelete}>이미지 삭제</button></div>;
+function FaqImagePanel(props: { siteId: string; fmId: number; kind: "header" | "footer"; label: string; image: AdminFaqImage; busy: boolean; onFile: (file: File) => void; onDelete: () => void }) {
+  const previewUrl = `/api/v1/sites/${encodeURIComponent(props.siteId)}/admin/faq-masters/${props.fmId}/images/${props.kind}`;
+  return <div className="faq-image-panel"><strong>{props.label}</strong><small>{props.image.exists ? `${props.image.width ?? "-"}×${props.image.height ?? "-"} · ${props.image.size ?? 0} bytes` : "등록된 이미지가 없습니다."}</small>{props.image.exists ? <img src={previewUrl} alt={`${props.label} 미리보기`} /> : null}<input aria-label={`${props.label} 파일`} type="file" accept="image/png,image/jpeg,image/gif" disabled={props.busy} onChange={(event) => { const file = event.currentTarget.files?.[0]; if (file) props.onFile(file); }} /><button type="button" className="danger-action" disabled={props.busy || !props.image.exists} onClick={props.onDelete}>이미지 삭제</button></div>;
 }
 
 async function fileUpload(file: File) {

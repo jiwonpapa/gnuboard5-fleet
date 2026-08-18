@@ -11,7 +11,7 @@ use axum::{
 use g5_fleet_admin_server::{AppConfig, ErrorEnvelope, HealthResponse, MetaResponse, build_router};
 use g5_fleet_connector::{
     BasicConfig, ConnectorCredentials, ConnectorGateway, ConnectorHealth, ConnectorLogin,
-    ConnectorResult, CoreExecuteRequest, CoreExecuteResponse,
+    ConnectorResult, CoreExecuteRequest, CoreExecuteResponse, FaqImageContent,
 };
 use g5_fleet_remote::{SshProfileSummary, TerminalTicket};
 use http_body_util::BodyExt;
@@ -346,6 +346,10 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             (
                 "DELETE",
                 "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/footer-image"
+            ),
+            (
+                "GET",
+                "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/images/{kind}"
             ),
             ("GET", "/api/v1/sites/{site_id}/admin/faqs"),
             ("POST", "/api/v1/sites/{site_id}/admin/faqs"),
@@ -2028,6 +2032,33 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap();
     assert_eq!(json::<Value>(faq_header_upload).await["exists"], true);
 
+    let faq_header_content = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/faq-masters/2/images/header",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(faq_header_content.status(), StatusCode::OK);
+    assert_eq!(faq_header_content.headers()["content-type"], "image/png");
+    assert_eq!(
+        faq_header_content.headers()["cache-control"],
+        "private, no-store"
+    );
+    assert_eq!(
+        faq_header_content
+            .into_body()
+            .collect()
+            .await
+            .unwrap()
+            .to_bytes(),
+        &[0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a][..]
+    );
+
     let faq_header_delete = app
         .clone()
         .oneshot(json_request(
@@ -2550,6 +2581,20 @@ impl ConnectorGateway for MockConnector {
         self.basic_config("", "", access_token).await
     }
 
+    async fn admin_get_faq_master_image_content(
+        &self,
+        _base_url: &str,
+        _request_id: &str,
+        fm_id: i64,
+        kind: &str,
+    ) -> ConnectorResult<FaqImageContent> {
+        assert_eq!(fm_id, 2);
+        assert_eq!(kind, "header");
+        Ok(FaqImageContent {
+            bytes: vec![0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a],
+        })
+    }
+
     async fn core_execute(
         &self,
         _base_url: &str,
@@ -2977,8 +3022,8 @@ impl ConnectorGateway for MockConnector {
                 let header = operation_id.contains("Header");
                 let image = serde_json::json!({
                     "exists": true,
-                    "relative_path": if header { format!("faq/{fm_id}/header.png") } else { format!("faq/{fm_id}/footer.png") },
-                    "url": if header { format!("/data/faq/{fm_id}/header.png") } else { format!("/data/faq/{fm_id}/footer.png") },
+                    "relative_path": if header { format!("faq/{fm_id}_h") } else { format!("faq/{fm_id}_t") },
+                    "url": if header { format!("/data/faq/{fm_id}_h") } else { format!("/data/faq/{fm_id}_t") },
                     "width": 32, "height": 32, "mime": "image/png", "size": 4
                 });
                 let mut masters = self.faq_masters.lock().unwrap();

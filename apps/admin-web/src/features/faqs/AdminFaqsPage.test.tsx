@@ -69,6 +69,8 @@ describe("AdminFaqsPage", () => {
       "site-a", 3, { fa_content: "변경 답변" }, "csrf-1",
     ));
     expect(api.getAdminFaq).toHaveBeenCalledWith("site-a", 3);
+    await waitFor(() => expect(api.listAdminFaqMasters).toHaveBeenCalledTimes(2));
+    expect(api.getAdminFaqMaster).toHaveBeenCalledWith("site-a", 7);
   });
 
   it("deletes a master only behind explicit confirmation", async () => {

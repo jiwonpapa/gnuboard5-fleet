@@ -167,6 +167,11 @@ pub struct CoreExecuteResponse {
     pub body_base64: Option<String>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FaqImageContent {
+    pub bytes: Vec<u8>,
+}
+
 #[async_trait]
 pub trait ConnectorGateway: Send + Sync {
     async fn health(&self, base_url: &str, request_id: &str) -> ConnectorResult<ConnectorHealth>;
@@ -210,6 +215,16 @@ pub trait ConnectorGateway: Send + Sync {
         operation_id: &str,
         input: &CoreExecuteRequest,
     ) -> ConnectorResult<CoreExecuteResponse>;
+
+    async fn admin_get_faq_master_image_content(
+        &self,
+        _base_url: &str,
+        _request_id: &str,
+        _fm_id: i64,
+        _kind: &str,
+    ) -> ConnectorResult<FaqImageContent> {
+        Err(ConnectorError::SpecializedOperation)
+    }
 
     async fn admin_get_dashboard(
         &self,
@@ -2233,6 +2248,19 @@ impl ConnectorGateway for ProductionConnectorGateway {
             .core_execute(request_id, access_token, operation_id, input)
             .await
     }
+
+    async fn admin_get_faq_master_image_content(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        fm_id: i64,
+        kind: &str,
+    ) -> ConnectorResult<FaqImageContent> {
+        G5Client::connect(base_url)
+            .await?
+            .faq_master_image_content(request_id, fm_id, kind)
+            .await
+    }
 }
 
 #[cfg(feature = "local-certification")]
@@ -2322,6 +2350,19 @@ impl ConnectorGateway for LocalCertificationConnectorGateway {
         G5Client::connect_local_certification(base_url)
             .await?
             .core_execute(request_id, access_token, operation_id, input)
+            .await
+    }
+
+    async fn admin_get_faq_master_image_content(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        fm_id: i64,
+        kind: &str,
+    ) -> ConnectorResult<FaqImageContent> {
+        G5Client::connect_local_certification(base_url)
+            .await?
+            .faq_master_image_content(request_id, fm_id, kind)
             .await
     }
 }
@@ -2648,6 +2689,53 @@ impl G5Client {
             content_type,
             data,
             body_base64,
+        })
+    }
+
+    async fn faq_master_image_content(
+        &self,
+        request_id: &str,
+        fm_id: i64,
+        kind: &str,
+    ) -> ConnectorResult<FaqImageContent> {
+        let suffix = match kind {
+            "header" => "h",
+            "footer" => "t",
+            _ => return Err(ConnectorError::InvalidCoreRequest),
+        };
+        if fm_id < 1 {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        #[cfg(not(test))]
+        self.guard
+            .revalidate_before_connect(&self.target)
+            .await
+            .map_err(|_| ConnectorError::UrlSecurity)?;
+        let url = self
+            .base_url
+            .join(&format!("../../data/faq/{fm_id}_{suffix}"))
+            .map_err(|_| ConnectorError::UrlSecurity)?;
+        let response = self
+            .client
+            .get(url)
+            .header("accept", "image/png, image/jpeg, image/gif")
+            .header("x-request-id", request_id)
+            .send()
+            .await
+            .map_err(|_| ConnectorError::Transport)?;
+        let status = response.status();
+        if !status.is_success() {
+            return Err(ConnectorError::Http(status.as_u16()));
+        }
+        let bytes = response
+            .bytes()
+            .await
+            .map_err(|_| ConnectorError::Transport)?;
+        if bytes.is_empty() || bytes.len() > MAX_CORE_RESPONSE_BYTES {
+            return Err(ConnectorError::ResponseTooLarge);
+        }
+        Ok(FaqImageContent {
+            bytes: bytes.to_vec(),
         })
     }
 
@@ -3155,6 +3243,7 @@ mod tests {
             .route("/api/v1/auth/logout", post(logout))
             .route("/api/v1/admin/config", get(config_get).put(config_put))
             .route("/api/v1/admin/members", get(member_list))
+            .route("/data/faq/7_h", get(faq_header_image))
             .with_state(state);
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let address = listener.local_addr().unwrap();
@@ -3165,6 +3254,14 @@ mod tests {
         let client = G5Client::for_test(&format!("http://{address}")).unwrap();
         let health = client.health("req-health").await.unwrap();
         assert_eq!(health.status, "ok");
+        let image = client
+            .faq_master_image_content("req-faq-image", 7, "header")
+            .await
+            .unwrap();
+        assert_eq!(
+            image.bytes,
+            vec![0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a]
+        );
         let credentials = client
             .login(
                 "req-login",
@@ -3311,6 +3408,13 @@ mod tests {
             "timestamp":1,
             "meta":{"request_id":"server"}
         }))
+    }
+
+    async fn faq_header_image() -> ([(&'static str, &'static str); 1], Vec<u8>) {
+        (
+            [("content-type", "image/png")],
+            vec![0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a],
+        )
     }
 
     async fn login(Json(body): Json<Value>) -> (StatusCode, Json<Value>) {

@@ -682,6 +682,13 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/images/{kind}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_faq_master_image_content"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/admin/faqs",
       "auth": "session",
       "site_context": true,
