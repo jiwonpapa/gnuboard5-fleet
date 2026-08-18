@@ -121,6 +121,16 @@ class ManifestTest(unittest.TestCase):
                 "adminGrantPoint",
                 "adminListPoints",
                 "adminPointSummary",
+                "adminSystemListPolls",
+                "adminSystemCreatePoll",
+                "adminSystemGetPoll",
+                "adminSystemUpdatePoll",
+                "adminSystemDeletePoll",
+                "adminListPolls",
+                "adminCreatePoll",
+                "adminGetPoll",
+                "adminUpdatePoll",
+                "adminDeletePoll",
             },
             {
                 mapping["operation_id"]
