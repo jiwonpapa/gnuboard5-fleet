@@ -158,6 +158,12 @@ def main() -> int:
         type=Path,
         default=ROOT / ".cache/evidence/local-runtime.json",
     )
+    parser.add_argument(
+        "--browser-env",
+        type=Path,
+        default=ROOT / ".cache/certification/local/browser.env",
+        help="0600 local-only TOTP handoff for the real-browser certification step",
+    )
     args = parser.parse_args()
     env = load_env(args.session)
     g5_base = env["G5_CERT_G5_URL"]
@@ -225,6 +231,14 @@ def main() -> int:
     setup_token = challenge.get("setup_token")
     if not isinstance(totp_secret, str) or not isinstance(setup_token, str):
         raise RuntimeError("Fleet install challenge readback failed")
+    args.browser_env.parent.mkdir(parents=True, exist_ok=True)
+    browser_env_fd = os.open(
+        args.browser_env,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+        0o600,
+    )
+    with os.fdopen(browser_env_fd, "w", encoding="utf-8") as browser_env:
+        browser_env.write(f"G5_CERT_FLEET_TOTP_SECRET={totp_secret}\n")
     completion = request(
         fleet_base,
         "POST",
