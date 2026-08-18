@@ -1704,6 +1704,12 @@ def check_server_scaffold_contract(root: Path) -> str:
         ("DELETE", "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/header-image", "session_csrf_step_up", True),
         ("POST", "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/footer-image", "session_csrf_step_up", True),
         ("DELETE", "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/footer-image", "session_csrf_step_up", True),
+        (
+            "GET",
+            "/api/v1/sites/{site_id}/admin/faq-masters/{fm_id}/images/{kind}",
+            "session",
+            True,
+        ),
         ("GET", "/api/v1/sites/{site_id}/admin/faqs", "session", True),
         ("POST", "/api/v1/sites/{site_id}/admin/faqs", "session_csrf_step_up", True),
         ("GET", "/api/v1/sites/{site_id}/admin/faqs/{fa_id}", "session", True),
