@@ -682,8 +682,13 @@
       "id": "R18",
       "sequence": 13,
       "title": "layouts",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R17"],
+      "completion": {
+        "implementation_commit": "d0e201b112b007bd0865c1aa97cff259940924c4",
+        "evidence_path": "docs/audits/evidence/R18_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-18T03:14:01Z"
+      },
       "core": {
         "domains": ["layouts"],
         "operation_ids": [
@@ -724,7 +729,7 @@
       "id": "R19",
       "sequence": 14,
       "title": "theme",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R18"],
       "core": {
         "domains": ["theme"],
