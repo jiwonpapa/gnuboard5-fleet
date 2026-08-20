@@ -1037,6 +1037,7 @@
       "core": {
         "domains": ["qa"],
         "operation_ids": [
+          "adminDeleteQaBulk",
           "adminSystemGetQaConfig",
           "adminSystemUpdateQaConfig"
         ],
