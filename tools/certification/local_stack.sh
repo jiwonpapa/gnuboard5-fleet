@@ -197,6 +197,26 @@ INSERT INTO g5_popular (pp_word, pp_date, pp_ip) VALUES
   ('fleet-r23', '2026-08-18', '198.51.100.21'),
   ('fleet-r23', '2026-08-18', '198.51.100.22'),
   ('gnuboard-r23', '2026-08-19', '198.51.100.23');
+CREATE TABLE IF NOT EXISTS g5_report (
+  rp_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  mb_id VARCHAR(20) NOT NULL,
+  rp_target_type VARCHAR(20) NOT NULL,
+  rp_target_id VARCHAR(100) NOT NULL,
+  rp_reason VARCHAR(30) NOT NULL,
+  rp_detail TEXT NOT NULL,
+  rp_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  rp_admin_memo TEXT NULL,
+  rp_datetime DATETIME NOT NULL,
+  rp_processed_at DATETIME NULL,
+  PRIMARY KEY (rp_id),
+  UNIQUE KEY uniq_member_target (mb_id, rp_target_type, rp_target_id),
+  KEY idx_status_datetime (rp_status, rp_datetime)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT INTO g5_report
+  (mb_id, rp_target_type, rp_target_id, rp_reason, rp_detail, rp_status, rp_admin_memo, rp_datetime, rp_processed_at)
+VALUES
+  ('fleetcert', 'post', 'notice:10', 'spam', 'Fleet certification report', 'pending', NULL, '2026-08-18 09:00:00', NULL),
+  ('fleetcert', 'comment', 'notice:11:3', 'abuse', 'Fleet certification comment report', 'hold', '추가 확인', '2026-08-19 10:00:00', NULL);
 INSERT INTO g5_visit
   (vi_ip, vi_date, vi_time, vi_referer, vi_agent, vi_browser, vi_os, vi_device)
 VALUES
