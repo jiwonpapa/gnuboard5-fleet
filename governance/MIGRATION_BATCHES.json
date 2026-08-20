@@ -906,11 +906,20 @@
       "id": "R23",
       "sequence": 18,
       "title": "popular",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R22"],
+      "completion": {
+        "implementation_commit": "1fc9f71019e0ea2b5405e9c161c5c9ed58631f56",
+        "evidence_path": "docs/audits/evidence/R23_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-20T05:26:21Z"
+      },
       "core": {
         "domains": ["popular"],
-        "operation_ids": [],
+        "operation_ids": [
+          "adminListPopular",
+          "adminPopularRank",
+          "adminResetPopular"
+        ],
         "expected_count": 3
       },
       "legacy": {
@@ -939,7 +948,7 @@
       "id": "R24",
       "sequence": 19,
       "title": "visits",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R23"],
       "core": {
         "domains": ["visits"],
