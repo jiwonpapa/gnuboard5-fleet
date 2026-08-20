@@ -147,6 +147,9 @@ class ManifestTest(unittest.TestCase):
                 "adminDeleteVisits",
                 "adminSearchVisits",
                 "adminVisitStats",
+                "adminListReports",
+                "adminReportStats",
+                "adminUpdateReport",
             },
             {
                 mapping["operation_id"]
