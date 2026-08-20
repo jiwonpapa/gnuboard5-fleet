@@ -1039,6 +1039,27 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/reports",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_report_list"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/reports/stats",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_report_stats"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/sites/{site_id}/admin/reports/{report_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_report_update"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/admin/points",
       "auth": "session",
       "site_context": true,

@@ -40,7 +40,8 @@ use g5_fleet_connector::{
     AdminPollCreate, AdminPollList, AdminPollListQuery, AdminPollUpdate, AdminPopularList,
     AdminPopularListQuery, AdminPopularRankList, AdminPopularRankQuery, AdminPopularReset,
     AdminPopularResetResult, AdminPopup, AdminPopupCreate, AdminPopupList, AdminPopupListQuery,
-    AdminPopupUpdate, AdminSchemaCatalog, AdminSchemaDetail, AdminSystemPermission,
+    AdminPopupUpdate, AdminReportItem, AdminReportList, AdminReportListQuery, AdminReportStats,
+    AdminReportUpdate, AdminSchemaCatalog, AdminSchemaDetail, AdminSystemPermission,
     AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
     AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, AdminVisitDelete,
     AdminVisitDeleteResult, AdminVisitSearchQuery, AdminVisitSearchResult, AdminVisitStats,
@@ -578,6 +579,15 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/visits",
             axum::routing::delete(admin_visit_delete),
+        )
+        .route("/sites/{site_id}/admin/reports", get(admin_report_list))
+        .route(
+            "/sites/{site_id}/admin/reports/stats",
+            get(admin_report_stats),
+        )
+        .route(
+            "/sites/{site_id}/admin/reports/{report_id}",
+            axum::routing::patch(admin_report_update),
         )
         .route(
             "/sites/{site_id}/admin/points",
@@ -4799,6 +4809,99 @@ async fn admin_visit_delete(
         .await
     {
         Ok(result) => Json::<AdminVisitDeleteResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_report_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminReportListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_list_reports(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminReportList>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_report_stats(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_report_stats(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminReportStats>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_report_update(
+    State(state): State<AppState>,
+    Path((site_id, report_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminReportUpdate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_update_report(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            report_id,
+            &update,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminReportItem>(result).into_response(),
         Err(error) => connector_error(error),
     }
 }

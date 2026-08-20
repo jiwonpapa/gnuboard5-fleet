@@ -422,6 +422,9 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("GET", "/api/v1/sites/{site_id}/admin/visits/stats"),
             ("GET", "/api/v1/sites/{site_id}/admin/visits/search"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/visits"),
+            ("GET", "/api/v1/sites/{site_id}/admin/reports"),
+            ("GET", "/api/v1/sites/{site_id}/admin/reports/stats"),
+            ("PATCH", "/api/v1/sites/{site_id}/admin/reports/{report_id}"),
             ("GET", "/api/v1/sites/{site_id}/admin/points"),
             ("POST", "/api/v1/sites/{site_id}/admin/points"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/points"),
@@ -860,6 +863,10 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         visits: Arc::new(Mutex::new(vec![
             serde_json::json!({"vi_id": 1, "vi_ip": "127.0.0.1", "vi_date": "2026-08-18", "vi_time": "09:10:00", "vi_referer": "https://example.com", "vi_agent": "Mozilla/5.0", "vi_browser": "Chrome", "vi_os": "macOS", "vi_device": "desktop"}),
             serde_json::json!({"vi_id": 2, "vi_ip": "127.0.0.2", "vi_date": "2026-08-19", "vi_time": "10:20:00", "vi_referer": "", "vi_agent": "Mobile Safari", "vi_browser": "Safari", "vi_os": "iOS", "vi_device": "mobile"}),
+        ])),
+        reports: Arc::new(Mutex::new(vec![
+            serde_json::json!({"rp_id": 41, "mb_id": "member01", "rp_target_type": "post", "rp_target_id": "notice:10", "rp_reason": "spam", "rp_detail": "중복 홍보 게시물", "rp_status": "pending", "rp_admin_memo": null, "rp_datetime": "2026-08-18 09:00:00", "rp_processed_at": null}),
+            serde_json::json!({"rp_id": 42, "mb_id": null, "rp_target_type": "comment", "rp_target_id": "notice:11:3", "rp_reason": "abuse", "rp_detail": "욕설 댓글", "rp_status": "hold", "rp_admin_memo": "추가 확인", "rp_datetime": "2026-08-19 10:00:00", "rp_processed_at": null}),
         ])),
         points: Arc::new(Mutex::new(Vec::new())),
     };
@@ -2900,6 +2907,59 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
     assert_eq!(json::<Value>(visit_delete).await["deleted_rows"], 1);
     assert_eq!(mock.visits.lock().unwrap().len(), 1);
 
+    // R25 report list, statistics and processing preserve the selected site.
+    let report_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/reports?status=pending&page=1&per_page=20",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(report_list.status(), StatusCode::OK);
+    let report_list = json::<Value>(report_list).await;
+    assert_eq!(report_list["items"].as_array().unwrap().len(), 1);
+    assert_eq!(report_list["items"][0]["rp_id"], 41);
+
+    let report_stats = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/reports/stats",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(report_stats.status(), StatusCode::OK);
+    let report_stats = json::<Value>(report_stats).await;
+    assert_eq!(report_stats["total"], 2);
+    assert_eq!(report_stats["pending"], 1);
+
+    let report_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PATCH,
+            "/api/v1/sites/site-a/admin/reports/41",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "status": "approved",
+                "admin_memo": "운영 검토 완료"
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(report_update.status(), StatusCode::OK);
+    let report_update = json::<Value>(report_update).await;
+    assert_eq!(report_update["rp_status"], "approved");
+    assert_eq!(report_update["rp_admin_memo"], "운영 검토 완료");
+    assert_eq!(mock.reports.lock().unwrap()[0]["rp_status"], "approved");
+
     let point_baseline = app
         .clone()
         .oneshot(json_request(
@@ -3523,6 +3583,7 @@ struct MockConnector {
     popups: Arc<Mutex<Vec<Value>>>,
     popular: Arc<Mutex<Vec<Value>>>,
     visits: Arc<Mutex<Vec<Value>>>,
+    reports: Arc<Mutex<Vec<Value>>>,
     points: Arc<Mutex<Vec<Value>>>,
 }
 
@@ -4672,6 +4733,55 @@ impl ConnectorGateway for MockConnector {
                     !matches
                 });
                 serde_json::json!({"data": {"deleted_rows": prior - visits.len(), "before": before_date, "date_from": date_from, "date_to": date_to, "ip": ip}, "meta": {}})
+            }
+            "adminListReports" => {
+                let status = input.query.get("status").and_then(Value::as_str);
+                let target_type = input.query.get("target_type").and_then(Value::as_str);
+                let reports = self
+                    .reports
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .filter(|report| {
+                        status.is_none_or(|value| report["rp_status"].as_str() == Some(value))
+                            && target_type.is_none_or(|value| {
+                                report["rp_target_type"].as_str() == Some(value)
+                            })
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>();
+                serde_json::json!({"data": reports, "pagination": {
+                    "mode": "page", "total": reports.len(), "page": 1, "per_page": 20,
+                    "last_page": 1, "cursor": null, "next_cursor": null,
+                    "has_next": false, "has_prev": false
+                }, "meta": {}})
+            }
+            "adminReportStats" => {
+                let reports = self.reports.lock().unwrap();
+                let count = |status: &str| {
+                    reports
+                        .iter()
+                        .filter(|report| report["rp_status"].as_str() == Some(status))
+                        .count()
+                };
+                serde_json::json!({"data": {
+                    "pending": count("pending"), "approved": count("approved"),
+                    "rejected": count("rejected"), "hold": count("hold"),
+                    "total": reports.len()
+                }, "meta": {}})
+            }
+            "adminUpdateReport" => {
+                let report_id = input.path["report_id"].parse::<i64>().unwrap();
+                let body = input.body.as_ref().unwrap();
+                let mut reports = self.reports.lock().unwrap();
+                let report = reports
+                    .iter_mut()
+                    .find(|report| report["rp_id"].as_i64() == Some(report_id))
+                    .unwrap();
+                report["rp_status"] = body["status"].clone();
+                report["rp_admin_memo"] = body.get("admin_memo").cloned().unwrap_or(Value::Null);
+                report["rp_processed_at"] = serde_json::json!("2026-08-20 12:00:00");
+                serde_json::json!({"data": report.clone(), "meta": {}})
             }
             "adminListPoints" => {
                 let member_id = input.query.get("mb_id").and_then(Value::as_str);

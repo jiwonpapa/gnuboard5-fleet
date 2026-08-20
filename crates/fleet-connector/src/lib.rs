@@ -65,6 +65,10 @@ pub use g5_fleet_core::popups::{
     AdminPopup, AdminPopupCreate, AdminPopupList, AdminPopupListQuery, AdminPopupUpdate,
     valid_popup_id,
 };
+pub use g5_fleet_core::reports::{
+    AdminReportItem, AdminReportList, AdminReportListQuery, AdminReportStats, AdminReportStatus,
+    AdminReportTargetType, AdminReportUpdate, valid_report_id,
+};
 pub use g5_fleet_core::theme::{
     AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, valid_theme_id,
 };
@@ -2734,6 +2738,86 @@ pub trait ConnectorGateway: Send + Sync {
             )
             .await?;
         typed_core_data("adminDeleteVisits", response)
+    }
+
+    async fn admin_list_reports(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminReportListQuery,
+    ) -> ConnectorResult<AdminReportList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListReports",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("status", query.status.map(|value| json!(value))),
+                        ("target_type", query.target_type.map(|value| json!(value))),
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<AdminReportItem> =
+            typed_core_envelope("adminListReports", response)?;
+        Ok(AdminReportList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_report_stats(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminReportStats> {
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminReportStats",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        typed_core_data("adminReportStats", response)
+    }
+
+    async fn admin_update_report(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        report_id: i64,
+        update: &AdminReportUpdate,
+    ) -> ConnectorResult<AdminReportItem> {
+        if !valid_report_id(report_id) || !update.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminUpdateReport",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("report_id".to_owned(), report_id.to_string())]),
+                    body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminUpdateReport", response)
     }
 
     async fn admin_list_points(
