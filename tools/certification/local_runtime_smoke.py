@@ -1653,6 +1653,72 @@ def main() -> int:
     ):
         raise RuntimeError("R25 report rollback readback failed")
 
+    qa_config_path = "/api/v1/sites/owner-a-site/admin/system/qa-config"
+    qa_config = request(
+        fleet_base, "GET", qa_config_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    qa_required_fields = {
+        "qa_id", "qa_title", "qa_category", "qa_skin", "qa_mobile_skin",
+        "qa_use_email", "qa_req_email", "qa_use_hp", "qa_req_hp", "qa_use_sms",
+        "qa_send_number", "qa_admin_hp", "qa_admin_email", "qa_use_editor",
+        "qa_subject_len", "qa_mobile_subject_len", "qa_page_rows", "qa_mobile_page_rows",
+        "qa_image_width", "qa_upload_size", "qa_insert_content", "qa_include_head",
+        "qa_include_tail", "qa_content_head", "qa_content_tail", "qa_mobile_content_head",
+        "qa_mobile_content_tail", "qa_1_subj", "qa_2_subj", "qa_3_subj", "qa_4_subj",
+        "qa_5_subj", "qa_1", "qa_2", "qa_3", "qa_4", "qa_5",
+    }
+    if set(qa_config) != qa_required_fields:
+        raise RuntimeError("R26 QA config canonical field set failed")
+    qa_config_sentinel = f"Fleet R26 {env['G5_CERT_REVISION'][:12]}"
+    updated_qa_config = request(
+        fleet_base, "PUT", qa_config_path,
+        body={"qa_title": qa_config_sentinel, "qa_5_subj": "인증 추가 필드"},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if (
+        updated_qa_config.get("qa_title") != qa_config_sentinel
+        or updated_qa_config.get("qa_5_subj") != "인증 추가 필드"
+    ):
+        raise RuntimeError("R26 QA config update response failed")
+    qa_config_readback = request(
+        fleet_base, "GET", qa_config_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        qa_config_readback.get("qa_title") != qa_config_sentinel
+        or qa_config_readback.get("qa_5_subj") != "인증 추가 필드"
+    ):
+        raise RuntimeError("R26 QA config update readback failed")
+    request(
+        fleet_base, "PUT", qa_config_path,
+        body={"qa_title": qa_config["qa_title"], "qa_5_subj": qa_config["qa_5_subj"]},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    )
+    restored_qa_config = request(
+        fleet_base, "GET", qa_config_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        restored_qa_config.get("qa_title") != qa_config.get("qa_title")
+        or restored_qa_config.get("qa_5_subj") != qa_config.get("qa_5_subj")
+    ):
+        raise RuntimeError("R26 QA config rollback readback failed")
+
+    request(g5_base, "GET", "/api/v1/qa/9002", headers=authorization)
+    deleted_qa = request(
+        fleet_base, "DELETE", "/api/v1/sites/owner-a-site/admin/qa",
+        body={"qa_ids": [9002]},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if deleted_qa != {"deleted_count": 1, "qa_ids": [9002]}:
+        raise RuntimeError("R26 QA bulk delete response failed")
+    request(
+        g5_base, "GET", "/api/v1/qa/9002",
+        headers=authorization, expected=(404,),
+    )
+    request(g5_base, "GET", "/api/v1/qa/9001", headers=authorization)
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -1967,6 +2033,16 @@ def main() -> int:
             "update_readback": "passed",
             "stats_post_update": "passed",
             "rollback_readback": "passed",
+        },
+        "r26_qa": {
+            "operations": 3,
+            "canonical_config_fields": 36,
+            "config_update_readback": "passed",
+            "config_rollback_readback": "passed",
+            "bulk_delete_requested_ids": [9002],
+            "bulk_delete_deleted_count": 1,
+            "provider_deleted_item_404": "passed",
+            "untargeted_item_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,

@@ -217,6 +217,11 @@ INSERT INTO g5_report
 VALUES
   ('fleetcert', 'post', 'notice:10', 'spam', 'Fleet certification report', 'pending', NULL, '2026-08-18 09:00:00', NULL),
   ('fleetcert', 'comment', 'notice:11:3', 'abuse', 'Fleet certification comment report', 'hold', '추가 확인', '2026-08-19 10:00:00', NULL);
+INSERT INTO g5_qa_content
+  (qa_id, qa_num, qa_parent, mb_id, qa_name, qa_email, qa_category, qa_subject, qa_content, qa_ip, qa_datetime)
+VALUES
+  (9001, -9001, 0, 'fleetcert', 'Fleet Certification', 'fleet-cert@example.invalid', '회원', 'R26 보존 문의', 'R26 QA configuration baseline', '198.51.100.41', '2026-08-18 11:00:00'),
+  (9002, -9002, 0, 'fleetcert', 'Fleet Certification', 'fleet-cert@example.invalid', '회원', 'R26 삭제 문의', 'R26 QA bulk delete target', '198.51.100.42', '2026-08-19 11:00:00');
 INSERT INTO g5_visit
   (vi_ip, vi_date, vi_time, vi_referer, vi_agent, vi_browser, vi_os, vi_device)
 VALUES
