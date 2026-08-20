@@ -1577,6 +1577,82 @@ def main() -> int:
     ):
         raise RuntimeError("R23 popular cleanup readback failed")
 
+    reports_path = "/api/v1/sites/owner-a-site/admin/reports"
+    report_baseline = request(
+        fleet_base, "GET", f"{reports_path}?page=1&per_page=20",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        report_baseline.get("pagination", {}).get("total") != 2
+        or len(report_baseline.get("items", [])) != 2
+    ):
+        raise RuntimeError("R25 report seeded list baseline failed")
+    pending_reports = request(
+        fleet_base, "GET", f"{reports_path}?status=pending&target_type=post&page=1&per_page=20",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        pending_reports.get("pagination", {}).get("total") != 1
+        or len(pending_reports.get("items", [])) != 1
+        or pending_reports["items"][0].get("rp_target_id") != "notice:10"
+    ):
+        raise RuntimeError("R25 report filtered list failed")
+    report_id = pending_reports["items"][0].get("rp_id")
+    if not isinstance(report_id, int) or report_id <= 0:
+        raise RuntimeError("R25 report id readback failed")
+    report_stats = request(
+        fleet_base, "GET", f"{reports_path}/stats",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        report_stats.get("total") != 2
+        or report_stats.get("pending") != 1
+        or report_stats.get("hold") != 1
+    ):
+        raise RuntimeError("R25 report stats baseline failed")
+    report_sentinel = f"R25 certification {env['G5_CERT_REVISION'][:12]}"
+    updated_report = request(
+        fleet_base, "PATCH", f"{reports_path}/{report_id}",
+        body={"status": "approved", "admin_memo": report_sentinel},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if (
+        updated_report.get("rp_status") != "approved"
+        or updated_report.get("rp_admin_memo") != report_sentinel
+        or not updated_report.get("rp_processed_at")
+    ):
+        raise RuntimeError("R25 report update response failed")
+    approved_reports = request(
+        fleet_base, "GET", f"{reports_path}?status=approved&page=1&per_page=20",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    updated_stats = request(
+        fleet_base, "GET", f"{reports_path}/stats",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        approved_reports.get("pagination", {}).get("total") != 1
+        or approved_reports.get("items", [{}])[0].get("rp_id") != report_id
+        or updated_stats.get("approved") != 1
+        or updated_stats.get("pending") != 0
+    ):
+        raise RuntimeError("R25 report post-update readback failed")
+    restored_report = request(
+        fleet_base, "PATCH", f"{reports_path}/{report_id}",
+        body={"status": "pending", "admin_memo": ""},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    restored_stats = request(
+        fleet_base, "GET", f"{reports_path}/stats",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        restored_report.get("rp_status") != "pending"
+        or restored_report.get("rp_admin_memo") != ""
+        or restored_stats != report_stats
+    ):
+        raise RuntimeError("R25 report rollback readback failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -1883,6 +1959,14 @@ def main() -> int:
             "range_reset_readback": "passed",
             "final_reset_deleted_rows": 1,
             "cleanup_readback": "passed",
+        },
+        "r25_reports": {
+            "operations": 3,
+            "seeded_list_and_filters": "passed",
+            "stats_baseline": "passed",
+            "update_readback": "passed",
+            "stats_post_update": "passed",
+            "rollback_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,
