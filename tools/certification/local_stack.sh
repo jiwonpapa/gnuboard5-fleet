@@ -197,6 +197,15 @@ INSERT INTO g5_popular (pp_word, pp_date, pp_ip) VALUES
   ('fleet-r23', '2026-08-18', '198.51.100.21'),
   ('fleet-r23', '2026-08-18', '198.51.100.22'),
   ('gnuboard-r23', '2026-08-19', '198.51.100.23');
+INSERT INTO g5_visit
+  (vi_ip, vi_date, vi_time, vi_referer, vi_agent, vi_browser, vi_os, vi_device)
+VALUES
+  ('198.51.100.31', '2026-08-18', '09:10:00', 'https://www.google.com/search?q=fleet', 'Fleet Certification Desktop', 'Chrome', 'macOS', 'desktop'),
+  ('198.51.100.32', '2026-08-19', '10:20:00', '', 'Fleet Certification Mobile', 'Safari', 'iOS', 'mobile');
+INSERT INTO g5_visit_sum (vs_date, vs_count) VALUES
+  ('2026-08-18', 1),
+  ('2026-08-19', 1)
+ON DUPLICATE KEY UPDATE vs_count = VALUES(vs_count);
 COMMIT;
 SQL
 
