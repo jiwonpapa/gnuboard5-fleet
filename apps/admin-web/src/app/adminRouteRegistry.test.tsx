@@ -44,8 +44,12 @@ describe("adminRouteRegistry", () => {
       label: "팝업",
       delivery: "active",
     });
+    expect(resolveRouteMeta("/admin/popular")).toMatchObject({
+      label: "인기검색",
+      delivery: "active",
+    });
     expect(adminRoutes.filter((route) => route.delivery === "active")).toHaveLength(
-      15,
+      16,
     );
     expect(groupedAdminRoutes().get("메시징")?.length).toBeGreaterThanOrEqual(6);
   });

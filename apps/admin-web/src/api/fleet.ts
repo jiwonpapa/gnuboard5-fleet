@@ -805,6 +805,55 @@ export interface AdminPopupCreate {
 
 export type AdminPopupUpdate = Partial<AdminPopupCreate>;
 
+export interface AdminPopularItem {
+  pp_word: string;
+  pp_date: string;
+  pp_cnt: number;
+  pp_rank: number;
+}
+
+export interface AdminPopularList {
+  items: AdminPopularItem[];
+  pagination: Pagination;
+}
+
+export interface AdminPopularListQuery {
+  page?: number;
+  per_page?: number;
+  date_from?: string;
+  date_to?: string;
+}
+
+export interface AdminPopularRankItem {
+  rank: number;
+  pp_word: string;
+  hit_count: number;
+  first_date: string;
+  last_date: string;
+}
+
+export interface AdminPopularRankList {
+  items: AdminPopularRankItem[];
+  pagination: Pagination;
+}
+
+export interface AdminPopularRankQuery {
+  limit?: number;
+  date_from?: string;
+  date_to?: string;
+}
+
+export interface AdminPopularReset {
+  date_from?: string;
+  date_to?: string;
+}
+
+export interface AdminPopularResetResult {
+  deleted_rows: number;
+  date_from: string | null;
+  date_to: string | null;
+}
+
 export interface AdminPointItem {
   po_id: number;
   mb_id: string;
@@ -2227,6 +2276,47 @@ export function updateAdminLegacyPopup(siteId: string, nwId: number, update: Adm
 
 export function deleteAdminLegacyPopup(siteId: string, nwId: number, csrfToken: string) {
   return transport.request<void>({ method: "DELETE", path: adminPopupPath(siteId, false, nwId), csrfToken });
+}
+
+function appendPopularRange(search: URLSearchParams, query: { date_from?: string; date_to?: string }) {
+  if (query.date_from) search.set("date_from", query.date_from);
+  if (query.date_to) search.set("date_to", query.date_to);
+}
+
+export function listAdminPopular(siteId: string, query: AdminPopularListQuery = {}) {
+  const search = new URLSearchParams();
+  if (query.page !== undefined) search.set("page", String(query.page));
+  if (query.per_page !== undefined) search.set("per_page", String(query.per_page));
+  appendPopularRange(search, query);
+  const suffix = search.size ? `?${search.toString()}` : "";
+  return transport.request<AdminPopularList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/popular${suffix}`,
+  });
+}
+
+export function getAdminPopularRank(siteId: string, query: AdminPopularRankQuery = {}) {
+  const search = new URLSearchParams();
+  if (query.limit !== undefined) search.set("limit", String(query.limit));
+  appendPopularRange(search, query);
+  const suffix = search.size ? `?${search.toString()}` : "";
+  return transport.request<AdminPopularRankList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/popular/rank${suffix}`,
+  });
+}
+
+export function resetAdminPopular(
+  siteId: string,
+  reset: AdminPopularReset,
+  csrfToken: string,
+) {
+  return transport.request<AdminPopularResetResult, AdminPopularReset>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/popular`,
+    csrfToken,
+    body: reset,
+  });
 }
 
 export function listAdminPoints(siteId: string, query: AdminPointListQuery = {}) {

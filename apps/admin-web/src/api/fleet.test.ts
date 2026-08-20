@@ -35,6 +35,7 @@ import {
   getAdminFieldSchema,
   getAdminMember,
   getAdminPointSummary,
+  getAdminPopularRank,
   getAdminLegacyPoll,
   getAdminSystemPoll,
   getAdminLegacyGroup,
@@ -46,6 +47,7 @@ import {
   listAdminFieldSchemas,
   listAdminMembers,
   listAdminPoints,
+  listAdminPopular,
   listAdminLegacyPolls,
   listAdminSystemPolls,
   listAdminLegacyGroupMembers,
@@ -54,6 +56,7 @@ import {
   openTerminalSocket,
   patchAdminBoardGroup,
   saveAdminSystemPermission,
+  resetAdminPopular,
   grantAdminPoint,
   deductAdminPoint,
   upsertAdminAuth,
@@ -416,5 +419,35 @@ describe("remote Fleet transport", () => {
     for (const [, init] of fetcher.mock.calls.filter(([, call]) => call?.method !== "GET")) {
       expect(new Headers(init?.headers).get("x-csrf-token")).toBe("csrf-1");
     }
+  });
+
+  it("consumes all three R23 popular operations through explicit site scope", async () => {
+    const fetcher = vi.fn(async (
+      _input: RequestInfo | URL,
+      _init?: RequestInit,
+    ) => {
+      void _input;
+      void _init;
+      return new Response("{}", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetcher);
+
+    await listAdminPopular("site-a", {
+      page: 2, per_page: 20, date_from: "2026-08-01", date_to: "2026-08-20",
+    });
+    await getAdminPopularRank("site-a", { limit: 10, date_from: "2026-08-01" });
+    await resetAdminPopular("site-a", { date_to: "2026-08-20" }, "csrf-1");
+
+    expect(fetcher.mock.calls.map(([input, init]) => [String(input), init?.method])).toEqual([
+      ["http://localhost:3000/api/v1/sites/site-a/admin/popular?page=2&per_page=20&date_from=2026-08-01&date_to=2026-08-20", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/popular/rank?limit=10&date_from=2026-08-01", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/popular", "DELETE"],
+    ]);
+    const reset = fetcher.mock.calls[2]?.[1];
+    expect(reset?.body).toBe(JSON.stringify({ date_to: "2026-08-20" }));
+    expect(new Headers(reset?.headers).get("x-csrf-token")).toBe("csrf-1");
   });
 });

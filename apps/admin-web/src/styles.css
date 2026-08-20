@@ -3656,11 +3656,29 @@ code {
   margin-top: 16px;
 }
 
+.popular-filter {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(140px, 1fr)) auto;
+  margin-bottom: 20px;
+}
+
+.popular-workspace {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.popular-pagination {
+  margin-top: 16px;
+}
+
 @media (max-width: 960px) {
   .points-page .point-filter,
   .points-workspace,
   .polls-workspace,
-  .popups-workspace {
+  .popups-workspace,
+  .popular-filter,
+  .popular-workspace {
     grid-template-columns: 1fr;
   }
 }
