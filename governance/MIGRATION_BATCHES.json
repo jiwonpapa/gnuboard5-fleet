@@ -948,8 +948,13 @@
       "id": "R24",
       "sequence": 19,
       "title": "visits",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R23"],
+      "completion": {
+        "implementation_commit": "2de2876bdd51151e52deb8223256d1be5af9f2e1",
+        "evidence_path": "docs/audits/evidence/R24_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-20T06:09:39Z"
+      },
       "core": {
         "domains": ["visits"],
         "operation_ids": [
@@ -985,7 +990,7 @@
       "id": "R25",
       "sequence": 20,
       "title": "reports",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R24"],
       "core": {
         "domains": ["reports"],

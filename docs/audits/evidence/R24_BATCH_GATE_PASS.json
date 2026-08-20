@@ -1,0 +1,137 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R24",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "2de2876bdd51151e52deb8223256d1be5af9f2e1",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "2de2876bdd51151e52deb8223256d1be5af9f2e1"
+  },
+  "generated_at": "2026-08-20T06:09:39Z",
+  "commands": [
+    "make active-check",
+    "make runtime-prepare",
+    "composer test (official G5 composed runtime)",
+    "make audit-runtime-prepare",
+    "make audit-server-static",
+    "make test-migration-parity test-audit",
+    "python3 -m tools.migration_parity.batch_cli --batch R24 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R23 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R25 --profile static",
+    "BUILDX_BUILDER=g5-fleet-cert-builder make certification-clean certification-up",
+    "make certification-local-smoke",
+    "playwright-cli --session r24-final resize 1440 1000 (headless)",
+    "playwright-cli --session r24-final resize 390 844 (headless)"
+  ],
+  "results": {
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {"passed": 79, "failed": 0, "ignored": 1},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 62,
+      "web_tests": {"passed": 134, "failed": 0},
+      "web_build": "PASS"
+    },
+    "php_composed_runtime": {
+      "status": "PASS",
+      "official_g5_version": "5.6.32",
+      "tests": 875,
+      "assertions": 6727,
+      "failed": 0,
+      "skipped": 5
+    },
+    "migration_harness_tests": {"passed": 26, "failed": 0},
+    "audit_harness_tests": {"passed": 25, "failed": 0},
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "2de2876bdd51151e52deb8223256d1be5af9f2e1",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "bfe664aa19bc4aac23a747d91b79e16d0ec6afcfef2fa9d4359442197624b5e0",
+      "otp_install_login_step_up": "PASS",
+      "visit_operations": 3,
+      "stats_summary_readback": {"total_visits": 2, "active_days": 2, "unique_ips_before_delete": 2},
+      "search_rows_before_delete": 2,
+      "ip_filter_rows": 1,
+      "conditional_delete_deleted_rows": 1,
+      "database_rows_after_delete": 1,
+      "unique_ips_after_delete": 1,
+      "visit_sum_after_log_cleanup": 2,
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "PASS",
+      "implementation_revision": "2de2876bdd51151e52deb8223256d1be5af9f2e1",
+      "execution_mode": "headless",
+      "login_and_recent_identity_step_up": "PASS",
+      "stats_and_search_readback": "PASS",
+      "ip_filter_readback": "PASS",
+      "confirmation_gated_conditional_delete": "PASS",
+      "delete_stats_search_readback": "PASS",
+      "console_errors": 0,
+      "desktop_1440x1000": "PASS",
+      "mobile_390x844": "PASS",
+      "screenshots": [
+        {
+          "path": "output/playwright/r24-visits-desktop.png",
+          "sha256": "ba6d99109867a5f68d9fa9793d43328d8a53697215f6dfbb34c73c56e18e51a2"
+        },
+        {
+          "path": "output/playwright/r24-visits-mobile.png",
+          "sha256": "b64b0466c9af1d9a9f71c720be265f59ddc08fa508f53bf75af7f727821c4271"
+        }
+      ]
+    },
+    "typed_operation_consumption": {
+      "operations": ["adminDeleteVisits", "adminSearchVisits", "adminVisitStats"],
+      "new_site_scoped_axum_routes": 3,
+      "browser_same_origin_transport": "PASS",
+      "canonical_vi_field_readback": "PASS",
+      "csrf_and_step_up_delete_guard": "PASS",
+      "empty_delete_condition_guard": "PASS",
+      "browser_g5_secret_exposure": "NONE"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 175, "added_r24_routes": 3},
+    "predecessor_regression": {"batch": "R23", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 8, "core_operations": 3, "required_capabilities": 0},
+    "reuse": {"reused": 1, "adapted": 7, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "global_migration": {"status": "FAIL", "findings": 175},
+    "next_batch_probe": {
+      "batch": "R25",
+      "status": "FAIL",
+      "scope": {"legacy": 5, "core_operations": 3, "required_capabilities": 0},
+      "findings": 8
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "cf90b40a8ab61346599de66dde167fd82d08a342ace44607f1b3aff832dd03e1",
+    "migration_batches_before_closeout": "8348a5c5a93450ee450cbdd2ccb85f07a7535cea829e88b14578e1287e94a98e"
+  },
+  "source_reports": [
+    {
+      "path": "output/audit/runs/20260820T060058Z-768790bc656d/result.json",
+      "sha256": "5b9f3b59459fcc25753ab194a8be331b7f238b5b8b5d9660e1dc6a7b2b06f455"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R24-20260820T060213Z-b776e138/result.json",
+      "sha256": "d40beeb0946554b6efc77c29b5df41edc9f1f92b0fbc3a923107725a74356738"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R23-20260820T060914Z-8bdf2ff4/result.json",
+      "sha256": "e8c5be07525fe4f8f7c67b283af33c76af36f056da69e2145dbde1af5af34da3"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R25-20260820T060914Z-fb8f3134/result.json",
+      "sha256": "2ee642d97d3c0008f716307f590244b3f4bc4a933c2cd8946b8716b5a184f685"
+    }
+  ],
+  "claim_limit": "R24 방문자 통계·로그 검색·조건 삭제 3-operation typed DTO, Connector, explicit site_id Axum routes, same-origin responsive React workspace, official G5 5.6.32 local runtime and headless browser readback only. Empty or mixed destructive input is fail-closed and deletion requires explicit confirmation plus recent identity step-up. This is not package, staging or live certification; global migration remains FAIL with 175 findings."
+}

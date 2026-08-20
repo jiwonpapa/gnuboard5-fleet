@@ -116,26 +116,25 @@ revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장�
 
 ## 현재 배치
 
-R00~R13은 tracked 증거로 닫혔습니다. R13은 legacy 20개와 Core operation
-17개를 닫아 전역 finding을 403개에서 366개로 줄였습니다.
+R00~R24는 tracked 증거로 닫혔습니다. R24는 방문 통계·로그 검색·조건
+삭제 3개 Core operation과 legacy 8개 항목을 닫았습니다.
 
-- 구현 commit: `8cc1ecbec6d57f7865b05fd4a5bc4735f942ad7f`
-- 증거: `docs/audits/evidence/R13_BATCH_GATE_PASS.json`
-- R13 scoped finding: 0
+- 구현 commit: `2de2876bdd51151e52deb8223256d1be5af9f2e1`
+- 증거: `docs/audits/evidence/R24_BATCH_GATE_PASS.json`
+- R24 scoped finding: 0
 - `SERVER_STATIC_PASS`: 35/35
-- typed Core 소비: 42/189
-- 웹 테스트: 68 PASS
-- `LOCAL_RUNTIME_PASS`: R13 그룹 canonical·legacy 17개 operation 실제 G5 readback
-- Chromium 데스크톱·390px 모바일 그룹 생성·재조회 UI PASS
-- staging `fac6a92` 배포·TLS·ready/meta와 실패 upgrade backup rollback
-  receipt PASS. 다만 과거 B10 local/browser/package 증거가 현재 SHA와 달라
-  전체 `audit-staging` PASS로 승격하지 않음
-- 다음 활성 배치: R14 boards
-- R14 사전 probe: FAIL 17
+- typed Core 소비: 120/189
+- Rust 테스트: 79 PASS, 1 ignored
+- 웹 테스트: 62 files, 134 PASS
+- PHP Connector: 875 tests, 6727 assertions, 5 skipped
+- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 통계·검색·조건 삭제·재조회 PASS
+- Chromium 1440×1000·390×844, OTP step-up, 콘솔 오류 0 PASS
+- 다음 활성 배치: R25 reports
+- R25 사전 probe: FAIL 8
 
 ```bash
-make check-batch BATCH=R14
+make check-batch BATCH=R25
 ```
 
-전체 완료는 아닙니다. 전역 감사 366개가 남아 있으며 R36 전까지
+전체 완료는 아닙니다. 전역 감사 175개가 남아 있으며 R36 전까지
 `MIGRATION_STATIC FAIL`을 유지합니다.
