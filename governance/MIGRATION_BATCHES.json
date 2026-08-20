@@ -952,7 +952,11 @@
       "depends_on": ["R23"],
       "core": {
         "domains": ["visits"],
-        "operation_ids": [],
+        "operation_ids": [
+          "adminDeleteVisits",
+          "adminSearchVisits",
+          "adminVisitStats"
+        ],
         "expected_count": 3
       },
       "legacy": {
