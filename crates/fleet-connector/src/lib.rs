@@ -68,6 +68,11 @@ pub use g5_fleet_core::popups::{
 pub use g5_fleet_core::theme::{
     AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, valid_theme_id,
 };
+pub use g5_fleet_core::visits::{
+    AdminVisitDelete, AdminVisitDeleteResult, AdminVisitLogItem, AdminVisitSearchQuery,
+    AdminVisitSearchResult, AdminVisitStatItem, AdminVisitStats, AdminVisitStatsQuery,
+    AdminVisitStatsSummary, AdminVisitStatsType,
+};
 use g5_fleet_security::{SystemResolver, UrlGuard};
 use reqwest::{
     Method,
@@ -2629,6 +2634,106 @@ pub trait ConnectorGateway: Send + Sync {
             )
             .await?;
         typed_core_data("adminResetPopular", response)
+    }
+
+    async fn admin_visit_stats(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminVisitStatsQuery,
+    ) -> ConnectorResult<AdminVisitStats> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminVisitStats",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        (
+                            "date_from",
+                            query.date_from.as_ref().map(|value| json!(value)),
+                        ),
+                        ("date_to", query.date_to.as_ref().map(|value| json!(value))),
+                        ("type", query.stats_type.map(|value| json!(value))),
+                        ("limit", query.limit.map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminVisitStats", response)
+    }
+
+    async fn admin_search_visits(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminVisitSearchQuery,
+    ) -> ConnectorResult<AdminVisitSearchResult> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSearchVisits",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                        (
+                            "date_from",
+                            query.date_from.as_ref().map(|value| json!(value)),
+                        ),
+                        ("date_to", query.date_to.as_ref().map(|value| json!(value))),
+                        ("ip", query.ip.as_ref().map(|value| json!(value))),
+                        ("referer", query.referer.as_ref().map(|value| json!(value))),
+                        ("agent", query.agent.as_ref().map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<AdminVisitLogItem> =
+            typed_core_envelope("adminSearchVisits", response)?;
+        Ok(AdminVisitSearchResult {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_delete_visits(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        delete: &AdminVisitDelete,
+    ) -> ConnectorResult<AdminVisitDeleteResult> {
+        if !delete.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteVisits",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(delete).map_err(|_| ConnectorError::Contract)?),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminDeleteVisits", response)
     }
 
     async fn admin_list_points(

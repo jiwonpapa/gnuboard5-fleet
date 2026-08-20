@@ -1018,6 +1018,27 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/visits/stats",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_visit_stats"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/visits/search",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_visit_search"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/visits",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_visit_delete"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/admin/points",
       "auth": "session",
       "site_context": true,

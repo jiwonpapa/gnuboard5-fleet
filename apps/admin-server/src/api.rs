@@ -42,10 +42,11 @@ use g5_fleet_connector::{
     AdminPopularResetResult, AdminPopup, AdminPopupCreate, AdminPopupList, AdminPopupListQuery,
     AdminPopupUpdate, AdminSchemaCatalog, AdminSchemaDetail, AdminSystemPermission,
     AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
-    AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, BasicConfig,
-    ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest,
-    CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview, core_operation,
-    core_operations,
+    AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, AdminVisitDelete,
+    AdminVisitDeleteResult, AdminVisitSearchQuery, AdminVisitSearchResult, AdminVisitStats,
+    AdminVisitStatsQuery, BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth,
+    ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, MemberProfile,
+    SiteOverview, core_operation, core_operations,
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
@@ -565,6 +566,18 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/popular/rank",
             get(admin_popular_rank),
+        )
+        .route(
+            "/sites/{site_id}/admin/visits/stats",
+            get(admin_visit_stats),
+        )
+        .route(
+            "/sites/{site_id}/admin/visits/search",
+            get(admin_visit_search),
+        )
+        .route(
+            "/sites/{site_id}/admin/visits",
+            axum::routing::delete(admin_visit_delete),
         )
         .route(
             "/sites/{site_id}/admin/points",
@@ -4691,6 +4704,101 @@ async fn admin_popular_reset(
         .await
     {
         Ok(result) => Json::<AdminPopularResetResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_visit_stats(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminVisitStatsQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_visit_stats(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminVisitStats>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_visit_search(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminVisitSearchQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_search_visits(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminVisitSearchResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_visit_delete(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    payload: Option<Json<AdminVisitDelete>>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let delete = payload.map(|Json(value)| value).unwrap_or_default();
+    match state
+        .config
+        .connector
+        .admin_delete_visits(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &delete,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminVisitDeleteResult>(result).into_response(),
         Err(error) => connector_error(error),
     }
 }

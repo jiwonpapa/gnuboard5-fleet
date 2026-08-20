@@ -15,6 +15,7 @@ pub mod polls;
 pub mod popular;
 pub mod popups;
 pub mod theme;
+pub mod visits;
 
 pub type FleetResult<T> = Result<T, AppErrorPayload>;
 

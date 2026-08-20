@@ -419,6 +419,9 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("GET", "/api/v1/sites/{site_id}/admin/popular"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/popular"),
             ("GET", "/api/v1/sites/{site_id}/admin/popular/rank"),
+            ("GET", "/api/v1/sites/{site_id}/admin/visits/stats"),
+            ("GET", "/api/v1/sites/{site_id}/admin/visits/search"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/visits"),
             ("GET", "/api/v1/sites/{site_id}/admin/points"),
             ("POST", "/api/v1/sites/{site_id}/admin/points"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/points"),
@@ -853,6 +856,10 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         popular: Arc::new(Mutex::new(vec![
             serde_json::json!({"pp_word": "fleet", "pp_date": "2026-08-18", "pp_cnt": 2, "pp_rank": 1}),
             serde_json::json!({"pp_word": "gnuboard", "pp_date": "2026-08-19", "pp_cnt": 1, "pp_rank": 2}),
+        ])),
+        visits: Arc::new(Mutex::new(vec![
+            serde_json::json!({"vi_id": 1, "ip": "127.0.0.1", "date": "2026-08-18", "time": "09:10:00", "referer": "https://example.com", "agent": "Mozilla/5.0", "browser": "Chrome", "os": "macOS", "device": "desktop"}),
+            serde_json::json!({"vi_id": 2, "ip": "127.0.0.2", "date": "2026-08-19", "time": "10:20:00", "referer": "", "agent": "Mobile Safari", "browser": "Safari", "os": "iOS", "device": "mobile"}),
         ])),
         points: Arc::new(Mutex::new(Vec::new())),
     };
@@ -2830,6 +2837,69 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
     assert_eq!(json::<Value>(popular_cleanup).await["deleted_rows"], 1);
     assert!(mock.popular.lock().unwrap().is_empty());
 
+    // R24 visit statistics, search and condition-bounded deletion stay site-scoped.
+    let visit_stats = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/visits/stats?type=device&limit=30",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(visit_stats.status(), StatusCode::OK);
+    let visit_stats = json::<Value>(visit_stats).await;
+    assert_eq!(visit_stats["summary"]["total_visits"], 2);
+    assert_eq!(visit_stats["type"], "device");
+
+    let visit_search = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/visits/search?page=1&per_page=50&ip=127.0.0.2",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(visit_search.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(visit_search).await["items"][0]["device"],
+        "mobile"
+    );
+
+    let unsafe_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/visits",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(unsafe_delete.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(mock.visits.lock().unwrap().len(), 2);
+
+    let visit_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/visits",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"before": "2026-08-19"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(visit_delete.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(visit_delete).await["deleted_rows"], 1);
+    assert_eq!(mock.visits.lock().unwrap().len(), 1);
+
     let point_baseline = app
         .clone()
         .oneshot(json_request(
@@ -3452,6 +3522,7 @@ struct MockConnector {
     polls: Arc<Mutex<Vec<Value>>>,
     popups: Arc<Mutex<Vec<Value>>>,
     popular: Arc<Mutex<Vec<Value>>>,
+    visits: Arc<Mutex<Vec<Value>>>,
     points: Arc<Mutex<Vec<Value>>>,
 }
 
@@ -4530,6 +4601,77 @@ impl ConnectorGateway for MockConnector {
                     },
                     "meta": {}
                 })
+            }
+            "adminVisitStats" => {
+                let stats_type = input
+                    .query
+                    .get("type")
+                    .and_then(Value::as_str)
+                    .unwrap_or("date");
+                let visits = self.visits.lock().unwrap();
+                let mut counts = std::collections::BTreeMap::<String, i64>::new();
+                for visit in visits.iter() {
+                    let key = match stats_type {
+                        "device" => visit["device"].as_str().unwrap_or_default(),
+                        "browser" => visit["browser"].as_str().unwrap_or_default(),
+                        "os" => visit["os"].as_str().unwrap_or_default(),
+                        _ => visit["date"].as_str().unwrap_or_default(),
+                    };
+                    *counts.entry(key.to_owned()).or_default() += 1;
+                }
+                serde_json::json!({"data": {
+                    "type": stats_type,
+                    "summary": {"total_visits": visits.len(), "active_days": 2, "first_date": "2026-08-18", "last_date": "2026-08-19", "visit_rows": visits.len(), "unique_ips": visits.len()},
+                    "items": counts.into_iter().map(|(stat_key, visit_count)| serde_json::json!({"stat_key": stat_key, "visit_count": visit_count})).collect::<Vec<_>>()
+                }, "meta": {}})
+            }
+            "adminSearchVisits" => {
+                let ip = input.query.get("ip").and_then(Value::as_str);
+                let date_from = input.query.get("date_from").and_then(Value::as_str);
+                let date_to = input.query.get("date_to").and_then(Value::as_str);
+                let visits = self
+                    .visits
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .filter(|visit| {
+                        let date = visit["date"].as_str().unwrap_or_default();
+                        ip.is_none_or(|value| {
+                            visit["ip"]
+                                .as_str()
+                                .is_some_and(|candidate| candidate.contains(value))
+                        }) && date_from.is_none_or(|value| date >= value)
+                            && date_to.is_none_or(|value| date <= value)
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>();
+                serde_json::json!({"data": visits, "pagination": {
+                    "mode": "page", "total": visits.len(), "page": 1, "per_page": 50,
+                    "last_page": 1, "cursor": null, "next_cursor": null,
+                    "has_next": false, "has_prev": false
+                }, "meta": {}})
+            }
+            "adminDeleteVisits" => {
+                assert!(input.confirm_destructive);
+                let body = input.body.as_ref().unwrap();
+                let before_date = body.get("before").and_then(Value::as_str);
+                let date_from = body.get("date_from").and_then(Value::as_str);
+                let date_to = body.get("date_to").and_then(Value::as_str);
+                let ip = body.get("ip").and_then(Value::as_str);
+                let mut visits = self.visits.lock().unwrap();
+                let prior = visits.len();
+                visits.retain(|visit| {
+                    let date = visit["date"].as_str().unwrap_or_default();
+                    let matches = if let Some(cutoff) = before_date {
+                        date < cutoff
+                    } else {
+                        date_from.is_none_or(|value| date >= value)
+                            && date_to.is_none_or(|value| date <= value)
+                            && ip.is_none_or(|value| visit["ip"].as_str() == Some(value))
+                    };
+                    !matches
+                });
+                serde_json::json!({"data": {"deleted_rows": prior - visits.len(), "before": before_date, "date_from": date_from, "date_to": date_to, "ip": ip}, "meta": {}})
             }
             "adminListPoints" => {
                 let member_id = input.query.get("mb_id").and_then(Value::as_str);
