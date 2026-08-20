@@ -990,11 +990,20 @@
       "id": "R25",
       "sequence": 20,
       "title": "reports",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R24"],
+      "completion": {
+        "implementation_commit": "da19a2be97f96ab21aa3a3fb12e4b3507f8ec5d9",
+        "evidence_path": "docs/audits/evidence/R25_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-20T08:32:59Z"
+      },
       "core": {
         "domains": ["reports"],
-        "operation_ids": [],
+        "operation_ids": [
+          "adminListReports",
+          "adminReportStats",
+          "adminUpdateReport"
+        ],
         "expected_count": 3
       },
       "legacy": {
@@ -1023,7 +1032,7 @@
       "id": "R26",
       "sequence": 21,
       "title": "qa",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R25"],
       "core": {
         "domains": ["qa"],

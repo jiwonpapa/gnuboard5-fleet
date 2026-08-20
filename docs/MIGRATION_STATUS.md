@@ -116,25 +116,25 @@ revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장�
 
 ## 현재 배치
 
-R00~R24는 tracked 증거로 닫혔습니다. R24는 방문 통계·로그 검색·조건
-삭제 3개 Core operation과 legacy 8개 항목을 닫았습니다.
+R00~R25는 tracked 증거로 닫혔습니다. R25는 신고 목록·상태 통계·처리
+변경 3개 Core operation과 legacy 5개 항목을 닫았습니다.
 
-- 구현 commit: `2de2876bdd51151e52deb8223256d1be5af9f2e1`
-- 증거: `docs/audits/evidence/R24_BATCH_GATE_PASS.json`
-- R24 scoped finding: 0
+- 구현 commit: `da19a2be97f96ab21aa3a3fb12e4b3507f8ec5d9`
+- 증거: `docs/audits/evidence/R25_BATCH_GATE_PASS.json`
+- R25 scoped finding: 0
 - `SERVER_STATIC_PASS`: 35/35
-- typed Core 소비: 120/189
-- Rust 테스트: 79 PASS, 1 ignored
-- 웹 테스트: 62 files, 134 PASS
+- typed Core 소비: 123/189
+- Rust 테스트: 81 PASS, 1 ignored
+- 웹 테스트: 64 files, 139 PASS
 - PHP Connector: 875 tests, 6727 assertions, 5 skipped
-- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 통계·검색·조건 삭제·재조회 PASS
-- Chromium 1440×1000·390×844, OTP step-up, 콘솔 오류 0 PASS
-- 다음 활성 배치: R25 reports
-- R25 사전 probe: FAIL 8
+- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 목록·통계·처리 변경·원복 PASS
+- Chromium 1440×768·390×844, OTP step-up, 콘솔 오류 0 PASS
+- 다음 활성 배치: R26 qa
+- R26 사전 probe: FAIL 8
 
 ```bash
-make check-batch BATCH=R25
+make check-batch BATCH=R26
 ```
 
-전체 완료는 아닙니다. 전역 감사 175개가 남아 있으며 R36 전까지
+전체 완료는 아닙니다. 전역 감사 167개가 남아 있으며 R36 전까지
 `MIGRATION_STATIC FAIL`을 유지합니다.
