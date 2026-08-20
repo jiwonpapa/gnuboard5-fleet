@@ -193,6 +193,10 @@ SET mb_no = 0,
     mb_nick_date = CURRENT_DATE();
 INSERT INTO g5_member SELECT * FROM fleet_cert_member;
 DROP TEMPORARY TABLE fleet_cert_member;
+INSERT INTO g5_popular (pp_word, pp_date, pp_ip) VALUES
+  ('fleet-r23', '2026-08-18', '198.51.100.21'),
+  ('fleet-r23', '2026-08-18', '198.51.100.22'),
+  ('gnuboard-r23', '2026-08-19', '198.51.100.23');
 COMMIT;
 SQL
 

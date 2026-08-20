@@ -141,6 +141,9 @@ class ManifestTest(unittest.TestCase):
                 "adminGetPopup",
                 "adminUpdatePopup",
                 "adminDeletePopup",
+                "adminListPopular",
+                "adminPopularRank",
+                "adminResetPopular",
             },
             {
                 mapping["operation_id"]

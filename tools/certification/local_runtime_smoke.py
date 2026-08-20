@@ -1509,6 +1509,74 @@ def main() -> int:
     ):
         raise RuntimeError("R22 popup cleanup readback failed")
 
+    popular_path = "/api/v1/sites/owner-a-site/admin/popular"
+    popular_baseline = request(
+        fleet_base, "GET", f"{popular_path}?page=1&per_page=20",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        popular_baseline.get("pagination", {}).get("total") != 2
+        or len(popular_baseline.get("items", [])) != 2
+    ):
+        raise RuntimeError("R23 popular seeded list baseline failed")
+    popular_filtered = request(
+        fleet_base, "GET",
+        f"{popular_path}?page=1&per_page=20&date_from=2026-08-18&date_to=2026-08-18",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        len(popular_filtered.get("items", [])) != 1
+        or popular_filtered["items"][0].get("pp_word") != "fleet-r23"
+        or popular_filtered["items"][0].get("pp_cnt") != 2
+    ):
+        raise RuntimeError("R23 popular filtered list failed")
+    popular_rank = request(
+        fleet_base, "GET", f"{popular_path}/rank?limit=10",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        len(popular_rank.get("items", [])) != 2
+        or popular_rank["items"][0].get("pp_word") != "fleet-r23"
+        or popular_rank["items"][0].get("hit_count") != 2
+    ):
+        raise RuntimeError("R23 popular rank readback failed")
+    popular_range_reset = request(
+        fleet_base, "DELETE", popular_path,
+        body={"date_from": "2026-08-18", "date_to": "2026-08-18"},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if popular_range_reset.get("deleted_rows") != 2:
+        raise RuntimeError("R23 popular range reset failed")
+    popular_after_range = request(
+        fleet_base, "GET", f"{popular_path}?page=1&per_page=20",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        popular_after_range.get("pagination", {}).get("total") != 1
+        or popular_after_range.get("items", [{}])[0].get("pp_word") != "gnuboard-r23"
+    ):
+        raise RuntimeError("R23 popular range reset readback failed")
+    popular_final_reset = request(
+        fleet_base, "DELETE", popular_path, body={},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if popular_final_reset.get("deleted_rows") != 1:
+        raise RuntimeError("R23 popular final reset failed")
+    popular_empty = request(
+        fleet_base, "GET", f"{popular_path}?page=1&per_page=20",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    popular_rank_empty = request(
+        fleet_base, "GET", f"{popular_path}/rank?limit=10",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        popular_empty.get("pagination", {}).get("total") != 0
+        or popular_empty.get("items") != []
+        or popular_rank_empty.get("items") != []
+    ):
+        raise RuntimeError("R23 popular cleanup readback failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -1806,6 +1874,15 @@ def main() -> int:
             "sparse_update_readback": "passed",
             "created_popups_deleted": 2,
             "popup_cleanup_readback": "passed",
+        },
+        "r23_popular": {
+            "operations": 3,
+            "seeded_list_and_date_filter": "passed",
+            "rank_readback": "passed",
+            "range_reset_deleted_rows": 2,
+            "range_reset_readback": "passed",
+            "final_reset_deleted_rows": 1,
+            "cleanup_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,
