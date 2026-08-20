@@ -40,7 +40,8 @@ use g5_fleet_connector::{
     AdminPollCreate, AdminPollList, AdminPollListQuery, AdminPollUpdate, AdminPopularList,
     AdminPopularListQuery, AdminPopularRankList, AdminPopularRankQuery, AdminPopularReset,
     AdminPopularResetResult, AdminPopup, AdminPopupCreate, AdminPopupList, AdminPopupListQuery,
-    AdminPopupUpdate, AdminReportItem, AdminReportList, AdminReportListQuery, AdminReportStats,
+    AdminPopupUpdate, AdminQaBulkDelete, AdminQaBulkDeleteResult, AdminQaConfig,
+    AdminQaConfigUpdate, AdminReportItem, AdminReportList, AdminReportListQuery, AdminReportStats,
     AdminReportUpdate, AdminSchemaCatalog, AdminSchemaDetail, AdminSystemPermission,
     AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
     AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, AdminVisitDelete,
@@ -588,6 +589,14 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/reports/{report_id}",
             axum::routing::patch(admin_report_update),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/qa-config",
+            get(admin_qa_config_get).put(admin_qa_config_update),
+        )
+        .route(
+            "/sites/{site_id}/admin/qa",
+            axum::routing::delete(admin_qa_bulk_delete),
         )
         .route(
             "/sites/{site_id}/admin/points",
@@ -4902,6 +4911,102 @@ async fn admin_report_update(
         .await
     {
         Ok(result) => Json::<AdminReportItem>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_qa_config_get(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_get_qa_config(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminQaConfig>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_qa_config_update(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(update): Json<AdminQaConfigUpdate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_update_qa_config(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &update,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminQaConfig>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_qa_bulk_delete(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(delete): Json<AdminQaBulkDelete>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_delete_qa_bulk(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &delete,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminQaBulkDeleteResult>(result).into_response(),
         Err(error) => connector_error(error),
     }
 }

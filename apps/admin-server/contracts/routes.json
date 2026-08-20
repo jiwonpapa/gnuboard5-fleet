@@ -1060,6 +1060,27 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/system/qa-config",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_qa_config_get"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/system/qa-config",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_qa_config_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/qa",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_qa_bulk_delete"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/admin/points",
       "auth": "session",
       "site_context": true,

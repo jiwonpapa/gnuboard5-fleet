@@ -425,6 +425,9 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("GET", "/api/v1/sites/{site_id}/admin/reports"),
             ("GET", "/api/v1/sites/{site_id}/admin/reports/stats"),
             ("PATCH", "/api/v1/sites/{site_id}/admin/reports/{report_id}"),
+            ("GET", "/api/v1/sites/{site_id}/admin/system/qa-config"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/system/qa-config"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/qa"),
             ("GET", "/api/v1/sites/{site_id}/admin/points"),
             ("POST", "/api/v1/sites/{site_id}/admin/points"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/points"),
@@ -868,6 +871,8 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             serde_json::json!({"rp_id": 41, "mb_id": "member01", "rp_target_type": "post", "rp_target_id": "notice:10", "rp_reason": "spam", "rp_detail": "중복 홍보 게시물", "rp_status": "pending", "rp_admin_memo": null, "rp_datetime": "2026-08-18 09:00:00", "rp_processed_at": null}),
             serde_json::json!({"rp_id": 42, "mb_id": null, "rp_target_type": "comment", "rp_target_id": "notice:11:3", "rp_reason": "abuse", "rp_detail": "욕설 댓글", "rp_status": "hold", "rp_admin_memo": "추가 확인", "rp_datetime": "2026-08-19 10:00:00", "rp_processed_at": null}),
         ])),
+        qa_config: Arc::new(Mutex::new(mock_qa_config())),
+        qa_ids: Arc::new(Mutex::new(vec![71, 72, 73])),
         points: Arc::new(Mutex::new(Vec::new())),
     };
     let app = build_router(AppConfig {
@@ -2960,6 +2965,60 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
     assert_eq!(report_update["rp_admin_memo"], "운영 검토 완료");
     assert_eq!(mock.reports.lock().unwrap()[0]["rp_status"], "approved");
 
+    // R26 QA config and bulk deletion stay site-scoped and require step-up for writes.
+    let qa_config = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/system/qa-config",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(qa_config.status(), StatusCode::OK);
+    let qa_config = json::<Value>(qa_config).await;
+    assert_eq!(qa_config["qa_title"], "1:1 문의");
+    assert_eq!(qa_config["qa_1_subj"], "추가 항목 1");
+
+    let qa_config_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/admin/system/qa-config",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "qa_title": "Fleet 문의",
+                "qa_1_subj": "주문 번호"
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(qa_config_update.status(), StatusCode::OK);
+    let qa_config_update = json::<Value>(qa_config_update).await;
+    assert_eq!(qa_config_update["qa_title"], "Fleet 문의");
+    assert_eq!(qa_config_update["qa_1_subj"], "주문 번호");
+    assert_eq!(mock.qa_config.lock().unwrap()["qa_title"], "Fleet 문의");
+
+    let qa_bulk_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/qa",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"qa_ids": [71, 72]})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(qa_bulk_delete.status(), StatusCode::OK);
+    let qa_bulk_delete = json::<Value>(qa_bulk_delete).await;
+    assert_eq!(qa_bulk_delete["deleted_count"], 2);
+    assert_eq!(qa_bulk_delete["qa_ids"], serde_json::json!([71, 72]));
+    assert_eq!(*mock.qa_ids.lock().unwrap(), vec![73]);
+
     let point_baseline = app
         .clone()
         .oneshot(json_request(
@@ -3563,6 +3622,48 @@ fn mock_point_change(points: &Mutex<Vec<Value>>, body: &Value, deduct: bool) -> 
     })
 }
 
+fn mock_qa_config() -> Value {
+    serde_json::json!({
+        "qa_id": 1,
+        "qa_title": "1:1 문의",
+        "qa_category": "회원,결제",
+        "qa_skin": "basic",
+        "qa_mobile_skin": "basic",
+        "qa_use_email": "1",
+        "qa_req_email": "0",
+        "qa_use_hp": "1",
+        "qa_req_hp": "0",
+        "qa_use_sms": "0",
+        "qa_send_number": "",
+        "qa_admin_hp": "",
+        "qa_admin_email": "admin@example.test",
+        "qa_use_editor": "1",
+        "qa_subject_len": "40",
+        "qa_mobile_subject_len": "30",
+        "qa_page_rows": "15",
+        "qa_mobile_page_rows": "10",
+        "qa_image_width": "800",
+        "qa_upload_size": "1048576",
+        "qa_insert_content": "문의 내용을 입력하십시오.",
+        "qa_include_head": "",
+        "qa_include_tail": "",
+        "qa_content_head": "",
+        "qa_content_tail": "",
+        "qa_mobile_content_head": "",
+        "qa_mobile_content_tail": "",
+        "qa_1_subj": "추가 항목 1",
+        "qa_2_subj": "추가 항목 2",
+        "qa_3_subj": "",
+        "qa_4_subj": "",
+        "qa_5_subj": "",
+        "qa_1": "",
+        "qa_2": "",
+        "qa_3": "",
+        "qa_4": "",
+        "qa_5": ""
+    })
+}
+
 #[derive(Clone, Default)]
 struct MockConnector {
     cf_10: Arc<Mutex<String>>,
@@ -3584,6 +3685,8 @@ struct MockConnector {
     popular: Arc<Mutex<Vec<Value>>>,
     visits: Arc<Mutex<Vec<Value>>>,
     reports: Arc<Mutex<Vec<Value>>>,
+    qa_config: Arc<Mutex<Value>>,
+    qa_ids: Arc<Mutex<Vec<i64>>>,
     points: Arc<Mutex<Vec<Value>>>,
 }
 
@@ -4782,6 +4885,33 @@ impl ConnectorGateway for MockConnector {
                 report["rp_admin_memo"] = body.get("admin_memo").cloned().unwrap_or(Value::Null);
                 report["rp_processed_at"] = serde_json::json!("2026-08-20 12:00:00");
                 serde_json::json!({"data": report.clone(), "meta": {}})
+            }
+            "adminSystemGetQaConfig" => {
+                serde_json::json!({"data": self.qa_config.lock().unwrap().clone(), "meta": {}})
+            }
+            "adminSystemUpdateQaConfig" => {
+                let body = input.body.as_ref().unwrap().as_object().unwrap();
+                let mut config = self.qa_config.lock().unwrap();
+                let config_fields = config.as_object_mut().unwrap();
+                for (key, value) in body {
+                    config_fields.insert(key.clone(), value.clone());
+                }
+                serde_json::json!({"data": config.clone(), "meta": {}})
+            }
+            "adminDeleteQaBulk" => {
+                let requested = input.body.as_ref().unwrap()["qa_ids"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .filter_map(Value::as_i64)
+                    .collect::<Vec<_>>();
+                let mut qa_ids = self.qa_ids.lock().unwrap();
+                let prior = qa_ids.len();
+                qa_ids.retain(|qa_id| !requested.contains(qa_id));
+                serde_json::json!({
+                    "data": {"deleted_count": prior - qa_ids.len(), "qa_ids": requested},
+                    "meta": {}
+                })
             }
             "adminListPoints" => {
                 let member_id = input.query.get("mb_id").and_then(Value::as_str);

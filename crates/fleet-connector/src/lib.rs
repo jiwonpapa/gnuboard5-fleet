@@ -65,6 +65,9 @@ pub use g5_fleet_core::popups::{
     AdminPopup, AdminPopupCreate, AdminPopupList, AdminPopupListQuery, AdminPopupUpdate,
     valid_popup_id,
 };
+pub use g5_fleet_core::qa::{
+    AdminQaBulkDelete, AdminQaBulkDeleteResult, AdminQaConfig, AdminQaConfigUpdate,
+};
 pub use g5_fleet_core::reports::{
     AdminReportItem, AdminReportList, AdminReportListQuery, AdminReportStats, AdminReportStatus,
     AdminReportTargetType, AdminReportUpdate, valid_report_id,
@@ -2818,6 +2821,75 @@ pub trait ConnectorGateway: Send + Sync {
             )
             .await?;
         typed_core_data("adminUpdateReport", response)
+    }
+
+    async fn admin_get_qa_config(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminQaConfig> {
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemGetQaConfig",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        typed_core_data("adminSystemGetQaConfig", response)
+    }
+
+    async fn admin_update_qa_config(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        update: &AdminQaConfigUpdate,
+    ) -> ConnectorResult<AdminQaConfig> {
+        if !update.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemUpdateQaConfig",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminSystemUpdateQaConfig", response)
+    }
+
+    async fn admin_delete_qa_bulk(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        delete: &AdminQaBulkDelete,
+    ) -> ConnectorResult<AdminQaBulkDeleteResult> {
+        if !delete.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteQaBulk",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(delete).map_err(|_| ConnectorError::Contract)?),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminDeleteQaBulk", response)
     }
 
     async fn admin_list_points(

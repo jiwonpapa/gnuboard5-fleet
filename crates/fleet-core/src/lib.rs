@@ -14,6 +14,7 @@ pub mod points;
 pub mod polls;
 pub mod popular;
 pub mod popups;
+pub mod qa;
 pub mod reports;
 pub mod theme;
 pub mod visits;
