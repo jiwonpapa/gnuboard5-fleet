@@ -1032,8 +1032,13 @@
       "id": "R26",
       "sequence": 21,
       "title": "qa",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R25"],
+      "completion": {
+        "implementation_commit": "3ccfc0921813667eda0fd60fe373c12987f8b0bd",
+        "evidence_path": "docs/audits/evidence/R26_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-20T09:03:29Z"
+      },
       "core": {
         "domains": ["qa"],
         "operation_ids": [
@@ -1069,7 +1074,7 @@
       "id": "R27",
       "sequence": 22,
       "title": "write-count",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R26"],
       "core": {
         "domains": ["write-count"],

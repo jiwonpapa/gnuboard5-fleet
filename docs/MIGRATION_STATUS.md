@@ -2,19 +2,21 @@
 
 ## 현재 판정
 
-2026-08-12 R13 마감 후 전체 이관 동등성 하네스 결과는
+2026-08-20 R26 마감 기준 전체 이관 동등성 하네스 결과는
 `MIGRATION_STATIC FAIL`입니다.
 
-- legacy inventory 510개 중 유효 매핑 295, 미매핑 215
-  - Tauri command 104/253
-  - React page 16/43
+- legacy inventory 510개 전체의 배치 소유권은 확정됐으며 현재 유효 매핑은
+  다음과 같습니다.
+  - Tauri command 190/253
+  - React page 31/43
   - Rust workspace member 21/21
-- frontend regression test 62/100
+- frontend regression test 84/100
   - Rust regression test 92/93
 - 서버 전환 필수 capability 9/13 구현 증명
-- typed Core operation 소비 42/189
-- 활성 server route 96개와 Core registry 189개는 존재하지만 전체 이관
+- typed Core operation 소비 126/189
+- 활성 server route 181개와 Core registry 189개는 존재하지만 전체 이관
   증거로 승격하지 않음
+- 전역 미완료 finding 159개
 
 아래 구현 목록은 현재 소스에 존재하는 기반 기능 inventory입니다. 전체
 legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B02부터 B10은
@@ -116,25 +118,27 @@ revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장�
 
 ## 현재 배치
 
-R00~R25는 tracked 증거로 닫혔습니다. R25는 신고 목록·상태 통계·처리
-변경 3개 Core operation과 legacy 5개 항목을 닫았습니다.
+R00~R26은 tracked 증거로 닫혔습니다. R26은 QA 설정 조회·수정과 문의
+일괄 삭제 3개 Core operation, legacy 5개 항목을 닫았습니다.
 
-- 구현 commit: `da19a2be97f96ab21aa3a3fb12e4b3507f8ec5d9`
-- 증거: `docs/audits/evidence/R25_BATCH_GATE_PASS.json`
-- R25 scoped finding: 0
+- 구현 commit: `3ccfc0921813667eda0fd60fe373c12987f8b0bd`
+- 증거: `docs/audits/evidence/R26_BATCH_GATE_PASS.json`
+- R26 scoped finding: 0
 - `SERVER_STATIC_PASS`: 35/35
-- typed Core 소비: 123/189
-- Rust 테스트: 81 PASS, 1 ignored
-- 웹 테스트: 64 files, 139 PASS
+- typed Core 소비: 126/189
+- Rust 테스트: 83 PASS, 1 ignored
+- 웹 테스트: 66 files, 146 PASS
 - PHP Connector: 875 tests, 6727 assertions, 5 skipped
-- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 목록·통계·처리 변경·원복 PASS
-- Chromium 1440×768·390×844, OTP step-up, 콘솔 오류 0 PASS
-- 다음 활성 배치: R26 qa
-- R26 사전 probe: FAIL 8
+- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 QA 설정 36개 조회·수정·원복과
+  지정 문의 일괄 삭제·비대상 보존 PASS
+- Chromium 1440×1000·390×844, OTP step-up, 삭제 DB readback,
+  콘솔 오류 0 PASS
+- 다음 활성 배치: R27 write-count
+- R27 사전 probe: FAIL 4
 
 ```bash
-make check-batch BATCH=R26
+make check-batch BATCH=R27
 ```
 
-전체 완료는 아닙니다. 전역 감사 167개가 남아 있으며 R36 전까지
+전체 완료는 아닙니다. 전역 감사 159개가 남아 있으며 R36 전까지
 `MIGRATION_STATIC FAIL`을 유지합니다.

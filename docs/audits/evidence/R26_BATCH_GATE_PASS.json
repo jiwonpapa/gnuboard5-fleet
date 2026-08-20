@@ -1,0 +1,145 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R26",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "3ccfc0921813667eda0fd60fe373c12987f8b0bd",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "3ccfc0921813667eda0fd60fe373c12987f8b0bd"
+  },
+  "generated_at": "2026-08-20T09:03:29Z",
+  "commands": [
+    "make audit-runtime-prepare",
+    "make check",
+    "make check-batch BATCH=R26",
+    "make runtime-prepare",
+    "composer test (official G5 composed runtime)",
+    "python3 -m tools.migration_parity.batch_cli --batch R25 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R26 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R27 --profile static",
+    "BUILDX_BUILDER=g5-fleet-cert-builder make certification-clean certification-up",
+    "make certification-local-smoke",
+    "playwright-cli --session r26-final (headless 1440x1000 and 390x844)",
+    "direct MariaDB readback for QA delete verification"
+  ],
+  "results": {
+    "canonical_make_check": {
+      "component_gates": "PASS",
+      "terminal_status": "EXPECTED_GLOBAL_MIGRATION_FAIL",
+      "terminal_findings": 159,
+      "detail": "versioning, audit, migration, upstream, runtime, package and certification harness tests, runtime identity, Rust, React and server static checks passed before the global migration parity gate reported planned remaining work"
+    },
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {"passed": 83, "failed": 0, "ignored": 1},
+      "http_contract_tests": {"passed": 8, "failed": 0},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 66,
+      "web_tests": {"passed": 146, "failed": 0},
+      "web_build": "PASS"
+    },
+    "php_composed_runtime": {
+      "status": "PASS",
+      "official_g5_version": "5.6.32",
+      "tests": 875,
+      "assertions": 6727,
+      "failed": 0,
+      "skipped": 5
+    },
+    "migration_harness_tests": {"passed": 26, "failed": 0},
+    "audit_harness_tests": {"passed": 25, "failed": 0},
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "revision": "627ba0fbd85281ed62c0c5ccd7cddbb324fe22ce",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "3ccfc0921813667eda0fd60fe373c12987f8b0bd",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "f5c649a145c3fb1433947bb97ad83e2a1ea43554424f32d17e75f41c512763b2",
+      "otp_install_login_step_up": "PASS",
+      "qa_operations": 3,
+      "canonical_config_fields": 36,
+      "config_update_and_post_update_readback": "PASS",
+      "config_rollback_readback": "PASS",
+      "bulk_delete_requested_ids": [9002],
+      "bulk_delete_deleted_count": 1,
+      "provider_deleted_item_404": "PASS",
+      "untargeted_item_readback": "PASS",
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "PASS",
+      "implementation_revision": "3ccfc0921813667eda0fd60fe373c12987f8b0bd",
+      "execution_mode": "headless",
+      "login_and_recent_identity_step_up": "PASS",
+      "canonical_36_field_readback": "PASS",
+      "diff_only_update_and_server_readback": "PASS",
+      "config_rollback_readback": "PASS",
+      "confirmation_gated_exact_id_delete": "PASS",
+      "deleted_id": 9001,
+      "direct_database_delete_readback": "PASS",
+      "console_errors_after_login": 0,
+      "desktop_1440x1000": "PASS",
+      "mobile_390x844": "PASS",
+      "screenshots": [
+        {
+          "path": "output/playwright/r26-qa-desktop.png",
+          "sha256": "2f084bb014a8babedbc04db1ac4cccbe0cd80949fae6aa0322272fe56415b059"
+        },
+        {
+          "path": "output/playwright/r26-qa-mobile.png",
+          "sha256": "c06215686db43f1f0a1d42430a0a908657112757ce6bd3c937c9e6e2d2925ab7"
+        }
+      ]
+    },
+    "typed_operation_consumption": {
+      "operations": ["adminDeleteQaBulk", "adminSystemGetQaConfig", "adminSystemUpdateQaConfig"],
+      "new_site_scoped_axum_routes": 3,
+      "browser_same_origin_transport": "PASS",
+      "csrf_and_step_up_mutation_guard": "PASS",
+      "post_mutation_server_readback": "PASS",
+      "browser_g5_secret_exposure": "NONE"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 181, "added_r26_routes": 3},
+    "predecessor_regression": {"batch": "R25", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 5, "core_operations": 3, "required_capabilities": 0},
+    "reuse": {"reused": 0, "adapted": 5, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "global_migration": {"status": "FAIL", "findings": 159},
+    "next_batch_probe": {
+      "batch": "R27",
+      "status": "FAIL",
+      "scope": {"legacy": 3, "core_operations": 1, "required_capabilities": 0},
+      "findings": 4
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "4f4dd7ad4cf0990492b6a6150cefa6dbec95e1ee8a8129c53e9a9bccff085108",
+    "migration_batches_before_closeout": "462745ab879f5476e1aadee09b47f15008b297b0e87b165129957cde412df3bb"
+  },
+  "source_reports": [
+    {
+      "path": "output/audit/runs/20260820T085941Z-a4f44170606b/result.json",
+      "sha256": "8cc819ec4e556afa1eb42cf05c7f002dccad6721aae20fd58e7be89333b9de12"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R25-20260820T090253Z-72d10e9c/result.json",
+      "sha256": "77ba5e3fee4caaeca26ebe481a7fcf5b2839c3df52f7071c9bcaf7f41e5be8a1"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R26-20260820T090253Z-f7d3c946/result.json",
+      "sha256": "946794c8e056257200a25e171b910ad4f16f40afb6dd9812738c6f7afe67461d"
+    },
+    {
+      "path": "output/audit/runs/migration-batch-R27-20260820T090253Z-55393090/result.json",
+      "sha256": "bb7c70b431e42fda7adf5370a49fe24c76d2ae0b25197b70e1c45761dd233f91"
+    }
+  ],
+  "claim_limit": "R26 QA canonical 36-field configuration read/update/rollback and exact-ID bulk delete 3-operation typed DTO, Connector, explicit site_id Axum routes, same-origin responsive React workspace, official G5 5.6.32 local runtime and headless browser readback only. Mutations require CSRF, explicit confirmation and recent identity step-up. This is not package, staging or live certification; global migration remains FAIL with 159 findings."
+}
