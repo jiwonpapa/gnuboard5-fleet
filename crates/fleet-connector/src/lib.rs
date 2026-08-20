@@ -57,6 +57,10 @@ pub use g5_fleet_core::polls::{
     AdminPoll, AdminPollCreate, AdminPollList, AdminPollListQuery, AdminPollSummary,
     AdminPollUpdate, valid_poll_id,
 };
+pub use g5_fleet_core::popular::{
+    AdminPopularList, AdminPopularListQuery, AdminPopularRankList, AdminPopularRankQuery,
+    AdminPopularReset, AdminPopularResetResult,
+};
 pub use g5_fleet_core::popups::{
     AdminPopup, AdminPopupCreate, AdminPopupList, AdminPopupListQuery, AdminPopupUpdate,
     valid_popup_id,
@@ -2524,6 +2528,107 @@ pub trait ConnectorGateway: Send + Sync {
             nw_id,
         )
         .await
+    }
+
+    async fn admin_list_popular(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminPopularListQuery,
+    ) -> ConnectorResult<AdminPopularList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListPopular",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                        (
+                            "date_from",
+                            query.date_from.as_ref().map(|value| json!(value)),
+                        ),
+                        ("date_to", query.date_to.as_ref().map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<g5_fleet_core::popular::AdminPopularItem> =
+            typed_core_envelope("adminListPopular", response)?;
+        Ok(AdminPopularList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_popular_rank(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminPopularRankQuery,
+    ) -> ConnectorResult<AdminPopularRankList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminPopularRank",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("limit", query.limit.map(|value| json!(value))),
+                        (
+                            "date_from",
+                            query.date_from.as_ref().map(|value| json!(value)),
+                        ),
+                        ("date_to", query.date_to.as_ref().map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<g5_fleet_core::popular::AdminPopularRankItem> =
+            typed_core_envelope("adminPopularRank", response)?;
+        Ok(AdminPopularRankList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_reset_popular(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        reset: &AdminPopularReset,
+    ) -> ConnectorResult<AdminPopularResetResult> {
+        if !reset.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminResetPopular",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(reset).map_err(|_| ConnectorError::Contract)?),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminResetPopular", response)
     }
 
     async fn admin_list_points(

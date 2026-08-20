@@ -37,13 +37,15 @@ use g5_fleet_connector::{
     AdminNewPostsDeleteResult, AdminPointAction, AdminPointActionResult, AdminPointChange,
     AdminPointChangeResult, AdminPointDelete, AdminPointDeleteResult, AdminPointExpire,
     AdminPointExpireResult, AdminPointList, AdminPointListQuery, AdminPointSummary, AdminPoll,
-    AdminPollCreate, AdminPollList, AdminPollListQuery, AdminPollUpdate, AdminPopup,
-    AdminPopupCreate, AdminPopupList, AdminPopupListQuery, AdminPopupUpdate, AdminSchemaCatalog,
-    AdminSchemaDetail, AdminSystemPermission, AdminSystemPermissionList,
-    AdminSystemPermissionListQuery, AdminSystemPermissionSave, AdminTheme, AdminThemeConfig,
-    AdminThemeList, AdminThemeUpdate, BasicConfig, ConnectorCredentials, ConnectorError,
-    ConnectorHealth, ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec,
-    MemberProfile, SiteOverview, core_operation, core_operations,
+    AdminPollCreate, AdminPollList, AdminPollListQuery, AdminPollUpdate, AdminPopularList,
+    AdminPopularListQuery, AdminPopularRankList, AdminPopularRankQuery, AdminPopularReset,
+    AdminPopularResetResult, AdminPopup, AdminPopupCreate, AdminPopupList, AdminPopupListQuery,
+    AdminPopupUpdate, AdminSchemaCatalog, AdminSchemaDetail, AdminSystemPermission,
+    AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
+    AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, BasicConfig,
+    ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest,
+    CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview, core_operation,
+    core_operations,
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
@@ -555,6 +557,14 @@ pub(crate) fn router() -> Router<AppState> {
             get(admin_legacy_popup_get)
                 .patch(admin_legacy_popup_update)
                 .delete(admin_legacy_popup_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/popular",
+            get(admin_popular_list).delete(admin_popular_reset),
+        )
+        .route(
+            "/sites/{site_id}/admin/popular/rank",
+            get(admin_popular_rank),
         )
         .route(
             "/sites/{site_id}/admin/points",
@@ -4586,6 +4596,101 @@ async fn admin_popup_delete(
     };
     match result {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_popular_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminPopularListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_list_popular(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(popular) => Json::<AdminPopularList>(popular).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_popular_rank(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminPopularRankQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_popular_rank(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(ranks) => Json::<AdminPopularRankList>(ranks).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_popular_reset(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    payload: Option<Json<AdminPopularReset>>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let reset = payload.map(|Json(value)| value).unwrap_or_default();
+    match state
+        .config
+        .connector
+        .admin_reset_popular(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &reset,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminPopularResetResult>(result).into_response(),
         Err(error) => connector_error(error),
     }
 }

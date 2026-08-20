@@ -997,6 +997,27 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/popular",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_popular_list"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/popular",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_popular_reset"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/popular/rank",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_popular_rank"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/admin/points",
       "auth": "session",
       "site_context": true,

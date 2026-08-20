@@ -12,6 +12,7 @@ pub mod menus;
 pub mod permissions;
 pub mod points;
 pub mod polls;
+pub mod popular;
 pub mod popups;
 pub mod theme;
 

@@ -416,6 +416,9 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("GET", "/api/v1/sites/{site_id}/admin/popups/{nw_id}"),
             ("PATCH", "/api/v1/sites/{site_id}/admin/popups/{nw_id}"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/popups/{nw_id}"),
+            ("GET", "/api/v1/sites/{site_id}/admin/popular"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/popular"),
+            ("GET", "/api/v1/sites/{site_id}/admin/popular/rank"),
             ("GET", "/api/v1/sites/{site_id}/admin/points"),
             ("POST", "/api/v1/sites/{site_id}/admin/points"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/points"),
@@ -847,6 +850,10 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         ])),
         polls: Arc::new(Mutex::new(Vec::new())),
         popups: Arc::new(Mutex::new(Vec::new())),
+        popular: Arc::new(Mutex::new(vec![
+            serde_json::json!({"pp_word": "fleet", "pp_date": "2026-08-18", "pp_cnt": 2, "pp_rank": 1}),
+            serde_json::json!({"pp_word": "gnuboard", "pp_date": "2026-08-19", "pp_cnt": 1, "pp_rank": 2}),
+        ])),
         points: Arc::new(Mutex::new(Vec::new())),
     };
     let app = build_router(AppConfig {
@@ -2760,6 +2767,69 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
     }
     assert!(mock.popups.lock().unwrap().is_empty());
 
+    // All three R23 popular operations preserve filters, rank and confirmed reset readback.
+    let popular_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/popular?page=1&per_page=20&date_from=2026-08-18&date_to=2026-08-19",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(popular_list.status(), StatusCode::OK);
+    let popular_list = json::<Value>(popular_list).await;
+    assert_eq!(popular_list["items"].as_array().map(Vec::len), Some(2));
+
+    let popular_rank = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/popular/rank?limit=10",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(popular_rank.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(popular_rank).await["items"][0]["pp_word"],
+        "fleet"
+    );
+
+    let popular_reset = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/popular",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"date_from": "2026-08-18", "date_to": "2026-08-18"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(popular_reset.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(popular_reset).await["deleted_rows"], 1);
+    assert_eq!(mock.popular.lock().unwrap().len(), 1);
+
+    let popular_cleanup = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/admin/popular",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(popular_cleanup.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(popular_cleanup).await["deleted_rows"], 1);
+    assert!(mock.popular.lock().unwrap().is_empty());
+
     let point_baseline = app
         .clone()
         .oneshot(json_request(
@@ -3381,6 +3451,7 @@ struct MockConnector {
     themes: Arc<Mutex<Vec<Value>>>,
     polls: Arc<Mutex<Vec<Value>>>,
     popups: Arc<Mutex<Vec<Value>>>,
+    popular: Arc<Mutex<Vec<Value>>>,
     points: Arc<Mutex<Vec<Value>>>,
 }
 
@@ -4380,6 +4451,85 @@ impl ConnectorGateway for MockConnector {
                     .unwrap()
                     .retain(|item| item["nw_id"].as_i64() != nw_id);
                 Value::Null
+            }
+            "adminListPopular" => {
+                let date_from = input.query.get("date_from").and_then(Value::as_str);
+                let date_to = input.query.get("date_to").and_then(Value::as_str);
+                let items = self
+                    .popular
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .filter(|item| {
+                        let date = item["pp_date"].as_str().unwrap_or_default();
+                        date_from.is_none_or(|from| date >= from)
+                            && date_to.is_none_or(|to| date <= to)
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>();
+                serde_json::json!({
+                    "data": items,
+                    "pagination": {
+                        "mode": "page", "total": items.len(), "page": 1, "per_page": 20,
+                        "last_page": 1, "cursor": null, "next_cursor": null,
+                        "has_next": false, "has_prev": false
+                    },
+                    "meta": {}
+                })
+            }
+            "adminPopularRank" => {
+                let limit = input
+                    .query
+                    .get("limit")
+                    .and_then(Value::as_u64)
+                    .unwrap_or(20) as usize;
+                let ranks = self
+                    .popular
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .take(limit)
+                    .enumerate()
+                    .map(|(index, item)| {
+                        serde_json::json!({
+                            "rank": index + 1,
+                            "pp_word": item["pp_word"],
+                            "hit_count": item["pp_cnt"],
+                            "first_date": item["pp_date"],
+                            "last_date": item["pp_date"]
+                        })
+                    })
+                    .collect::<Vec<_>>();
+                serde_json::json!({
+                    "data": ranks,
+                    "pagination": {
+                        "mode": "page", "total": ranks.len(), "page": 1,
+                        "per_page": ranks.len(), "last_page": 1, "cursor": null,
+                        "next_cursor": null, "has_next": false, "has_prev": false
+                    },
+                    "meta": {}
+                })
+            }
+            "adminResetPopular" => {
+                assert!(input.confirm_destructive);
+                let body = input.body.as_ref().unwrap();
+                let date_from = body.get("date_from").and_then(Value::as_str);
+                let date_to = body.get("date_to").and_then(Value::as_str);
+                let mut items = self.popular.lock().unwrap();
+                let before = items.len();
+                items.retain(|item| {
+                    let date = item["pp_date"].as_str().unwrap_or_default();
+                    !(date_from.is_none_or(|from| date >= from)
+                        && date_to.is_none_or(|to| date <= to))
+                });
+                serde_json::json!({
+                    "data": {
+                        "deleted_rows": before - items.len(),
+                        "date_from": date_from,
+                        "date_to": date_to
+                    },
+                    "meta": {}
+                })
             }
             "adminListPoints" => {
                 let member_id = input.query.get("mb_id").and_then(Value::as_str);
