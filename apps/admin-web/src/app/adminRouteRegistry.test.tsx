@@ -48,8 +48,12 @@ describe("adminRouteRegistry", () => {
       label: "인기검색",
       delivery: "active",
     });
+    expect(resolveRouteMeta("/admin/visits")).toMatchObject({
+      label: "접속자",
+      delivery: "active",
+    });
     expect(adminRoutes.filter((route) => route.delivery === "active")).toHaveLength(
-      16,
+      17,
     );
     expect(groupedAdminRoutes().get("메시징")?.length).toBeGreaterThanOrEqual(6);
   });

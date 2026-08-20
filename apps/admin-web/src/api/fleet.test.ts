@@ -24,6 +24,7 @@ import {
   deleteAdminSystemPoll,
   deleteAdminMember,
   deleteAdminMemberMedia,
+  deleteAdminVisits,
   deleteAdminAuthByMember,
   deleteAdminSystemPermission,
   exportAdminMembers,
@@ -36,6 +37,7 @@ import {
   getAdminMember,
   getAdminPointSummary,
   getAdminPopularRank,
+  getAdminVisitStats,
   getAdminLegacyPoll,
   getAdminSystemPoll,
   getAdminLegacyGroup,
@@ -57,6 +59,7 @@ import {
   patchAdminBoardGroup,
   saveAdminSystemPermission,
   resetAdminPopular,
+  searchAdminVisits,
   grantAdminPoint,
   deductAdminPoint,
   upsertAdminAuth,
@@ -449,5 +452,24 @@ describe("remote Fleet transport", () => {
     const reset = fetcher.mock.calls[2]?.[1];
     expect(reset?.body).toBe(JSON.stringify({ date_to: "2026-08-20" }));
     expect(new Headers(reset?.headers).get("x-csrf-token")).toBe("csrf-1");
+  });
+
+  it("consumes all three R24 visit operations without exposing G5 credentials", async () => {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => {
+      void _input;
+      void _init;
+      return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    await getAdminVisitStats("site-a", { type: "device", limit: 30, date_from: "2026-08-01" });
+    await searchAdminVisits("site-a", { page: 2, per_page: 50, ip: "127.0.0.1" });
+    await deleteAdminVisits("site-a", { before: "2026-08-01" }, "csrf-1");
+    expect(fetcher.mock.calls.map(([input, init]) => [String(input), init?.method])).toEqual([
+      ["http://localhost:3000/api/v1/sites/site-a/admin/visits/stats?date_from=2026-08-01&type=device&limit=30", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/visits/search?page=2&per_page=50&ip=127.0.0.1", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/visits", "DELETE"],
+    ]);
+    expect(fetcher.mock.calls[2]?.[1]?.body).toBe(JSON.stringify({ before: "2026-08-01" }));
+    expect(new Headers(fetcher.mock.calls[2]?.[1]?.headers).get("x-csrf-token")).toBe("csrf-1");
   });
 });

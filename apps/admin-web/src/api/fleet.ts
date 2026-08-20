@@ -854,6 +854,70 @@ export interface AdminPopularResetResult {
   date_to: string | null;
 }
 
+export type AdminVisitStatsType = "date" | "hour" | "week" | "month" | "year" | "browser" | "os" | "device" | "domain" | "search";
+
+export interface AdminVisitStatsQuery {
+  date_from?: string;
+  date_to?: string;
+  type?: AdminVisitStatsType;
+  limit?: number;
+}
+
+export interface AdminVisitStats {
+  type: AdminVisitStatsType;
+  summary: {
+    total_visits: number;
+    active_days: number;
+    first_date: string;
+    last_date: string;
+    visit_rows: number;
+    unique_ips: number;
+  };
+  items: Array<{ stat_key: string; visit_count: number }>;
+}
+
+export interface AdminVisitSearchQuery {
+  page?: number;
+  per_page?: number;
+  date_from?: string;
+  date_to?: string;
+  ip?: string;
+  referer?: string;
+  agent?: string;
+}
+
+export interface AdminVisitLogItem {
+  vi_id: number;
+  ip: string;
+  date: string;
+  time: string;
+  referer: string;
+  agent: string;
+  browser: string;
+  os: string;
+  device: string;
+}
+
+export interface AdminVisitSearchResult {
+  items: AdminVisitLogItem[];
+  pagination: Pagination;
+}
+
+export interface AdminVisitDelete {
+  before?: string;
+  date_from?: string;
+  date_to?: string;
+  ip?: string;
+}
+
+export interface AdminVisitDeleteResult {
+  deleted_rows: number;
+  before: string | null;
+  date_from: string | null;
+  date_to: string | null;
+  ip: string | null;
+}
+
 export interface AdminPointItem {
   po_id: number;
   mb_id: string;
@@ -2316,6 +2380,47 @@ export function resetAdminPopular(
     path: `/sites/${encodeURIComponent(siteId)}/admin/popular`,
     csrfToken,
     body: reset,
+  });
+}
+
+function appendVisitFilters(search: URLSearchParams, query: AdminVisitStatsQuery | AdminVisitSearchQuery) {
+  if (query.date_from) search.set("date_from", query.date_from);
+  if (query.date_to) search.set("date_to", query.date_to);
+}
+
+export function getAdminVisitStats(siteId: string, query: AdminVisitStatsQuery = {}) {
+  const search = new URLSearchParams();
+  appendVisitFilters(search, query);
+  if (query.type) search.set("type", query.type);
+  if (query.limit !== undefined) search.set("limit", String(query.limit));
+  const suffix = search.size ? `?${search.toString()}` : "";
+  return transport.request<AdminVisitStats>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/visits/stats${suffix}`,
+  });
+}
+
+export function searchAdminVisits(siteId: string, query: AdminVisitSearchQuery = {}) {
+  const search = new URLSearchParams();
+  appendVisitFilters(search, query);
+  if (query.page !== undefined) search.set("page", String(query.page));
+  if (query.per_page !== undefined) search.set("per_page", String(query.per_page));
+  if (query.ip) search.set("ip", query.ip);
+  if (query.referer) search.set("referer", query.referer);
+  if (query.agent) search.set("agent", query.agent);
+  const suffix = search.size ? `?${search.toString()}` : "";
+  return transport.request<AdminVisitSearchResult>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/visits/search${suffix}`,
+  });
+}
+
+export function deleteAdminVisits(siteId: string, input: AdminVisitDelete, csrfToken: string) {
+  return transport.request<AdminVisitDeleteResult, AdminVisitDelete>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/visits`,
+    csrfToken,
+    body: input,
   });
 }
 

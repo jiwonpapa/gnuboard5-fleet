@@ -3672,14 +3672,89 @@ code {
   margin-top: 16px;
 }
 
+.visits-tabs {
+  display: flex;
+  gap: 0.45rem;
+  margin: 1rem 0;
+  padding: 0.35rem;
+  width: fit-content;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-muted);
+}
+
+.visits-tabs button {
+  min-height: 2.45rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.visits-tabs button.active {
+  color: white;
+  background: var(--ink);
+}
+
+.visits-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.visits-filter {
+  grid-template-columns: repeat(4, minmax(8rem, 1fr)) auto;
+}
+
+.visits-search-filter {
+  grid-template-columns: repeat(5, minmax(8rem, 1fr)) auto;
+}
+
+.visits-delete-filter {
+  align-items: end;
+  grid-template-columns: minmax(10rem, 1fr) auto repeat(3, minmax(10rem, 1fr)) auto;
+}
+
+.visits-danger-panel {
+  border-color: color-mix(in srgb, var(--danger) 28%, var(--border));
+}
+
+.visits-filter-divider {
+  align-self: center;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.table-subline {
+  display: block;
+  color: var(--muted);
+}
+
 @media (max-width: 960px) {
   .points-page .point-filter,
   .points-workspace,
   .polls-workspace,
   .popups-workspace,
   .popular-filter,
-  .popular-workspace {
+  .popular-workspace,
+  .visits-filter,
+  .visits-search-filter,
+  .visits-delete-filter {
     grid-template-columns: 1fr;
+  }
+
+  .visits-tabs {
+    width: 100%;
+  }
+
+  .visits-tabs button {
+    flex: 1;
+    padding-inline: 0.55rem;
+  }
+
+  .visits-filter-divider {
+    display: none;
   }
 }
 
