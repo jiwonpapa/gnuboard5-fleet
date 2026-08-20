@@ -959,6 +959,57 @@ export interface AdminReportUpdate {
   admin_memo?: string;
 }
 
+export interface AdminQaConfig {
+  qa_id: number;
+  qa_title: string;
+  qa_category: string;
+  qa_skin: string;
+  qa_mobile_skin: string;
+  qa_use_email: string;
+  qa_req_email: string;
+  qa_use_hp: string;
+  qa_req_hp: string;
+  qa_use_sms: string;
+  qa_send_number: string;
+  qa_admin_hp: string;
+  qa_admin_email: string;
+  qa_use_editor: string;
+  qa_subject_len: string;
+  qa_mobile_subject_len: string;
+  qa_page_rows: string;
+  qa_mobile_page_rows: string;
+  qa_image_width: string;
+  qa_upload_size: string;
+  qa_insert_content: string;
+  qa_include_head: string;
+  qa_include_tail: string;
+  qa_content_head: string;
+  qa_content_tail: string;
+  qa_mobile_content_head: string;
+  qa_mobile_content_tail: string;
+  qa_1_subj: string;
+  qa_2_subj: string;
+  qa_3_subj: string;
+  qa_4_subj: string;
+  qa_5_subj: string;
+  qa_1: string;
+  qa_2: string;
+  qa_3: string;
+  qa_4: string;
+  qa_5: string;
+}
+
+export type AdminQaConfigUpdate = Partial<Omit<AdminQaConfig, "qa_id">>;
+
+export interface AdminQaBulkDelete {
+  qa_ids: number[];
+}
+
+export interface AdminQaBulkDeleteResult {
+  deleted_count: number;
+  qa_ids: number[];
+}
+
 export interface AdminPointItem {
   po_id: number;
   mb_id: string;
@@ -2496,6 +2547,39 @@ export function updateAdminReport(
     path: `/sites/${encodeURIComponent(siteId)}/admin/reports/${reportId}`,
     csrfToken,
     body: update,
+  });
+}
+
+export function getAdminQaConfig(siteId: string) {
+  return transport.request<AdminQaConfig>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/system/qa-config`,
+  });
+}
+
+export function updateAdminQaConfig(
+  siteId: string,
+  update: AdminQaConfigUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminQaConfig, AdminQaConfigUpdate>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/system/qa-config`,
+    csrfToken,
+    body: update,
+  });
+}
+
+export function deleteAdminQaBulk(
+  siteId: string,
+  input: AdminQaBulkDelete,
+  csrfToken: string,
+) {
+  return transport.request<AdminQaBulkDeleteResult, AdminQaBulkDelete>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/qa`,
+    csrfToken,
+    body: input,
   });
 }
 

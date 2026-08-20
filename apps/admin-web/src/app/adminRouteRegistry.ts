@@ -88,7 +88,7 @@ export const adminRoutes: readonly AdminRouteMeta[] = [
     label,
     group,
     description: `${label} 도메인 작업면입니다.`,
-    delivery: ["members", "groups", "faqs", "menus", "layouts", "theme", "points", "polls", "popups", "popular", "visits", "reports"].includes(slug) ? "active" as const : "planned" as const,
+    delivery: ["members", "groups", "faqs", "menus", "layouts", "theme", "points", "polls", "popups", "popular", "visits", "reports", "qa"].includes(slug) ? "active" as const : "planned" as const,
     legacySource,
   })),
 ];

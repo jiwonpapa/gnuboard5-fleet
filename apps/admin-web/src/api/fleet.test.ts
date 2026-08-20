@@ -17,6 +17,7 @@ import {
   deleteAdminBoardGroupMember,
   deleteAdminBoard,
   deleteAdminNewPosts,
+  deleteAdminQaBulk,
   deleteAdminLegacyGroup,
   deleteAdminLegacyGroupMember,
   deleteAdminPoints,
@@ -37,6 +38,7 @@ import {
   getAdminMember,
   getAdminPointSummary,
   getAdminPopularRank,
+  getAdminQaConfig,
   getAdminReportStats,
   getAdminVisitStats,
   getAdminLegacyPoll,
@@ -71,6 +73,7 @@ import {
   updateAdminLegacyGroup,
   updateAdminMember,
   updateAdminMemberLevel,
+  updateAdminQaConfig,
   updateAdminReport,
   updateAdminLegacyPoll,
   updateAdminSystemPoll,
@@ -491,6 +494,26 @@ describe("remote Fleet transport", () => {
       ["http://localhost:3000/api/v1/sites/site-a/admin/reports/41", "PATCH"],
     ]);
     expect(fetcher.mock.calls[2]?.[1]?.body).toBe(JSON.stringify({ status: "approved", admin_memo: "검토 완료" }));
+    expect(new Headers(fetcher.mock.calls[2]?.[1]?.headers).get("x-csrf-token")).toBe("csrf-1");
+  });
+
+  it("consumes all three R26 QA operations through explicit site scope", async () => {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => {
+      void _input; void _init;
+      return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    await getAdminQaConfig("site-a");
+    await updateAdminQaConfig("site-a", { qa_title: "Fleet 문의" }, "csrf-1");
+    await deleteAdminQaBulk("site-a", { qa_ids: [71, 72] }, "csrf-1");
+    expect(fetcher.mock.calls.map(([input, init]) => [String(input), init?.method])).toEqual([
+      ["http://localhost:3000/api/v1/sites/site-a/admin/system/qa-config", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/system/qa-config", "PUT"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/qa", "DELETE"],
+    ]);
+    expect(fetcher.mock.calls[1]?.[1]?.body).toBe(JSON.stringify({ qa_title: "Fleet 문의" }));
+    expect(fetcher.mock.calls[2]?.[1]?.body).toBe(JSON.stringify({ qa_ids: [71, 72] }));
+    expect(new Headers(fetcher.mock.calls[1]?.[1]?.headers).get("x-csrf-token")).toBe("csrf-1");
     expect(new Headers(fetcher.mock.calls[2]?.[1]?.headers).get("x-csrf-token")).toBe("csrf-1");
   });
 });
