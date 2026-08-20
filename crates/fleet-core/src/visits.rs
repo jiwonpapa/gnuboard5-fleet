@@ -83,14 +83,14 @@ impl AdminVisitSearchQuery {
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct AdminVisitLogItem {
     pub vi_id: i64,
-    pub ip: String,
-    pub date: String,
-    pub time: String,
-    pub referer: String,
-    pub agent: String,
-    pub browser: String,
-    pub os: String,
-    pub device: String,
+    pub vi_ip: String,
+    pub vi_date: String,
+    pub vi_time: String,
+    pub vi_referer: String,
+    pub vi_agent: String,
+    pub vi_browser: String,
+    pub vi_os: String,
+    pub vi_device: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]

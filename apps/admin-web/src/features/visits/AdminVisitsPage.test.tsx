@@ -21,7 +21,7 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks();
   api.getAdminVisitStats.mockResolvedValue({ type: "date", summary: { total_visits: 2, active_days: 2, first_date: "2026-08-18", last_date: "2026-08-19", visit_rows: 2, unique_ips: 2 }, items: [{ stat_key: "2026-08-18", visit_count: 1 }] });
-  api.searchAdminVisits.mockResolvedValue({ items: [{ vi_id: 1, ip: "127.0.0.1", date: "2026-08-18", time: "09:10:00", referer: "", agent: "Mozilla", browser: "Chrome", os: "macOS", device: "desktop" }], pagination });
+  api.searchAdminVisits.mockResolvedValue({ items: [{ vi_id: 1, vi_ip: "127.0.0.1", vi_date: "2026-08-18", vi_time: "09:10:00", vi_referer: "", vi_agent: "Mozilla", vi_browser: "Chrome", vi_os: "macOS", vi_device: "desktop" }], pagination });
   api.deleteAdminVisits.mockResolvedValue({ deleted_rows: 1, before: "2026-08-19", date_from: null, date_to: null, ip: null });
 });
 

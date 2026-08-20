@@ -858,8 +858,8 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
             serde_json::json!({"pp_word": "gnuboard", "pp_date": "2026-08-19", "pp_cnt": 1, "pp_rank": 2}),
         ])),
         visits: Arc::new(Mutex::new(vec![
-            serde_json::json!({"vi_id": 1, "ip": "127.0.0.1", "date": "2026-08-18", "time": "09:10:00", "referer": "https://example.com", "agent": "Mozilla/5.0", "browser": "Chrome", "os": "macOS", "device": "desktop"}),
-            serde_json::json!({"vi_id": 2, "ip": "127.0.0.2", "date": "2026-08-19", "time": "10:20:00", "referer": "", "agent": "Mobile Safari", "browser": "Safari", "os": "iOS", "device": "mobile"}),
+            serde_json::json!({"vi_id": 1, "vi_ip": "127.0.0.1", "vi_date": "2026-08-18", "vi_time": "09:10:00", "vi_referer": "https://example.com", "vi_agent": "Mozilla/5.0", "vi_browser": "Chrome", "vi_os": "macOS", "vi_device": "desktop"}),
+            serde_json::json!({"vi_id": 2, "vi_ip": "127.0.0.2", "vi_date": "2026-08-19", "vi_time": "10:20:00", "vi_referer": "", "vi_agent": "Mobile Safari", "vi_browser": "Safari", "vi_os": "iOS", "vi_device": "mobile"}),
         ])),
         points: Arc::new(Mutex::new(Vec::new())),
     };
@@ -2867,7 +2867,7 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap();
     assert_eq!(visit_search.status(), StatusCode::OK);
     assert_eq!(
-        json::<Value>(visit_search).await["items"][0]["device"],
+        json::<Value>(visit_search).await["items"][0]["vi_device"],
         "mobile"
     );
 
@@ -4612,10 +4612,10 @@ impl ConnectorGateway for MockConnector {
                 let mut counts = std::collections::BTreeMap::<String, i64>::new();
                 for visit in visits.iter() {
                     let key = match stats_type {
-                        "device" => visit["device"].as_str().unwrap_or_default(),
-                        "browser" => visit["browser"].as_str().unwrap_or_default(),
-                        "os" => visit["os"].as_str().unwrap_or_default(),
-                        _ => visit["date"].as_str().unwrap_or_default(),
+                        "device" => visit["vi_device"].as_str().unwrap_or_default(),
+                        "browser" => visit["vi_browser"].as_str().unwrap_or_default(),
+                        "os" => visit["vi_os"].as_str().unwrap_or_default(),
+                        _ => visit["vi_date"].as_str().unwrap_or_default(),
                     };
                     *counts.entry(key.to_owned()).or_default() += 1;
                 }
@@ -4635,9 +4635,9 @@ impl ConnectorGateway for MockConnector {
                     .unwrap()
                     .iter()
                     .filter(|visit| {
-                        let date = visit["date"].as_str().unwrap_or_default();
+                        let date = visit["vi_date"].as_str().unwrap_or_default();
                         ip.is_none_or(|value| {
-                            visit["ip"]
+                            visit["vi_ip"]
                                 .as_str()
                                 .is_some_and(|candidate| candidate.contains(value))
                         }) && date_from.is_none_or(|value| date >= value)
@@ -4661,13 +4661,13 @@ impl ConnectorGateway for MockConnector {
                 let mut visits = self.visits.lock().unwrap();
                 let prior = visits.len();
                 visits.retain(|visit| {
-                    let date = visit["date"].as_str().unwrap_or_default();
+                    let date = visit["vi_date"].as_str().unwrap_or_default();
                     let matches = if let Some(cutoff) = before_date {
                         date < cutoff
                     } else {
                         date_from.is_none_or(|value| date >= value)
                             && date_to.is_none_or(|value| date <= value)
-                            && ip.is_none_or(|value| visit["ip"].as_str() == Some(value))
+                            && ip.is_none_or(|value| visit["vi_ip"].as_str() == Some(value))
                     };
                     !matches
                 });

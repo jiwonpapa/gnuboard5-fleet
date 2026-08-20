@@ -138,10 +138,10 @@ export function AdminVisitsPage() {
           <button className="primary-action" type="submit">로그 검색</button>
         </form>
         <AdminDataTable columns={[
-          { header: "일시", render: (item) => <strong>{item.date} {item.time}</strong> },
-          { header: "IP", render: (item) => item.ip },
-          { header: "환경", render: (item) => <span>{item.browser} · {item.os}<small className="table-subline">{item.device}</small></span> },
-          { header: "유입", render: (item) => item.referer || "직접 유입" },
+          { header: "일시", render: (item) => <strong>{item.vi_date} {item.vi_time}</strong> },
+          { header: "IP", render: (item) => item.vi_ip },
+          { header: "환경", render: (item) => <span>{item.vi_browser} · {item.vi_os}<small className="table-subline">{item.vi_device}</small></span> },
+          { header: "유입", render: (item) => item.vi_referer || "직접 유입" },
         ]} emptyMessage="조회된 방문 로그가 없습니다." getRowKey={(item) => String(item.vi_id)} rows={logs?.items ?? []} />
         <div className="action-row popular-pagination"><button type="button" disabled={!pagination?.has_prev} onClick={() => setPage((value) => Math.max(1, value - 1))}>이전</button><span>{pagination?.page ?? page} / {pagination?.last_page ?? 1}</span><button type="button" disabled={!pagination?.has_next} onClick={() => setPage((value) => value + 1)}>다음</button></div>
       </section> : null}

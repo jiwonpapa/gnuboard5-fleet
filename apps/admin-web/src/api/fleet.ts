@@ -888,14 +888,14 @@ export interface AdminVisitSearchQuery {
 
 export interface AdminVisitLogItem {
   vi_id: number;
-  ip: string;
-  date: string;
-  time: string;
-  referer: string;
-  agent: string;
-  browser: string;
-  os: string;
-  device: string;
+  vi_ip: string;
+  vi_date: string;
+  vi_time: string;
+  vi_referer: string;
+  vi_agent: string;
+  vi_browser: string;
+  vi_os: string;
+  vi_device: string;
 }
 
 export interface AdminVisitSearchResult {
