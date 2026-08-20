@@ -918,6 +918,47 @@ export interface AdminVisitDeleteResult {
   ip: string | null;
 }
 
+export type AdminReportStatus = "pending" | "approved" | "rejected" | "hold";
+export type AdminReportTargetType = "post" | "comment" | "member";
+
+export interface AdminReportListQuery {
+  status?: AdminReportStatus;
+  target_type?: AdminReportTargetType;
+  page?: number;
+  per_page?: number;
+}
+
+export interface AdminReportItem {
+  rp_id: number;
+  mb_id: string | null;
+  rp_target_type: string | null;
+  rp_target_id: string | null;
+  rp_reason: string | null;
+  rp_detail: string | null;
+  rp_status: string | null;
+  rp_admin_memo: string | null;
+  rp_datetime: string | null;
+  rp_processed_at: string | null;
+}
+
+export interface AdminReportList {
+  items: AdminReportItem[];
+  pagination: Pagination;
+}
+
+export interface AdminReportStats {
+  pending: number;
+  approved: number;
+  rejected: number;
+  hold: number;
+  total: number;
+}
+
+export interface AdminReportUpdate {
+  status: AdminReportStatus;
+  admin_memo?: string;
+}
+
 export interface AdminPointItem {
   po_id: number;
   mb_id: string;
@@ -2421,6 +2462,40 @@ export function deleteAdminVisits(siteId: string, input: AdminVisitDelete, csrfT
     path: `/sites/${encodeURIComponent(siteId)}/admin/visits`,
     csrfToken,
     body: input,
+  });
+}
+
+export function listAdminReports(siteId: string, query: AdminReportListQuery = {}) {
+  const search = new URLSearchParams();
+  if (query.status) search.set("status", query.status);
+  if (query.target_type) search.set("target_type", query.target_type);
+  if (query.page !== undefined) search.set("page", String(query.page));
+  if (query.per_page !== undefined) search.set("per_page", String(query.per_page));
+  const suffix = search.size ? `?${search.toString()}` : "";
+  return transport.request<AdminReportList>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/reports${suffix}`,
+  });
+}
+
+export function getAdminReportStats(siteId: string) {
+  return transport.request<AdminReportStats>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/reports/stats`,
+  });
+}
+
+export function updateAdminReport(
+  siteId: string,
+  reportId: number,
+  update: AdminReportUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminReportItem, AdminReportUpdate>({
+    method: "PATCH",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/reports/${reportId}`,
+    csrfToken,
+    body: update,
   });
 }
 

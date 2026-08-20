@@ -209,6 +209,9 @@ export function SiteDashboardPage() {
           <Link to={`/sites/${encodeURIComponent(siteId)}/admin/visits`}>
             접속자 운영
           </Link>
+          <Link to={`/sites/${encodeURIComponent(siteId)}/admin/reports`}>
+            신고 운영
+          </Link>
           <Link
             className="primary-action"
             to={`/sites/${encodeURIComponent(siteId)}/admin/config`}

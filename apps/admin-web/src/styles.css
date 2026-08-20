@@ -3726,6 +3726,59 @@ code {
   letter-spacing: 0.08em;
 }
 
+.reports-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.reports-workspace {
+  grid-template-columns: minmax(0, 1.25fr) minmax(340px, 0.75fr);
+}
+
+.reports-filter {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(9rem, 1fr)) auto;
+  margin-bottom: 18px;
+}
+
+.reports-filter label,
+.report-editor > label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.reports-filter select {
+  padding: 10px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--paper);
+  font: inherit;
+}
+
+.report-editor {
+  display: grid;
+  gap: 16px;
+  position: sticky;
+  top: 20px;
+}
+
+.report-status {
+  display: inline-flex;
+  padding: 4px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.report-status[data-status="approved"] { color: var(--success, #0f766e); }
+.report-status[data-status="rejected"] { color: var(--danger, #b42318); }
+.report-status[data-status="hold"] { color: #8a5b00; }
+
 .table-subline {
   display: block;
   color: var(--muted);
@@ -3742,6 +3795,16 @@ code {
   .visits-search-filter,
   .visits-delete-filter {
     grid-template-columns: 1fr;
+  }
+
+  .reports-summary,
+  .reports-workspace,
+  .reports-filter {
+    grid-template-columns: 1fr;
+  }
+
+  .report-editor {
+    position: static;
   }
 
   .visits-tabs {

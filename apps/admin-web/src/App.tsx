@@ -23,6 +23,7 @@ import { AdminPointsPage } from "./features/points/AdminPointsPage";
 import { AdminPollsPage } from "./features/polls/AdminPollsPage";
 import { AdminPopupsPage } from "./features/popups/AdminPopupsPage";
 import { AdminPopularPage } from "./features/popular/AdminPopularPage";
+import { AdminReportsPage } from "./features/reports/AdminReportsPage";
 import { AdminVisitsPage } from "./features/visits/AdminVisitsPage";
 import { SecuritySettingsPage } from "./features/security/SecuritySettingsPage";
 import { SiteActivationPage } from "./features/sites/SiteActivationPage";
@@ -114,6 +115,10 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/visits"
               element={<AdminVisitsPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/reports"
+              element={<AdminReportsPage />}
             />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />
