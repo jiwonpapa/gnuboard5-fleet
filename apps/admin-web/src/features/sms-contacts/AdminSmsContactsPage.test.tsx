@@ -41,6 +41,21 @@ describe("AdminSmsContactsPage", () => {
     expect(api.listAdminSmsContacts).toHaveBeenCalled();
   });
 
+  it("keeps an explicit create mode while group reads refresh", async () => {
+    api.createAdminSmsContactGroup.mockResolvedValue({ ...group, bg_no: 2, bg_name: "신규" });
+    api.listAdminSmsContactGroups.mockResolvedValue({ groups: [group, { ...group, bg_no: 2, bg_name: "신규" }], total: 2 });
+    renderPage();
+    await screen.findByText("홍길동");
+
+    fireEvent.click(screen.getByRole("button", { name: "새 그룹" }));
+    fireEvent.change(screen.getByLabelText("그룹명"), { target: { value: "신규" } });
+    await waitFor(() => expect(screen.getByRole("button", { name: "그룹 만들기" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "그룹 만들기" }));
+
+    await waitFor(() => expect(api.createAdminSmsContactGroup).toHaveBeenCalledWith("site-a", "신규", "csrf-1"));
+    expect(await screen.findByText("새 연락처 그룹을 만들었습니다.")).toBeVisible();
+  });
+
   it("requires explicit confirmation for a batch mutation", async () => {
     renderPage();
     fireEvent.click(await screen.findByLabelText("홍길동 선택"));

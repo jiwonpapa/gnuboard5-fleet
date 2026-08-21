@@ -46,6 +46,7 @@ export function AdminSmsContactsPage() {
   const { session } = useAuthSession();
   const [groups, setGroups] = useState<AdminSmsContactGroup[]>([]);
   const [activeGroupId, setActiveGroupId] = useState<number | null>(null);
+  const [creatingGroup, setCreatingGroup] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [moveTarget, setMoveTarget] = useState("");
   const [contactList, setContactList] = useState<AdminSmsContactList | null>(null);
@@ -65,11 +66,12 @@ export function AdminSmsContactsPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const refreshGroups = useCallback(async () => {
+  const refreshGroups = useCallback(async (preferredGroupId?: number) => {
     const result = await listAdminSmsContactGroups(siteId);
     setGroups(result.groups);
-    const fallback = activeGroupId && result.groups.some((group) => group.bg_no === activeGroupId)
-      ? activeGroupId
+    const selectedGroupId = preferredGroupId ?? activeGroupId;
+    const fallback = selectedGroupId && result.groups.some((group) => group.bg_no === selectedGroupId)
+      ? selectedGroupId
       : result.groups[0]?.bg_no ?? null;
     setActiveGroupId(fallback);
     setDraft((current) => ({ ...current, bg_no: current.bg_no || String(fallback ?? "") }));
@@ -121,6 +123,7 @@ export function AdminSmsContactsPage() {
   }
 
   async function selectGroup(bgNo: number) {
+    setCreatingGroup(false);
     setActiveGroupId(bgNo);
     setPage(1);
     setSelectedIds([]);
@@ -138,16 +141,18 @@ export function AdminSmsContactsPage() {
     const name = groupName.trim();
     if (!name) return setError("그룹명을 입력해 주십시오.");
     await mutate(async () => {
-      if (activeGroupId) {
+      if (!creatingGroup && activeGroupId) {
         await updateAdminSmsContactGroup(siteId, activeGroupId, name, session.csrf_token);
         setMessage("그룹명을 저장하고 서버 값을 재조회했습니다.");
+        await refreshGroups(activeGroupId);
       } else {
         const created = await createAdminSmsContactGroup(siteId, name, session.csrf_token);
+        setCreatingGroup(false);
         setActiveGroupId(created.bg_no);
         setDraft((current) => ({ ...current, bg_no: String(created.bg_no) }));
         setMessage("새 연락처 그룹을 만들었습니다.");
+        await refreshGroups(created.bg_no);
       }
-      await refreshGroups();
     });
   }
 
@@ -257,19 +262,19 @@ export function AdminSmsContactsPage() {
 
       <div className="sms-contacts-workspace">
         <aside className="member-list-panel sms-group-panel">
-          <div className="workspace-panel-heading"><div><span className="eyebrow">Group index</span><h3>연락처 그룹</h3></div><button type="button" onClick={() => { setActiveGroupId(null); setGroupName(""); }}>새 그룹</button></div>
+          <div className="workspace-panel-heading"><div><span className="eyebrow">Group index</span><h3>연락처 그룹</h3></div><button type="button" onClick={() => { setCreatingGroup(true); setGroupName(""); }}>새 그룹</button></div>
           <div className="sms-group-list">
             {groups.map((group) => <button type="button" data-active={group.bg_no === activeGroupId} key={group.bg_no} onClick={() => void selectGroup(group.bg_no)}><span>{group.bg_name}</span><strong>{group.bg_count}</strong><small>허용 {group.bg_receipt} · 거부 {group.bg_reject}</small></button>)}
           </div>
           <form onSubmit={saveGroup} className="sms-group-editor">
             <label>그룹명<input aria-label="그룹명" value={groupName} onChange={(event) => setGroupName(event.currentTarget.value)} /></label>
-            <button className="primary-action" disabled={!canWrite || !groupName.trim()}>{activeGroupId ? "그룹명 저장" : "그룹 만들기"}</button>
+            <button className="primary-action" disabled={!canWrite || !groupName.trim()}>{creatingGroup ? "그룹 만들기" : "그룹명 저장"}</button>
           </form>
-          {activeGroup ? <div className="sms-group-danger">
+          {activeGroup && !creatingGroup ? <div className="sms-group-danger">
             <label>이동 대상<select aria-label="그룹 이동 대상" value={moveTarget} onChange={(event) => setMoveTarget(event.currentTarget.value)}><option value="">선택</option>{groups.filter((group) => group.bg_no !== activeGroupId).map((group) => <option key={group.bg_no} value={group.bg_no}>{group.bg_name}</option>)}</select></label>
             <button disabled={!canWrite || !moveTarget} onClick={() => void mutate(async () => { const result = await moveAdminSmsContactGroup(siteId, activeGroup.bg_no, Number(moveTarget), session.csrf_token); await Promise.all([refreshGroups(), refreshContacts()]); setMessage(`${result.affected}건을 대상 그룹으로 옮겼습니다.`); })}>그룹 연락처 이동</button>
             <button disabled={!canWrite} onClick={() => setConfirmation({ title: "그룹 연락처 비우기", description: `${activeGroup.bg_name} 그룹의 연락처를 모두 삭제합니다.`, confirmLabel: "그룹 비우기", action: async () => mutate(async () => { const result = await clearAdminSmsContactGroup(siteId, activeGroup.bg_no, session.csrf_token); await Promise.all([refreshGroups(), refreshContacts()]); setMessage(`${result.deleted}건을 삭제했습니다.`); }) })}>그룹 비우기</button>
-            <button className="danger-action" disabled={!canWrite} onClick={() => setConfirmation({ title: "연락처 그룹 삭제", description: "기본 그룹·잔여 연락처 제약은 서버가 최종 확인합니다.", confirmLabel: "그룹 삭제", action: async () => mutate(async () => { await deleteAdminSmsContactGroup(siteId, activeGroup.bg_no, session.csrf_token); setActiveGroupId(null); setGroupName(""); await refreshGroups(); setMessage("연락처 그룹을 삭제했습니다."); }) })}>그룹 삭제</button>
+            <button className="danger-action" disabled={!canWrite} onClick={() => setConfirmation({ title: "연락처 그룹 삭제", description: "기본 그룹·잔여 연락처 제약은 서버가 최종 확인합니다.", confirmLabel: "그룹 삭제", action: async () => mutate(async () => { await deleteAdminSmsContactGroup(siteId, activeGroup.bg_no, session.csrf_token); setCreatingGroup(false); setActiveGroupId(null); setGroupName(""); await refreshGroups(); setMessage("연락처 그룹을 삭제했습니다."); }) })}>그룹 삭제</button>
           </div> : null}
         </aside>
 
