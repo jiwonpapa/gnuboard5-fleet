@@ -1141,6 +1141,48 @@ export interface AdminSystemMailSendResult {
   recipients: Array<{ mb_id: string; mb_email: string }>;
 }
 
+export interface AdminSmsConfig {
+  cf_title: string | null;
+  cf_sms_use: string | null;
+  cf_sms_type: string | null;
+  cf_icode_id: string | null;
+  cf_icode_pw: null;
+  cf_icode_server_ip: string | null;
+  cf_icode_server_port: string | null;
+  cf_icode_token_key: null;
+  cf_phone: string | null;
+  cf_datetime: string | null;
+  provider_ready: boolean;
+  uses_token_key: boolean;
+  uses_legacy_credentials: boolean;
+  storage_ready: boolean;
+  missing_tables: string[];
+}
+
+export interface AdminSmsConfigUpdate {
+  cf_sms_use?: "" | "icode";
+  cf_sms_type?: "" | "LMS";
+  cf_icode_id?: string;
+  cf_icode_pw?: string;
+  cf_icode_server_ip?: string;
+  cf_icode_server_port?: string;
+  cf_icode_token_key?: string;
+  cf_phone?: string;
+}
+
+export interface AdminSmsMemberSyncResult {
+  datetime: string | null;
+  summary: {
+    total_members: number;
+    leave_members: number;
+    phone_empty: number;
+    phone_valid: number;
+    phone_invalid: number;
+    receipt_enabled: number;
+    receipt_disabled: number;
+  };
+}
+
 export interface AdminPointItem {
   po_id: number;
   mb_id: string;
@@ -2800,6 +2842,35 @@ export function sendAdminSystemMailTest(siteId: string, input: AdminSystemMailTe
 
 export function sendAdminSystemMemberMail(siteId: string, input: AdminSystemMailSendRequest, csrfToken: string) {
   return transport.request<AdminSystemMailSendResult, AdminSystemMailSendRequest & { confirm_send: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/system/mails/send`, csrfToken, body: { ...input, confirm_send: true } });
+}
+
+export function getAdminSmsConfig(siteId: string) {
+  return transport.request<AdminSmsConfig>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/sms/config`,
+  });
+}
+
+export function updateAdminSmsConfig(
+  siteId: string,
+  input: AdminSmsConfigUpdate,
+  csrfToken: string,
+) {
+  return transport.request<AdminSmsConfig, AdminSmsConfigUpdate>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/sms/config`,
+    csrfToken,
+    body: input,
+  });
+}
+
+export function syncAdminSmsMembers(siteId: string, csrfToken: string) {
+  return transport.request<AdminSmsMemberSyncResult, { confirm_sync: true }>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/sms/member-sync`,
+    csrfToken,
+    body: { confirm_sync: true },
+  });
 }
 
 export function listAdminPoints(siteId: string, query: AdminPointListQuery = {}) {

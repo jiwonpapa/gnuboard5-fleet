@@ -3992,6 +3992,103 @@ code {
   letter-spacing: 0.04em;
 }
 
+.sms-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.sms-summary-grid article[data-ready="true"] strong {
+  color: var(--accent);
+}
+
+.sms-storage-warning {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--danger) 36%, var(--line));
+  color: var(--danger);
+  background: color-mix(in srgb, var(--paper) 90%, #fff1e8);
+}
+
+.sms-storage-warning span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.sms-config-workspace {
+  display: grid;
+  grid-template-columns: minmax(460px, 1.28fr) minmax(320px, 0.72fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.sms-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.sms-field-grid label {
+  display: grid;
+  gap: 7px;
+}
+
+.sms-field-grid input,
+.sms-field-grid select {
+  width: 100%;
+}
+
+.sms-config-actions {
+  justify-content: flex-end;
+}
+
+.sms-sync-panel {
+  position: sticky;
+  top: 22px;
+  display: grid;
+  gap: 18px;
+}
+
+.sms-sync-panel .workspace-panel-heading {
+  align-items: flex-start;
+  margin-bottom: 0;
+}
+
+.sms-sync-panel .workspace-panel-heading p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.77rem;
+  line-height: 1.55;
+}
+
+.sms-sync-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.sms-sync-results div {
+  padding: 13px;
+  background: var(--surface);
+}
+
+.sms-sync-results dt,
+.sms-sync-panel > small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.sms-sync-results dd {
+  margin: 5px 0 0;
+  font-family: var(--display);
+  font-size: 1.05rem;
+}
+
 @media (max-width: 960px) {
   .points-page .point-filter,
   .points-workspace,
@@ -4011,8 +4108,17 @@ code {
 
   .mail-template-workspace,
   .mail-action-workspace,
-  .mail-recipient-filter {
+  .mail-recipient-filter,
+  .sms-config-workspace {
     grid-template-columns: 1fr;
+  }
+
+  .sms-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sms-sync-panel {
+    position: static;
   }
 
   .write-count-actions {
@@ -4064,8 +4170,13 @@ code {
   .poll-number-grid,
   .popup-field-grid,
   .mail-short-fields,
-  .mail-safety-row {
+  .mail-safety-row,
+  .sms-field-grid {
     grid-template-columns: 1fr;
+  }
+
+  .sms-storage-warning {
+    flex-direction: column;
   }
 
   .mail-safety-confirm {

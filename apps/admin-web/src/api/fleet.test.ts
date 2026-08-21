@@ -46,6 +46,7 @@ import {
   getAdminVisitStats,
   getAdminWriteCountStats,
   getAdminMail,
+  getAdminSmsConfig,
   getAdminLegacyPoll,
   getAdminSystemPoll,
   getAdminLegacyGroup,
@@ -77,6 +78,7 @@ import {
   sendAdminMailTestLegacy,
   sendAdminSystemMailTest,
   sendAdminSystemMemberMail,
+  syncAdminSmsMembers,
   grantAdminPoint,
   deductAdminPoint,
   upsertAdminAuth,
@@ -87,6 +89,7 @@ import {
   updateAdminMember,
   updateAdminMemberLevel,
   updateAdminMailTemplate,
+  updateAdminSmsConfig,
   updateAdminQaConfig,
   updateAdminReport,
   updateAdminLegacyPoll,
@@ -584,6 +587,27 @@ describe("remote Fleet transport", () => {
     ]);
     for (const index of [1, 4, 5, 11, 12]) {
       expect(JSON.parse(String(fetcher.mock.calls[index]?.[1]?.body))).toMatchObject({ confirm_send: true });
+      expect(new Headers(fetcher.mock.calls[index]?.[1]?.headers).get("x-csrf-token")).toBe("csrf-1");
+    }
+  });
+
+  it("consumes all three R29 SMS config operations with confirmed local mutation", async () => {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => {
+      void _input; void _init;
+      return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    await getAdminSmsConfig("site-a");
+    await updateAdminSmsConfig("site-a", { cf_phone: "02-1234-5678" }, "csrf-1");
+    await syncAdminSmsMembers("site-a", "csrf-1");
+    expect(fetcher.mock.calls.map(([input, init]) => [String(input), init?.method])).toEqual([
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/config", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/config", "PUT"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/member-sync", "POST"],
+    ]);
+    expect(fetcher.mock.calls[1]?.[1]?.body).toBe(JSON.stringify({ cf_phone: "02-1234-5678" }));
+    expect(fetcher.mock.calls[2]?.[1]?.body).toBe(JSON.stringify({ confirm_sync: true }));
+    for (const index of [1, 2]) {
       expect(new Headers(fetcher.mock.calls[index]?.[1]?.headers).get("x-csrf-token")).toBe("csrf-1");
     }
   });
