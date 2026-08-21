@@ -1074,11 +1074,16 @@
       "id": "R27",
       "sequence": 22,
       "title": "write-count",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R26"],
+      "completion": {
+        "implementation_commit": "8adafafc799af3e6113010c4a7ed8dc895e49486",
+        "evidence_path": "docs/audits/evidence/R27_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-21T00:49:30Z"
+      },
       "core": {
         "domains": ["write-count"],
-        "operation_ids": [],
+        "operation_ids": ["adminWriteCountStats"],
         "expected_count": 1
       },
       "legacy": {
@@ -1107,7 +1112,7 @@
       "id": "R28",
       "sequence": 23,
       "title": "mails",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R27"],
       "core": {
         "domains": ["mails"],

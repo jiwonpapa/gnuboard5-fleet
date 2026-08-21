@@ -67,8 +67,8 @@ R00에서 `make check-batch BATCH=Rxx`를 구현합니다. 각 배치는 아래
 
 ## 4. 배치 순서
 
-현재 manifest 상태는 R00~R26 `batch_pass`, R27 `active`, 나머지는
-`planned`입니다. R26까지 닫았고 전체 감사에는 159개 findings가 남아
+현재 manifest 상태는 R00~R27 `batch_pass`, R28 `active`, 나머지는
+`planned`입니다. R27까지 닫았고 전체 감사에는 155개 findings가 남아
 있으므로 제품 기능 이관 완료를 뜻하지 않습니다.
 
 ### 4.1 이관 통제와 공통 기반
@@ -168,14 +168,13 @@ commit/push: 미실행
 
 ## 6. 현재 실행
 
-R00~R26은 닫혔고 다음 목표 추진 단위는 5차 R27~R28입니다.
+R00~R27은 닫혔고 현재 목표 추진 단위는 5차의 R28 mails입니다.
 
-1. R27 write-count의 legacy 3개와 Core operation 1개를 먼저 닫습니다.
-2. R27 scoped audit·runtime·브라우저·commit·push가 PASS한 뒤 R28을 시작합니다.
-3. R28 mails의 Core 13개와 legacy command·page·test를 재사용 이관합니다.
-4. 메일 테스트·회원 메일은 외부 발송 없이 fake adapter와 outbox로 검증합니다.
-5. R28 gate·commit·push 후 5차 통합 보고를 작성합니다.
-6. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
+1. R27 write-count의 legacy 3개와 Core operation 1개는 runtime·브라우저까지 닫았습니다.
+2. R28 mails의 Core 13개와 legacy command·page·test를 재사용 이관합니다.
+3. 메일 테스트·회원 메일은 외부 발송 없이 fake adapter와 outbox로 검증합니다.
+4. R28 gate·commit·push 후 5차 통합 보고를 작성합니다.
+5. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
 
 실행 명령:
 

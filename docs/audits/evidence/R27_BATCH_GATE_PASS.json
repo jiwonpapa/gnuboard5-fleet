@@ -1,0 +1,113 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R27",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "8adafafc799af3e6113010c4a7ed8dc895e49486",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "8adafafc799af3e6113010c4a7ed8dc895e49486"
+  },
+  "generated_at": "2026-08-21T00:49:30Z",
+  "commands": [
+    "make audit-runtime-prepare",
+    "make check",
+    "make check-batch BATCH=R27",
+    "composer test (official G5 composed runtime)",
+    "BUILDX_BUILDER=g5-fleet-cert-builder make certification-clean certification-up",
+    "make certification-local-smoke",
+    "playwright-cli --session r27-final (headless 1440x1000 and 390x844)",
+    "python3 -m tools.migration_parity.batch_cli --batch R26 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R27 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R28 --profile static"
+  ],
+  "results": {
+    "canonical_make_check": {
+      "component_gates": "PASS",
+      "terminal_status": "EXPECTED_GLOBAL_MIGRATION_FAIL",
+      "terminal_findings": 155
+    },
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {"passed": 85, "failed": 0, "ignored": 1},
+      "http_contract_tests": {"passed": 8, "failed": 0},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 68,
+      "web_tests": {"passed": 151, "failed": 0},
+      "web_build": "PASS"
+    },
+    "php_composed_runtime": {
+      "status": "PASS",
+      "official_g5_version": "5.6.32",
+      "tests": 875,
+      "assertions": 6727,
+      "failed": 0,
+      "skipped": 5
+    },
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "revision": "8adafafc799af3e6113010c4a7ed8dc895e49486",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "8adafafc799af3e6113010c4a7ed8dc895e49486",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "5f4ce22f567d567b1b543926819508162aa458bcf21316f054be62adfe6198f3",
+      "write_count_operations": 1,
+      "write_total": 3,
+      "comment_total": 1,
+      "day_and_month_bucket_readback": "PASS",
+      "date_range_readback": "PASS",
+      "notice_filter_readback": {"write_total": 2, "comment_total": 1},
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "PASS",
+      "implementation_revision": "8adafafc799af3e6113010c4a7ed8dc895e49486",
+      "execution_mode": "headless",
+      "login_with_otp": "PASS",
+      "default_summary_and_day_bucket_readback": "PASS",
+      "month_date_notice_filter_readback": "PASS",
+      "console_errors_after_login": 0,
+      "desktop_1440x1000": "PASS",
+      "mobile_390x844": "PASS",
+      "screenshots": [
+        {"path": "output/playwright/r27-write-count-desktop.png", "sha256": "1033628b818d9fc6088ca0bda9a75a67f9e9a62e2c5e9a7d21870c43ce789151"},
+        {"path": "output/playwright/r27-write-count-mobile.png", "sha256": "ca4909823169ed842c18efb2f648e8222d0673e83bf4f35135f33d13ab910274"}
+      ]
+    },
+    "typed_operation_consumption": {
+      "operations": ["adminWriteCountStats"],
+      "new_site_scoped_axum_routes": 1,
+      "browser_same_origin_transport": "PASS",
+      "browser_g5_secret_exposure": "NONE"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 182, "added_r27_routes": 1},
+    "predecessor_regression": {"batch": "R26", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 3, "core_operations": 1, "required_capabilities": 0},
+    "reuse": {"reused": 0, "adapted": 3, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "global_migration": {"status": "FAIL", "findings": 155},
+    "next_batch_probe": {
+      "batch": "R28",
+      "status": "FAIL",
+      "scope": {"legacy": 19, "core_operations": 13, "required_capabilities": 0},
+      "findings": 32
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "a13c2acb32a0ea2f020c575a55cff72c5d9c4bb4a71820a27a9a60d199169536",
+    "migration_batches_before_closeout": "10a52f26a433395ec9b9413d70d5517b6402eba9c595f68fdef90631d2920381"
+  },
+  "source_reports": [
+    {"path": "output/audit/runs/20260821T004216Z-224681eb83f6/result.json", "sha256": "2970600815f4874078576784f5e4475d2432d2c61f5dd1f53f87b7c7530c5d51"},
+    {"path": "output/audit/runs/migration-batch-R26-20260821T004849Z-151ebe51/result.json", "sha256": "f81f8a735059ec51db1b2fbb7d0975d61a19ca64c17645d28ec88dcb30f284d2"},
+    {"path": "output/audit/runs/migration-batch-R27-20260821T004850Z-6d3b1bb7/result.json", "sha256": "ca0d745a34362086adcb655221cc3c3f0e5ce1b0f34ec2e9fd3da5a1ae2b8ae1"},
+    {"path": "output/audit/runs/migration-batch-R28-20260821T004850Z-100b4580/result.json", "sha256": "336dd5d856b7d63a81ccdd3f1453b56d93f24294ed7705af6ee8598945b57390"}
+  ],
+  "claim_limit": "R27 write-count 1-operation typed DTO, Connector, explicit site_id Axum route, same-origin responsive React workspace, official G5 5.6.32 local runtime and headless browser readback only. This is not package, staging or live certification; global migration remains FAIL with 155 findings."
+}
