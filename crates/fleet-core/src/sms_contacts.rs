@@ -388,5 +388,18 @@ mod tests {
         assert!(import.is_valid());
         let encoded = serde_json::to_value(import).expect("serialize import");
         assert!(encoded["contacts"][0].get("memo").is_none());
+        assert!(
+            AdminSmsContactImport {
+                bg_no: 2,
+                dry_run: true,
+                contacts: vec![AdminSmsContactImportItem {
+                    name: Some("invalid row".into()),
+                    phone: Some("123".into()),
+                    memo: None,
+                    receipt: Some(false),
+                }],
+            }
+            .is_valid()
+        );
     }
 }

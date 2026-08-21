@@ -5461,11 +5461,7 @@ impl G5Client {
             .header("x-request-id", request_id)
             .bearer_auth(access_token);
         if let Some(body) = input.body.as_ref() {
-            if operation
-                .request_media_types
-                .iter()
-                .any(|value| value == "multipart/form-data")
-            {
+            if should_use_multipart(operation, body) {
                 request = request.multipart(multipart_form(body)?);
             } else if operation
                 .request_media_types
@@ -5870,6 +5866,28 @@ fn multipart_form(body: &Value) -> ConnectorResult<Form> {
     Ok(form)
 }
 
+fn should_use_multipart(operation: &CoreOperationSpec, body: &Value) -> bool {
+    let supports_multipart = operation
+        .request_media_types
+        .iter()
+        .any(|value| value == "multipart/form-data");
+    if !supports_multipart {
+        return false;
+    }
+    let supports_json = operation
+        .request_media_types
+        .iter()
+        .any(|value| value == "application/json");
+    let contains_file = body.as_object().is_some_and(|fields| {
+        fields.values().any(|value| {
+            value
+                .as_object()
+                .is_some_and(|value| value.contains_key("$file"))
+        })
+    });
+    contains_file || !supports_json
+}
+
 #[cfg(test)]
 mod tests {
     use std::{
@@ -5893,7 +5911,7 @@ mod tests {
     use super::{
         ConnectorError, ConnectorLogin, CoreExecuteRequest, G5Client, HealthEnvelope,
         core_operation, core_operations, is_mysql_datetime, normalize_base_url,
-        validate_core_request,
+        should_use_multipart, validate_core_request,
     };
 
     #[test]
@@ -6050,6 +6068,33 @@ mod tests {
         assert!(matches!(
             validate_core_request(operation, &missing),
             Err(ConnectorError::InvalidCoreRequest)
+        ));
+    }
+
+    #[test]
+    fn request_validator_accepts_sms_contact_import_preview_rows() {
+        let operation = core_operation("adminImportSmsContacts").expect("operation");
+        let request = CoreExecuteRequest {
+            body: Some(json!({
+                "bg_no": 2,
+                "dry_run": true,
+                "contacts": [
+                    {"name": "valid", "phone": "01011112222", "receipt": true},
+                    {"name": "invalid", "phone": "123", "receipt": false}
+                ]
+            })),
+            ..Default::default()
+        };
+        validate_core_request(operation, &request).expect("SMS import preview payload");
+        assert!(!should_use_multipart(
+            operation,
+            request.body.as_ref().expect("body")
+        ));
+
+        let upload = core_operation("adminUploadMemberIcon").expect("upload operation");
+        assert!(should_use_multipart(
+            upload,
+            &json!({"file":{"$file":{"filename":"icon.png","base64":"AA=="}}})
         ));
     }
 
