@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   addAdminBoardGroupMember,
   addAdminLegacyGroupMember,
+  batchAdminSmsContacts,
+  clearAdminSmsContactGroup,
   connectorLogin,
   connectorLogout,
   connectorRefresh,
@@ -15,6 +17,8 @@ import {
   createAdminBoard,
   createAdminBoardGroup,
   createAdminLegacyGroup,
+  createAdminSmsContact,
+  createAdminSmsContactGroup,
   deleteAdminBoardGroup,
   deleteAdminBoardGroupMember,
   deleteAdminBoard,
@@ -30,8 +34,11 @@ import {
   deleteAdminMail,
   deleteAdminVisits,
   deleteAdminAuthByMember,
+  deleteAdminSmsContact,
+  deleteAdminSmsContactGroup,
   deleteAdminSystemPermission,
   exportAdminMembers,
+  exportAdminSmsContacts,
   expireAdminPoints,
   getAdminConfig,
   getAdminBoardGroup,
@@ -47,6 +54,8 @@ import {
   getAdminWriteCountStats,
   getAdminMail,
   getAdminSmsConfig,
+  getAdminSmsContact,
+  getAdminSmsContactGroup,
   getAdminLegacyPoll,
   getAdminSystemPoll,
   getAdminLegacyGroup,
@@ -69,6 +78,8 @@ import {
   listAdminSystemPermissions,
   listAdminSystemMails,
   listAdminSystemMailRecipients,
+  listAdminSmsContactGroups,
+  listAdminSmsContacts,
   openTerminalSocket,
   patchAdminBoardGroup,
   saveAdminSystemPermission,
@@ -78,6 +89,8 @@ import {
   sendAdminMailTestLegacy,
   sendAdminSystemMailTest,
   sendAdminSystemMemberMail,
+  importAdminSmsContacts,
+  moveAdminSmsContactGroup,
   syncAdminSmsMembers,
   grantAdminPoint,
   deductAdminPoint,
@@ -90,6 +103,8 @@ import {
   updateAdminMemberLevel,
   updateAdminMailTemplate,
   updateAdminSmsConfig,
+  updateAdminSmsContact,
+  updateAdminSmsContactGroup,
   updateAdminQaConfig,
   updateAdminReport,
   updateAdminLegacyPoll,
@@ -610,5 +625,47 @@ describe("remote Fleet transport", () => {
     for (const index of [1, 2]) {
       expect(new Headers(fetcher.mock.calls[index]?.[1]?.headers).get("x-csrf-token")).toBe("csrf-1");
     }
+  });
+
+  it("consumes all fifteen R30 SMS contact operations with destructive confirmations", async () => {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => {
+      void _input; void _init;
+      return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    await listAdminSmsContactGroups("site-a");
+    await createAdminSmsContactGroup("site-a", "Fleet", "csrf-1");
+    await getAdminSmsContactGroup("site-a", 2);
+    await updateAdminSmsContactGroup("site-a", 2, "Fleet 2", "csrf-1");
+    await deleteAdminSmsContactGroup("site-a", 2, "csrf-1");
+    await moveAdminSmsContactGroup("site-a", 2, 1, "csrf-1");
+    await clearAdminSmsContactGroup("site-a", 2, "csrf-1");
+    await listAdminSmsContacts("site-a", { page: 1, per_page: 20, bg_no: 1, search_field: "name", search: "Fleet", with_phone_only: true });
+    await createAdminSmsContact("site-a", { bg_no: 1, bk_name: "Fleet", bk_hp: "01012345678" }, "csrf-1");
+    await getAdminSmsContact("site-a", 7);
+    await updateAdminSmsContact("site-a", 7, { bk_name: "Fleet 2" }, "csrf-1");
+    await deleteAdminSmsContact("site-a", 7, "csrf-1");
+    await batchAdminSmsContacts("site-a", { action: "reject", contact_ids: [7] }, "csrf-1");
+    await importAdminSmsContacts("site-a", { bg_no: 1, dry_run: false, contacts: [{ name: "Fleet", phone: "01012345678" }] }, "csrf-1");
+    await exportAdminSmsContacts("site-a", { bg_no: 1, include_no_phone: false, with_hyphen: true });
+    expect(fetcher.mock.calls.map(([input, init]) => [String(input), init?.method])).toEqual([
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contact-groups", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contact-groups", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contact-groups/2", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contact-groups/2", "PUT"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contact-groups/2?confirm=true", "DELETE"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contact-groups/2/move", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contact-groups/2/contacts?confirm=true", "DELETE"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contacts?page=1&per_page=20&bg_no=1&search_field=name&search=Fleet&with_phone_only=true", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contacts", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contacts/7", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contacts/7", "PUT"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contacts/7?confirm=true", "DELETE"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contacts/batch", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contacts/import", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/contacts/export?bg_no=1&include_no_phone=false&with_hyphen=true", "GET"],
+    ]);
+    expect(JSON.parse(String(fetcher.mock.calls[12]?.[1]?.body))).toMatchObject({ confirm_action: true });
+    expect(JSON.parse(String(fetcher.mock.calls[13]?.[1]?.body))).toMatchObject({ confirm_import: true, dry_run: false });
   });
 });
