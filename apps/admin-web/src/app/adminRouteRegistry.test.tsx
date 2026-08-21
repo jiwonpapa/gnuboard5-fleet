@@ -72,8 +72,12 @@ describe("adminRouteRegistry", () => {
       label: "SMS 설정",
       delivery: "active",
     });
+    expect(resolveRouteMeta("/admin/sms-contacts")).toMatchObject({
+      label: "SMS 연락처",
+      delivery: "active",
+    });
     expect(adminRoutes.filter((route) => route.delivery === "active")).toHaveLength(
-      22,
+      23,
     );
     expect(groupedAdminRoutes().get("메시징")?.length).toBeGreaterThanOrEqual(6);
   });

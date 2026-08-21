@@ -4089,6 +4089,168 @@ code {
   font-size: 1.05rem;
 }
 
+.sms-contacts-summary {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.sms-contacts-workspace {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.32fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.sms-group-panel {
+  position: sticky;
+  top: 22px;
+  display: grid;
+  gap: 16px;
+}
+
+.sms-group-list {
+  display: grid;
+  gap: 6px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.sms-group-list button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  width: 100%;
+  padding: 11px 12px;
+  border-color: transparent;
+  text-align: left;
+  background: var(--surface);
+}
+
+.sms-group-list button[data-active="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.sms-group-list small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+}
+
+.sms-group-editor,
+.sms-group-danger {
+  display: grid;
+  gap: 9px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.sms-group-editor label,
+.sms-group-danger label {
+  display: grid;
+  gap: 6px;
+}
+
+.sms-contact-main {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+
+.sms-contact-filter {
+  display: grid;
+  grid-template-columns: 120px minmax(180px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.sms-contact-filter label,
+.sms-receipt-field,
+.sms-import-panel > label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.sms-contact-filter label input,
+.sms-receipt-field input,
+.sms-import-panel > label input {
+  width: auto;
+}
+
+.sms-contact-table-wrap {
+  overflow-x: auto;
+}
+
+.sms-contact-table button {
+  padding: 0;
+  border: 0;
+  color: var(--accent);
+  background: transparent;
+}
+
+.sms-contact-table tr[data-selected="true"] td {
+  background: var(--accent-soft);
+}
+
+.sms-batch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.sms-contact-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.72fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.sms-contact-memo {
+  grid-column: 1 / -1;
+}
+
+.sms-contact-memo textarea,
+.sms-import-panel textarea {
+  width: 100%;
+  min-height: 112px;
+  resize: vertical;
+}
+
+.sms-import-panel {
+  display: grid;
+  gap: 13px;
+}
+
+.sms-import-panel header p {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.sms-import-result {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  margin: 0;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.sms-import-result div {
+  padding: 9px;
+  background: var(--surface);
+}
+
+.sms-import-result dt {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.sms-import-result dd {
+  margin: 3px 0 0;
+  font-family: var(--display);
+}
+
 @media (max-width: 960px) {
   .points-page .point-filter,
   .points-workspace,
@@ -4109,7 +4271,9 @@ code {
   .mail-template-workspace,
   .mail-action-workspace,
   .mail-recipient-filter,
-  .sms-config-workspace {
+  .sms-config-workspace,
+  .sms-contacts-workspace,
+  .sms-contact-detail-grid {
     grid-template-columns: 1fr;
   }
 
@@ -4118,6 +4282,10 @@ code {
   }
 
   .sms-sync-panel {
+    position: static;
+  }
+
+  .sms-group-panel {
     position: static;
   }
 
@@ -4172,6 +4340,11 @@ code {
   .mail-short-fields,
   .mail-safety-row,
   .sms-field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sms-contacts-summary,
+  .sms-contact-filter {
     grid-template-columns: 1fr;
   }
 

@@ -1183,6 +1183,130 @@ export interface AdminSmsMemberSyncResult {
   };
 }
 
+export interface AdminSmsContactGroup {
+  bg_no: number;
+  bg_name: string;
+  bg_count: number;
+  bg_member: number;
+  bg_nomember: number;
+  bg_receipt: number;
+  bg_reject: number;
+}
+
+export interface AdminSmsContactGroupList {
+  groups: AdminSmsContactGroup[];
+  total: number;
+}
+
+export interface AdminSmsContact {
+  bk_no: number;
+  bg_no: number;
+  bg_name: string | null;
+  mb_id: string | null;
+  bk_name: string;
+  bk_hp: string;
+  bk_receipt: number;
+  bk_datetime: string | null;
+  bk_memo: string | null;
+  receipt_label: string;
+  member_type: string;
+  member_sync_skipped: boolean | null;
+}
+
+export interface AdminSmsContactSummary {
+  total_count: number;
+  receipt_count: number;
+  reject_count: number;
+  member_count: number;
+  non_member_count: number;
+  last_synced_at: string | null;
+}
+
+export interface AdminSmsContactList {
+  contacts: AdminSmsContact[];
+  pagination: Pagination;
+  summary: AdminSmsContactSummary;
+}
+
+export interface AdminSmsContactListQuery {
+  page?: number;
+  per_page?: number;
+  bg_no?: number;
+  search_field?: "all" | "name" | "hp";
+  search?: string;
+  with_phone_only?: boolean;
+}
+
+export interface AdminSmsContactCreate {
+  bg_no?: number;
+  mb_id?: string;
+  bk_name: string;
+  bk_hp: string;
+  bk_receipt?: number;
+  bk_memo?: string;
+}
+
+export type AdminSmsContactUpdate = Partial<Omit<AdminSmsContactCreate, "mb_id">>;
+export type AdminSmsContactBatchAction = "delete" | "allow" | "reject" | "move" | "copy";
+
+export interface AdminSmsContactBatch {
+  action: AdminSmsContactBatchAction;
+  contact_ids: number[];
+  target_bg_no?: number;
+}
+
+export interface AdminSmsContactBatchResult {
+  action: AdminSmsContactBatchAction;
+  affected: number;
+  target_bg_no: number | null;
+}
+
+export interface AdminSmsContactImportItem {
+  name?: string;
+  phone?: string;
+  memo?: string;
+  receipt?: boolean;
+}
+
+export interface AdminSmsContactImport {
+  bg_no: number;
+  dry_run: boolean;
+  contacts: AdminSmsContactImportItem[];
+}
+
+export interface AdminSmsContactImportResult {
+  total_count: number;
+  invalid_count: number;
+  duplicate_count: number;
+  importable_count: number;
+  imported_count: number;
+  dry_run: boolean;
+  duplicate_phones: string[];
+  importable_phones: string[];
+}
+
+export interface AdminSmsContactExportQuery {
+  bg_no?: number;
+  include_no_phone?: boolean;
+  with_hyphen?: boolean;
+}
+
+export interface AdminSmsContactExportItem {
+  bk_name: string;
+  bk_hp: string;
+  bg_no: number;
+  mb_id: string | null;
+  bk_receipt: number;
+}
+
+export interface AdminSmsContactExport {
+  items: AdminSmsContactExportItem[];
+  total: number;
+  bg_no: number | null;
+  include_no_phone: boolean;
+  with_hyphen: boolean;
+}
+
 export interface AdminPointItem {
   po_id: number;
   mb_id: string;
@@ -2871,6 +2995,82 @@ export function syncAdminSmsMembers(siteId: string, csrfToken: string) {
     csrfToken,
     body: { confirm_sync: true },
   });
+}
+
+function adminSmsContactQuery(query: AdminSmsContactListQuery = {}): string {
+  const search = new URLSearchParams();
+  if (query.page !== undefined) search.set("page", String(query.page));
+  if (query.per_page !== undefined) search.set("per_page", String(query.per_page));
+  if (query.bg_no !== undefined) search.set("bg_no", String(query.bg_no));
+  if (query.search_field) search.set("search_field", query.search_field);
+  if (query.search) search.set("search", query.search);
+  if (query.with_phone_only) search.set("with_phone_only", "true");
+  return search.size ? `?${search.toString()}` : "";
+}
+
+export function listAdminSmsContactGroups(siteId: string) {
+  return transport.request<AdminSmsContactGroupList>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contact-groups` });
+}
+
+export function createAdminSmsContactGroup(siteId: string, bgName: string, csrfToken: string) {
+  return transport.request<AdminSmsContactGroup, { bg_name: string }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contact-groups`, csrfToken, body: { bg_name: bgName } });
+}
+
+export function getAdminSmsContactGroup(siteId: string, bgNo: number) {
+  return transport.request<AdminSmsContactGroup>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contact-groups/${bgNo}` });
+}
+
+export function updateAdminSmsContactGroup(siteId: string, bgNo: number, bgName: string, csrfToken: string) {
+  return transport.request<AdminSmsContactGroup, { bg_name: string }>({ method: "PUT", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contact-groups/${bgNo}`, csrfToken, body: { bg_name: bgName } });
+}
+
+export function deleteAdminSmsContactGroup(siteId: string, bgNo: number, csrfToken: string) {
+  return transport.request<void>({ method: "DELETE", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contact-groups/${bgNo}?confirm=true`, csrfToken });
+}
+
+export function moveAdminSmsContactGroup(siteId: string, bgNo: number, targetBgNo: number, csrfToken: string) {
+  return transport.request<{ from_bg_no: number; target_bg_no: number; affected: number }, { target_bg_no: number }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contact-groups/${bgNo}/move`, csrfToken, body: { target_bg_no: targetBgNo } });
+}
+
+export function clearAdminSmsContactGroup(siteId: string, bgNo: number, csrfToken: string) {
+  return transport.request<{ bg_no: number; deleted: number }>({ method: "DELETE", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contact-groups/${bgNo}/contacts?confirm=true`, csrfToken });
+}
+
+export function listAdminSmsContacts(siteId: string, query: AdminSmsContactListQuery = {}) {
+  return transport.request<AdminSmsContactList>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contacts${adminSmsContactQuery(query)}` });
+}
+
+export function createAdminSmsContact(siteId: string, input: AdminSmsContactCreate, csrfToken: string) {
+  return transport.request<AdminSmsContact, AdminSmsContactCreate>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contacts`, csrfToken, body: input });
+}
+
+export function getAdminSmsContact(siteId: string, bkNo: number) {
+  return transport.request<AdminSmsContact>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contacts/${bkNo}` });
+}
+
+export function updateAdminSmsContact(siteId: string, bkNo: number, input: AdminSmsContactUpdate, csrfToken: string) {
+  return transport.request<AdminSmsContact, AdminSmsContactUpdate>({ method: "PUT", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contacts/${bkNo}`, csrfToken, body: input });
+}
+
+export function deleteAdminSmsContact(siteId: string, bkNo: number, csrfToken: string) {
+  return transport.request<void>({ method: "DELETE", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contacts/${bkNo}?confirm=true`, csrfToken });
+}
+
+export function batchAdminSmsContacts(siteId: string, input: AdminSmsContactBatch, csrfToken: string) {
+  return transport.request<AdminSmsContactBatchResult, AdminSmsContactBatch & { confirm_action: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contacts/batch`, csrfToken, body: { ...input, confirm_action: true } });
+}
+
+export function importAdminSmsContacts(siteId: string, input: AdminSmsContactImport, csrfToken: string) {
+  return transport.request<AdminSmsContactImportResult, AdminSmsContactImport & { confirm_import: boolean }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contacts/import`, csrfToken, body: { ...input, confirm_import: !input.dry_run } });
+}
+
+export function exportAdminSmsContacts(siteId: string, query: AdminSmsContactExportQuery = {}) {
+  const search = new URLSearchParams();
+  if (query.bg_no !== undefined) search.set("bg_no", String(query.bg_no));
+  if (query.include_no_phone !== undefined) search.set("include_no_phone", String(query.include_no_phone));
+  if (query.with_hyphen !== undefined) search.set("with_hyphen", String(query.with_hyphen));
+  const suffix = search.size ? `?${search.toString()}` : "";
+  return transport.request<AdminSmsContactExport>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contacts/export${suffix}` });
 }
 
 export function listAdminPoints(siteId: string, query: AdminPointListQuery = {}) {
