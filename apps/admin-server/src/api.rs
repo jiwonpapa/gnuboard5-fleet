@@ -45,16 +45,17 @@ use g5_fleet_connector::{
     AdminPopup, AdminPopupCreate, AdminPopupList, AdminPopupListQuery, AdminPopupUpdate,
     AdminQaBulkDelete, AdminQaBulkDeleteResult, AdminQaConfig, AdminQaConfigUpdate,
     AdminReportItem, AdminReportList, AdminReportListQuery, AdminReportStats, AdminReportUpdate,
-    AdminSchemaCatalog, AdminSchemaDetail, AdminSystemMailRecipientList,
-    AdminSystemMailRecipientQuery, AdminSystemMailSendRequest, AdminSystemMailSendResult,
-    AdminSystemMailTemplateList, AdminSystemMailTestRequest, AdminSystemMailTestResult,
-    AdminSystemPermission, AdminSystemPermissionList, AdminSystemPermissionListQuery,
-    AdminSystemPermissionSave, AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate,
-    AdminVisitDelete, AdminVisitDeleteResult, AdminVisitSearchQuery, AdminVisitSearchResult,
-    AdminVisitStats, AdminVisitStatsQuery, AdminWriteCountStats, AdminWriteCountStatsQuery,
-    BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin,
-    CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview,
-    core_operation, core_operations,
+    AdminSchemaCatalog, AdminSchemaDetail, AdminSmsConfig, AdminSmsConfigUpdate,
+    AdminSmsMemberSyncResult, AdminSystemMailRecipientList, AdminSystemMailRecipientQuery,
+    AdminSystemMailSendRequest, AdminSystemMailSendResult, AdminSystemMailTemplateList,
+    AdminSystemMailTestRequest, AdminSystemMailTestResult, AdminSystemPermission,
+    AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
+    AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, AdminVisitDelete,
+    AdminVisitDeleteResult, AdminVisitSearchQuery, AdminVisitSearchResult, AdminVisitStats,
+    AdminVisitStatsQuery, AdminWriteCountStats, AdminWriteCountStatsQuery, BasicConfig,
+    ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest,
+    CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview, core_operation,
+    core_operations,
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
@@ -187,6 +188,11 @@ struct ConfirmedAdminSystemMailSendRequest {
     confirm_send: bool,
     #[serde(flatten)]
     send: AdminSystemMailSendRequest,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedAdminSmsMemberSyncRequest {
+    confirm_sync: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -677,6 +683,14 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/system/mails/send",
             post(admin_system_member_mail_send),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/config",
+            get(admin_sms_config_get).put(admin_sms_config_update),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/member-sync",
+            post(admin_sms_member_sync),
         )
         .route(
             "/sites/{site_id}/admin/points",
@@ -5546,6 +5560,108 @@ fn external_confirmation_required() -> Response {
         "external_effect_confirmation_required",
         "External mail action requires explicit confirmation.",
     )
+}
+
+async fn admin_sms_config_get(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_get_sms_config(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsConfig>(result.browser_safe()).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_config_update(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(update): Json<AdminSmsConfigUpdate>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_update_sms_config(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &update,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsConfig>(result.browser_safe()).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_member_sync(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminSmsMemberSyncRequest>,
+) -> Response {
+    if !confirmed.confirm_sync {
+        return api_error(
+            StatusCode::BAD_REQUEST,
+            "sms_member_sync_confirmation_required",
+            "SMS member synchronization requires explicit confirmation.",
+        );
+    }
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_sync_sms_members(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsMemberSyncResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
 }
 
 async fn admin_point_list(

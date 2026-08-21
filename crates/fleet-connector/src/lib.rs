@@ -82,6 +82,9 @@ pub use g5_fleet_core::reports::{
     AdminReportItem, AdminReportList, AdminReportListQuery, AdminReportStats, AdminReportStatus,
     AdminReportTargetType, AdminReportUpdate, valid_report_id,
 };
+pub use g5_fleet_core::sms::{
+    AdminSmsConfig, AdminSmsConfigUpdate, AdminSmsMemberSyncResult, AdminSmsMemberSyncSummary,
+};
 pub use g5_fleet_core::theme::{
     AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, valid_theme_id,
 };
@@ -3090,6 +3093,67 @@ pub trait ConnectorGateway: Send + Sync {
             )
             .await?;
         typed_core_data("adminSystemSendMemberMail", response)
+    }
+
+    async fn admin_get_sms_config(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminSmsConfig> {
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminGetSmsConfig",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        typed_core_data("adminGetSmsConfig", response)
+    }
+
+    async fn admin_update_sms_config(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        update: &AdminSmsConfigUpdate,
+    ) -> ConnectorResult<AdminSmsConfig> {
+        if !update.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminUpdateSmsConfig",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminUpdateSmsConfig", response)
+    }
+
+    async fn admin_sync_sms_members(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminSmsMemberSyncResult> {
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSyncSmsMembers",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        typed_core_data("adminSyncSmsMembers", response)
     }
 
     async fn admin_search_visits(

@@ -1179,6 +1179,27 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/sms/config",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_sms_config_get"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/sms/config",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_sms_config_update"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/sms/member-sync",
+      "auth": "session_csrf_step_up_confirm_mutation",
+      "site_context": true,
+      "purpose": "typed_sms_member_sync"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/admin/points",
       "auth": "session",
       "site_context": true,
