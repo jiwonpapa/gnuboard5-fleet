@@ -165,7 +165,16 @@ rm -f "$install_result"
 compose exec -T db mariadb \
   --user=root --password="$db_root_value" g5cert <<'SQL'
 START TRANSACTION;
-UPDATE g5_config SET cf_use_member_icon = 1, cf_email_use = 0;
+UPDATE g5_config
+SET cf_use_member_icon = 1,
+    cf_email_use = 0,
+    cf_sms_use = '',
+    cf_sms_type = '',
+    cf_icode_id = 'baseline-id',
+    cf_icode_pw = 'baseline-password',
+    cf_icode_server_ip = '121.78.96.124',
+    cf_icode_server_port = '7295',
+    cf_icode_token_key = '';
 CREATE TABLE IF NOT EXISTS g5_sdui_layout (
   sl_id int(11) NOT NULL AUTO_INCREMENT,
   sl_page_id varchar(50) NOT NULL,
@@ -188,12 +197,94 @@ SET mb_no = 0,
     mb_email = 'fleet-cert@example.invalid',
     mb_level = 2,
     mb_mailling = 1,
+    mb_sms = 1,
+    mb_hp = '01012345678',
     mb_point = 0,
     mb_datetime = NOW(),
     mb_today_login = NOW(),
     mb_nick_date = CURRENT_DATE();
 INSERT INTO g5_member SELECT * FROM fleet_cert_member;
 DROP TEMPORARY TABLE fleet_cert_member;
+CREATE TABLE IF NOT EXISTS g5_sms5_config (
+  cf_phone varchar(255) NOT NULL DEFAULT '',
+  cf_datetime datetime NOT NULL DEFAULT '0000-00-00 00:00:00'
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+CREATE TABLE IF NOT EXISTS g5_sms5_form_group (
+  fg_no int(11) NOT NULL AUTO_INCREMENT,
+  fg_name varchar(255) NOT NULL DEFAULT '',
+  fg_count int(11) NOT NULL DEFAULT '0',
+  fg_member tinyint(4) NOT NULL,
+  PRIMARY KEY (fg_no), KEY fg_name (fg_name)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+CREATE TABLE IF NOT EXISTS g5_sms5_form (
+  fo_no int(11) NOT NULL AUTO_INCREMENT,
+  fg_no tinyint(4) NOT NULL DEFAULT '0',
+  fg_member char(1) NOT NULL DEFAULT '0',
+  fo_name varchar(255) NOT NULL DEFAULT '',
+  fo_content text NOT NULL,
+  fo_datetime datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  PRIMARY KEY (fo_no), KEY fg_no (fg_no, fo_no)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+CREATE TABLE IF NOT EXISTS g5_sms5_book_group (
+  bg_no int(11) NOT NULL AUTO_INCREMENT,
+  bg_name varchar(255) NOT NULL DEFAULT '',
+  bg_count int(11) NOT NULL DEFAULT '0',
+  bg_member int(11) NOT NULL DEFAULT '0',
+  bg_nomember int(11) NOT NULL DEFAULT '0',
+  bg_receipt int(11) NOT NULL DEFAULT '0',
+  bg_reject int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (bg_no), KEY bg_name (bg_name)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+CREATE TABLE IF NOT EXISTS g5_sms5_book (
+  bk_no int(11) NOT NULL AUTO_INCREMENT,
+  bg_no int(11) NOT NULL DEFAULT '0',
+  mb_no int(11) NOT NULL DEFAULT '0',
+  mb_id varchar(20) NOT NULL DEFAULT '',
+  bk_name varchar(255) NOT NULL DEFAULT '',
+  bk_hp varchar(255) NOT NULL DEFAULT '',
+  bk_receipt tinyint(4) NOT NULL DEFAULT '0',
+  bk_datetime datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  bk_memo text NOT NULL,
+  PRIMARY KEY (bk_no), KEY bk_name (bk_name), KEY bk_hp (bk_hp),
+  KEY mb_no (mb_no), KEY bg_no (bg_no, bk_no), KEY mb_id (mb_id)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+CREATE TABLE IF NOT EXISTS g5_sms5_write (
+  wr_no int(11) NOT NULL DEFAULT '1',
+  wr_renum int(11) NOT NULL DEFAULT '0',
+  wr_reply varchar(255) NOT NULL DEFAULT '',
+  wr_message text NOT NULL,
+  wr_booking datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  wr_total int(11) NOT NULL DEFAULT '0',
+  wr_re_total int(11) NOT NULL DEFAULT '0',
+  wr_success int(11) NOT NULL DEFAULT '0',
+  wr_failure int(11) NOT NULL DEFAULT '0',
+  wr_datetime datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  wr_memo text NOT NULL,
+  KEY wr_no (wr_no, wr_renum)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+CREATE TABLE IF NOT EXISTS g5_sms5_history (
+  hs_no int(11) NOT NULL AUTO_INCREMENT,
+  wr_no int(11) NOT NULL DEFAULT '0',
+  wr_renum int(11) NOT NULL DEFAULT '0',
+  bg_no int(11) NOT NULL DEFAULT '0',
+  mb_no int(11) NOT NULL DEFAULT '0',
+  mb_id varchar(20) NOT NULL DEFAULT '',
+  bk_no int(11) NOT NULL DEFAULT '0',
+  hs_name varchar(30) NOT NULL DEFAULT '',
+  hs_hp varchar(255) NOT NULL DEFAULT '',
+  hs_datetime datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+  hs_flag tinyint(4) NOT NULL DEFAULT '0',
+  hs_code varchar(255) NOT NULL DEFAULT '',
+  hs_memo varchar(255) NOT NULL DEFAULT '',
+  hs_log varchar(255) NOT NULL DEFAULT '',
+  PRIMARY KEY (hs_no), KEY wr_no (wr_no), KEY mb_no (mb_no), KEY bk_no (bk_no),
+  KEY hs_hp (hs_hp), KEY hs_code (hs_code), KEY bg_no (bg_no), KEY mb_id (mb_id)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+INSERT INTO g5_sms5_config (cf_phone, cf_datetime)
+VALUES ('02-1234-5678', NOW());
+INSERT INTO g5_sms5_book_group
+  (bg_no, bg_name, bg_count, bg_member, bg_nomember, bg_receipt, bg_reject)
+VALUES (1, '미분류', 0, 0, 0, 0, 0);
 INSERT INTO g5_popular (pp_word, pp_date, pp_ip) VALUES
   ('fleet-r23', '2026-08-18', '198.51.100.21'),
   ('fleet-r23', '2026-08-18', '198.51.100.22'),

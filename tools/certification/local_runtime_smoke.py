@@ -1924,6 +1924,153 @@ def main() -> int:
     ):
         raise RuntimeError("R28 mail cleanup did not restore baseline")
 
+    sms_config_path = "/api/v1/sites/owner-a-site/admin/sms/config"
+    direct_sms_baseline = request(
+        g5_base, "GET", "/api/v1/admin/sms/config", headers=authorization,
+    ).json().get("data", {})
+    sms_baseline = request(
+        fleet_base, "GET", sms_config_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        sms_baseline.get("storage_ready") is not True
+        or sms_baseline.get("missing_tables") != []
+        or sms_baseline.get("cf_icode_pw") is not None
+        or sms_baseline.get("cf_icode_token_key") is not None
+        or sms_baseline.get("uses_legacy_credentials") is not True
+    ):
+        raise RuntimeError("R29 SMS config baseline or browser secret redaction failed")
+
+    sms_update = {
+        "cf_sms_use": "icode",
+        "cf_sms_type": "LMS",
+        "cf_icode_id": "r29-provider",
+        "cf_icode_pw": f"r29-password-{env['G5_CERT_REVISION'][:8]}",
+        "cf_icode_server_ip": "121.78.96.124",
+        "cf_icode_server_port": "7295",
+        "cf_icode_token_key": f"r29-token-{env['G5_CERT_REVISION'][:12]}",
+        "cf_phone": "02-9876-5432",
+    }
+    sms_updated = request(
+        fleet_base, "PUT", sms_config_path, body=sms_update,
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    sms_updated_readback = request(
+        fleet_base, "GET", sms_config_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    for result in (sms_updated, sms_updated_readback):
+        if (
+            result.get("cf_sms_use") != "icode"
+            or result.get("cf_sms_type") != "LMS"
+            or result.get("cf_phone") != "02-9876-5432"
+            or result.get("provider_ready") is not True
+            or result.get("uses_token_key") is not True
+            or result.get("uses_legacy_credentials") is not True
+            or result.get("cf_icode_pw") is not None
+            or result.get("cf_icode_token_key") is not None
+        ):
+            raise RuntimeError("R29 SMS config update/readback or secret redaction failed")
+
+    unconfirmed_sms_sync = request(
+        fleet_base, "POST", "/api/v1/sites/owner-a-site/admin/sms/member-sync",
+        body={"confirm_sync": False},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    if unconfirmed_sms_sync.get("error", {}).get("code") != "sms_member_sync_confirmation_required":
+        raise RuntimeError("R29 SMS member sync confirmation did not fail closed")
+
+    sms_sync = request(
+        fleet_base, "POST", "/api/v1/sites/owner-a-site/admin/sms/member-sync",
+        body={"confirm_sync": True},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    sms_summary = sms_sync.get("summary", {})
+    sms_summary_fields = (
+        "total_members", "leave_members", "phone_empty", "phone_valid",
+        "phone_invalid", "receipt_enabled", "receipt_disabled",
+    )
+    if (
+        not all(isinstance(sms_summary.get(field), int) for field in sms_summary_fields)
+        or sms_summary.get("total_members", 0) < 2
+        or sms_summary.get("phone_valid", 0) < 1
+        or sms_summary.get("receipt_enabled", 0) < 1
+        or sms_summary.get("leave_members", 0)
+        + sms_summary.get("phone_empty", 0)
+        + sms_summary.get("phone_valid", 0)
+        + sms_summary.get("phone_invalid", 0)
+        != sms_summary.get("total_members")
+        or sms_summary.get("receipt_enabled", 0)
+        + sms_summary.get("receipt_disabled", 0)
+        != sms_summary.get("phone_valid")
+    ):
+        raise RuntimeError("R29 SMS member sync summary readback failed")
+    sms_sync_config_readback = request(
+        fleet_base, "GET", sms_config_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if sms_sync_config_readback.get("cf_datetime") != sms_sync.get("datetime"):
+        raise RuntimeError("R29 SMS member sync datetime readback failed")
+
+    synced_contacts = request(
+        g5_base, "GET", "/api/v1/admin/sms/contacts?page=1&per_page=100",
+        headers=authorization,
+    ).json().get("data", {})
+    synced_contact_items = synced_contacts.get("items", [])
+    if (
+        synced_contacts.get("pagination", {}).get("total") != sms_summary.get("total_members")
+        or not any(
+            row.get("mb_id") == member_id and row.get("bk_hp") == "01012345678"
+            for row in synced_contact_items
+        )
+    ):
+        raise RuntimeError("R29 SMS synchronized contact rows failed")
+    synced_contact_ids = [row.get("bk_no") for row in synced_contact_items]
+    if not all(isinstance(contact_id, int) and contact_id > 0 for contact_id in synced_contact_ids):
+        raise RuntimeError("R29 SMS synchronized contact IDs are invalid")
+    for contact_id in synced_contact_ids:
+        request(
+            g5_base, "DELETE", f"/api/v1/admin/sms/contacts/{contact_id}",
+            headers=authorization, expected=(204,),
+        )
+    cleaned_contacts = request(
+        g5_base, "GET", "/api/v1/admin/sms/contacts?page=1&per_page=100",
+        headers=authorization,
+    ).json().get("data", {})
+    if cleaned_contacts.get("pagination", {}).get("total") != 0:
+        raise RuntimeError("R29 SMS synchronized contact cleanup failed")
+
+    sms_setting_fields = (
+        "cf_sms_use", "cf_sms_type", "cf_icode_id", "cf_icode_pw",
+        "cf_icode_server_ip", "cf_icode_server_port", "cf_icode_token_key",
+        "cf_phone",
+    )
+    sms_rollback = {field: direct_sms_baseline.get(field, "") for field in sms_setting_fields}
+    request(
+        fleet_base, "PUT", sms_config_path, body=sms_rollback,
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    )
+    direct_sms_restored = request(
+        g5_base, "GET", "/api/v1/admin/sms/config", headers=authorization,
+    ).json().get("data", {})
+    if any(
+        direct_sms_restored.get(field) != direct_sms_baseline.get(field)
+        for field in sms_setting_fields
+    ):
+        raise RuntimeError("R29 SMS config cleanup did not restore provider baseline")
+    sms_final = request(
+        fleet_base, "GET", sms_config_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        sms_final.get("cf_sms_use") != direct_sms_baseline.get("cf_sms_use")
+        or sms_final.get("cf_phone") != direct_sms_baseline.get("cf_phone")
+        or sms_final.get("cf_icode_pw") is not None
+        or sms_final.get("cf_icode_token_key") is not None
+        or sms_final.get("provider_ready") is not False
+    ):
+        raise RuntimeError("R29 SMS browser-safe cleanup readback failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -2271,6 +2418,19 @@ def main() -> int:
             "system_member_send_dry_run_log_readback": "passed",
             "created_records_deleted": len(created_mail_ids),
             "baseline_template_preserved": 9301,
+            "external_delivery_attempts": 0,
+        },
+        "r29_sms_config": {
+            "operations": 3,
+            "storage_ready": True,
+            "config_update_readback": "passed",
+            "provider_ready_readback": "passed",
+            "browser_secret_redaction": "passed",
+            "explicit_sync_confirmation_fail_closed": "passed",
+            "member_sync_summary_readback": "passed",
+            "synced_contacts": len(synced_contact_ids),
+            "contact_cleanup_readback": "passed",
+            "config_cleanup_readback": "passed",
             "external_delivery_attempts": 0,
         },
         "notifications": {

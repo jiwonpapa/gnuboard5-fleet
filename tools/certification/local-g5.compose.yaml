@@ -57,7 +57,7 @@ services:
       RATE_LIMIT_ENABLED: "false"
       G5_ENCRYPT_FUNC: create_hash
       SETUP_ENABLED: "false"
-      ADMIN_SMS_ENABLED: "false"
+      ADMIN_SMS_ENABLED: "true"
       G5_INDEPENDENT: "true"
     ports:
       - "127.0.0.1:${G5_CERT_G5_PORT:?set G5_CERT_G5_PORT}:80"
