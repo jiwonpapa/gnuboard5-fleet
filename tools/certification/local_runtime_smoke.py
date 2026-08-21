@@ -2015,8 +2015,8 @@ def main() -> int:
     synced_contacts = request(
         g5_base, "GET", "/api/v1/admin/sms/contacts?page=1&per_page=100",
         headers=authorization,
-    ).json().get("data", {})
-    synced_contact_items = synced_contacts.get("items", [])
+    ).json()
+    synced_contact_items = synced_contacts.get("data", [])
     if (
         synced_contacts.get("pagination", {}).get("total") != sms_summary.get("total_members")
         or not any(
@@ -2036,7 +2036,7 @@ def main() -> int:
     cleaned_contacts = request(
         g5_base, "GET", "/api/v1/admin/sms/contacts?page=1&per_page=100",
         headers=authorization,
-    ).json().get("data", {})
+    ).json()
     if cleaned_contacts.get("pagination", {}).get("total") != 0:
         raise RuntimeError("R29 SMS synchronized contact cleanup failed")
 
