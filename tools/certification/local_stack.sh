@@ -165,7 +165,7 @@ rm -f "$install_result"
 compose exec -T db mariadb \
   --user=root --password="$db_root_value" g5cert <<'SQL'
 START TRANSACTION;
-UPDATE g5_config SET cf_use_member_icon = 1;
+UPDATE g5_config SET cf_use_member_icon = 1, cf_email_use = 0;
 CREATE TABLE IF NOT EXISTS g5_sdui_layout (
   sl_id int(11) NOT NULL AUTO_INCREMENT,
   sl_page_id varchar(50) NOT NULL,
@@ -187,6 +187,7 @@ SET mb_no = 0,
     mb_nick = 'fleet_cert',
     mb_email = 'fleet-cert@example.invalid',
     mb_level = 2,
+    mb_mailling = 1,
     mb_point = 0,
     mb_datetime = NOW(),
     mb_today_login = NOW(),
@@ -236,6 +237,10 @@ INSERT INTO g5_board_new (bo_table, wr_id, wr_parent, bn_datetime, mb_id) VALUES
   ('notice', 9102, 9101, '2026-08-18 09:30:00', 'fleetcert'),
   ('notice', 9103, 9103, '2026-08-19 10:00:00', 'fleetcert'),
   ('free', 9201, 9201, '2026-08-19 11:00:00', 'fleetcert');
+INSERT INTO g5_mail
+  (ma_id, ma_subject, ma_content, ma_time, ma_ip, ma_last_option)
+VALUES
+  (9301, 'R28 기준 템플릿', 'R28 기준 본문', '2026-08-20 09:00:00', '127.0.0.1', '');
 COMMIT;
 SQL
 

@@ -1765,6 +1765,164 @@ def main() -> int:
     ):
         raise RuntimeError("R27 write-count period filter failed")
 
+    mail_path = "/api/v1/sites/owner-a-site/admin/mails"
+    baseline_mails = request(
+        fleet_base, "GET", f"{mail_path}?page=1&per_page=20",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    baseline_system_mails = request(
+        fleet_base, "GET", "/api/v1/sites/owner-a-site/admin/system/mails?page=1&per_page=20",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        baseline_mails.get("pagination", {}).get("total") != 1
+        or [row.get("ma_id") for row in baseline_mails.get("items", [])] != [9301]
+        or baseline_system_mails.get("pagination", {}).get("total") != 1
+        or [row.get("ma_id") for row in baseline_system_mails.get("items", [])] != [9301]
+    ):
+        raise RuntimeError("R28 mail baseline list contracts failed")
+    baseline_mail = request(
+        fleet_base, "GET", f"{mail_path}/9301",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if baseline_mail.get("ma_subject") != "R28 기준 템플릿" or baseline_mail.get("ma_content") != "R28 기준 본문":
+        raise RuntimeError("R28 mail baseline detail failed")
+
+    recipients = request(
+        fleet_base, "GET",
+        f"{mail_path}/recipients?page=1&per_page=20&search=fleetcert&level_min=2&level_max=2&mailling_only=true",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    system_recipients = request(
+        fleet_base, "GET",
+        "/api/v1/sites/owner-a-site/admin/system/mail-recipients?page=1&per_page=20&search=fleetcert",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        [row.get("mb_id") for row in recipients.get("items", [])] != [member_id]
+        or recipients.get("items", [{}])[0].get("mb_mailling") != 1
+        or [row.get("mb_id") for row in system_recipients.get("items", [])] != [member_id]
+    ):
+        raise RuntimeError("R28 mail recipient contracts failed")
+
+    created_mail = request(
+        fleet_base, "POST", f"{mail_path}/templates",
+        body={"ma_subject": "R28 인증 템플릿", "ma_content": "안녕하세요 {이름}님"},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    created_mail_id = created_mail.get("ma_id")
+    if not isinstance(created_mail_id, int) or created_mail_id <= 9301:
+        raise RuntimeError("R28 mail template create failed")
+    updated_mail = request(
+        fleet_base, "PUT", f"{mail_path}/{created_mail_id}",
+        body={"ma_subject": "R28 인증 템플릿 수정", "ma_content": "안녕하세요 {이름}님. 인증 본문입니다."},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    created_readback = request(
+        fleet_base, "GET", f"{mail_path}/{created_mail_id}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if updated_mail.get("ma_subject") != "R28 인증 템플릿 수정" or created_readback.get("ma_content") != "안녕하세요 {이름}님. 인증 본문입니다.":
+        raise RuntimeError("R28 mail template update readback failed")
+
+    unconfirmed = request(
+        fleet_base, "POST", mail_path,
+        body={
+            "confirm_send": False, "ma_id": created_mail_id, "target_type": "member",
+            "mb_ids": [member_id], "mailling_only": True, "dry_run": True,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    if unconfirmed.get("error", {}).get("code") != "external_effect_confirmation_required":
+        raise RuntimeError("R28 mail external-effect confirmation did not fail closed")
+
+    mail_send = request(
+        fleet_base, "POST", mail_path,
+        body={
+            "confirm_send": True, "ma_id": created_mail_id, "target_type": "member",
+            "mb_ids": [member_id], "mailling_only": True, "dry_run": True,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if (
+        mail_send.get("target_count") != 1
+        or mail_send.get("sent_count") != 0
+        or mail_send.get("mail_enabled") is not False
+        or mail_send.get("dry_run") is not True
+        or [row.get("mb_id") for row in mail_send.get("targets", [])] != [member_id]
+    ):
+        raise RuntimeError("R28 mail dry-run send failed")
+    last_option_readback = request(
+        fleet_base, "GET", f"{mail_path}/{created_mail_id}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if last_option_readback.get("last_option", {}).get("mb_mailling") != 1:
+        raise RuntimeError("R28 mail last-option readback failed")
+
+    test_payload = {"confirm_send": True, "ma_id": created_mail_id, "to": "audit@example.test"}
+    modern_test = request(
+        fleet_base, "POST", f"{mail_path}/test", body=test_payload,
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    legacy_test = request(
+        fleet_base, "POST", f"{mail_path}/test/legacy", body=test_payload,
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    for result in (modern_test, legacy_test):
+        if result.get("mail_enabled") is not False or result.get("sent") is not False or result.get("to") != "audit@example.test":
+            raise RuntimeError("R28 mail-disabled test contract failed")
+
+    system_test = request(
+        fleet_base, "POST", "/api/v1/sites/owner-a-site/admin/system/mails/test",
+        body={"confirm_send": True, "to": "audit@example.test", "subject": "R28 시스템 점검", "content": "로그 전용 테스트"},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    system_test_log_id = system_test.get("mail_log_id")
+    if system_test.get("sent") is not True or not isinstance(system_test_log_id, int):
+        raise RuntimeError("R28 system mail test log failed")
+    system_test_readback = request(
+        fleet_base, "GET", f"{mail_path}/{system_test_log_id}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if system_test_readback.get("ma_subject") != "[TEST] R28 시스템 점검":
+        raise RuntimeError("R28 system mail test log readback failed")
+
+    system_send = request(
+        fleet_base, "POST", "/api/v1/sites/owner-a-site/admin/system/mails/send",
+        body={
+            "confirm_send": True, "ma_id": created_mail_id, "mb_ids": [member_id],
+            "mailling_only": True, "dry_run": True,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    system_send_log_id = system_send.get("mail_log_id")
+    if (
+        not isinstance(system_send_log_id, int)
+        or system_send.get("target_count") != 1
+        or system_send.get("sent_count") != 0
+        or system_send.get("mail_enabled") is not False
+        or system_send.get("dry_run") is not True
+        or [row.get("mb_id") for row in system_send.get("recipients", [])] != [member_id]
+    ):
+        raise RuntimeError("R28 system member mail dry-run failed")
+
+    created_mail_ids = [created_mail_id, system_test_log_id, system_send_log_id]
+    for mail_id in created_mail_ids:
+        request(
+            fleet_base, "DELETE", f"{mail_path}/{mail_id}",
+            headers=fleet_headers(admin_cookie, admin_csrf), expected=(204,),
+        )
+        request(
+            fleet_base, "GET", f"{mail_path}/{mail_id}",
+            headers=fleet_headers(admin_cookie), expected=(404,),
+        )
+    final_mails = request(
+        fleet_base, "GET", f"{mail_path}?page=1&per_page=20",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if final_mails.get("pagination", {}).get("total") != 1 or [row.get("ma_id") for row in final_mails.get("items", [])] != [9301]:
+        raise RuntimeError("R28 mail cleanup did not restore baseline")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -2099,6 +2257,20 @@ def main() -> int:
             "board_filter_readback": "passed",
             "month_bucket_readback": "passed",
             "date_range_readback": "passed",
+        },
+        "r28_mails": {
+            "operations": 13,
+            "baseline_admin_and_system_lists": "passed",
+            "template_create_update_detail": "passed",
+            "recipient_admin_and_system_filters": "passed",
+            "explicit_confirmation_fail_closed": "passed",
+            "admin_member_send_dry_run": "passed",
+            "canonical_and_legacy_tests_mail_disabled": "passed",
+            "system_test_log_readback": "passed",
+            "system_member_send_dry_run_log_readback": "passed",
+            "created_records_deleted": len(created_mail_ids),
+            "baseline_template_preserved": 9301,
+            "external_delivery_attempts": 0,
         },
         "notifications": {
             "external_delivery_attempts": 0,
