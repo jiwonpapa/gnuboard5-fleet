@@ -226,13 +226,13 @@ pub struct AdminSmsContactBatchResult {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct AdminSmsContactImportItem {
-    #[serde(default, alias = "bk_name")]
+    #[serde(default, alias = "bk_name", skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(default, alias = "bk_hp")]
+    #[serde(default, alias = "bk_hp", skip_serializing_if = "Option::is_none")]
     pub phone: Option<String>,
-    #[serde(default, alias = "bk_memo")]
+    #[serde(default, alias = "bk_memo", skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
-    #[serde(default, alias = "bk_receipt")]
+    #[serde(default, alias = "bk_receipt", skip_serializing_if = "Option::is_none")]
     pub receipt: Option<bool>,
 }
 
@@ -375,18 +375,18 @@ mod tests {
             }
             .is_valid()
         );
-        assert!(
-            AdminSmsContactImport {
-                bg_no: 1,
-                dry_run: true,
-                contacts: vec![AdminSmsContactImportItem {
-                    name: Some("Fleet".into()),
-                    phone: Some("01012345678".into()),
-                    memo: None,
-                    receipt: Some(true),
-                }],
-            }
-            .is_valid()
-        );
+        let import = AdminSmsContactImport {
+            bg_no: 1,
+            dry_run: true,
+            contacts: vec![AdminSmsContactImportItem {
+                name: Some("Fleet".into()),
+                phone: Some("01012345678".into()),
+                memo: None,
+                receipt: Some(true),
+            }],
+        };
+        assert!(import.is_valid());
+        let encoded = serde_json::to_value(import).expect("serialize import");
+        assert!(encoded["contacts"][0].get("memo").is_none());
     }
 }
