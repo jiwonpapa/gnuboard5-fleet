@@ -11,6 +11,20 @@ use PHPUnit\Framework\TestCase;
 
 final class AdminSmsServiceTest extends TestCase
 {
+    public function testContactCreateCapturesInsertIdBeforeGroupStatWrites(): void
+    {
+        $source = (string)file_get_contents(
+            dirname(__DIR__, 3) . '/api/v1/Admin/Sms/Repository/AdminSmsContactWriteStore.php'
+        );
+        $idPosition = strpos($source, '$contactId = $this->lastInsertId();');
+        $syncPosition = strpos($source, '$this->syncAllContactGroupStats();', (int)$idPosition);
+
+        self::assertNotFalse($idPosition);
+        self::assertNotFalse($syncPosition);
+        self::assertLessThan($syncPosition, $idPosition);
+        self::assertStringContainsString('findContact($contactId)', $source);
+    }
+
     public function testUpdateConfigRejectsInvalidCallbackPhone(): void
     {
         $service = new AdminSmsService($this->createMock(AdminSmsRepository::class));

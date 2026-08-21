@@ -44,9 +44,10 @@ final class AdminSmsContactWriteStore extends AdminSmsContactStoreBase
             ]
         );
 
+        $contactId = $this->lastInsertId();
         $this->syncAllContactGroupStats();
 
-        return $this->queryStore()->findContact($this->lastInsertId()) ?? [];
+        return $this->queryStore()->findContact($contactId) ?? [];
     }
 
     /**
