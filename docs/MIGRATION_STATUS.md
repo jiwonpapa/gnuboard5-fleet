@@ -16,7 +16,7 @@
 - typed Core operation 소비 140/189
 - 활성 server route 195개와 Core registry 189개는 존재하지만 전체 이관
   증거로 승격하지 않음
-- 전역 미완료 finding 123개
+- 전역 미완료 finding 114개
 
 아래 구현 목록은 현재 소스에 존재하는 기반 기능 inventory입니다. 전체
 legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B02부터 B10은
@@ -118,36 +118,36 @@ revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장�
 
 ## 현재 배치
 
-R00~R28은 tracked 증거로 닫혔습니다. 5차 목표의 R27 글·댓글 작성량과
-R28 메일 도메인은 각각 독립 gate·commit·push로 마감했습니다.
+R00~R29는 tracked 증거로 닫혔습니다. 6차 첫 배치 R29 SMS 설정은
+독립 gate·commit·push로 마감했습니다.
 
-- R28 구현 commit: `1a72f8faf12df1121d01434c7546ed179f13f573`
-- 증거: `docs/audits/evidence/R28_BATCH_GATE_PASS.json`
-- R28 scope: legacy 19, Core 13, capability 0
-- reuse: 3 reused / 16 adapted / 0 redesigned / 0 deferred
-- R28 scoped finding: 0
+- R29 구현 commit: `2fff93d8fd47bc626d27f5eae1b10dd4dd3d0d14`
+- 증거: `docs/audits/evidence/R29_BATCH_GATE_PASS.json`
+- R29 scope: legacy 6, Core 3, capability 0
+- reuse: 1 reused / 5 adapted / 0 redesigned / 0 deferred
+- R29 scoped finding: 0
 - `SERVER_STATIC_PASS`: 35/35
-- typed Core 소비: 140/189
-- Rust 테스트: 89 PASS, 1 ignored
-- 웹 테스트: 71 files, 160 PASS
+- typed Core 소비: 143/189
+- Rust 테스트: 91 PASS, 1 ignored
+- 웹 테스트: 73 files, 167 PASS
 - PHP Connector: 875 tests, 6727 assertions, 5 skipped
-- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 메일 13개 operation의 템플릿
-  CRUD, 수신자 필터, 회원 dry-run, 표준·호환·시스템 테스트와 cleanup readback PASS
-- 실제 외부 메일 전달 시도: 0
-- Chromium 1440×1000·390×844, OTP 로그인·recent step-up·템플릿
-  CRUD·회원 1명 dry-run(발송 0)·mail OFF 테스트·원상복구, 콘솔 오류 0 PASS
-- 다음 활성 배치: R29 sms config
-- R29 사전 probe: FAIL 9
+- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 SMS 설정 3개 operation의
+  수정·비밀 비노출·동기화 명시 확인·회원 2건 동기화·cleanup readback PASS
+- 실제 외부 문자 전달 시도: 0
+- Chromium 1440×1000·390×844, OTP 로그인·recent step-up·Connector 로그인·
+  설정 변경/재조회·회원 동기화·원상복구, 콘솔 오류 0 PASS
+- 다음 활성 배치: R30 sms-contacts
+- R30 사전 probe: FAIL 33
 - 목표 추진 차수:
   - 5차: R27~R28, write-count·mails — 완료
-  - 6차: R29~R30, SMS 설정·주소록
+  - 6차: R29~R30, SMS 설정 완료·주소록 진행
   - 7차: R31~R32, SMS 템플릿·메시지
   - 8차: R33~R34, Push·시스템 도구
   - 9차: R35~R36, 알림·PWA·전체 종결
 
 ```bash
-make check-batch BATCH=R29
+make check-batch BATCH=R30
 ```
 
-전체 완료는 아닙니다. 전역 감사 123개가 남아 있으며 R36 전까지
+전체 완료는 아닙니다. 전역 감사 114개가 남아 있으며 R36 전까지
 `MIGRATION_STATIC FAIL`을 유지합니다.

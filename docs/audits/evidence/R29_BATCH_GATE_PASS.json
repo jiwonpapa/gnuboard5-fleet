@@ -1,0 +1,120 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R29",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "2fff93d8fd47bc626d27f5eae1b10dd4dd3d0d14",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "2fff93d8fd47bc626d27f5eae1b10dd4dd3d0d14"
+  },
+  "generated_at": "2026-08-21T02:58:17Z",
+  "commands": [
+    "make audit-runtime-prepare",
+    "make check",
+    "make check-batch BATCH=R29",
+    "composer test (official G5 composed runtime)",
+    "BUILDX_BUILDER=g5-fleet-cert-builder make certification-clean certification-up",
+    "make certification-local-smoke",
+    "playwright-cli --session r29sms2 (headed 1440x1000 and 390x844)",
+    "python3 -m tools.migration_parity.batch_cli --batch R28 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R29 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R30 --profile static"
+  ],
+  "results": {
+    "canonical_make_check": {
+      "component_gates": "PASS",
+      "terminal_status": "EXPECTED_GLOBAL_MIGRATION_FAIL",
+      "terminal_findings": 114
+    },
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {"passed": 91, "failed": 0, "ignored": 1},
+      "http_contract_tests": {"passed": 8, "failed": 0},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 73,
+      "web_tests": {"passed": 167, "failed": 0},
+      "web_build": "PASS"
+    },
+    "php_composed_runtime": {
+      "status": "PASS",
+      "official_g5_version": "5.6.32",
+      "tests": 875,
+      "assertions": 6727,
+      "failed": 0,
+      "skipped": 5
+    },
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "revision": "2fff93d8fd47bc626d27f5eae1b10dd4dd3d0d14",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "2fff93d8fd47bc626d27f5eae1b10dd4dd3d0d14",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "dcf9f33cbb3f2d497a79d5cfa9b365076ae5c8ebce37f3a9ebcdcf4bb0a4e07d",
+      "sms_config_operations": 3,
+      "config_update_and_rollback_readback": "PASS",
+      "browser_secret_redaction": "PASS",
+      "explicit_sync_confirmation_fail_closed": "PASS",
+      "synced_contacts": 2,
+      "contact_cleanup_readback": "PASS",
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "PASS",
+      "implementation_revision": "2fff93d8fd47bc626d27f5eae1b10dd4dd3d0d14",
+      "execution_mode": "headed",
+      "login_with_otp": "PASS",
+      "recent_step_up": "PASS",
+      "connector_login": "PASS",
+      "secret_fields_are_rotation_only": "PASS",
+      "config_update_readback": "PASS",
+      "member_sync_with_explicit_confirmation": {"contacts": 2, "external_deliveries": 0},
+      "config_rollback_readback": "PASS",
+      "console_errors_after_login": 0,
+      "desktop_1440x1000": "PASS",
+      "mobile_390x844": "PASS",
+      "artifacts": [
+        {"path": "output/playwright/r29-sms-config-desktop.png", "sha256": "db27a1230f40811e922a0ead993d213e11f3bccf314c49c40edbfbbe03784d55"},
+        {"path": "output/playwright/r29-sms-config-mobile.png", "sha256": "30fcd839e8b8798bb1cf205684f1f71a79b77001e3305fde05bb00ac9f728915"},
+        {"path": "output/playwright/r29-sms-config.trace", "sha256": "83b8dbc3d4fc2b43c53e6239d3b1b55d2c9be81f7277318139ee9487b46f1cd6"}
+      ]
+    },
+    "typed_operation_consumption": {
+      "operations": ["adminGetSmsConfig", "adminSyncSmsMembers", "adminUpdateSmsConfig"],
+      "new_site_scoped_axum_routes": 3,
+      "browser_same_origin_transport": "PASS",
+      "browser_g5_secret_exposure": "NONE",
+      "external_effect_boundary": "CSRF + recent step-up + one-time explicit confirmation"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 198, "added_r29_routes": 3},
+    "predecessor_regression": {"batch": "R28", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 6, "core_operations": 3, "required_capabilities": 0},
+    "reuse": {"reused": 1, "adapted": 5, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "global_migration": {"status": "FAIL", "findings": 114},
+    "next_batch_probe": {
+      "batch": "R30",
+      "status": "FAIL",
+      "scope": {"legacy": 18, "core_operations": 15, "required_capabilities": 0},
+      "findings": 33
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "bf61e3c6e2ef4387ca645386199182d559d955a03da2b42a3ae1be2803b461ff",
+    "migration_batches_before_closeout": "9f8eb10b85a276e2834ca73b0d4c00eb22414d2caa55bdb461e867afbdd34361"
+  },
+  "source_reports": [
+    {"path": "output/audit/runs/20260821T025604Z-a40b8529b777/result.json", "sha256": "1d02d4cbd9fa8b15805d80ec63bfaf3a650f84718b4217959a4044186aa0bc42"},
+    {"path": "output/audit/runs/migration-parity-20260821T025708Z-1449a55d/result.json", "sha256": "8e627ffeb40c92c81f163a5fb2cdb106397645c02fbe13f29b2e97fdfe2548f9"},
+    {"path": "output/audit/runs/migration-batch-R28-20260821T025718Z-321bc749/result.json", "sha256": "a950f258be4d873c624101726360a35aa7b229ca5573d95bdb0ac0f54e9d8b7f"},
+    {"path": "output/audit/runs/migration-batch-R29-20260821T025719Z-a02d0919/result.json", "sha256": "e5e52bdff7be567b827854ade207588542c309b4fbdd53c3541aae397a340b07"},
+    {"path": "output/audit/runs/migration-batch-R30-20260821T025720Z-c7dfee4d/result.json", "sha256": "75a4c14cc90f45ffa8138ce62e18480183dcf41c357333f66fe132f23fd29f20"}
+  ],
+  "claim_limit": "R29 SMS 설정 3-operation typed DTO, Connector, explicit site_id Axum routes, same-origin responsive React workspace, official G5 5.6.32 local runtime and headed Chromium update, sync and rollback readback only. Browser responses excluded provider secrets and routine external SMS delivery stayed at zero. This is not package, staging, live-SMS or full-product certification; global migration remains FAIL with 114 findings."
+}
