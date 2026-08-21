@@ -2269,9 +2269,13 @@ def main() -> int:
     ).json()
     exported_phones = {item.get("bk_hp") for item in exported_contacts.get("items", [])}
     if (
-        exported_contacts.get("total") != 3
+        exported_contacts.get("total") != 4
         or exported_contacts.get("bg_no") != target_group_id
         or not {"010-1111-2222", "010-3333-4444", "010-7777-8888"}.issubset(exported_phones)
+        or sum(
+            item.get("bk_hp") == "010-1111-2222"
+            for item in exported_contacts.get("items", [])
+        ) != 2
     ):
         raise RuntimeError("R30 SMS contact export readback failed")
 
@@ -2285,7 +2289,7 @@ def main() -> int:
         fleet_base, "DELETE", f"{sms_groups_path}/{target_group_id}/contacts?confirm=true",
         headers=fleet_headers(admin_cookie, admin_csrf),
     ).json()
-    if cleared_group.get("deleted") != 3:
+    if cleared_group.get("deleted") != 4:
         raise RuntimeError("R30 SMS contact group clear failed")
     unconfirmed_group_delete = request(
         fleet_base, "DELETE", f"{sms_groups_path}/{source_group_id}",
