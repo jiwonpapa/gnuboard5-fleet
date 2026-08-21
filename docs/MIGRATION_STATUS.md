@@ -2,21 +2,21 @@
 
 ## 현재 판정
 
-2026-08-21 R27 마감 기준 전체 이관 동등성 하네스 결과는
+2026-08-21 R28 마감 기준 전체 이관 동등성 하네스 결과는
 `MIGRATION_STATIC FAIL`입니다.
 
 - legacy inventory 510개 전체의 배치 소유권은 확정됐으며 현재 유효 매핑은
   다음과 같습니다.
-  - Tauri command 191/253
-  - React page 32/43
+  - Tauri command 204/253
+  - React page 34/43
   - Rust workspace member 21/21
-- frontend regression test 85/100
-  - Rust regression test 92/93
+- frontend regression test 88/100
+  - Rust regression test 93/93
 - 서버 전환 필수 capability 9/13 구현 증명
-- typed Core operation 소비 127/189
-- 활성 server route 182개와 Core registry 189개는 존재하지만 전체 이관
+- typed Core operation 소비 140/189
+- 활성 server route 195개와 Core registry 189개는 존재하지만 전체 이관
   증거로 승격하지 않음
-- 전역 미완료 finding 155개
+- 전역 미완료 finding 123개
 
 아래 구현 목록은 현재 소스에 존재하는 기반 기능 inventory입니다. 전체
 legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B02부터 B10은
@@ -118,33 +118,36 @@ revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장�
 
 ## 현재 배치
 
-R00~R27은 tracked 증거로 닫혔습니다. R27은 글·댓글 작성량 1개 Core
-operation과 legacy 3개 항목을 닫았습니다.
+R00~R28은 tracked 증거로 닫혔습니다. 5차 목표의 R27 글·댓글 작성량과
+R28 메일 도메인은 각각 독립 gate·commit·push로 마감했습니다.
 
-- 구현 commit: `8adafafc799af3e6113010c4a7ed8dc895e49486`
-- 증거: `docs/audits/evidence/R27_BATCH_GATE_PASS.json`
-- R27 scoped finding: 0
+- R28 구현 commit: `1a72f8faf12df1121d01434c7546ed179f13f573`
+- 증거: `docs/audits/evidence/R28_BATCH_GATE_PASS.json`
+- R28 scope: legacy 19, Core 13, capability 0
+- reuse: 3 reused / 16 adapted / 0 redesigned / 0 deferred
+- R28 scoped finding: 0
 - `SERVER_STATIC_PASS`: 35/35
-- typed Core 소비: 127/189
-- Rust 테스트: 85 PASS, 1 ignored
-- 웹 테스트: 68 files, 151 PASS
+- typed Core 소비: 140/189
+- Rust 테스트: 89 PASS, 1 ignored
+- 웹 테스트: 71 files, 160 PASS
 - PHP Connector: 875 tests, 6727 assertions, 5 skipped
-- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 글 3건·댓글 1건의 일·월
-  bucket, 날짜 범위와 `notice` 게시판 필터 readback PASS
-- Chromium 1440×1000·390×844, 월·날짜·게시판 필터와 합계 readback,
-  콘솔 오류 0 PASS
-- 다음 활성 배치: R28 mails
-- R28 사전 probe: FAIL 32
+- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 메일 13개 operation의 템플릿
+  CRUD, 수신자 필터, 회원 dry-run, 표준·호환·시스템 테스트와 cleanup readback PASS
+- 실제 외부 메일 전달 시도: 0
+- Chromium 1440×1000·390×844, OTP 로그인·recent step-up·템플릿
+  CRUD·회원 1명 dry-run(발송 0)·mail OFF 테스트·원상복구, 콘솔 오류 0 PASS
+- 다음 활성 배치: R29 sms config
+- R29 사전 probe: FAIL 9
 - 목표 추진 차수:
-  - 5차: R27~R28, write-count·mails
+  - 5차: R27~R28, write-count·mails — 완료
   - 6차: R29~R30, SMS 설정·주소록
   - 7차: R31~R32, SMS 템플릿·메시지
   - 8차: R33~R34, Push·시스템 도구
   - 9차: R35~R36, 알림·PWA·전체 종결
 
 ```bash
-make check-batch BATCH=R28
+make check-batch BATCH=R29
 ```
 
-전체 완료는 아닙니다. 전역 감사 155개가 남아 있으며 R36 전까지
+전체 완료는 아닙니다. 전역 감사 123개가 남아 있으며 R36 전까지
 `MIGRATION_STATIC FAIL`을 유지합니다.

@@ -1,0 +1,135 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R28",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "1a72f8faf12df1121d01434c7546ed179f13f573",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "1a72f8faf12df1121d01434c7546ed179f13f573"
+  },
+  "generated_at": "2026-08-21T01:50:33Z",
+  "commands": [
+    "make audit-runtime-prepare",
+    "make check",
+    "make check-batch BATCH=R28",
+    "composer test (official G5 composed runtime)",
+    "BUILDX_BUILDER=g5-fleet-cert-builder make certification-clean certification-up",
+    "make certification-local-smoke",
+    "playwright-cli --session r28mails/r28clean (headless 1440x1000 and 390x844)",
+    "python3 -m tools.migration_parity.batch_cli --batch R27 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R28 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R29 --profile static"
+  ],
+  "results": {
+    "canonical_make_check": {
+      "component_gates": "PASS",
+      "terminal_status": "EXPECTED_GLOBAL_MIGRATION_FAIL",
+      "terminal_findings": 123
+    },
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {"passed": 89, "failed": 0, "ignored": 1},
+      "http_contract_tests": {"passed": 8, "failed": 0},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 71,
+      "web_tests": {"passed": 160, "failed": 0},
+      "web_build": "PASS"
+    },
+    "php_composed_runtime": {
+      "status": "PASS",
+      "official_g5_version": "5.6.32",
+      "tests": 875,
+      "assertions": 6727,
+      "failed": 0,
+      "skipped": 5
+    },
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "revision": "1a72f8faf12df1121d01434c7546ed179f13f573",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "1a72f8faf12df1121d01434c7546ed179f13f573",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "eaf051fae2b674d71bf6fe5e7f6f4c6f2294d83b51e909d96aeb91a4f4986ee4",
+      "mail_operations": 13,
+      "template_create_update_detail": "PASS",
+      "recipient_admin_and_system_filters": "PASS",
+      "explicit_confirmation_fail_closed": "PASS",
+      "member_send_dry_run_readback": "PASS",
+      "canonical_legacy_and_system_test_readback": "PASS",
+      "created_records_deleted": 3,
+      "baseline_template_preserved": 9301,
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "PASS",
+      "implementation_revision": "1a72f8faf12df1121d01434c7546ed179f13f573",
+      "execution_mode": "headless",
+      "login_with_otp": "PASS",
+      "recent_step_up": "PASS",
+      "template_create_update_detail_delete_readback": "PASS",
+      "recipient_selection": {"member_id": "admin", "selected": 1},
+      "member_send_dry_run": {"target_count": 1, "sent_count": 0},
+      "mail_test_disabled_readback": "PASS",
+      "baseline_cleanup_readback": "PASS",
+      "console_errors_after_login": 0,
+      "desktop_1440x1000": "PASS",
+      "mobile_390x844": "PASS",
+      "screenshots": [
+        {"path": "output/playwright/r28-mails-desktop.png", "sha256": "aad7f4c542db31c0bd80340bfadaf7854a63aa4dd4e36fde066c2b159637cdf8"},
+        {"path": "output/playwright/r28-mails-mobile.png", "sha256": "915d891a020f017e6088b02281c9f899abe241df8a5fa786e8e2faab1412e210"}
+      ]
+    },
+    "typed_operation_consumption": {
+      "operations": [
+        "adminCreateMailTemplate",
+        "adminCreateMailTest",
+        "adminDeleteMail",
+        "adminGetMail",
+        "adminListMailRecipients",
+        "adminListMails",
+        "adminSendMail",
+        "adminSendTestMail",
+        "adminSystemListMailRecipients",
+        "adminSystemListMails",
+        "adminSystemSendMailTest",
+        "adminSystemSendMemberMail",
+        "adminUpdateMailTemplate"
+      ],
+      "new_site_scoped_axum_routes": 13,
+      "browser_same_origin_transport": "PASS",
+      "browser_g5_secret_exposure": "NONE",
+      "external_effect_boundary": "CSRF + recent step-up + one-time explicit confirmation"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 195, "added_r28_routes": 13},
+    "predecessor_regression": {"batch": "R27", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 19, "core_operations": 13, "required_capabilities": 0},
+    "reuse": {"reused": 3, "adapted": 16, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "global_migration": {"status": "FAIL", "findings": 123},
+    "next_batch_probe": {
+      "batch": "R29",
+      "status": "FAIL",
+      "scope": {"legacy": 6, "core_operations": 3, "required_capabilities": 0},
+      "findings": 9
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "af33276ce73b13a0b3f7d189358e8d93c51ce26f55d4b042973ae0db8df04639",
+    "migration_batches_before_closeout": "b217d586dbd368dbf62f1311fb8ab4c09f6b6b180ac7ac103ad184ee38491245"
+  },
+  "source_reports": [
+    {"path": "output/audit/runs/20260821T014716Z-e18df3f08a87/result.json", "sha256": "a6f98f52d0e0687e69ade8e944e27c6264ee2f99f773eb87dca90a44d6561cf2"},
+    {"path": "output/audit/runs/migration-parity-20260821T014826Z-713e6f38/result.json", "sha256": "ff029a79c89f5b35ea6de3714c7b3c1e97358ed5ebd714e4d29708fc45d95f0b"},
+    {"path": "output/audit/runs/migration-batch-R27-20260821T014832Z-592bf060/result.json", "sha256": "4762af591ec8559348fdd16f562b593c74877f570a5a5cbfe1a9b12f928bbead"},
+    {"path": "output/audit/runs/migration-batch-R28-20260821T014924Z-ec5f3964/result.json", "sha256": "5e2ba6547fadcc604beb44acbc2e11caf6872cef0cc9e7d649a7ed0db51474c1"},
+    {"path": "output/audit/runs/migration-batch-R29-20260821T014833Z-73caa205/result.json", "sha256": "badd68992611293eb0101c0810aa07ac2b29e20d5a85bded7f4d9dd42b6d675d"}
+  ],
+  "claim_limit": "R28 mails 13-operation typed DTO, Connector, explicit site_id Axum routes, same-origin responsive React workspace, official G5 5.6.32 local runtime and headless browser CRUD/dry-run readback only. Routine external delivery stayed at zero. This is not package, staging, live-mail or full-product certification; global migration remains FAIL with 123 findings."
+}

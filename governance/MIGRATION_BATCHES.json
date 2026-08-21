@@ -1112,8 +1112,13 @@
       "id": "R28",
       "sequence": 23,
       "title": "mails",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R27"],
+      "completion": {
+        "implementation_commit": "1a72f8faf12df1121d01434c7546ed179f13f573",
+        "evidence_path": "docs/audits/evidence/R28_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-21T01:50:33Z"
+      },
       "core": {
         "domains": ["mails"],
         "operation_ids": [
@@ -1156,7 +1161,7 @@
       "id": "R29",
       "sequence": 24,
       "title": "sms config",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R28"],
       "core": {
         "domains": ["sms"],
