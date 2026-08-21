@@ -4151,6 +4151,7 @@ code {
 
 .sms-contact-main {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 22px;
   min-width: 0;
 }
@@ -4282,7 +4283,7 @@ code {
   .sms-config-workspace,
   .sms-contacts-workspace,
   .sms-contact-detail-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .sms-summary-grid {
@@ -4354,6 +4355,10 @@ code {
   .sms-contacts-summary,
   .sms-contact-filter {
     grid-template-columns: 1fr;
+  }
+
+  .sms-contact-table {
+    min-width: 640px;
   }
 
   .sms-storage-warning {
