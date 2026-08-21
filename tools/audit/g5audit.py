@@ -1806,6 +1806,7 @@ def check_server_scaffold_contract(root: Path) -> str:
         ("GET", "/api/v1/sites/{site_id}/admin/system/qa-config", "session", True),
         ("PUT", "/api/v1/sites/{site_id}/admin/system/qa-config", "session_csrf_step_up", True),
         ("DELETE", "/api/v1/sites/{site_id}/admin/qa", "session_csrf_step_up", True),
+        ("GET", "/api/v1/sites/{site_id}/admin/write-count/stats", "session", True),
         ("GET", "/api/v1/sites/{site_id}/admin/points", "session", True),
         ("POST", "/api/v1/sites/{site_id}/admin/points", "session_csrf_step_up", True),
         ("DELETE", "/api/v1/sites/{site_id}/admin/points", "session_csrf_step_up", True),

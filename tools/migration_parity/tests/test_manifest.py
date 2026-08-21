@@ -153,6 +153,7 @@ class ManifestTest(unittest.TestCase):
                 "adminDeleteQaBulk",
                 "adminSystemGetQaConfig",
                 "adminSystemUpdateQaConfig",
+                "adminWriteCountStats",
             },
             {
                 mapping["operation_id"]
