@@ -1010,6 +1010,24 @@ export interface AdminQaBulkDeleteResult {
   qa_ids: number[];
 }
 
+export type AdminWriteCountPeriod = "hour" | "day" | "week" | "month" | "year";
+
+export interface AdminWriteCountStatsQuery {
+  period?: AdminWriteCountPeriod;
+  date_from?: string;
+  date_to?: string;
+  bo_table?: string;
+}
+
+export interface AdminWriteCountStats {
+  period: AdminWriteCountPeriod;
+  date_from: string;
+  date_to: string;
+  bo_table: string | null;
+  summary: { write_total: number; comment_total: number };
+  items: Array<{ bucket: string; write_count: number; comment_count: number }>;
+}
+
 export interface AdminPointItem {
   po_id: number;
   mb_id: string;
@@ -2580,6 +2598,22 @@ export function deleteAdminQaBulk(
     path: `/sites/${encodeURIComponent(siteId)}/admin/qa`,
     csrfToken,
     body: input,
+  });
+}
+
+export function getAdminWriteCountStats(
+  siteId: string,
+  query: AdminWriteCountStatsQuery = {},
+) {
+  const search = new URLSearchParams();
+  if (query.period) search.set("period", query.period);
+  if (query.date_from) search.set("date_from", query.date_from);
+  if (query.date_to) search.set("date_to", query.date_to);
+  if (query.bo_table) search.set("bo_table", query.bo_table);
+  const suffix = search.size ? `?${search.toString()}` : "";
+  return transport.request<AdminWriteCountStats>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/admin/write-count/stats${suffix}`,
   });
 }
 

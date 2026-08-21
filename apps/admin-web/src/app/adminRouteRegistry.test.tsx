@@ -60,8 +60,12 @@ describe("adminRouteRegistry", () => {
       label: "QA",
       delivery: "active",
     });
+    expect(resolveRouteMeta("/admin/write-count")).toMatchObject({
+      label: "글·댓글 통계",
+      delivery: "active",
+    });
     expect(adminRoutes.filter((route) => route.delivery === "active")).toHaveLength(
-      19,
+      20,
     );
     expect(groupedAdminRoutes().get("메시징")?.length).toBeGreaterThanOrEqual(6);
   });

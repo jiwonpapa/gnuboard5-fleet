@@ -75,6 +75,7 @@ export const adminRoutes: readonly AdminRouteMeta[] = [
     ["접속자", "visits", "운영 도구", "visits/AdminVisitStatsPage.tsx"],
     ["신고", "reports", "운영 도구", "reports/AdminReportsPage.tsx"],
     ["QA", "qa", "운영 도구", "qa-config/AdminQaConfigPage.tsx"],
+    ["글·댓글 통계", "write-count", "운영 도구", "write-count/AdminWriteCountPage.tsx"],
     ["메일", "mails", "메시징", "mails/AdminMailsPage.tsx"],
     ["SMS 설정", "sms", "메시징", "system/AdminSmsConfigPage.tsx"],
     ["SMS 연락처", "sms-contacts", "메시징", "sms-contacts/AdminSmsContactsPage.tsx"],
@@ -88,7 +89,7 @@ export const adminRoutes: readonly AdminRouteMeta[] = [
     label,
     group,
     description: `${label} 도메인 작업면입니다.`,
-    delivery: ["members", "groups", "faqs", "menus", "layouts", "theme", "points", "polls", "popups", "popular", "visits", "reports", "qa"].includes(slug) ? "active" as const : "planned" as const,
+    delivery: ["members", "groups", "faqs", "menus", "layouts", "theme", "points", "polls", "popups", "popular", "visits", "reports", "qa", "write-count"].includes(slug) ? "active" as const : "planned" as const,
     legacySource,
   })),
 ];

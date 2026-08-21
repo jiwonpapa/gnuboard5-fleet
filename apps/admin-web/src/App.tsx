@@ -26,6 +26,7 @@ import { AdminPopularPage } from "./features/popular/AdminPopularPage";
 import { AdminQaPage } from "./features/qa/AdminQaPage";
 import { AdminReportsPage } from "./features/reports/AdminReportsPage";
 import { AdminVisitsPage } from "./features/visits/AdminVisitsPage";
+import { AdminWriteCountPage } from "./features/write-count/AdminWriteCountPage";
 import { SecuritySettingsPage } from "./features/security/SecuritySettingsPage";
 import { SiteActivationPage } from "./features/sites/SiteActivationPage";
 import { SiteDashboardPage } from "./features/sites/SiteDashboardPage";
@@ -124,6 +125,10 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/qa"
               element={<AdminQaPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/write-count"
+              element={<AdminWriteCountPage />}
             />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />

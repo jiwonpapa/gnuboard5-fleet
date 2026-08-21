@@ -3867,6 +3867,35 @@ code {
   color: var(--muted);
 }
 
+.write-count-panel {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.write-count-panel .workspace-panel-heading {
+  align-items: flex-start;
+  margin-bottom: 0;
+}
+
+.write-count-panel .workspace-panel-heading p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.77rem;
+  line-height: 1.55;
+}
+
+.write-count-filter {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(8rem, 1fr)) auto;
+}
+
+.write-count-actions {
+  flex-wrap: nowrap;
+}
+
 @media (max-width: 960px) {
   .points-page .point-filter,
   .points-workspace,
@@ -3878,6 +3907,14 @@ code {
   .visits-search-filter,
   .visits-delete-filter {
     grid-template-columns: 1fr;
+  }
+
+  .write-count-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .write-count-actions {
+    grid-column: 1 / -1;
   }
 
   .reports-summary,
@@ -3912,6 +3949,15 @@ code {
 }
 
 @media (max-width: 720px) {
+  .write-count-filter,
+  .write-count-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .write-count-actions {
+    grid-column: auto;
+  }
+
   .poll-choice-grid,
   .poll-number-grid,
   .popup-field-grid {

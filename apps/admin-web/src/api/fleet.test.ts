@@ -41,6 +41,7 @@ import {
   getAdminQaConfig,
   getAdminReportStats,
   getAdminVisitStats,
+  getAdminWriteCountStats,
   getAdminLegacyPoll,
   getAdminSystemPoll,
   getAdminLegacyGroup,
@@ -515,5 +516,19 @@ describe("remote Fleet transport", () => {
     expect(fetcher.mock.calls[2]?.[1]?.body).toBe(JSON.stringify({ qa_ids: [71, 72] }));
     expect(new Headers(fetcher.mock.calls[1]?.[1]?.headers).get("x-csrf-token")).toBe("csrf-1");
     expect(new Headers(fetcher.mock.calls[2]?.[1]?.headers).get("x-csrf-token")).toBe("csrf-1");
+  });
+
+  it("consumes the R27 write-count operation through explicit site scope", async () => {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => {
+      void _input; void _init;
+      return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    await getAdminWriteCountStats("site-a", {
+      period: "week", date_from: "2026-08-01", date_to: "2026-08-21", bo_table: "notice",
+    });
+    expect(fetcher.mock.calls.map(([input, init]) => [String(input), init?.method])).toEqual([
+      ["http://localhost:3000/api/v1/sites/site-a/admin/write-count/stats?period=week&date_from=2026-08-01&date_to=2026-08-21&bo_table=notice", "GET"],
+    ]);
   });
 });
