@@ -2071,6 +2071,248 @@ def main() -> int:
     ):
         raise RuntimeError("R29 SMS browser-safe cleanup readback failed")
 
+    sms_groups_path = "/api/v1/sites/owner-a-site/admin/sms/contact-groups"
+    sms_contacts_path = "/api/v1/sites/owner-a-site/admin/sms/contacts"
+    baseline_sms_groups = request(
+        fleet_base, "GET", sms_groups_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    baseline_sms_group_ids = sorted(
+        group.get("bg_no") for group in baseline_sms_groups.get("groups", [])
+        if isinstance(group.get("bg_no"), int)
+    )
+    if (
+        baseline_sms_groups.get("total") != len(baseline_sms_group_ids)
+        or not baseline_sms_group_ids
+    ):
+        raise RuntimeError("R30 SMS contact group baseline failed")
+
+    sms_source_group = request(
+        fleet_base, "POST", sms_groups_path,
+        body={"bg_name": "R30 원본 그룹"},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    sms_target_group = request(
+        fleet_base, "POST", sms_groups_path,
+        body={"bg_name": "R30 대상 그룹"},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    source_group_id = sms_source_group.get("bg_no")
+    target_group_id = sms_target_group.get("bg_no")
+    if not all(isinstance(value, int) and value > 0 for value in (source_group_id, target_group_id)):
+        raise RuntimeError("R30 SMS contact group create failed")
+
+    source_group_path = f"{sms_groups_path}/{source_group_id}"
+    source_group_detail = request(
+        fleet_base, "GET", source_group_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if source_group_detail.get("bg_name") != "R30 원본 그룹":
+        raise RuntimeError("R30 SMS contact group detail failed")
+    updated_source_group = request(
+        fleet_base, "PUT", source_group_path,
+        body={"bg_name": "R30 원본 갱신"},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if updated_source_group.get("bg_name") != "R30 원본 갱신":
+        raise RuntimeError("R30 SMS contact group update/readback failed")
+
+    first_contact = request(
+        fleet_base, "POST", sms_contacts_path,
+        body={
+            "bg_no": source_group_id, "bk_name": "R30 홍길동",
+            "bk_hp": "01011112222", "bk_receipt": 1, "bk_memo": "first",
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    second_contact = request(
+        fleet_base, "POST", sms_contacts_path,
+        body={
+            "bg_no": source_group_id, "bk_name": "R30 김영희",
+            "bk_hp": "01033334444", "bk_receipt": 1, "bk_memo": "second",
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    first_contact_id = first_contact.get("bk_no")
+    second_contact_id = second_contact.get("bk_no")
+    if not all(isinstance(value, int) and value > 0 for value in (first_contact_id, second_contact_id)):
+        raise RuntimeError("R30 SMS contact create failed")
+    first_contact_detail = request(
+        fleet_base, "GET", f"{sms_contacts_path}/{first_contact_id}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if first_contact_detail.get("bk_hp") != "01011112222":
+        raise RuntimeError("R30 SMS contact detail failed")
+    updated_contact = request(
+        fleet_base, "PUT", f"{sms_contacts_path}/{first_contact_id}",
+        body={"bk_name": "R30 홍길동 갱신", "bk_receipt": 0},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if updated_contact.get("bk_name") != "R30 홍길동 갱신" or updated_contact.get("bk_receipt") != 0:
+        raise RuntimeError("R30 SMS contact update/readback failed")
+
+    filtered_contacts = request(
+        fleet_base, "GET",
+        f"{sms_contacts_path}?page=1&per_page=20&bg_no={source_group_id}&search_field=name&search=R30&with_phone_only=true",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        filtered_contacts.get("pagination", {}).get("total") != 2
+        or filtered_contacts.get("summary", {}).get("total_count") != 2
+    ):
+        raise RuntimeError("R30 SMS contact list/filter/summary failed")
+
+    unconfirmed_batch = request(
+        fleet_base, "POST", f"{sms_contacts_path}/batch",
+        body={"confirm_action": False, "action": "reject", "contact_ids": [first_contact_id]},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    if unconfirmed_batch.get("error", {}).get("code") != "destructive_confirmation_required":
+        raise RuntimeError("R30 SMS contact batch confirmation did not fail closed")
+    rejected_contact = request(
+        fleet_base, "POST", f"{sms_contacts_path}/batch",
+        body={"confirm_action": True, "action": "reject", "contact_ids": [second_contact_id]},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if rejected_contact.get("affected") != 1 or rejected_contact.get("action") != "reject":
+        raise RuntimeError("R30 SMS contact batch reject failed")
+    copied_contact = request(
+        fleet_base, "POST", f"{sms_contacts_path}/batch",
+        body={
+            "confirm_action": True, "action": "copy", "contact_ids": [first_contact_id],
+            "target_bg_no": target_group_id,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    moved_contact = request(
+        fleet_base, "POST", f"{sms_contacts_path}/batch",
+        body={
+            "confirm_action": True, "action": "move", "contact_ids": [second_contact_id],
+            "target_bg_no": target_group_id,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if copied_contact.get("affected") != 1 or moved_contact.get("affected") != 1:
+        raise RuntimeError("R30 SMS contact batch copy/move failed")
+    moved_group = request(
+        fleet_base, "POST", f"{source_group_path}/move",
+        body={"target_bg_no": target_group_id},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if moved_group.get("from_bg_no") != source_group_id or moved_group.get("target_bg_no") != target_group_id:
+        raise RuntimeError("R30 SMS contact group move failed")
+
+    deletable_contact = request(
+        fleet_base, "POST", sms_contacts_path,
+        body={"bg_no": source_group_id, "bk_name": "R30 삭제", "bk_hp": "01055556666"},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    deletable_contact_id = deletable_contact.get("bk_no")
+    unconfirmed_contact_delete = request(
+        fleet_base, "DELETE", f"{sms_contacts_path}/{deletable_contact_id}",
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    if unconfirmed_contact_delete.get("error", {}).get("code") != "destructive_confirmation_required":
+        raise RuntimeError("R30 SMS contact delete confirmation did not fail closed")
+    request(
+        fleet_base, "DELETE", f"{sms_contacts_path}/{deletable_contact_id}?confirm=true",
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(204,),
+    )
+
+    import_contacts = [
+        {"name": "R30 중복", "phone": "01011112222", "receipt": True},
+        {"name": "R30 신규", "phone": "01077778888", "receipt": True},
+        {"name": "R30 오류", "phone": "123", "receipt": False},
+    ]
+    import_preview = request(
+        fleet_base, "POST", f"{sms_contacts_path}/import",
+        body={
+            "confirm_import": False, "bg_no": target_group_id,
+            "dry_run": True, "contacts": import_contacts,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if (
+        import_preview.get("total_count") != 3
+        or import_preview.get("invalid_count") != 1
+        or import_preview.get("duplicate_count") != 1
+        or import_preview.get("importable_count") != 1
+        or import_preview.get("imported_count") != 0
+        or import_preview.get("dry_run") is not True
+    ):
+        raise RuntimeError("R30 SMS contact import preview failed")
+    unconfirmed_import = request(
+        fleet_base, "POST", f"{sms_contacts_path}/import",
+        body={
+            "confirm_import": False, "bg_no": target_group_id,
+            "dry_run": False, "contacts": import_contacts,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    if unconfirmed_import.get("error", {}).get("code") != "destructive_confirmation_required":
+        raise RuntimeError("R30 SMS contact import confirmation did not fail closed")
+    imported_contacts = request(
+        fleet_base, "POST", f"{sms_contacts_path}/import",
+        body={
+            "confirm_import": True, "bg_no": target_group_id,
+            "dry_run": False, "contacts": import_contacts,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if imported_contacts.get("imported_count") != 1 or imported_contacts.get("dry_run") is not False:
+        raise RuntimeError("R30 SMS contact confirmed import failed")
+
+    exported_contacts = request(
+        fleet_base, "GET",
+        f"{sms_contacts_path}/export?bg_no={target_group_id}&include_no_phone=false&with_hyphen=true",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    exported_phones = {item.get("bk_hp") for item in exported_contacts.get("items", [])}
+    if (
+        exported_contacts.get("total") != 3
+        or exported_contacts.get("bg_no") != target_group_id
+        or not {"010-1111-2222", "010-3333-4444", "010-7777-8888"}.issubset(exported_phones)
+    ):
+        raise RuntimeError("R30 SMS contact export readback failed")
+
+    unconfirmed_clear = request(
+        fleet_base, "DELETE", f"{sms_groups_path}/{target_group_id}/contacts",
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    if unconfirmed_clear.get("error", {}).get("code") != "destructive_confirmation_required":
+        raise RuntimeError("R30 SMS contact group clear confirmation did not fail closed")
+    cleared_group = request(
+        fleet_base, "DELETE", f"{sms_groups_path}/{target_group_id}/contacts?confirm=true",
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if cleared_group.get("deleted") != 3:
+        raise RuntimeError("R30 SMS contact group clear failed")
+    unconfirmed_group_delete = request(
+        fleet_base, "DELETE", f"{sms_groups_path}/{source_group_id}",
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    if unconfirmed_group_delete.get("error", {}).get("code") != "destructive_confirmation_required":
+        raise RuntimeError("R30 SMS contact group delete confirmation did not fail closed")
+    for group_id in (source_group_id, target_group_id):
+        request(
+            fleet_base, "DELETE", f"{sms_groups_path}/{group_id}?confirm=true",
+            headers=fleet_headers(admin_cookie, admin_csrf), expected=(204,),
+        )
+    final_sms_groups = request(
+        fleet_base, "GET", sms_groups_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    final_sms_contacts = request(
+        fleet_base, "GET", f"{sms_contacts_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        sorted(group.get("bg_no") for group in final_sms_groups.get("groups", [])) != baseline_sms_group_ids
+        or final_sms_contacts.get("pagination", {}).get("total") != 0
+        or final_sms_contacts.get("summary", {}).get("total_count") != 0
+    ):
+        raise RuntimeError("R30 SMS contact cleanup did not restore baseline")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -2431,6 +2673,18 @@ def main() -> int:
             "synced_contacts": len(synced_contact_ids),
             "contact_cleanup_readback": "passed",
             "config_cleanup_readback": "passed",
+            "external_delivery_attempts": 0,
+        },
+        "r30_sms_contacts": {
+            "operations": 15,
+            "group_list_create_detail_update_move": "passed",
+            "contact_list_create_detail_update": "passed",
+            "batch_reject_copy_move": "passed",
+            "import_preview_and_confirmed_readback": "passed",
+            "export_readback": "passed",
+            "destructive_confirmations_fail_closed": "passed",
+            "group_clear_and_delete_cleanup": "passed",
+            "baseline_groups_preserved": baseline_sms_group_ids,
             "external_delivery_attempts": 0,
         },
         "notifications": {
