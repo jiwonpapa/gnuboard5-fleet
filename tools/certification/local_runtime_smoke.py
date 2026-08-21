@@ -1790,7 +1790,7 @@ def main() -> int:
 
     recipients = request(
         fleet_base, "GET",
-        f"{mail_path}/recipients?page=1&per_page=20&search=fleetcert&level_min=2&level_max=2&mailling_only=true",
+        f"{mail_path}/recipients?page=1&per_page=20&search=fleetcert&level_min=3&level_max=3&mailling_only=true",
         headers=fleet_headers(admin_cookie),
     ).json()
     system_recipients = request(
