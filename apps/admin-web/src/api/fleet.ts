@@ -1028,6 +1028,119 @@ export interface AdminWriteCountStats {
   items: Array<{ bucket: string; write_count: number; comment_count: number }>;
 }
 
+export interface AdminMailListQuery {
+  page?: number;
+  per_page?: number;
+}
+
+export interface AdminMailTemplate {
+  ma_id: number;
+  ma_subject: string;
+  ma_content: string;
+  ma_time: string;
+  ma_ip: string;
+  ma_last_option: string;
+}
+
+export interface AdminMailLastOption {
+  mb_id1: number;
+  mb_id1_from: string;
+  mb_id1_to: string;
+  mb_email: string;
+  mb_mailling: number;
+  mb_level_from: number;
+  mb_level_to: number;
+  gr_id: string;
+}
+
+export interface AdminMailDetail extends AdminMailTemplate {
+  last_option: AdminMailLastOption;
+  preview_html: string;
+}
+
+export interface AdminMailList { items: AdminMailTemplate[]; pagination: Pagination; }
+export interface AdminMailTemplateWrite { ma_subject: string; ma_content: string; }
+
+export interface AdminMailRecipientQuery extends AdminMailListQuery {
+  search?: string;
+  level_min?: number;
+  level_max?: number;
+  gr_id?: string;
+  member_id_from?: string;
+  member_id_to?: string;
+  email_contains?: string;
+  mailling_only?: boolean;
+}
+
+export interface AdminMailRecipient {
+  mb_id: string;
+  mb_name: string;
+  mb_nick: string;
+  mb_email: string;
+  mb_level: number;
+  mb_mailling: number;
+  mb_datetime: string;
+}
+
+export interface AdminMailRecipientList { items: AdminMailRecipient[]; pagination: Pagination; }
+export type AdminMailTargetType = "all" | "level" | "group" | "member";
+
+export interface AdminMailSendRequest {
+  ma_id?: number;
+  subject?: string;
+  content?: string;
+  target_type: AdminMailTargetType;
+  level_min?: number;
+  level_max?: number;
+  gr_id?: string;
+  member_id_from?: string;
+  member_id_to?: string;
+  email_contains?: string;
+  mb_ids: string[];
+  mailling_only: boolean;
+  dry_run: boolean;
+}
+
+export interface AdminMailSendResult {
+  ma_id: number | null;
+  template_used: boolean;
+  target_count: number;
+  sent_count: number;
+  skipped_count: number;
+  mail_enabled: boolean;
+  dry_run: boolean;
+  targets: Array<{ mb_id: string; mb_email: string }>;
+}
+
+export interface AdminMailTestRequest { ma_id?: number; to: string; subject?: string; content?: string; }
+export interface AdminMailTestResult { ma_id: number | null; template_used: boolean; mail_enabled: boolean; sent: boolean; to: string; }
+
+export interface AdminSystemMailTemplate { ma_id: number; ma_subject: string; ma_time: string; ma_ip: string; ma_last_option: string; }
+export interface AdminSystemMailTemplateList { items: AdminSystemMailTemplate[]; pagination: Pagination; }
+export interface AdminSystemMailRecipient { mb_id: string; mb_name: string; mb_nick: string; mb_email: string; mb_level: number; mb_mailling: number; mb_today_login: string; }
+export interface AdminSystemMailRecipientList { items: AdminSystemMailRecipient[]; pagination: Pagination; }
+export interface AdminSystemMailTestRequest { to: string; subject: string; content: string; }
+export interface AdminSystemMailTestResult { sent: boolean; mail_log_id: number; to: string; }
+
+export interface AdminSystemMailSendRequest {
+  ma_id?: number;
+  subject?: string;
+  content?: string;
+  mb_ids: string[];
+  mailling_only: boolean;
+  dry_run: boolean;
+}
+
+export interface AdminSystemMailSendResult {
+  mail_log_id: number;
+  target_count: number;
+  sent_count: number;
+  skipped_count: number;
+  mail_enabled: boolean;
+  dry_run: boolean;
+  recipients: Array<{ mb_id: string; mb_email: string }>;
+}
+
 export interface AdminPointItem {
   po_id: number;
   mb_id: string;
@@ -2615,6 +2728,78 @@ export function getAdminWriteCountStats(
     method: "GET",
     path: `/sites/${encodeURIComponent(siteId)}/admin/write-count/stats${suffix}`,
   });
+}
+
+function adminMailListQuery(query: AdminMailListQuery = {}): string {
+  const search = new URLSearchParams();
+  if (query.page !== undefined) search.set("page", String(query.page));
+  if (query.per_page !== undefined) search.set("per_page", String(query.per_page));
+  return search.size ? `?${search.toString()}` : "";
+}
+
+function adminMailRecipientQuery(query: AdminMailRecipientQuery = {}): string {
+  const search = new URLSearchParams(adminMailListQuery(query).slice(1));
+  if (query.search) search.set("search", query.search);
+  if (query.level_min !== undefined) search.set("level_min", String(query.level_min));
+  if (query.level_max !== undefined) search.set("level_max", String(query.level_max));
+  if (query.gr_id) search.set("gr_id", query.gr_id);
+  if (query.member_id_from) search.set("member_id_from", query.member_id_from);
+  if (query.member_id_to) search.set("member_id_to", query.member_id_to);
+  if (query.email_contains) search.set("email_contains", query.email_contains);
+  if (query.mailling_only) search.set("mailling_only", "true");
+  return search.size ? `?${search.toString()}` : "";
+}
+
+export function listAdminMails(siteId: string, query: AdminMailListQuery = {}) {
+  return transport.request<AdminMailList>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/mails${adminMailListQuery(query)}` });
+}
+
+export function sendAdminMail(siteId: string, input: AdminMailSendRequest, csrfToken: string) {
+  return transport.request<AdminMailSendResult, AdminMailSendRequest & { confirm_send: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/mails`, csrfToken, body: { ...input, confirm_send: true } });
+}
+
+export function createAdminMailTemplate(siteId: string, input: AdminMailTemplateWrite, csrfToken: string) {
+  return transport.request<AdminMailDetail, AdminMailTemplateWrite>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/mails/templates`, csrfToken, body: input });
+}
+
+export function listAdminMailRecipients(siteId: string, query: AdminMailRecipientQuery = {}) {
+  return transport.request<AdminMailRecipientList>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/mails/recipients${adminMailRecipientQuery(query)}` });
+}
+
+export function createAdminMailTest(siteId: string, input: AdminMailTestRequest, csrfToken: string) {
+  return transport.request<AdminMailTestResult, AdminMailTestRequest & { confirm_send: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/mails/test`, csrfToken, body: { ...input, confirm_send: true } });
+}
+
+export function sendAdminMailTestLegacy(siteId: string, input: AdminMailTestRequest, csrfToken: string) {
+  return transport.request<AdminMailTestResult, AdminMailTestRequest & { confirm_send: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/mails/test/legacy`, csrfToken, body: { ...input, confirm_send: true } });
+}
+
+export function getAdminMail(siteId: string, maId: number) {
+  return transport.request<AdminMailDetail>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/mails/${maId}` });
+}
+
+export function updateAdminMailTemplate(siteId: string, maId: number, input: AdminMailTemplateWrite, csrfToken: string) {
+  return transport.request<AdminMailDetail, AdminMailTemplateWrite>({ method: "PUT", path: `/sites/${encodeURIComponent(siteId)}/admin/mails/${maId}`, csrfToken, body: input });
+}
+
+export function deleteAdminMail(siteId: string, maId: number, csrfToken: string) {
+  return transport.request<void>({ method: "DELETE", path: `/sites/${encodeURIComponent(siteId)}/admin/mails/${maId}`, csrfToken });
+}
+
+export function listAdminSystemMails(siteId: string, query: AdminMailListQuery = {}) {
+  return transport.request<AdminSystemMailTemplateList>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/system/mails${adminMailListQuery(query)}` });
+}
+
+export function listAdminSystemMailRecipients(siteId: string, query: Pick<AdminMailRecipientQuery, "page" | "per_page" | "search"> = {}) {
+  return transport.request<AdminSystemMailRecipientList>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/system/mail-recipients${adminMailRecipientQuery(query)}` });
+}
+
+export function sendAdminSystemMailTest(siteId: string, input: AdminSystemMailTestRequest, csrfToken: string) {
+  return transport.request<AdminSystemMailTestResult, AdminSystemMailTestRequest & { confirm_send: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/system/mails/test`, csrfToken, body: { ...input, confirm_send: true } });
+}
+
+export function sendAdminSystemMemberMail(siteId: string, input: AdminSystemMailSendRequest, csrfToken: string) {
+  return transport.request<AdminSystemMailSendResult, AdminSystemMailSendRequest & { confirm_send: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/system/mails/send`, csrfToken, body: { ...input, confirm_send: true } });
 }
 
 export function listAdminPoints(siteId: string, query: AdminPointListQuery = {}) {

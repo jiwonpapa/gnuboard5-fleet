@@ -7,6 +7,8 @@ import {
   connectorLogout,
   connectorRefresh,
   copyAdminBoard,
+  createAdminMailTemplate,
+  createAdminMailTest,
   createAdminPointAction,
   createAdminLegacyPoll,
   createAdminSystemPoll,
@@ -25,6 +27,7 @@ import {
   deleteAdminSystemPoll,
   deleteAdminMember,
   deleteAdminMemberMedia,
+  deleteAdminMail,
   deleteAdminVisits,
   deleteAdminAuthByMember,
   deleteAdminSystemPermission,
@@ -42,6 +45,7 @@ import {
   getAdminReportStats,
   getAdminVisitStats,
   getAdminWriteCountStats,
+  getAdminMail,
   getAdminLegacyPoll,
   getAdminSystemPoll,
   getAdminLegacyGroup,
@@ -52,6 +56,8 @@ import {
   listAdminBoards,
   listAdminFieldSchemas,
   listAdminMembers,
+  listAdminMails,
+  listAdminMailRecipients,
   listAdminPoints,
   listAdminPopular,
   listAdminReports,
@@ -60,11 +66,17 @@ import {
   listAdminLegacyGroupMembers,
   listAdminLegacyGroups,
   listAdminSystemPermissions,
+  listAdminSystemMails,
+  listAdminSystemMailRecipients,
   openTerminalSocket,
   patchAdminBoardGroup,
   saveAdminSystemPermission,
   resetAdminPopular,
   searchAdminVisits,
+  sendAdminMail,
+  sendAdminMailTestLegacy,
+  sendAdminSystemMailTest,
+  sendAdminSystemMemberMail,
   grantAdminPoint,
   deductAdminPoint,
   upsertAdminAuth,
@@ -74,6 +86,7 @@ import {
   updateAdminLegacyGroup,
   updateAdminMember,
   updateAdminMemberLevel,
+  updateAdminMailTemplate,
   updateAdminQaConfig,
   updateAdminReport,
   updateAdminLegacyPoll,
@@ -530,5 +543,48 @@ describe("remote Fleet transport", () => {
     expect(fetcher.mock.calls.map(([input, init]) => [String(input), init?.method])).toEqual([
       ["http://localhost:3000/api/v1/sites/site-a/admin/write-count/stats?period=week&date_from=2026-08-01&date_to=2026-08-21&bo_table=notice", "GET"],
     ]);
+  });
+
+  it("consumes all thirteen R28 mail operations with confirmation on external effects", async () => {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => {
+      void _input; void _init;
+      return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    const template = { ma_subject: "안내", ma_content: "본문" };
+    const send = { ma_id: 11, target_type: "member" as const, mb_ids: ["fleetcert"], mailling_only: true, dry_run: true };
+    const test = { ma_id: 11, to: "admin@example.test" };
+    await listAdminMails("site-a", { page: 1, per_page: 20 });
+    await sendAdminMail("site-a", send, "csrf-1");
+    await createAdminMailTemplate("site-a", template, "csrf-1");
+    await listAdminMailRecipients("site-a", { search: "fleet", level_min: 2, mailling_only: true });
+    await createAdminMailTest("site-a", test, "csrf-1");
+    await sendAdminMailTestLegacy("site-a", test, "csrf-1");
+    await getAdminMail("site-a", 11);
+    await updateAdminMailTemplate("site-a", 11, template, "csrf-1");
+    await deleteAdminMail("site-a", 11, "csrf-1");
+    await listAdminSystemMails("site-a", { page: 1, per_page: 20 });
+    await listAdminSystemMailRecipients("site-a", { page: 1, per_page: 20, search: "fleet" });
+    await sendAdminSystemMailTest("site-a", { to: "admin@example.test", subject: "점검", content: "본문" }, "csrf-1");
+    await sendAdminSystemMemberMail("site-a", { ma_id: 11, mb_ids: ["fleetcert"], mailling_only: true, dry_run: true }, "csrf-1");
+    expect(fetcher.mock.calls.map(([input, init]) => [String(input), init?.method])).toEqual([
+      ["http://localhost:3000/api/v1/sites/site-a/admin/mails?page=1&per_page=20", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/mails", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/mails/templates", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/mails/recipients?search=fleet&level_min=2&mailling_only=true", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/mails/test", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/mails/test/legacy", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/mails/11", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/mails/11", "PUT"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/mails/11", "DELETE"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/system/mails?page=1&per_page=20", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/system/mail-recipients?page=1&per_page=20&search=fleet", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/system/mails/test", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/system/mails/send", "POST"],
+    ]);
+    for (const index of [1, 4, 5, 11, 12]) {
+      expect(JSON.parse(String(fetcher.mock.calls[index]?.[1]?.body))).toMatchObject({ confirm_send: true });
+      expect(new Headers(fetcher.mock.calls[index]?.[1]?.headers).get("x-csrf-token")).toBe("csrf-1");
+    }
   });
 });
