@@ -1088,6 +1088,97 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/mails",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_mail_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/mails",
+      "auth": "session_csrf_step_up_confirm_external",
+      "site_context": true,
+      "purpose": "typed_mail_send"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/mails/templates",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_mail_template_create"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/mails/recipients",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_mail_recipient_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/mails/test",
+      "auth": "session_csrf_step_up_confirm_external",
+      "site_context": true,
+      "purpose": "typed_mail_test_create"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/mails/test/legacy",
+      "auth": "session_csrf_step_up_confirm_external",
+      "site_context": true,
+      "purpose": "typed_mail_test_legacy"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/mails/{ma_id}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_mail_detail"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/mails/{ma_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_mail_template_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/mails/{ma_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_mail_delete"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/system/mails",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_system_mail_list"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/system/mail-recipients",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_system_mail_recipient_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/system/mails/test",
+      "auth": "session_csrf_step_up_confirm_external",
+      "site_context": true,
+      "purpose": "typed_system_mail_test"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/system/mails/send",
+      "auth": "session_csrf_step_up_confirm_external",
+      "site_context": true,
+      "purpose": "typed_system_member_mail_send"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/admin/points",
       "auth": "session",
       "site_context": true,

@@ -34,6 +34,16 @@ pub use g5_fleet_core::layouts::{
     AdminLayoutWidgetCreate, AdminLayoutWidgetReorder, AdminLayoutWidgetUpdate,
     valid_layout_page_id, valid_widget_id,
 };
+pub use g5_fleet_core::mails::{
+    AdminMailDetail, AdminMailLastOption, AdminMailList, AdminMailListQuery, AdminMailRecipient,
+    AdminMailRecipientList, AdminMailRecipientQuery, AdminMailSendRequest, AdminMailSendResult,
+    AdminMailSendTarget, AdminMailTargetType, AdminMailTemplate, AdminMailTemplateWrite,
+    AdminMailTestRequest, AdminMailTestResult, AdminSystemMailRecipient,
+    AdminSystemMailRecipientList, AdminSystemMailRecipientQuery, AdminSystemMailSendRecipient,
+    AdminSystemMailSendRequest, AdminSystemMailSendResult, AdminSystemMailTemplate,
+    AdminSystemMailTemplateList, AdminSystemMailTestRequest, AdminSystemMailTestResult,
+    valid_mail_id,
+};
 pub use g5_fleet_core::members::{
     AdminMember, AdminMemberLevelUpdate, AdminMemberList, AdminMemberListQuery,
     AdminMemberMediaDeleteResult, AdminMemberMediaUpload, AdminMemberMediaUploadResult,
@@ -261,6 +271,17 @@ pub trait ConnectorGateway: Send + Sync {
         operation_id: &str,
         input: &CoreExecuteRequest,
     ) -> ConnectorResult<CoreExecuteResponse>;
+
+    async fn external_execute(
+        &self,
+        _base_url: &str,
+        _request_id: &str,
+        _access_token: &str,
+        _operation_id: &str,
+        _input: &CoreExecuteRequest,
+    ) -> ConnectorResult<CoreExecuteResponse> {
+        Err(ConnectorError::ExternalEffectBlocked)
+    }
 
     async fn admin_get_faq_master_image_content(
         &self,
@@ -2716,6 +2737,361 @@ pub trait ConnectorGateway: Send + Sync {
         typed_core_data("adminWriteCountStats", response)
     }
 
+    async fn admin_list_mails(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminMailListQuery,
+    ) -> ConnectorResult<AdminMailList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListMails",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<AdminMailTemplate> =
+            typed_core_envelope("adminListMails", response)?;
+        Ok(AdminMailList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_create_mail_template(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        write: &AdminMailTemplateWrite,
+    ) -> ConnectorResult<AdminMailDetail> {
+        if !write.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminCreateMailTemplate",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(write).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminCreateMailTemplate", response)
+    }
+
+    async fn admin_list_mail_recipients(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminMailRecipientQuery,
+    ) -> ConnectorResult<AdminMailRecipientList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListMailRecipients",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                        ("search", query.search.as_ref().map(|value| json!(value))),
+                        ("level_min", query.level_min.map(|value| json!(value))),
+                        ("level_max", query.level_max.map(|value| json!(value))),
+                        ("gr_id", query.gr_id.as_ref().map(|value| json!(value))),
+                        (
+                            "member_id_from",
+                            query.member_id_from.as_ref().map(|value| json!(value)),
+                        ),
+                        (
+                            "member_id_to",
+                            query.member_id_to.as_ref().map(|value| json!(value)),
+                        ),
+                        (
+                            "email_contains",
+                            query.email_contains.as_ref().map(|value| json!(value)),
+                        ),
+                        ("mailling_only", Some(json!(query.mailling_only))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<AdminMailRecipient> =
+            typed_core_envelope("adminListMailRecipients", response)?;
+        Ok(AdminMailRecipientList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_get_mail(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        ma_id: i64,
+    ) -> ConnectorResult<AdminMailDetail> {
+        if !valid_mail_id(ma_id) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminGetMail",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("ma_id".to_owned(), ma_id.to_string())]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminGetMail", response)
+    }
+
+    async fn admin_update_mail_template(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        ma_id: i64,
+        write: &AdminMailTemplateWrite,
+    ) -> ConnectorResult<AdminMailDetail> {
+        if !valid_mail_id(ma_id) || !write.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminUpdateMailTemplate",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("ma_id".to_owned(), ma_id.to_string())]),
+                    body: Some(serde_json::to_value(write).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminUpdateMailTemplate", response)
+    }
+
+    async fn admin_delete_mail(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        ma_id: i64,
+    ) -> ConnectorResult<()> {
+        if !valid_mail_id(ma_id) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteMail",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("ma_id".to_owned(), ma_id.to_string())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_empty("adminDeleteMail", response)
+    }
+
+    async fn admin_send_mail(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        send: &AdminMailSendRequest,
+    ) -> ConnectorResult<AdminMailSendResult> {
+        if !send.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .external_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSendMail",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(send).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminSendMail", response)
+    }
+
+    async fn admin_send_mail_test(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        operation_id: &str,
+        send: &AdminMailTestRequest,
+    ) -> ConnectorResult<AdminMailTestResult> {
+        if !matches!(operation_id, "adminSendTestMail" | "adminCreateMailTest") || !send.is_valid()
+        {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .external_execute(
+                base_url,
+                request_id,
+                access_token,
+                operation_id,
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(send).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data(operation_id, response)
+    }
+
+    async fn admin_system_list_mails(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminMailListQuery,
+    ) -> ConnectorResult<AdminSystemMailTemplateList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemListMails",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<AdminSystemMailTemplate> =
+            typed_core_envelope("adminSystemListMails", response)?;
+        Ok(AdminSystemMailTemplateList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_system_list_mail_recipients(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminSystemMailRecipientQuery,
+    ) -> ConnectorResult<AdminSystemMailRecipientList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemListMailRecipients",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                        ("search", query.search.as_ref().map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<AdminSystemMailRecipient> =
+            typed_core_envelope("adminSystemListMailRecipients", response)?;
+        Ok(AdminSystemMailRecipientList {
+            items: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_system_send_mail_test(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        send: &AdminSystemMailTestRequest,
+    ) -> ConnectorResult<AdminSystemMailTestResult> {
+        if !send.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .external_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemSendMailTest",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(send).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminSystemSendMailTest", response)
+    }
+
+    async fn admin_system_send_member_mail(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        send: &AdminSystemMailSendRequest,
+    ) -> ConnectorResult<AdminSystemMailSendResult> {
+        if !send.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .external_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemSendMemberMail",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(send).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminSystemSendMemberMail", response)
+    }
+
     async fn admin_search_visits(
         &self,
         base_url: &str,
@@ -4089,6 +4465,20 @@ impl ConnectorGateway for ProductionConnectorGateway {
             .await
     }
 
+    async fn external_execute(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        operation_id: &str,
+        input: &CoreExecuteRequest,
+    ) -> ConnectorResult<CoreExecuteResponse> {
+        G5Client::connect(base_url)
+            .await?
+            .external_execute(request_id, access_token, operation_id, input)
+            .await
+    }
+
     async fn admin_get_faq_master_image_content(
         &self,
         base_url: &str,
@@ -4190,6 +4580,20 @@ impl ConnectorGateway for LocalCertificationConnectorGateway {
         G5Client::connect_local_certification(base_url)
             .await?
             .core_execute(request_id, access_token, operation_id, input)
+            .await
+    }
+
+    async fn external_execute(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        operation_id: &str,
+        input: &CoreExecuteRequest,
+    ) -> ConnectorResult<CoreExecuteResponse> {
+        G5Client::connect_local_certification(base_url)
+            .await?
+            .external_execute(request_id, access_token, operation_id, input)
             .await
     }
 
@@ -4448,12 +4852,48 @@ impl G5Client {
         operation_id: &str,
         input: &CoreExecuteRequest,
     ) -> ConnectorResult<CoreExecuteResponse> {
+        self.execute_registered_operation(request_id, access_token, operation_id, input, false)
+            .await
+    }
+
+    async fn external_execute(
+        &self,
+        request_id: &str,
+        access_token: &str,
+        operation_id: &str,
+        input: &CoreExecuteRequest,
+    ) -> ConnectorResult<CoreExecuteResponse> {
+        if !matches!(
+            operation_id,
+            "adminCreateMailTest"
+                | "adminSendMail"
+                | "adminSendTestMail"
+                | "adminSystemSendMemberMail"
+                | "adminSystemSendMailTest"
+        ) {
+            return Err(ConnectorError::ExternalEffectBlocked);
+        }
+        self.execute_registered_operation(request_id, access_token, operation_id, input, true)
+            .await
+    }
+
+    async fn execute_registered_operation(
+        &self,
+        request_id: &str,
+        access_token: &str,
+        operation_id: &str,
+        input: &CoreExecuteRequest,
+        allow_external: bool,
+    ) -> ConnectorResult<CoreExecuteResponse> {
         let operation = core_operation(operation_id).ok_or(ConnectorError::UnknownOperation)?;
         if operation.transport != "core_proxy" {
             return Err(ConnectorError::SpecializedOperation);
         }
-        if operation.risk == "external_effect" {
+        if operation.risk == "external_effect" && !allow_external {
             return Err(ConnectorError::ExternalEffectBlocked);
+        }
+        if allow_external && operation.risk != "external_effect" {
+            return Err(ConnectorError::InvalidCoreRequest);
         }
         if operation.risk == "destructive" && !input.confirm_destructive {
             return Err(ConnectorError::InvalidCoreRequest);

@@ -30,26 +30,31 @@ use g5_fleet_connector::{
     AdminFaqListQuery, AdminFaqMasterCreate, AdminFaqMasterDetail, AdminFaqMasterList,
     AdminFaqMasterListQuery, AdminFaqMasterUpdate, AdminFaqUpdate, AdminLayoutDetail,
     AdminLayoutList, AdminLayoutListQuery, AdminLayoutSave, AdminLayoutWidgetCreate,
-    AdminLayoutWidgetReorder, AdminLayoutWidgetUpdate, AdminMember, AdminMemberLevelUpdate,
-    AdminMemberList, AdminMemberListQuery, AdminMemberMediaDeleteResult, AdminMemberMediaUpload,
-    AdminMemberMediaUploadResult, AdminMemberUpdate, AdminMenu, AdminMenuCreate, AdminMenuList,
-    AdminMenuReorder, AdminMenuReorderResult, AdminMenuUpdate, AdminNewPostsDelete,
-    AdminNewPostsDeleteResult, AdminPointAction, AdminPointActionResult, AdminPointChange,
-    AdminPointChangeResult, AdminPointDelete, AdminPointDeleteResult, AdminPointExpire,
-    AdminPointExpireResult, AdminPointList, AdminPointListQuery, AdminPointSummary, AdminPoll,
-    AdminPollCreate, AdminPollList, AdminPollListQuery, AdminPollUpdate, AdminPopularList,
-    AdminPopularListQuery, AdminPopularRankList, AdminPopularRankQuery, AdminPopularReset,
-    AdminPopularResetResult, AdminPopup, AdminPopupCreate, AdminPopupList, AdminPopupListQuery,
-    AdminPopupUpdate, AdminQaBulkDelete, AdminQaBulkDeleteResult, AdminQaConfig,
-    AdminQaConfigUpdate, AdminReportItem, AdminReportList, AdminReportListQuery, AdminReportStats,
-    AdminReportUpdate, AdminSchemaCatalog, AdminSchemaDetail, AdminSystemPermission,
-    AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
-    AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, AdminVisitDelete,
-    AdminVisitDeleteResult, AdminVisitSearchQuery, AdminVisitSearchResult, AdminVisitStats,
-    AdminVisitStatsQuery, AdminWriteCountStats, AdminWriteCountStatsQuery, BasicConfig,
-    ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest,
-    CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview, core_operation,
-    core_operations,
+    AdminLayoutWidgetReorder, AdminLayoutWidgetUpdate, AdminMailDetail, AdminMailList,
+    AdminMailListQuery, AdminMailRecipientList, AdminMailRecipientQuery, AdminMailSendRequest,
+    AdminMailSendResult, AdminMailTemplateWrite, AdminMailTestRequest, AdminMailTestResult,
+    AdminMember, AdminMemberLevelUpdate, AdminMemberList, AdminMemberListQuery,
+    AdminMemberMediaDeleteResult, AdminMemberMediaUpload, AdminMemberMediaUploadResult,
+    AdminMemberUpdate, AdminMenu, AdminMenuCreate, AdminMenuList, AdminMenuReorder,
+    AdminMenuReorderResult, AdminMenuUpdate, AdminNewPostsDelete, AdminNewPostsDeleteResult,
+    AdminPointAction, AdminPointActionResult, AdminPointChange, AdminPointChangeResult,
+    AdminPointDelete, AdminPointDeleteResult, AdminPointExpire, AdminPointExpireResult,
+    AdminPointList, AdminPointListQuery, AdminPointSummary, AdminPoll, AdminPollCreate,
+    AdminPollList, AdminPollListQuery, AdminPollUpdate, AdminPopularList, AdminPopularListQuery,
+    AdminPopularRankList, AdminPopularRankQuery, AdminPopularReset, AdminPopularResetResult,
+    AdminPopup, AdminPopupCreate, AdminPopupList, AdminPopupListQuery, AdminPopupUpdate,
+    AdminQaBulkDelete, AdminQaBulkDeleteResult, AdminQaConfig, AdminQaConfigUpdate,
+    AdminReportItem, AdminReportList, AdminReportListQuery, AdminReportStats, AdminReportUpdate,
+    AdminSchemaCatalog, AdminSchemaDetail, AdminSystemMailRecipientList,
+    AdminSystemMailRecipientQuery, AdminSystemMailSendRequest, AdminSystemMailSendResult,
+    AdminSystemMailTemplateList, AdminSystemMailTestRequest, AdminSystemMailTestResult,
+    AdminSystemPermission, AdminSystemPermissionList, AdminSystemPermissionListQuery,
+    AdminSystemPermissionSave, AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate,
+    AdminVisitDelete, AdminVisitDeleteResult, AdminVisitSearchQuery, AdminVisitSearchResult,
+    AdminVisitStats, AdminVisitStatsQuery, AdminWriteCountStats, AdminWriteCountStatsQuery,
+    BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin,
+    CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview,
+    core_operation, core_operations,
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
@@ -154,6 +159,34 @@ struct BasicConfigUpdateRequest {
 #[derive(Debug, Deserialize)]
 struct AdminDashboardQuery {
     limit: Option<u8>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedAdminMailSendRequest {
+    confirm_send: bool,
+    #[serde(flatten)]
+    send: AdminMailSendRequest,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedAdminMailTestRequest {
+    confirm_send: bool,
+    #[serde(flatten)]
+    send: AdminMailTestRequest,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedAdminSystemMailTestRequest {
+    confirm_send: bool,
+    #[serde(flatten)]
+    send: AdminSystemMailTestRequest,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedAdminSystemMailSendRequest {
+    confirm_send: bool,
+    #[serde(flatten)]
+    send: AdminSystemMailSendRequest,
 }
 
 #[derive(Debug, Deserialize)]
@@ -602,6 +635,48 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/write-count/stats",
             get(admin_write_count_stats),
+        )
+        .route(
+            "/sites/{site_id}/admin/mails",
+            get(admin_mail_list).post(admin_mail_send),
+        )
+        .route(
+            "/sites/{site_id}/admin/mails/templates",
+            post(admin_mail_template_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/mails/recipients",
+            get(admin_mail_recipient_list),
+        )
+        .route(
+            "/sites/{site_id}/admin/mails/test",
+            post(admin_mail_test_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/mails/test/legacy",
+            post(admin_mail_test_send_legacy),
+        )
+        .route(
+            "/sites/{site_id}/admin/mails/{ma_id}",
+            get(admin_mail_get)
+                .put(admin_mail_template_update)
+                .delete(admin_mail_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/mails",
+            get(admin_system_mail_list),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/mail-recipients",
+            get(admin_system_mail_recipient_list),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/mails/test",
+            post(admin_system_mail_test_send),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/mails/send",
+            post(admin_system_member_mail_send),
         )
         .route(
             "/sites/{site_id}/admin/points",
@@ -5044,6 +5119,433 @@ async fn admin_write_count_stats(
         Ok(result) => Json::<AdminWriteCountStats>(result).into_response(),
         Err(error) => connector_error(error),
     }
+}
+
+async fn admin_mail_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminMailListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_list_mails(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminMailList>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_mail_template_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(write): Json<AdminMailTemplateWrite>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_create_mail_template(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &write,
+        )
+        .await
+    {
+        Ok(result) => (StatusCode::CREATED, Json::<AdminMailDetail>(result)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_mail_recipient_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminMailRecipientQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_list_mail_recipients(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminMailRecipientList>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_mail_get(
+    State(state): State<AppState>,
+    Path((site_id, ma_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_get_mail(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            ma_id,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminMailDetail>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_mail_template_update(
+    State(state): State<AppState>,
+    Path((site_id, ma_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(write): Json<AdminMailTemplateWrite>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_update_mail_template(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            ma_id,
+            &write,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminMailDetail>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_mail_delete(
+    State(state): State<AppState>,
+    Path((site_id, ma_id)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_delete_mail(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            ma_id,
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_mail_send(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminMailSendRequest>,
+) -> Response {
+    if !confirmed.confirm_send {
+        return external_confirmation_required();
+    }
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_send_mail(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &confirmed.send,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminMailSendResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_mail_test_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminMailTestRequest>,
+) -> Response {
+    admin_mail_test_operation(state, site_id, headers, confirmed, "adminCreateMailTest").await
+}
+
+async fn admin_mail_test_send_legacy(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminMailTestRequest>,
+) -> Response {
+    admin_mail_test_operation(state, site_id, headers, confirmed, "adminSendTestMail").await
+}
+
+async fn admin_mail_test_operation(
+    state: AppState,
+    site_id: String,
+    headers: HeaderMap,
+    confirmed: ConfirmedAdminMailTestRequest,
+    operation_id: &str,
+) -> Response {
+    if !confirmed.confirm_send {
+        return external_confirmation_required();
+    }
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_send_mail_test(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            operation_id,
+            &confirmed.send,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminMailTestResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_mail_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminMailListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_system_list_mails(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSystemMailTemplateList>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_mail_recipient_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminSystemMailRecipientQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_system_list_mail_recipients(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSystemMailRecipientList>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_mail_test_send(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminSystemMailTestRequest>,
+) -> Response {
+    if !confirmed.confirm_send {
+        return external_confirmation_required();
+    }
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_system_send_mail_test(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &confirmed.send,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSystemMailTestResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_member_mail_send(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminSystemMailSendRequest>,
+) -> Response {
+    if !confirmed.confirm_send {
+        return external_confirmation_required();
+    }
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_system_send_member_mail(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &confirmed.send,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSystemMailSendResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+fn external_confirmation_required() -> Response {
+    api_error(
+        StatusCode::BAD_REQUEST,
+        "external_effect_confirmation_required",
+        "External mail action requires explicit confirmation.",
+    )
 }
 
 async fn admin_point_list(

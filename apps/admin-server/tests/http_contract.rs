@@ -429,6 +429,22 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("PUT", "/api/v1/sites/{site_id}/admin/system/qa-config"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/qa"),
             ("GET", "/api/v1/sites/{site_id}/admin/write-count/stats"),
+            ("GET", "/api/v1/sites/{site_id}/admin/mails"),
+            ("POST", "/api/v1/sites/{site_id}/admin/mails"),
+            ("POST", "/api/v1/sites/{site_id}/admin/mails/templates"),
+            ("GET", "/api/v1/sites/{site_id}/admin/mails/recipients"),
+            ("POST", "/api/v1/sites/{site_id}/admin/mails/test"),
+            ("POST", "/api/v1/sites/{site_id}/admin/mails/test/legacy"),
+            ("GET", "/api/v1/sites/{site_id}/admin/mails/{ma_id}"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/mails/{ma_id}"),
+            ("DELETE", "/api/v1/sites/{site_id}/admin/mails/{ma_id}"),
+            ("GET", "/api/v1/sites/{site_id}/admin/system/mails"),
+            (
+                "GET",
+                "/api/v1/sites/{site_id}/admin/system/mail-recipients"
+            ),
+            ("POST", "/api/v1/sites/{site_id}/admin/system/mails/test"),
+            ("POST", "/api/v1/sites/{site_id}/admin/system/mails/send"),
             ("GET", "/api/v1/sites/{site_id}/admin/points"),
             ("POST", "/api/v1/sites/{site_id}/admin/points"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/points"),
@@ -874,6 +890,8 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         ])),
         qa_config: Arc::new(Mutex::new(mock_qa_config())),
         qa_ids: Arc::new(Mutex::new(vec![71, 72, 73])),
+        mails: Arc::new(Mutex::new(vec![mock_mail(51, "기준 메일", "기준 본문")])),
+        external_mail_operations: Arc::new(Mutex::new(Vec::new())),
         points: Arc::new(Mutex::new(Vec::new())),
     };
     let app = build_router(AppConfig {
@@ -3053,6 +3071,253 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap();
     assert_eq!(unsafe_write_count.status(), StatusCode::BAD_REQUEST);
 
+    // R28 mail templates, recipients and explicitly confirmed external actions are typed.
+    let mail_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/mails?page=1&per_page=20",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(mail_list.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(mail_list).await["pagination"]["total"], 1);
+
+    let mail_create = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/mails/templates",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "ma_subject": "Fleet 운영 공지",
+                "ma_content": "안녕하세요 {이름}"
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(mail_create.status(), StatusCode::CREATED);
+    let mail_create = json::<Value>(mail_create).await;
+    let mail_id = mail_create["ma_id"].as_i64().unwrap();
+
+    let mail_recipients = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/mails/recipients?page=1&per_page=20&search=member&mailling_only=true",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(mail_recipients.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(mail_recipients).await["items"][0]["mb_id"],
+        "member01"
+    );
+
+    let mail_detail = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            &format!("/api/v1/sites/site-a/admin/mails/{mail_id}"),
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(mail_detail.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(mail_detail).await["ma_subject"],
+        "Fleet 운영 공지"
+    );
+
+    let mail_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            &format!("/api/v1/sites/site-a/admin/mails/{mail_id}"),
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "ma_subject": "Fleet 수정 공지",
+                "ma_content": "수정 본문"
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(mail_update.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(mail_update).await["ma_subject"],
+        "Fleet 수정 공지"
+    );
+
+    let unconfirmed_send = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/mails",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "confirm_send": false, "ma_id": mail_id, "target_type": "member",
+                "mb_ids": ["member01"], "mailling_only": true, "dry_run": true
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(unconfirmed_send.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        json::<ErrorEnvelope>(unconfirmed_send).await.error.code,
+        "external_effect_confirmation_required"
+    );
+
+    let mail_send = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/mails",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "confirm_send": true, "ma_id": mail_id, "target_type": "member",
+                "mb_ids": ["member01"], "mailling_only": true, "dry_run": true
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(mail_send.status(), StatusCode::OK);
+    let mail_send = json::<Value>(mail_send).await;
+    assert_eq!(mail_send["dry_run"], true);
+    assert_eq!(mail_send["target_count"], 1);
+    assert_eq!(mail_send["sent_count"], 0);
+
+    for path in [
+        "/api/v1/sites/site-a/admin/mails/test",
+        "/api/v1/sites/site-a/admin/mails/test/legacy",
+    ] {
+        let mail_test = app
+            .clone()
+            .oneshot(json_request(
+                Method::POST,
+                path,
+                Some(&cookie),
+                Some(&csrf),
+                Some(serde_json::json!({
+                    "confirm_send": true,
+                    "ma_id": mail_id,
+                    "to": "mail-test@example.invalid"
+                })),
+            ))
+            .await
+            .unwrap();
+        assert_eq!(mail_test.status(), StatusCode::OK);
+        assert_eq!(json::<Value>(mail_test).await["mail_enabled"], false);
+    }
+
+    let system_mail_list = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/system/mails?page=1&per_page=20",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(system_mail_list.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(system_mail_list).await["pagination"]["total"],
+        2
+    );
+
+    let system_recipients = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/system/mail-recipients?search=member",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(system_recipients.status(), StatusCode::OK);
+    assert_eq!(
+        json::<Value>(system_recipients).await["items"][0]["mb_id"],
+        "member01"
+    );
+
+    let system_mail_test = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/system/mails/test",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "confirm_send": true,
+                "to": "system-test@example.invalid",
+                "subject": "시스템 테스트",
+                "content": "로컬 로그 전용"
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(system_mail_test.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(system_mail_test).await["mail_log_id"], 9001);
+
+    let system_mail_send = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/system/mails/send",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "confirm_send": true, "ma_id": mail_id, "mb_ids": ["member01"],
+                "mailling_only": true, "dry_run": true
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(system_mail_send.status(), StatusCode::OK);
+    let system_mail_send = json::<Value>(system_mail_send).await;
+    assert_eq!(system_mail_send["mail_log_id"], 9002);
+    assert_eq!(system_mail_send["dry_run"], true);
+
+    assert_eq!(
+        *mock.external_mail_operations.lock().unwrap(),
+        vec![
+            "adminSendMail",
+            "adminCreateMailTest",
+            "adminSendTestMail",
+            "adminSystemSendMailTest",
+            "adminSystemSendMemberMail"
+        ]
+    );
+
+    let mail_delete = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            &format!("/api/v1/sites/site-a/admin/mails/{mail_id}"),
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(mail_delete.status(), StatusCode::NO_CONTENT);
+    assert_eq!(mock.mails.lock().unwrap().len(), 1);
+
     let point_baseline = app
         .clone()
         .oneshot(json_request(
@@ -3698,6 +3963,28 @@ fn mock_qa_config() -> Value {
     })
 }
 
+fn mock_mail(ma_id: i64, subject: &str, content: &str) -> Value {
+    serde_json::json!({
+        "ma_id": ma_id,
+        "ma_subject": subject,
+        "ma_content": content,
+        "ma_time": "2026-08-21 09:00:00",
+        "ma_ip": "127.0.0.1",
+        "ma_last_option": "",
+        "last_option": {
+            "mb_id1": 1,
+            "mb_id1_from": "",
+            "mb_id1_to": "",
+            "mb_email": "",
+            "mb_mailling": 1,
+            "mb_level_from": 1,
+            "mb_level_to": 10,
+            "gr_id": ""
+        },
+        "preview_html": content
+    })
+}
+
 #[derive(Clone, Default)]
 struct MockConnector {
     cf_10: Arc<Mutex<String>>,
@@ -3721,6 +4008,8 @@ struct MockConnector {
     reports: Arc<Mutex<Vec<Value>>>,
     qa_config: Arc<Mutex<Value>>,
     qa_ids: Arc<Mutex<Vec<i64>>>,
+    mails: Arc<Mutex<Vec<Value>>>,
+    external_mail_operations: Arc<Mutex<Vec<String>>>,
     points: Arc<Mutex<Vec<Value>>>,
 }
 
@@ -4979,6 +5268,88 @@ impl ConnectorGateway for MockConnector {
                     "meta": {}
                 })
             }
+            "adminListMails" | "adminSystemListMails" => {
+                let mails = self.mails.lock().unwrap().clone();
+                serde_json::json!({
+                    "data": mails,
+                    "pagination": {
+                        "mode": "page", "total": mails.len(), "page": 1, "per_page": 20,
+                        "last_page": 1, "cursor": null, "next_cursor": null,
+                        "has_next": false, "has_prev": false
+                    },
+                    "meta": {}
+                })
+            }
+            "adminCreateMailTemplate" => {
+                let body = input.body.as_ref().unwrap();
+                let ma_id = self.mails.lock().unwrap().len() as i64 + 51;
+                let mail = mock_mail(
+                    ma_id,
+                    body["ma_subject"].as_str().unwrap(),
+                    body["ma_content"].as_str().unwrap(),
+                );
+                self.mails.lock().unwrap().push(mail.clone());
+                serde_json::json!({"data": mail, "meta": {}})
+            }
+            "adminListMailRecipients" => serde_json::json!({
+                "data": [{
+                    "mb_id": "member01", "mb_name": "회원 이름", "mb_nick": "회원 닉네임",
+                    "mb_email": "member@example.test", "mb_level": 2, "mb_mailling": 1,
+                    "mb_datetime": "2026-08-01 10:00:00"
+                }],
+                "pagination": {
+                    "mode": "page", "total": 1, "page": 1, "per_page": 20,
+                    "last_page": 1, "cursor": null, "next_cursor": null,
+                    "has_next": false, "has_prev": false
+                },
+                "meta": {}
+            }),
+            "adminSystemListMailRecipients" => serde_json::json!({
+                "data": [{
+                    "mb_id": "member01", "mb_name": "회원 이름", "mb_nick": "회원 닉네임",
+                    "mb_email": "member@example.test", "mb_level": 2, "mb_mailling": 1,
+                    "mb_today_login": "2026-08-21 08:00:00"
+                }],
+                "pagination": {
+                    "mode": "page", "total": 1, "page": 1, "per_page": 20,
+                    "last_page": 1, "cursor": null, "next_cursor": null,
+                    "has_next": false, "has_prev": false
+                },
+                "meta": {}
+            }),
+            "adminGetMail" => {
+                let ma_id = input.path["ma_id"].parse::<i64>().unwrap();
+                let mail = self
+                    .mails
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|mail| mail["ma_id"].as_i64() == Some(ma_id))
+                    .cloned()
+                    .unwrap();
+                serde_json::json!({"data": mail, "meta": {}})
+            }
+            "adminUpdateMailTemplate" => {
+                let ma_id = input.path["ma_id"].parse::<i64>().unwrap();
+                let body = input.body.as_ref().unwrap();
+                let mut mails = self.mails.lock().unwrap();
+                let mail = mails
+                    .iter_mut()
+                    .find(|mail| mail["ma_id"].as_i64() == Some(ma_id))
+                    .unwrap();
+                mail["ma_subject"] = body["ma_subject"].clone();
+                mail["ma_content"] = body["ma_content"].clone();
+                mail["preview_html"] = body["ma_content"].clone();
+                serde_json::json!({"data": mail.clone(), "meta": {}})
+            }
+            "adminDeleteMail" => {
+                let ma_id = input.path["ma_id"].parse::<i64>().unwrap();
+                self.mails
+                    .lock()
+                    .unwrap()
+                    .retain(|mail| mail["ma_id"].as_i64() != Some(ma_id));
+                Value::Null
+            }
             "adminListPoints" => {
                 let member_id = input.query.get("mb_id").and_then(Value::as_str);
                 let items = self
@@ -5256,6 +5627,71 @@ impl ConnectorGateway for MockConnector {
                 "query": input.query,
                 "body": input.body,
             }),
+        };
+        Ok(CoreExecuteResponse {
+            operation_id: operation_id.to_owned(),
+            upstream_status: 200,
+            content_type: Some("application/json".to_owned()),
+            data: Some(data),
+            body_base64: None,
+        })
+    }
+
+    async fn external_execute(
+        &self,
+        _base_url: &str,
+        _request_id: &str,
+        access_token: &str,
+        operation_id: &str,
+        input: &CoreExecuteRequest,
+    ) -> ConnectorResult<CoreExecuteResponse> {
+        assert_eq!(access_token, "g5-access-token");
+        self.external_mail_operations
+            .lock()
+            .unwrap()
+            .push(operation_id.to_owned());
+        let body = input.body.as_ref().unwrap();
+        let data = match operation_id {
+            "adminSendMail" => serde_json::json!({
+                "data": {
+                    "ma_id": body.get("ma_id").cloned().unwrap_or(Value::Null),
+                    "template_used": body.get("ma_id").is_some(),
+                    "target_count": 1,
+                    "sent_count": 0,
+                    "skipped_count": 1,
+                    "mail_enabled": false,
+                    "dry_run": body["dry_run"],
+                    "targets": [{"mb_id": "member01", "mb_email": "member@example.test"}]
+                },
+                "meta": {}
+            }),
+            "adminSendTestMail" | "adminCreateMailTest" => serde_json::json!({
+                "data": {
+                    "ma_id": body.get("ma_id").cloned().unwrap_or(Value::Null),
+                    "template_used": body.get("ma_id").is_some(),
+                    "mail_enabled": false,
+                    "sent": false,
+                    "to": body["to"]
+                },
+                "meta": {}
+            }),
+            "adminSystemSendMailTest" => serde_json::json!({
+                "data": {"sent": true, "mail_log_id": 9001, "to": body["to"]},
+                "meta": {}
+            }),
+            "adminSystemSendMemberMail" => serde_json::json!({
+                "data": {
+                    "mail_log_id": 9002,
+                    "target_count": 1,
+                    "sent_count": 0,
+                    "skipped_count": 1,
+                    "mail_enabled": false,
+                    "dry_run": body["dry_run"],
+                    "recipients": [{"mb_id": "member01", "mb_email": "member@example.test"}]
+                },
+                "meta": {}
+            }),
+            _ => panic!("unexpected specialized external operation: {operation_id}"),
         };
         Ok(CoreExecuteResponse {
             operation_id: operation_id.to_owned(),
