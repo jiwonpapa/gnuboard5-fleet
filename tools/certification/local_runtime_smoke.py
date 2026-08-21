@@ -1719,6 +1719,52 @@ def main() -> int:
     )
     request(g5_base, "GET", "/api/v1/qa/9001", headers=authorization)
 
+    write_count_path = "/api/v1/sites/owner-a-site/admin/write-count/stats"
+    write_count = request(
+        fleet_base,
+        "GET",
+        f"{write_count_path}?period=day&date_from=2026-08-18&date_to=2026-08-19",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        write_count.get("period") != "day"
+        or write_count.get("date_from") != "2026-08-18"
+        or write_count.get("date_to") != "2026-08-19"
+        or write_count.get("bo_table") is not None
+        or write_count.get("summary") != {"write_total": 3, "comment_total": 1}
+        or write_count.get("items") != [
+            {"bucket": "2026-08-18", "write_count": 1, "comment_count": 1},
+            {"bucket": "2026-08-19", "write_count": 2, "comment_count": 0},
+        ]
+    ):
+        raise RuntimeError("R27 write-count day aggregate failed")
+    write_count_notice = request(
+        fleet_base,
+        "GET",
+        f"{write_count_path}?period=day&date_from=2026-08-18&date_to=2026-08-19&bo_table=notice",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        write_count_notice.get("bo_table") != "notice"
+        or write_count_notice.get("summary") != {"write_total": 2, "comment_total": 1}
+        or len(write_count_notice.get("items", [])) != 2
+    ):
+        raise RuntimeError("R27 write-count board filter failed")
+    write_count_month = request(
+        fleet_base,
+        "GET",
+        f"{write_count_path}?period=month&date_from=2026-08-18&date_to=2026-08-19",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        write_count_month.get("period") != "month"
+        or write_count_month.get("summary") != {"write_total": 3, "comment_total": 1}
+        or write_count_month.get("items") != [
+            {"bucket": "2026-08", "write_count": 3, "comment_count": 1}
+        ]
+    ):
+        raise RuntimeError("R27 write-count period filter failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -2043,6 +2089,16 @@ def main() -> int:
             "bulk_delete_deleted_count": 1,
             "provider_deleted_item_404": "passed",
             "untargeted_item_readback": "passed",
+        },
+        "r27_write_count": {
+            "operations": 1,
+            "seeded_write_total": 3,
+            "seeded_comment_total": 1,
+            "day_bucket_readback": "passed",
+            "board_filter": "notice",
+            "board_filter_readback": "passed",
+            "month_bucket_readback": "passed",
+            "date_range_readback": "passed",
         },
         "notifications": {
             "external_delivery_attempts": 0,

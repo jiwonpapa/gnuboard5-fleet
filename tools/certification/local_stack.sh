@@ -231,6 +231,11 @@ INSERT INTO g5_visit_sum (vs_date, vs_count) VALUES
   ('2026-08-18', 1),
   ('2026-08-19', 1)
 ON DUPLICATE KEY UPDATE vs_count = VALUES(vs_count);
+INSERT INTO g5_board_new (bo_table, wr_id, wr_parent, bn_datetime, mb_id) VALUES
+  ('notice', 9101, 9101, '2026-08-18 09:00:00', 'fleetcert'),
+  ('notice', 9102, 9101, '2026-08-18 09:30:00', 'fleetcert'),
+  ('notice', 9103, 9103, '2026-08-19 10:00:00', 'fleetcert'),
+  ('free', 9201, 9201, '2026-08-19 11:00:00', 'fleetcert');
 COMMIT;
 SQL
 
