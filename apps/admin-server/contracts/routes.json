@@ -1081,6 +1081,13 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/write-count/stats",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_write_count_stats"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/admin/points",
       "auth": "session",
       "site_context": true,

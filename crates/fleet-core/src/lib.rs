@@ -18,6 +18,7 @@ pub mod qa;
 pub mod reports;
 pub mod theme;
 pub mod visits;
+pub mod write_count;
 
 pub type FleetResult<T> = Result<T, AppErrorPayload>;
 

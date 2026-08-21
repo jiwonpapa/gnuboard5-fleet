@@ -46,9 +46,10 @@ use g5_fleet_connector::{
     AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
     AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, AdminVisitDelete,
     AdminVisitDeleteResult, AdminVisitSearchQuery, AdminVisitSearchResult, AdminVisitStats,
-    AdminVisitStatsQuery, BasicConfig, ConnectorCredentials, ConnectorError, ConnectorHealth,
-    ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse, CoreOperationSpec, MemberProfile,
-    SiteOverview, core_operation, core_operations,
+    AdminVisitStatsQuery, AdminWriteCountStats, AdminWriteCountStatsQuery, BasicConfig,
+    ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest,
+    CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview, core_operation,
+    core_operations,
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
@@ -597,6 +598,10 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/qa",
             axum::routing::delete(admin_qa_bulk_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/write-count/stats",
+            get(admin_write_count_stats),
         )
         .route(
             "/sites/{site_id}/admin/points",
@@ -5007,6 +5012,36 @@ async fn admin_qa_bulk_delete(
         .await
     {
         Ok(result) => Json::<AdminQaBulkDeleteResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_write_count_stats(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminWriteCountStatsQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_write_count_stats(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminWriteCountStats>(result).into_response(),
         Err(error) => connector_error(error),
     }
 }

@@ -428,6 +428,7 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("GET", "/api/v1/sites/{site_id}/admin/system/qa-config"),
             ("PUT", "/api/v1/sites/{site_id}/admin/system/qa-config"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/qa"),
+            ("GET", "/api/v1/sites/{site_id}/admin/write-count/stats"),
             ("GET", "/api/v1/sites/{site_id}/admin/points"),
             ("POST", "/api/v1/sites/{site_id}/admin/points"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/points"),
@@ -3019,6 +3020,39 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
     assert_eq!(qa_bulk_delete["qa_ids"], serde_json::json!([71, 72]));
     assert_eq!(*mock.qa_ids.lock().unwrap(), vec![73]);
 
+    // R27 write-count filters and bucket summaries stay site-scoped and read-only.
+    let write_count = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/write-count/stats?period=week&date_from=2026-08-01&date_to=2026-08-21&bo_table=notice",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(write_count.status(), StatusCode::OK);
+    let write_count = json::<Value>(write_count).await;
+    assert_eq!(write_count["period"], "week");
+    assert_eq!(write_count["bo_table"], "notice");
+    assert_eq!(write_count["summary"]["write_total"], 7);
+    assert_eq!(write_count["summary"]["comment_total"], 3);
+    assert_eq!(write_count["items"].as_array().map(Vec::len), Some(2));
+
+    let unsafe_write_count = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/write-count/stats?bo_table=notice%3Bdrop",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(unsafe_write_count.status(), StatusCode::BAD_REQUEST);
+
     let point_baseline = app
         .clone()
         .oneshot(json_request(
@@ -4910,6 +4944,38 @@ impl ConnectorGateway for MockConnector {
                 qa_ids.retain(|qa_id| !requested.contains(qa_id));
                 serde_json::json!({
                     "data": {"deleted_count": prior - qa_ids.len(), "qa_ids": requested},
+                    "meta": {}
+                })
+            }
+            "adminWriteCountStats" => {
+                let period = input
+                    .query
+                    .get("period")
+                    .and_then(Value::as_str)
+                    .unwrap_or("day");
+                let date_from = input
+                    .query
+                    .get("date_from")
+                    .and_then(Value::as_str)
+                    .unwrap_or("2026-08-01");
+                let date_to = input
+                    .query
+                    .get("date_to")
+                    .and_then(Value::as_str)
+                    .unwrap_or("2026-08-21");
+                let bo_table = input.query.get("bo_table").cloned().unwrap_or(Value::Null);
+                serde_json::json!({
+                    "data": {
+                        "period": period,
+                        "date_from": date_from,
+                        "date_to": date_to,
+                        "bo_table": bo_table,
+                        "summary": {"write_total": 7, "comment_total": 3},
+                        "items": [
+                            {"bucket": "2026-W32", "write_count": 3, "comment_count": 1},
+                            {"bucket": "2026-W33", "write_count": 4, "comment_count": 2}
+                        ]
+                    },
                     "meta": {}
                 })
             }

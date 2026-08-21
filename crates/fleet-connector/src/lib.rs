@@ -80,6 +80,10 @@ pub use g5_fleet_core::visits::{
     AdminVisitSearchResult, AdminVisitStatItem, AdminVisitStats, AdminVisitStatsQuery,
     AdminVisitStatsSummary, AdminVisitStatsType,
 };
+pub use g5_fleet_core::write_count::{
+    AdminWriteCountItem, AdminWriteCountPeriod, AdminWriteCountStats, AdminWriteCountStatsQuery,
+    AdminWriteCountSummary,
+};
 use g5_fleet_security::{SystemResolver, UrlGuard};
 use reqwest::{
     Method,
@@ -2674,6 +2678,42 @@ pub trait ConnectorGateway: Send + Sync {
             )
             .await?;
         typed_core_data("adminVisitStats", response)
+    }
+
+    async fn admin_write_count_stats(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminWriteCountStatsQuery,
+    ) -> ConnectorResult<AdminWriteCountStats> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminWriteCountStats",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("period", query.period.map(|value| json!(value))),
+                        (
+                            "date_from",
+                            query.date_from.as_ref().map(|value| json!(value)),
+                        ),
+                        ("date_to", query.date_to.as_ref().map(|value| json!(value))),
+                        (
+                            "bo_table",
+                            query.bo_table.as_ref().map(|value| json!(value)),
+                        ),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminWriteCountStats", response)
     }
 
     async fn admin_search_visits(
