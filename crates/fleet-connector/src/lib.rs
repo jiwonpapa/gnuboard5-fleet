@@ -85,6 +85,14 @@ pub use g5_fleet_core::reports::{
 pub use g5_fleet_core::sms::{
     AdminSmsConfig, AdminSmsConfigUpdate, AdminSmsMemberSyncResult, AdminSmsMemberSyncSummary,
 };
+pub use g5_fleet_core::sms_contacts::{
+    AdminSmsContact, AdminSmsContactBatch, AdminSmsContactBatchResult, AdminSmsContactCreate,
+    AdminSmsContactExport, AdminSmsContactExportItem, AdminSmsContactExportQuery,
+    AdminSmsContactGroup, AdminSmsContactGroupClearResult, AdminSmsContactGroupList,
+    AdminSmsContactGroupMove, AdminSmsContactGroupMoveResult, AdminSmsContactGroupWrite,
+    AdminSmsContactImport, AdminSmsContactImportResult, AdminSmsContactList,
+    AdminSmsContactListQuery, AdminSmsContactSummary, AdminSmsContactUpdate, valid_sms_contact_id,
+};
 pub use g5_fleet_core::theme::{
     AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, valid_theme_id,
 };
@@ -3156,6 +3164,431 @@ pub trait ConnectorGateway: Send + Sync {
         typed_core_data("adminSyncSmsMembers", response)
     }
 
+    async fn admin_list_sms_contact_groups(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminSmsContactGroupList> {
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListSmsContactGroups",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        let envelope: SmsContactGroupListEnvelope =
+            typed_core_envelope("adminListSmsContactGroups", response)?;
+        Ok(AdminSmsContactGroupList {
+            total: envelope.meta.total.unwrap_or(envelope.data.len() as i64),
+            groups: envelope.data,
+        })
+    }
+
+    async fn admin_create_sms_contact_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        write: &AdminSmsContactGroupWrite,
+    ) -> ConnectorResult<AdminSmsContactGroup> {
+        if !write.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminCreateSmsContactGroup",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(write).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminCreateSmsContactGroup", response)
+    }
+
+    async fn admin_get_sms_contact_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        bg_no: i64,
+    ) -> ConnectorResult<AdminSmsContactGroup> {
+        if !valid_sms_contact_id(bg_no) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminGetSmsContactGroup",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("bg_no".to_owned(), bg_no.to_string())]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminGetSmsContactGroup", response)
+    }
+
+    async fn admin_update_sms_contact_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        bg_no: i64,
+        write: &AdminSmsContactGroupWrite,
+    ) -> ConnectorResult<AdminSmsContactGroup> {
+        if !valid_sms_contact_id(bg_no) || !write.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminUpdateSmsContactGroup",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("bg_no".to_owned(), bg_no.to_string())]),
+                    body: Some(serde_json::to_value(write).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminUpdateSmsContactGroup", response)
+    }
+
+    async fn admin_delete_sms_contact_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        bg_no: i64,
+    ) -> ConnectorResult<()> {
+        if !valid_sms_contact_id(bg_no) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteSmsContactGroup",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("bg_no".to_owned(), bg_no.to_string())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_empty("adminDeleteSmsContactGroup", response)
+    }
+
+    async fn admin_move_sms_contact_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        bg_no: i64,
+        move_request: &AdminSmsContactGroupMove,
+    ) -> ConnectorResult<AdminSmsContactGroupMoveResult> {
+        if !valid_sms_contact_id(bg_no) || !valid_sms_contact_id(move_request.target_bg_no) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminMoveSmsContactGroup",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("bg_no".to_owned(), bg_no.to_string())]),
+                    body: Some(
+                        serde_json::to_value(move_request).map_err(|_| ConnectorError::Contract)?,
+                    ),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminMoveSmsContactGroup", response)
+    }
+
+    async fn admin_clear_sms_contact_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        bg_no: i64,
+    ) -> ConnectorResult<AdminSmsContactGroupClearResult> {
+        if !valid_sms_contact_id(bg_no) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminClearSmsContactGroup",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("bg_no".to_owned(), bg_no.to_string())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminClearSmsContactGroup", response)
+    }
+
+    async fn admin_list_sms_contacts(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminSmsContactListQuery,
+    ) -> ConnectorResult<AdminSmsContactList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListSmsContacts",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                        ("bg_no", query.bg_no.map(|value| json!(value))),
+                        (
+                            "search_field",
+                            query.search_field.as_ref().map(|value| json!(value)),
+                        ),
+                        ("search", query.search.as_ref().map(|value| json!(value))),
+                        (
+                            "with_phone_only",
+                            query.with_phone_only.map(|value| json!(value)),
+                        ),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: SmsContactListEnvelope =
+            typed_core_envelope("adminListSmsContacts", response)?;
+        Ok(AdminSmsContactList {
+            contacts: envelope.data,
+            pagination: envelope.pagination,
+            summary: AdminSmsContactSummary {
+                total_count: envelope.meta.total_count,
+                receipt_count: envelope.meta.receipt_count,
+                reject_count: envelope.meta.reject_count,
+                member_count: envelope.meta.member_count,
+                non_member_count: envelope.meta.non_member_count,
+                last_synced_at: envelope.meta.last_synced_at,
+            },
+        })
+    }
+
+    async fn admin_create_sms_contact(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        create: &AdminSmsContactCreate,
+    ) -> ConnectorResult<AdminSmsContact> {
+        if !create.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminCreateSmsContact",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(create).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminCreateSmsContact", response)
+    }
+
+    async fn admin_get_sms_contact(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        bk_no: i64,
+    ) -> ConnectorResult<AdminSmsContact> {
+        if !valid_sms_contact_id(bk_no) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminGetSmsContact",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("bk_no".to_owned(), bk_no.to_string())]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminGetSmsContact", response)
+    }
+
+    async fn admin_update_sms_contact(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        bk_no: i64,
+        update: &AdminSmsContactUpdate,
+    ) -> ConnectorResult<AdminSmsContact> {
+        if !valid_sms_contact_id(bk_no) || !update.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminUpdateSmsContact",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("bk_no".to_owned(), bk_no.to_string())]),
+                    body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminUpdateSmsContact", response)
+    }
+
+    async fn admin_delete_sms_contact(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        bk_no: i64,
+    ) -> ConnectorResult<()> {
+        if !valid_sms_contact_id(bk_no) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteSmsContact",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("bk_no".to_owned(), bk_no.to_string())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_empty("adminDeleteSmsContact", response)
+    }
+
+    async fn admin_batch_sms_contacts(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        batch: &AdminSmsContactBatch,
+    ) -> ConnectorResult<AdminSmsContactBatchResult> {
+        if !batch.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminBatchSmsContacts",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(batch).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminBatchSmsContacts", response)
+    }
+
+    async fn admin_import_sms_contacts(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        import: &AdminSmsContactImport,
+    ) -> ConnectorResult<AdminSmsContactImportResult> {
+        if !import.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminImportSmsContacts",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(import).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminImportSmsContacts", response)
+    }
+
+    async fn admin_export_sms_contacts(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminSmsContactExportQuery,
+    ) -> ConnectorResult<AdminSmsContactExport> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminExportSmsContacts",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("bg_no", query.bg_no.map(|value| json!(value))),
+                        (
+                            "include_no_phone",
+                            query.include_no_phone.map(|value| json!(value)),
+                        ),
+                        ("with_hyphen", query.with_hyphen.map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: SmsContactExportEnvelope =
+            typed_core_envelope("adminExportSmsContacts", response)?;
+        Ok(AdminSmsContactExport {
+            total: envelope.meta.total.unwrap_or(envelope.data.len() as i64),
+            bg_no: envelope.meta.bg_no,
+            include_no_phone: envelope.meta.include_no_phone.unwrap_or(false),
+            with_hyphen: envelope.meta.with_hyphen.unwrap_or(true),
+            items: envelope.data,
+        })
+    }
+
     async fn admin_search_visits(
         &self,
         base_url: &str,
@@ -3652,6 +4085,56 @@ pub trait ConnectorGateway: Send + Sync {
 struct TypedListEnvelope<T> {
     data: Vec<T>,
     pagination: Pagination,
+}
+
+#[derive(Deserialize)]
+struct SmsContactGroupListEnvelope {
+    data: Vec<AdminSmsContactGroup>,
+    #[serde(default)]
+    meta: SmsContactGroupListMeta,
+}
+
+#[derive(Default, Deserialize)]
+struct SmsContactGroupListMeta {
+    total: Option<i64>,
+}
+
+#[derive(Deserialize)]
+struct SmsContactListEnvelope {
+    data: Vec<AdminSmsContact>,
+    pagination: Pagination,
+    meta: SmsContactListMeta,
+}
+
+#[derive(Default, Deserialize)]
+struct SmsContactListMeta {
+    #[serde(default)]
+    total_count: i64,
+    #[serde(default)]
+    receipt_count: i64,
+    #[serde(default)]
+    reject_count: i64,
+    #[serde(default)]
+    member_count: i64,
+    #[serde(default)]
+    non_member_count: i64,
+    #[serde(default)]
+    last_synced_at: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct SmsContactExportEnvelope {
+    data: Vec<AdminSmsContactExportItem>,
+    #[serde(default)]
+    meta: SmsContactExportMeta,
+}
+
+#[derive(Default, Deserialize)]
+struct SmsContactExportMeta {
+    total: Option<i64>,
+    bg_no: Option<i64>,
+    include_no_phone: Option<bool>,
+    with_hyphen: Option<bool>,
 }
 
 #[derive(Deserialize)]

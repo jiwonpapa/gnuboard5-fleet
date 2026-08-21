@@ -18,6 +18,7 @@ pub mod popups;
 pub mod qa;
 pub mod reports;
 pub mod sms;
+pub mod sms_contacts;
 pub mod theme;
 pub mod visits;
 pub mod write_count;

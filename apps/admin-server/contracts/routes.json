@@ -1200,6 +1200,111 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contact-groups",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_sms_contact_group_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contact-groups",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_sms_contact_group_create"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contact-groups/{bg_no}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_sms_contact_group_get"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contact-groups/{bg_no}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_sms_contact_group_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contact-groups/{bg_no}",
+      "auth": "session_csrf_step_up_confirm_mutation",
+      "site_context": true,
+      "purpose": "typed_sms_contact_group_delete"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contact-groups/{bg_no}/move",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_sms_contact_group_move"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contact-groups/{bg_no}/contacts",
+      "auth": "session_csrf_step_up_confirm_mutation",
+      "site_context": true,
+      "purpose": "typed_sms_contact_group_clear"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contacts",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_sms_contact_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contacts",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_sms_contact_create"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contacts/batch",
+      "auth": "session_csrf_step_up_confirm_mutation",
+      "site_context": true,
+      "purpose": "typed_sms_contact_batch"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contacts/import",
+      "auth": "session_csrf_step_up_confirm_mutation",
+      "site_context": true,
+      "purpose": "typed_sms_contact_import"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contacts/export",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_sms_contact_export"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contacts/{bk_no}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_sms_contact_get"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contacts/{bk_no}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_sms_contact_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/sms/contacts/{bk_no}",
+      "auth": "session_csrf_step_up_confirm_mutation",
+      "site_context": true,
+      "purpose": "typed_sms_contact_delete"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/admin/points",
       "auth": "session",
       "site_context": true,

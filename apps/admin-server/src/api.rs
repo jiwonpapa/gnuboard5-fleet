@@ -45,17 +45,21 @@ use g5_fleet_connector::{
     AdminPopup, AdminPopupCreate, AdminPopupList, AdminPopupListQuery, AdminPopupUpdate,
     AdminQaBulkDelete, AdminQaBulkDeleteResult, AdminQaConfig, AdminQaConfigUpdate,
     AdminReportItem, AdminReportList, AdminReportListQuery, AdminReportStats, AdminReportUpdate,
-    AdminSchemaCatalog, AdminSchemaDetail, AdminSmsConfig, AdminSmsConfigUpdate,
-    AdminSmsMemberSyncResult, AdminSystemMailRecipientList, AdminSystemMailRecipientQuery,
-    AdminSystemMailSendRequest, AdminSystemMailSendResult, AdminSystemMailTemplateList,
-    AdminSystemMailTestRequest, AdminSystemMailTestResult, AdminSystemPermission,
-    AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
-    AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, AdminVisitDelete,
-    AdminVisitDeleteResult, AdminVisitSearchQuery, AdminVisitSearchResult, AdminVisitStats,
-    AdminVisitStatsQuery, AdminWriteCountStats, AdminWriteCountStatsQuery, BasicConfig,
-    ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest,
-    CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview, core_operation,
-    core_operations,
+    AdminSchemaCatalog, AdminSchemaDetail, AdminSmsConfig, AdminSmsConfigUpdate, AdminSmsContact,
+    AdminSmsContactBatch, AdminSmsContactBatchResult, AdminSmsContactCreate, AdminSmsContactExport,
+    AdminSmsContactExportQuery, AdminSmsContactGroup, AdminSmsContactGroupClearResult,
+    AdminSmsContactGroupList, AdminSmsContactGroupMove, AdminSmsContactGroupMoveResult,
+    AdminSmsContactGroupWrite, AdminSmsContactImport, AdminSmsContactImportResult,
+    AdminSmsContactList, AdminSmsContactListQuery, AdminSmsContactUpdate, AdminSmsMemberSyncResult,
+    AdminSystemMailRecipientList, AdminSystemMailRecipientQuery, AdminSystemMailSendRequest,
+    AdminSystemMailSendResult, AdminSystemMailTemplateList, AdminSystemMailTestRequest,
+    AdminSystemMailTestResult, AdminSystemPermission, AdminSystemPermissionList,
+    AdminSystemPermissionListQuery, AdminSystemPermissionSave, AdminTheme, AdminThemeConfig,
+    AdminThemeList, AdminThemeUpdate, AdminVisitDelete, AdminVisitDeleteResult,
+    AdminVisitSearchQuery, AdminVisitSearchResult, AdminVisitStats, AdminVisitStatsQuery,
+    AdminWriteCountStats, AdminWriteCountStatsQuery, BasicConfig, ConnectorCredentials,
+    ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse,
+    CoreOperationSpec, MemberProfile, SiteOverview, core_operation, core_operations,
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
@@ -193,6 +197,25 @@ struct ConfirmedAdminSystemMailSendRequest {
 #[derive(Debug, Deserialize)]
 struct ConfirmedAdminSmsMemberSyncRequest {
     confirm_sync: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedMutationQuery {
+    confirm: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedAdminSmsContactBatchRequest {
+    confirm_action: bool,
+    #[serde(flatten)]
+    batch: AdminSmsContactBatch,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedAdminSmsContactImportRequest {
+    confirm_import: bool,
+    #[serde(flatten)]
+    import: AdminSmsContactImport,
 }
 
 #[derive(Debug, Deserialize)]
@@ -691,6 +714,46 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/sms/member-sync",
             post(admin_sms_member_sync),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/contact-groups",
+            get(admin_sms_contact_group_list).post(admin_sms_contact_group_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/contact-groups/{bg_no}",
+            get(admin_sms_contact_group_get)
+                .put(admin_sms_contact_group_update)
+                .delete(admin_sms_contact_group_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/contact-groups/{bg_no}/move",
+            post(admin_sms_contact_group_move),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/contact-groups/{bg_no}/contacts",
+            axum::routing::delete(admin_sms_contact_group_clear),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/contacts",
+            get(admin_sms_contact_list).post(admin_sms_contact_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/contacts/batch",
+            post(admin_sms_contact_batch),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/contacts/import",
+            post(admin_sms_contact_import),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/contacts/export",
+            get(admin_sms_contact_export),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/contacts/{bk_no}",
+            get(admin_sms_contact_get)
+                .put(admin_sms_contact_update)
+                .delete(admin_sms_contact_delete),
         )
         .route(
             "/sites/{site_id}/admin/points",
@@ -5662,6 +5725,451 @@ async fn admin_sms_member_sync(
         Ok(result) => Json::<AdminSmsMemberSyncResult>(result).into_response(),
         Err(error) => connector_error(error),
     }
+}
+
+async fn sms_contact_access(
+    state: &AppState,
+    headers: &HeaderMap,
+    site_id: String,
+    mutation: bool,
+) -> Result<(RequestContext, SiteRecord, ConnectorCredentials), Response> {
+    let (context, principal, site) = owned_site_context(state, headers, site_id, mutation).await?;
+    if mutation {
+        state
+            .config
+            .auth
+            .require_recent_step_up(&principal)
+            .map_err(auth_error)?;
+    }
+    let credentials = connector_credentials(state, &context, &site.site_id).await?;
+    Ok((context, site, credentials))
+}
+
+async fn admin_sms_contact_group_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, false).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_list_sms_contact_groups(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsContactGroupList>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_contact_group_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(write): Json<AdminSmsContactGroupWrite>,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_create_sms_contact_group(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &write,
+        )
+        .await
+    {
+        Ok(result) => (StatusCode::CREATED, Json::<AdminSmsContactGroup>(result)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_contact_group_get(
+    State(state): State<AppState>,
+    Path((site_id, bg_no)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, false).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_get_sms_contact_group(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            bg_no,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsContactGroup>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_contact_group_update(
+    State(state): State<AppState>,
+    Path((site_id, bg_no)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(write): Json<AdminSmsContactGroupWrite>,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_update_sms_contact_group(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            bg_no,
+            &write,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsContactGroup>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_contact_group_delete(
+    State(state): State<AppState>,
+    Path((site_id, bg_no)): Path<(String, i64)>,
+    Query(confirmation): Query<ConfirmedMutationQuery>,
+    headers: HeaderMap,
+) -> Response {
+    if confirmation.confirm != Some(true) {
+        return destructive_confirmation_required("SMS contact group deletion");
+    }
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_delete_sms_contact_group(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            bg_no,
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_contact_group_move(
+    State(state): State<AppState>,
+    Path((site_id, bg_no)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(move_request): Json<AdminSmsContactGroupMove>,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_move_sms_contact_group(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            bg_no,
+            &move_request,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsContactGroupMoveResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_contact_group_clear(
+    State(state): State<AppState>,
+    Path((site_id, bg_no)): Path<(String, i64)>,
+    Query(confirmation): Query<ConfirmedMutationQuery>,
+    headers: HeaderMap,
+) -> Response {
+    if confirmation.confirm != Some(true) {
+        return destructive_confirmation_required("SMS contact group clearing");
+    }
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_clear_sms_contact_group(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            bg_no,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsContactGroupClearResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_contact_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminSmsContactListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, false).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_list_sms_contacts(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsContactList>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_contact_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(create): Json<AdminSmsContactCreate>,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_create_sms_contact(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &create,
+        )
+        .await
+    {
+        Ok(result) => (StatusCode::CREATED, Json::<AdminSmsContact>(result)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_contact_get(
+    State(state): State<AppState>,
+    Path((site_id, bk_no)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, false).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_get_sms_contact(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            bk_no,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsContact>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_contact_update(
+    State(state): State<AppState>,
+    Path((site_id, bk_no)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminSmsContactUpdate>,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_update_sms_contact(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            bk_no,
+            &update,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsContact>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_contact_delete(
+    State(state): State<AppState>,
+    Path((site_id, bk_no)): Path<(String, i64)>,
+    Query(confirmation): Query<ConfirmedMutationQuery>,
+    headers: HeaderMap,
+) -> Response {
+    if confirmation.confirm != Some(true) {
+        return destructive_confirmation_required("SMS contact deletion");
+    }
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_delete_sms_contact(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            bk_no,
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_contact_batch(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminSmsContactBatchRequest>,
+) -> Response {
+    if !confirmed.confirm_action {
+        return destructive_confirmation_required("SMS contact batch action");
+    }
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_batch_sms_contacts(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &confirmed.batch,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsContactBatchResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_contact_import(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminSmsContactImportRequest>,
+) -> Response {
+    if !confirmed.import.dry_run && !confirmed.confirm_import {
+        return destructive_confirmation_required("SMS contact import");
+    }
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_import_sms_contacts(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &confirmed.import,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsContactImportResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_contact_export(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminSmsContactExportQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_contact_access(&state, &headers, site_id, false).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_export_sms_contacts(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsContactExport>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+fn destructive_confirmation_required(_action: &str) -> Response {
+    api_error(
+        StatusCode::BAD_REQUEST,
+        "destructive_confirmation_required",
+        "This SMS contact operation requires explicit confirmation.",
+    )
 }
 
 async fn admin_point_list(

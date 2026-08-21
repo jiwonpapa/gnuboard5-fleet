@@ -448,6 +448,39 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("GET", "/api/v1/sites/{site_id}/admin/sms/config"),
             ("PUT", "/api/v1/sites/{site_id}/admin/sms/config"),
             ("POST", "/api/v1/sites/{site_id}/admin/sms/member-sync"),
+            ("GET", "/api/v1/sites/{site_id}/admin/sms/contact-groups"),
+            ("POST", "/api/v1/sites/{site_id}/admin/sms/contact-groups"),
+            (
+                "GET",
+                "/api/v1/sites/{site_id}/admin/sms/contact-groups/{bg_no}"
+            ),
+            (
+                "PUT",
+                "/api/v1/sites/{site_id}/admin/sms/contact-groups/{bg_no}"
+            ),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/sms/contact-groups/{bg_no}"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/sms/contact-groups/{bg_no}/move"
+            ),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/sms/contact-groups/{bg_no}/contacts"
+            ),
+            ("GET", "/api/v1/sites/{site_id}/admin/sms/contacts"),
+            ("POST", "/api/v1/sites/{site_id}/admin/sms/contacts"),
+            ("POST", "/api/v1/sites/{site_id}/admin/sms/contacts/batch"),
+            ("POST", "/api/v1/sites/{site_id}/admin/sms/contacts/import"),
+            ("GET", "/api/v1/sites/{site_id}/admin/sms/contacts/export"),
+            ("GET", "/api/v1/sites/{site_id}/admin/sms/contacts/{bk_no}"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/sms/contacts/{bk_no}"),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/sms/contacts/{bk_no}"
+            ),
             ("GET", "/api/v1/sites/{site_id}/admin/points"),
             ("POST", "/api/v1/sites/{site_id}/admin/points"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/points"),
