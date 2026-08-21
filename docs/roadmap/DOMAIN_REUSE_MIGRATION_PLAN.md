@@ -67,8 +67,8 @@ R00에서 `make check-batch BATCH=Rxx`를 구현합니다. 각 배치는 아래
 
 ## 4. 배치 순서
 
-현재 manifest 상태는 R00~R19 `batch_pass`, R20 `active`, 나머지는
-`planned`입니다. R19까지 닫았고 전체 감사에는 259개 findings가 남아
+현재 manifest 상태는 R00~R26 `batch_pass`, R27 `active`, 나머지는
+`planned`입니다. R26까지 닫았고 전체 감사에는 159개 findings가 남아
 있으므로 제품 기능 이관 완료를 뜻하지 않습니다.
 
 ### 4.1 이관 통제와 공통 기반
@@ -126,6 +126,26 @@ R28, 나머지 10개는 R34가 소유합니다.
 | R35 | 알림·PWA | outbox, fake delivery, Web Push subscription, offline/cache 안전 |
 | R36 | 전체 종결 | 최초 712 findings 0, 현재 SHA package·staging 배포, 전체 readback·rollback 증거 |
 
+### 4.4 목표 추진 차수
+
+차수는 연속 작업과 보고를 묶는 단위입니다. 차수 안에서도 R 배치 순서는
+건너뛰지 않으며 각 R은 별도 scoped gate, commit, push와 증거 파일을
+가집니다. 앞 R이 `BATCH_PASS`가 아니면 같은 차수의 다음 R을 시작하지
+않습니다.
+
+| 차수 | 포함 배치 | Core·capability 규모 | 차수 완료 목표 |
+|---|---|---:|---|
+| 5차 | R27 write-count → R28 mails | Core 14 | 작성 통계와 메일 관리·테스트 발송을 typed 서버·웹으로 닫기 |
+| 6차 | R29 sms config → R30 sms-contacts | Core 18 | SMS 설정과 주소록 CRUD·동기화 경계를 닫기 |
+| 7차 | R31 sms-templates → R32 sms-messages | Core 19 | SMS 템플릿·발송 작성·이력 workflow를 닫기 |
+| 8차 | R33 push → R34 system tools·maintenance | Core 12 | Push와 시스템 점검·정리 도구의 보안 경계를 닫기 |
+| 9차 | R35 알림·PWA → R36 전체 종결 | capability 4 | 전역 findings 0, package·staging·전체 readback 종결 |
+
+메일·SMS·Push는 routine 검증에서 실제 외부 발송을 금지하고 fake adapter와
+outbox readback으로 증명합니다. 실제 발송은 별도 `LIVE` 승인과 증거가
+있을 때만 수행합니다. 시스템 정리 작업은 정확한 대상 표시, 확인,
+CSRF와 recent identity step-up 없이는 실행하지 않습니다.
+
 ## 5. 배치별 보고 형식
 
 완료 보고는 반드시 아래 형식을 사용합니다.
@@ -148,18 +168,20 @@ commit/push: 미실행
 
 ## 6. 현재 실행
 
-R00~R13은 닫혔고 다음 작업은 R14입니다.
+R00~R26은 닫혔고 다음 목표 추진 단위는 5차 R27~R28입니다.
 
-1. R14의 legacy 10개와 Core operation 7개를 기존 코드에서 우선 추출합니다.
-2. 게시판 목록·상세·생성·수정·복사·삭제·신규 글 정리의 typed DTO·Axum route·React workflow를 이관합니다.
-3. scoped audit의 17 findings를 0으로 닫기 전 R15를 시작하지 않습니다.
-4. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
-5. R14 검증·commit·push 후에만 R15를 시작합니다.
+1. R27 write-count의 legacy 3개와 Core operation 1개를 먼저 닫습니다.
+2. R27 scoped audit·runtime·브라우저·commit·push가 PASS한 뒤 R28을 시작합니다.
+3. R28 mails의 Core 13개와 legacy command·page·test를 재사용 이관합니다.
+4. 메일 테스트·회원 메일은 외부 발송 없이 fake adapter와 outbox로 검증합니다.
+5. R28 gate·commit·push 후 5차 통합 보고를 작성합니다.
+6. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
 
 실행 명령:
 
 ```bash
-make check-batch BATCH=R14
+make check-batch BATCH=R27
+make check-batch BATCH=R28
 ```
 
 배치 gate가 PASS하더라도 전역 `make audit-migration-parity`는 R36 전까지

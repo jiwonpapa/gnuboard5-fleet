@@ -135,6 +135,12 @@ R00~R26은 tracked 증거로 닫혔습니다. R26은 QA 설정 조회·수정과
   콘솔 오류 0 PASS
 - 다음 활성 배치: R27 write-count
 - R27 사전 probe: FAIL 4
+- 목표 추진 차수:
+  - 5차: R27~R28, write-count·mails
+  - 6차: R29~R30, SMS 설정·주소록
+  - 7차: R31~R32, SMS 템플릿·메시지
+  - 8차: R33~R34, Push·시스템 도구
+  - 9차: R35~R36, 알림·PWA·전체 종결
 
 ```bash
 make check-batch BATCH=R27
