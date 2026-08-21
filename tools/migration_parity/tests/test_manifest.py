@@ -167,6 +167,9 @@ class ManifestTest(unittest.TestCase):
                 "adminSystemSendMailTest",
                 "adminSystemSendMemberMail",
                 "adminUpdateMailTemplate",
+                "adminGetSmsConfig",
+                "adminSyncSmsMembers",
+                "adminUpdateSmsConfig",
             },
             {
                 mapping["operation_id"]
