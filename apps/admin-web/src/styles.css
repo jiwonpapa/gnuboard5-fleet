@@ -4213,6 +4213,8 @@ code {
 .sms-contact-memo textarea,
 .sms-import-panel textarea {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 112px;
   resize: vertical;
 }
@@ -4220,6 +4222,12 @@ code {
 .sms-import-panel {
   display: grid;
   gap: 13px;
+  min-width: 0;
+}
+
+.sms-import-panel > input[type="file"] {
+  max-width: 100%;
+  min-width: 0;
 }
 
 .sms-import-panel header p {
