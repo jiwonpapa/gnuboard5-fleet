@@ -1,0 +1,143 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R30",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "c19094f150083619ba1313295bc950f11da44462",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "c19094f150083619ba1313295bc950f11da44462"
+  },
+  "generated_at": "2026-08-21T04:12:26Z",
+  "commands": [
+    "make audit-runtime-prepare",
+    "make check",
+    "make check-batch BATCH=R30",
+    "composer test (official G5 composed runtime)",
+    "BUILDX_BUILDER=g5-fleet-cert-builder make certification-clean certification-up",
+    "make certification-local-smoke",
+    "Browser Client in-app Chromium (headed 1440x1000 and 375x812)",
+    "python3 -m tools.migration_parity.batch_cli --batch R29 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R30 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R31 --profile static"
+  ],
+  "results": {
+    "canonical_make_check": {
+      "component_gates": "PASS",
+      "terminal_status": "EXPECTED_GLOBAL_MIGRATION_FAIL",
+      "terminal_findings": 81
+    },
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "rust_tests": {"passed": 91, "failed": 0, "ignored": 1},
+      "http_contract_tests": {"passed": 8, "failed": 0},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 75,
+      "web_tests": {"passed": 174, "failed": 0},
+      "web_build": "PASS"
+    },
+    "php_composed_runtime": {
+      "status": "PASS",
+      "official_g5_version": "5.6.32",
+      "tests": 876,
+      "assertions": 6731,
+      "failed": 0,
+      "skipped": 5
+    },
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "revision": "c19094f150083619ba1313295bc950f11da44462",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "c19094f150083619ba1313295bc950f11da44462",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "497ebb93b5ce7f937e6b85dfb6db15843b91d5a5683e95cb5abb2d251d37b6f9",
+      "sms_contact_operations": 15,
+      "group_crud_and_move_readback": "PASS",
+      "contact_crud_readback": "PASS",
+      "batch_reject_copy_move_readback": "PASS",
+      "import_preview_and_confirmed_readback": "PASS",
+      "export_readback": "PASS",
+      "destructive_confirmations_fail_closed": "PASS",
+      "cleanup_readback": "PASS",
+      "baseline_groups_preserved": [1],
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "PASS",
+      "implementation_revision": "c19094f150083619ba1313295bc950f11da44462",
+      "execution_mode": "headed in-app Chromium",
+      "login_with_otp": "PASS",
+      "recent_step_up": "PASS",
+      "group_create_readback": "PASS",
+      "contact_create_update_readback": "PASS",
+      "batch_explicit_confirmation_reject": "PASS",
+      "import_preview": {"total": 3, "importable": 1, "duplicate": 1, "invalid": 1},
+      "csv_export_action_message": "PASS",
+      "browser_download_event": "NOT_OBSERVED",
+      "runtime_export_readback": "PASS",
+      "console_errors_after_login": 0,
+      "console_warnings_after_login": 0,
+      "desktop_1440x1000": "PASS",
+      "mobile_375x812": "PASS",
+      "mobile_document_width": {"scroll_width": 375, "client_width": 375},
+      "mobile_table_internal_scroll": "PASS",
+      "artifacts": [
+        {"path": "output/playwright/r30-sms-contacts-desktop.png", "sha256": "1095098dd26dc0269d967a8979522460cc5fe900814c6b89327082256ce2cea2"},
+        {"path": "output/playwright/r30-sms-contacts-mobile.png", "sha256": "948558f84bc77951d1cb6bbb3824243fe0bbd16ebf0703f15eed812f6ec3cc87"}
+      ]
+    },
+    "typed_operation_consumption": {
+      "operations": [
+        "adminBatchSmsContacts",
+        "adminClearSmsContactGroup",
+        "adminCreateSmsContact",
+        "adminCreateSmsContactGroup",
+        "adminDeleteSmsContact",
+        "adminDeleteSmsContactGroup",
+        "adminExportSmsContacts",
+        "adminGetSmsContact",
+        "adminGetSmsContactGroup",
+        "adminImportSmsContacts",
+        "adminListSmsContactGroups",
+        "adminListSmsContacts",
+        "adminMoveSmsContactGroup",
+        "adminUpdateSmsContact",
+        "adminUpdateSmsContactGroup"
+      ],
+      "new_site_scoped_axum_routes": 15,
+      "browser_same_origin_transport": "PASS",
+      "browser_g5_secret_exposure": "NONE",
+      "external_effect_boundary": "CSRF + recent step-up + explicit confirmation; no SMS delivery"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 213, "added_r30_routes": 15},
+    "predecessor_regression": {"batch": "R29", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 18, "core_operations": 15, "required_capabilities": 0},
+    "reuse": {"reused": 1, "adapted": 17, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "global_migration": {"status": "FAIL", "findings": 81},
+    "next_batch_probe": {
+      "batch": "R31",
+      "status": "FAIL",
+      "scope": {"legacy": 16, "core_operations": 13, "required_capabilities": 0},
+      "findings": 29
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "f64cbc5fcc0be19180d4d4ce0807e9f44758e08b8302999a8ad1ad8c16664768",
+    "migration_batches_before_closeout": "3c0c0ab7c63330c1adc4b04efaabb86b8b68718b63195e5e5a67c6334e25c51f"
+  },
+  "source_reports": [
+    {"path": "output/audit/runs/20260821T041113Z-27fd7ca7fb5d/result.json", "sha256": "a592ee583df04013959982735262161577272e86615a8c6b3916f804022a1a88"},
+    {"path": "output/audit/runs/migration-parity-20260821T041220Z-2f59486e/result.json", "sha256": "000025b4bfad3c2915c4bc3689d9fb8874ded6e8d03448324f2b137fc025eef3"},
+    {"path": "output/audit/runs/migration-batch-R29-20260821T040353Z-36861f0e/result.json", "sha256": "714aa9f20a124fa669a152f790aba30a120ed9ecfd928dfbcc8169966add65a9"},
+    {"path": "output/audit/runs/migration-batch-R30-20260821T040317Z-afc67650/result.json", "sha256": "00a2390290d25e5129d91f05c3cd5213ffa8af4c740b56980d5a9c3b4ecd62f0"},
+    {"path": "output/audit/runs/migration-batch-R31-20260821T040353Z-055f29b4/result.json", "sha256": "9182ff23c0d36dc810aaefd7eb088a7f631abbaae8a072909baceb07f478dc96"}
+  ],
+  "claim_limit": "R30 SMS 주소록 15-operation typed DTO, Connector, explicit site_id Axum routes, same-origin responsive React workspace, official G5 5.6.32 local runtime and headed Chromium CRUD, batch, import preview, export and cleanup readback only. Browser CSV action was observed but its download event was not; export correctness is supported by local runtime readback. Routine external SMS delivery stayed at zero. This is not package, staging, live-SMS or full-product certification; global migration remains FAIL with 81 findings."
+}

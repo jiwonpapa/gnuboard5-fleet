@@ -1199,8 +1199,13 @@
       "id": "R30",
       "sequence": 25,
       "title": "sms-contacts",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R29"],
+      "completion": {
+        "implementation_commit": "c19094f150083619ba1313295bc950f11da44462",
+        "evidence_path": "docs/audits/evidence/R30_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-21T04:12:26Z"
+      },
       "core": {
         "domains": ["sms-contacts"],
         "operation_ids": [],
@@ -1232,7 +1237,7 @@
       "id": "R31",
       "sequence": 26,
       "title": "sms-templates",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R30"],
       "core": {
         "domains": ["sms-templates"],

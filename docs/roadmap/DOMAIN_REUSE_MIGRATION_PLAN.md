@@ -67,8 +67,8 @@ R00에서 `make check-batch BATCH=Rxx`를 구현합니다. 각 배치는 아래
 
 ## 4. 배치 순서
 
-현재 manifest 상태는 R00~R29 `batch_pass`, R30 `active`, 나머지는
-`planned`입니다. 5차 R27~R28과 6차 첫 배치 R29를 닫았고 전체 감사에는 114개 findings가 남아
+현재 manifest 상태는 R00~R30 `batch_pass`, R31 `active`, 나머지는
+`planned`입니다. 5차 R27~R28과 6차 R29~R30을 닫았고 전체 감사에는 81개 findings가 남아
 있으므로 제품 기능 이관 완료를 뜻하지 않습니다.
 
 ### 4.1 이관 통제와 공통 기반
@@ -136,7 +136,7 @@ R28, 나머지 10개는 R34가 소유합니다.
 | 차수 | 포함 배치 | Core·capability 규모 | 차수 완료 목표 |
 |---|---|---:|---|
 | 5차 (완료) | R27 write-count → R28 mails | Core 14 | 작성 통계와 메일 관리·테스트 발송을 typed 서버·웹으로 닫기 |
-| 6차 | R29 sms config → R30 sms-contacts | Core 18 | SMS 설정과 주소록 CRUD·동기화 경계를 닫기 |
+| 6차 (완료) | R29 sms config → R30 sms-contacts | Core 18 | SMS 설정과 주소록 CRUD·동기화 경계를 닫기 |
 | 7차 | R31 sms-templates → R32 sms-messages | Core 19 | SMS 템플릿·발송 작성·이력 workflow를 닫기 |
 | 8차 | R33 push → R34 system tools·maintenance | Core 12 | Push와 시스템 점검·정리 도구의 보안 경계를 닫기 |
 | 9차 | R35 알림·PWA → R36 전체 종결 | capability 4 | 전역 findings 0, package·staging·전체 readback 종결 |
@@ -168,25 +168,38 @@ commit/push: 미실행
 
 ## 6. 현재 실행
 
-R00~R29와 5차 목표는 닫혔고 다음 목표 추진 단위는 6차의 R30 sms-contacts입니다.
+R00~R30과 6차 목표는 닫혔고 다음 목표 추진 단위는 7차의 R31 sms-templates입니다.
 
 1. R27 write-count의 legacy 3개와 Core operation 1개는 runtime·브라우저까지 닫았습니다.
 2. R28 mails의 legacy 19개와 Core 13개도 runtime·브라우저까지 닫았습니다.
 3. 메일 테스트·회원 메일은 외부 발송 0, dry-run·mail OFF·로그 readback으로 검증했습니다.
 4. R29 sms config의 legacy 6개와 Core 3개를 typed 서버·웹과 공식 G5·Chromium readback으로 닫았습니다.
-5. R30 sms-contacts의 legacy 18개와 Core 15개를 주소록·그룹·import/export 경계로 이관합니다.
-6. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
+5. R30 sms-contacts의 legacy 18개와 Core 15개를 주소록·그룹·일괄 처리·import/export의 typed 서버·웹과 공식 G5·Chromium readback으로 닫았습니다.
+6. R30 routine 검증의 외부 문자 발송은 0이며, 브라우저 CSV download event 비관측은 로컬 런타임 export readback과 구분해 기록했습니다.
+7. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
 
 실행 명령:
 
 ```bash
-make check-batch BATCH=R28
 make check-batch BATCH=R29
 make check-batch BATCH=R30
+make check-batch BATCH=R31
 ```
 
 배치 gate가 PASS하더라도 전역 `make audit-migration-parity`는 R36 전까지
 FAIL과 전체 잔여 수를 그대로 반환합니다.
+
+R30 closeout:
+
+- 구현 commit: `c19094f150083619ba1313295bc950f11da44462`
+- tracked 증거: `docs/audits/evidence/R30_BATCH_GATE_PASS.json`
+- scope: legacy 18, Core 15, capability 0
+- reuse: 1 reused / 17 adapted / 0 redesigned / 0 deferred
+- 공식 G5 v5.6.32 local runtime 주소록 15 operation readback PASS
+- Chromium 1440×1000·375×812 주소록 CRUD·일괄 처리·import preview PASS
+- R30 finding: 0
+- 전역 잔여 finding: 81
+- 다음 R31 사전 probe: FAIL 29
 
 R00 closeout:
 
