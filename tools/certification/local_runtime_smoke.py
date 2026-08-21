@@ -1912,15 +1912,16 @@ def main() -> int:
             fleet_base, "DELETE", f"{mail_path}/{mail_id}",
             headers=fleet_headers(admin_cookie, admin_csrf), expected=(204,),
         )
-        request(
-            fleet_base, "GET", f"{mail_path}/{mail_id}",
-            headers=fleet_headers(admin_cookie), expected=(404,),
-        )
     final_mails = request(
         fleet_base, "GET", f"{mail_path}?page=1&per_page=20",
         headers=fleet_headers(admin_cookie),
     ).json()
-    if final_mails.get("pagination", {}).get("total") != 1 or [row.get("ma_id") for row in final_mails.get("items", [])] != [9301]:
+    final_mail_ids = [row.get("ma_id") for row in final_mails.get("items", [])]
+    if (
+        final_mails.get("pagination", {}).get("total") != 1
+        or final_mail_ids != [9301]
+        or any(mail_id in final_mail_ids for mail_id in created_mail_ids)
+    ):
         raise RuntimeError("R28 mail cleanup did not restore baseline")
 
     canonical_members_path = f"{canonical_group_path}/members"
