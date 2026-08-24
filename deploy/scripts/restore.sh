@@ -27,6 +27,9 @@ manifest="$snapshot.manifest.json"
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 previous="$state_dir/data.pre-restore-$stamp"
 failed="$state_dir/data.restore-failed-$stamp"
+runtime_failed="$state_dir/data.runtime-failed-$stamp"
+candidate_name=".restore-data-$stamp"
+candidate="$state_dir/backups/$candidate_name"
 previous_secrets="$state_dir/secrets.pre-restore-$stamp"
 recovery_work="$state_dir/backups/.restore-recovery-$stamp"
 restore_recovery=0
@@ -84,16 +87,27 @@ fi
 compose stop caddy app
 mv "$state_dir/data" "$previous"
 prepare_runtime_directory "$state_dir/data"
+prepare_runtime_directory "$candidate"
 if ! compose run --rm --no-deps app restore \
   "/var/backups/g5-fleet/$filename" \
   "/var/backups/g5-fleet/$filename.manifest.json" \
-  /var/lib/g5-fleet; then
-  mv "$state_dir/data" "$failed"
+  "/var/backups/g5-fleet/$candidate_name"; then
+  rmdir "$state_dir/data" 2>/dev/null || mv "$state_dir/data" "$runtime_failed"
+  mv "$candidate" "$failed"
   mv "$previous" "$state_dir/data"
   start_and_verify || true
   echo "restore rejected; original data reinstated, failed target retained at $failed" >&2
   exit 1
 fi
+if ! rmdir "$state_dir/data"; then
+  mv "$state_dir/data" "$runtime_failed"
+  mv "$candidate" "$failed"
+  mv "$previous" "$state_dir/data"
+  start_and_verify || true
+  echo "restore rejected; runtime populated the empty data mount at $runtime_failed" >&2
+  exit 1
+fi
+mv "$candidate" "$state_dir/data"
 if [ "$restore_recovery" -eq 1 ]; then
   mv "$state_dir/secrets" "$previous_secrets"
   prepare_runtime_directory "$state_dir/secrets"
