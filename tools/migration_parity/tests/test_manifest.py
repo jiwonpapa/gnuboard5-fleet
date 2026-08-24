@@ -198,6 +198,12 @@ class ManifestTest(unittest.TestCase):
                 "adminUpdateSmsTemplate",
                 "adminDeleteSmsTemplate",
                 "adminBatchSmsTemplates",
+                "adminListSmsMessageBatches",
+                "adminGetSmsMessageBatch",
+                "adminListSmsDeliveries",
+                "adminResendSmsFailures",
+                "adminResendAllSmsBatch",
+                "adminCreateSmsMessage",
             },
             {
                 mapping["operation_id"]
