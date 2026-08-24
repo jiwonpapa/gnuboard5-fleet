@@ -92,8 +92,16 @@ describe("adminRouteRegistry", () => {
       label: "Push",
       delivery: "active",
     });
+    expect(resolveRouteMeta("/admin/system-tools")).toMatchObject({
+      label: "시스템 도구",
+      delivery: "active",
+    });
+    expect(resolveRouteMeta("/admin/maintenance")).toMatchObject({
+      label: "유지보수",
+      delivery: "active",
+    });
     expect(adminRoutes.filter((route) => route.delivery === "active")).toHaveLength(
-      27,
+      29,
     );
     expect(groupedAdminRoutes().get("메시징")?.length).toBeGreaterThanOrEqual(6);
   });

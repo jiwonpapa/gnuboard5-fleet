@@ -90,7 +90,7 @@ export const adminRoutes: readonly AdminRouteMeta[] = [
     label,
     group,
     description: `${label} 도메인 작업면입니다.`,
-    delivery: ["members", "groups", "faqs", "menus", "layouts", "theme", "points", "polls", "popups", "popular", "visits", "reports", "qa", "write-count", "mails", "sms", "sms-contacts", "sms-templates", "sms-messages", "sms-history", "push"].includes(slug) ? "active" as const : "planned" as const,
+    delivery: ["members", "groups", "faqs", "menus", "layouts", "theme", "points", "polls", "popups", "popular", "visits", "reports", "qa", "write-count", "mails", "sms", "sms-contacts", "sms-templates", "sms-messages", "sms-history", "push", "system-tools", "maintenance"].includes(slug) ? "active" as const : "planned" as const,
     legacySource,
   })),
 ];

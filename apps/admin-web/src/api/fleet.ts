@@ -1506,6 +1506,52 @@ export interface AdminPushMessageResult {
   failed: number;
 }
 
+export interface AdminSystemPhpInfoSummary {
+  php_version: string;
+  sapi: string;
+  loaded_ini_configured: boolean;
+  scanned_ini_configured: boolean;
+  extension_count: number;
+  raw_html_withheld: true;
+}
+
+export interface AdminSystemBrowscapStatus {
+  available: boolean;
+  plugin_path: string;
+  cache_directory: string;
+  cache_file: string;
+  cache_exists: boolean;
+  php_version: string;
+  pending_visit_count: number;
+  updated?: boolean;
+  cache_mtime: string | null;
+}
+
+export interface AdminSystemBrowscapConvertResult {
+  rows: number;
+  total_pending_before: number;
+  processed_count: number;
+  remaining_count: number;
+  completed: boolean;
+}
+
+export type AdminSystemMaintenanceTask =
+  | "cache-files"
+  | "captcha-files"
+  | "member-list-files"
+  | "session-files"
+  | "thumbnail-files";
+
+export interface AdminSystemMaintenanceResult {
+  task: string;
+  status: "completed" | "skipped";
+  directory: string;
+  deleted_count: number;
+  deleted_paths: string[];
+  message?: string;
+  social_log_deleted_count?: number;
+}
+
 export interface AdminPointItem {
   po_id: number;
   mb_id: string;
@@ -3372,6 +3418,26 @@ export function createAdminPushMessage(siteId: string, input: AdminPushMessageRe
 
 export function sendAdminPushMessageLegacy(siteId: string, input: AdminPushMessageRequest, csrfToken: string) {
   return transport.request<AdminPushMessageResult, AdminPushMessageRequest & { confirm_send: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/push/send`, csrfToken, body: { ...input, confirm_send: true } });
+}
+
+export function getAdminSystemPhpInfo(siteId: string) {
+  return transport.request<AdminSystemPhpInfoSummary>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/system/phpinfo` });
+}
+
+export function getAdminSystemBrowscapStatus(siteId: string) {
+  return transport.request<AdminSystemBrowscapStatus>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/system/browscap` });
+}
+
+export function updateAdminSystemBrowscap(siteId: string, csrfToken: string) {
+  return transport.request<AdminSystemBrowscapStatus, { confirm_update: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/system/browscap/update`, csrfToken, body: { confirm_update: true } });
+}
+
+export function convertAdminSystemBrowscap(siteId: string, rows: number | undefined, csrfToken: string) {
+  return transport.request<AdminSystemBrowscapConvertResult, { confirm_action: true; rows?: number }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/system/browscap/convert`, csrfToken, body: { confirm_action: true, ...(rows === undefined ? {} : { rows }) } });
+}
+
+export function purgeAdminSystemFiles(siteId: string, task: AdminSystemMaintenanceTask, csrfToken: string) {
+  return transport.request<AdminSystemMaintenanceResult, { confirm_action: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/system/maintenance/${task}/purge`, csrfToken, body: { confirm_action: true } });
 }
 
 export function listAdminPoints(siteId: string, query: AdminPointListQuery = {}) {

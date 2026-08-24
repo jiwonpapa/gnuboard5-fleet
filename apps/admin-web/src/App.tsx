@@ -24,6 +24,9 @@ import { AdminPollsPage } from "./features/polls/AdminPollsPage";
 import { AdminPopupsPage } from "./features/popups/AdminPopupsPage";
 import { AdminPopularPage } from "./features/popular/AdminPopularPage";
 import { AdminPushPage } from "./features/push/AdminPushPage";
+import { AdminMaintenancePage } from "./features/maintenance/AdminMaintenancePage";
+import { AdminBrowscapPage } from "./features/system-tools/AdminBrowscapPage";
+import { AdminPhpInfoPage } from "./features/system-tools/AdminPhpInfoPage";
 import { AdminQaPage } from "./features/qa/AdminQaPage";
 import { AdminReportsPage } from "./features/reports/AdminReportsPage";
 import { AdminVisitsPage } from "./features/visits/AdminVisitsPage";
@@ -164,6 +167,22 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/push"
               element={<AdminPushPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/system-tools"
+              element={<AdminPhpInfoPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/system-tools/phpinfo"
+              element={<AdminPhpInfoPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/system-tools/browscap"
+              element={<AdminBrowscapPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/maintenance"
+              element={<AdminMaintenancePage />}
             />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />
