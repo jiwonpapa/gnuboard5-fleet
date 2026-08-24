@@ -59,10 +59,12 @@ use g5_fleet_connector::{
     AdminSmsTemplateGroupClearResult, AdminSmsTemplateGroupCreate, AdminSmsTemplateGroupList,
     AdminSmsTemplateGroupMove, AdminSmsTemplateGroupMoveResult, AdminSmsTemplateGroupUpdate,
     AdminSmsTemplateList, AdminSmsTemplateListQuery, AdminSmsTemplateUpdate,
+    AdminSystemBrowscapConvertRequest, AdminSystemBrowscapConvertResult, AdminSystemBrowscapStatus,
     AdminSystemMailRecipientList, AdminSystemMailRecipientQuery, AdminSystemMailSendRequest,
     AdminSystemMailSendResult, AdminSystemMailTemplateList, AdminSystemMailTestRequest,
-    AdminSystemMailTestResult, AdminSystemPermission, AdminSystemPermissionList,
-    AdminSystemPermissionListQuery, AdminSystemPermissionSave, AdminTheme, AdminThemeConfig,
+    AdminSystemMailTestResult, AdminSystemMaintenanceResult, AdminSystemMaintenanceTask,
+    AdminSystemPermission, AdminSystemPermissionList, AdminSystemPermissionListQuery,
+    AdminSystemPermissionSave, AdminSystemPhpInfoSummary, AdminTheme, AdminThemeConfig,
     AdminThemeList, AdminThemeUpdate, AdminVisitDelete, AdminVisitDeleteResult,
     AdminVisitSearchQuery, AdminVisitSearchResult, AdminVisitStats, AdminVisitStatsQuery,
     AdminWriteCountStats, AdminWriteCountStatsQuery, BasicConfig, ConnectorCredentials,
@@ -207,6 +209,22 @@ struct ConfirmedAdminPushMessageRequest {
     confirm_send: bool,
     #[serde(flatten)]
     message: AdminPushMessageRequest,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedAdminSystemActionRequest {
+    confirm_action: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedAdminBrowscapUpdateRequest {
+    confirm_update: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedAdminBrowscapConvertRequest {
+    confirm_action: bool,
+    rows: Option<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -754,6 +772,42 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/push/send",
             post(admin_push_send_legacy),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/phpinfo",
+            get(admin_system_php_info),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/browscap",
+            get(admin_system_browscap_status),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/browscap/update",
+            post(admin_system_browscap_update),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/browscap/convert",
+            post(admin_system_browscap_convert),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/maintenance/cache-files/purge",
+            post(admin_system_purge_cache_files),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/maintenance/captcha-files/purge",
+            post(admin_system_purge_captcha_files),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/maintenance/member-list-files/purge",
+            post(admin_system_purge_member_list_files),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/maintenance/session-files/purge",
+            post(admin_system_purge_session_files),
+        )
+        .route(
+            "/sites/{site_id}/admin/system/maintenance/thumbnail-files/purge",
+            post(admin_system_purge_thumbnail_files),
         )
         .route(
             "/sites/{site_id}/admin/sms/member-sync",
@@ -5792,6 +5846,265 @@ async fn admin_push_operation(
         Ok(result) => Json::<AdminPushMessageResult>(result).into_response(),
         Err(error) => connector_error(error),
     }
+}
+
+async fn admin_system_php_info(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_system_php_info(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(info) => {
+            Json::<AdminSystemPhpInfoSummary>(info.into_browser_safe_summary()).into_response()
+        }
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_browscap_status(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_system_browscap_status(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(status) => Json::<AdminSystemBrowscapStatus>(status).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_browscap_update(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminBrowscapUpdateRequest>,
+) -> Response {
+    if !confirmed.confirm_update {
+        return external_confirmation_required();
+    }
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_system_browscap_update(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(status) => Json::<AdminSystemBrowscapStatus>(status).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_browscap_convert(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminBrowscapConvertRequest>,
+) -> Response {
+    if !confirmed.confirm_action {
+        return mutation_confirmation_required();
+    }
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_system_browscap_convert(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &AdminSystemBrowscapConvertRequest {
+                rows: confirmed.rows,
+            },
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSystemBrowscapConvertResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_system_purge_cache_files(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminSystemActionRequest>,
+) -> Response {
+    admin_system_purge(
+        state,
+        site_id,
+        headers,
+        confirmed,
+        AdminSystemMaintenanceTask::CacheFiles,
+    )
+    .await
+}
+
+async fn admin_system_purge_captcha_files(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminSystemActionRequest>,
+) -> Response {
+    admin_system_purge(
+        state,
+        site_id,
+        headers,
+        confirmed,
+        AdminSystemMaintenanceTask::CaptchaFiles,
+    )
+    .await
+}
+
+async fn admin_system_purge_member_list_files(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminSystemActionRequest>,
+) -> Response {
+    admin_system_purge(
+        state,
+        site_id,
+        headers,
+        confirmed,
+        AdminSystemMaintenanceTask::MemberListFiles,
+    )
+    .await
+}
+
+async fn admin_system_purge_session_files(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminSystemActionRequest>,
+) -> Response {
+    admin_system_purge(
+        state,
+        site_id,
+        headers,
+        confirmed,
+        AdminSystemMaintenanceTask::SessionFiles,
+    )
+    .await
+}
+
+async fn admin_system_purge_thumbnail_files(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminSystemActionRequest>,
+) -> Response {
+    admin_system_purge(
+        state,
+        site_id,
+        headers,
+        confirmed,
+        AdminSystemMaintenanceTask::ThumbnailFiles,
+    )
+    .await
+}
+
+async fn admin_system_purge(
+    state: AppState,
+    site_id: String,
+    headers: HeaderMap,
+    confirmed: ConfirmedAdminSystemActionRequest,
+    task: AdminSystemMaintenanceTask,
+) -> Response {
+    if !confirmed.confirm_action {
+        return mutation_confirmation_required();
+    }
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .connector
+        .admin_system_purge(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            task,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSystemMaintenanceResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+fn mutation_confirmation_required() -> Response {
+    api_error(
+        StatusCode::BAD_REQUEST,
+        "mutation_confirmation_required",
+        "Mutation requires explicit confirmation.",
+    )
 }
 
 async fn admin_sms_config_get(

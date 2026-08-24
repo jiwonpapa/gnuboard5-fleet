@@ -22,6 +22,7 @@ pub mod sms;
 pub mod sms_contacts;
 pub mod sms_messages;
 pub mod sms_templates;
+pub mod system_tools;
 pub mod theme;
 pub mod visits;
 pub mod write_count;

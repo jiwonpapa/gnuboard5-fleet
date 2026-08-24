@@ -108,6 +108,11 @@ pub use g5_fleet_core::sms_templates::{
     AdminSmsTemplateGroupUpdate, AdminSmsTemplateList, AdminSmsTemplateListQuery,
     AdminSmsTemplateUpdate, valid_sms_template_group_id, valid_sms_template_id,
 };
+pub use g5_fleet_core::system_tools::{
+    AdminSystemBrowscapConvertRequest, AdminSystemBrowscapConvertResult, AdminSystemBrowscapStatus,
+    AdminSystemMaintenanceResult, AdminSystemMaintenanceTask, AdminSystemPhpInfo,
+    AdminSystemPhpInfoSummary,
+};
 pub use g5_fleet_core::theme::{
     AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, valid_theme_id,
 };
@@ -3176,6 +3181,107 @@ pub trait ConnectorGateway: Send + Sync {
         typed_core_data(operation_id, response)
     }
 
+    async fn admin_system_php_info(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminSystemPhpInfo> {
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemPhpInfo",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        typed_core_data("adminSystemPhpInfo", response)
+    }
+
+    async fn admin_system_browscap_status(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminSystemBrowscapStatus> {
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemBrowscapStatus",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        typed_core_data("adminSystemBrowscapStatus", response)
+    }
+
+    async fn admin_system_browscap_update(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminSystemBrowscapStatus> {
+        let response = self
+            .external_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemBrowscapUpdate",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        typed_core_data("adminSystemBrowscapUpdate", response)
+    }
+
+    async fn admin_system_browscap_convert(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        convert: &AdminSystemBrowscapConvertRequest,
+    ) -> ConnectorResult<AdminSystemBrowscapConvertResult> {
+        if !convert.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminSystemBrowscapConvert",
+                &CoreExecuteRequest {
+                    body: Some(
+                        serde_json::to_value(convert).map_err(|_| ConnectorError::Contract)?,
+                    ),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminSystemBrowscapConvert", response)
+    }
+
+    async fn admin_system_purge(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        task: AdminSystemMaintenanceTask,
+    ) -> ConnectorResult<AdminSystemMaintenanceResult> {
+        let operation_id = task.operation_id();
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                operation_id,
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        typed_core_data(operation_id, response)
+    }
+
     async fn admin_get_sms_config(
         &self,
         base_url: &str,
@@ -6057,6 +6163,7 @@ impl G5Client {
                 | "adminSendTestMail"
                 | "adminCreatePushMessage"
                 | "adminSendPush"
+                | "adminSystemBrowscapUpdate"
                 | "adminSystemSendMemberMail"
                 | "adminSystemSendMailTest"
         ) {

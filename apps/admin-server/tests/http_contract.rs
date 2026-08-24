@@ -448,6 +448,36 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("GET", "/api/v1/sites/{site_id}/admin/sms/config"),
             ("POST", "/api/v1/sites/{site_id}/admin/push/messages"),
             ("POST", "/api/v1/sites/{site_id}/admin/push/send"),
+            ("GET", "/api/v1/sites/{site_id}/admin/system/phpinfo"),
+            ("GET", "/api/v1/sites/{site_id}/admin/system/browscap"),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/system/browscap/update"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/system/browscap/convert"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/system/maintenance/cache-files/purge"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/system/maintenance/captcha-files/purge"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/system/maintenance/member-list-files/purge"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/system/maintenance/session-files/purge"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/system/maintenance/thumbnail-files/purge"
+            ),
             ("PUT", "/api/v1/sites/{site_id}/admin/sms/config"),
             ("POST", "/api/v1/sites/{site_id}/admin/sms/member-sync"),
             ("GET", "/api/v1/sites/{site_id}/admin/sms/contact-groups"),
@@ -3817,6 +3847,110 @@ async fn site_lifecycle_dashboard_diagnostics_and_portable_backup_are_live() {
         .unwrap();
     assert_eq!(wrong_password.status(), StatusCode::BAD_REQUEST);
 
+    // R34 system tools keep raw phpinfo out of the browser and require explicit mutation confirmation.
+    let phpinfo = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/system/phpinfo",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(phpinfo.status(), StatusCode::OK);
+    let phpinfo: Value = json(phpinfo).await;
+    assert_eq!(phpinfo["php_version"], "8.3.0");
+    assert_eq!(phpinfo["raw_html_withheld"], true);
+    assert!(phpinfo.get("html").is_none());
+    assert!(!phpinfo.to_string().contains("secret-token"));
+
+    let browscap = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/system/browscap",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(browscap.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(browscap).await["pending_visit_count"], 2);
+
+    for path in [
+        "/api/v1/sites/site-a/admin/system/browscap/convert",
+        "/api/v1/sites/site-a/admin/system/maintenance/cache-files/purge",
+        "/api/v1/sites/site-a/admin/system/maintenance/captcha-files/purge",
+        "/api/v1/sites/site-a/admin/system/maintenance/member-list-files/purge",
+        "/api/v1/sites/site-a/admin/system/maintenance/session-files/purge",
+        "/api/v1/sites/site-a/admin/system/maintenance/thumbnail-files/purge",
+    ] {
+        let unconfirmed = app
+            .clone()
+            .oneshot(json_request(
+                Method::POST,
+                path,
+                Some(&cookie),
+                Some(&csrf),
+                Some(serde_json::json!({"confirm_action": false})),
+            ))
+            .await
+            .unwrap();
+        assert_eq!(unconfirmed.status(), StatusCode::BAD_REQUEST, "{path}");
+        assert_eq!(
+            json::<ErrorEnvelope>(unconfirmed).await.error.code,
+            "mutation_confirmation_required"
+        );
+    }
+
+    let converted = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/system/browscap/convert",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"confirm_action": true, "rows": 25})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(converted.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(converted).await["rows"], 25);
+
+    let purged = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/system/maintenance/cache-files/purge",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"confirm_action": true})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(purged.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(purged).await["task"], "cache_files");
+
+    let unconfirmed_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/system/browscap/update",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"confirm_update": false})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(unconfirmed_update.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        json::<ErrorEnvelope>(unconfirmed_update).await.error.code,
+        "external_effect_confirmation_required"
+    );
+
     let delete = app
         .clone()
         .oneshot(json_request(
@@ -5355,6 +5489,53 @@ impl ConnectorGateway for MockConnector {
                     "meta": {}
                 })
             }
+            "adminSystemPhpInfo" => serde_json::json!({
+                "data": {
+                    "php_version": "8.3.0", "sapi": "fpm-fcgi",
+                    "loaded_ini": "/etc/php/php.ini", "scanned_ini": null,
+                    "extension_count": 42,
+                    "html": "<table><tr><td>API_TOKEN</td><td>secret-token</td></tr></table>"
+                },
+                "meta": {}
+            }),
+            "adminSystemBrowscapStatus" => serde_json::json!({
+                "data": {
+                    "available": true, "plugin_path": "/plugin/browscap.php",
+                    "cache_directory": "/data/cache", "cache_file": "/data/cache/browscap_cache.php",
+                    "cache_exists": true, "php_version": "8.3.0",
+                    "pending_visit_count": 2, "updated": null, "cache_mtime": null
+                },
+                "meta": {}
+            }),
+            "adminSystemBrowscapConvert" => serde_json::json!({
+                "data": {
+                    "rows": input.body.as_ref().and_then(|body| body.get("rows")).and_then(Value::as_u64).unwrap_or(100),
+                    "total_pending_before": 2, "processed_count": 2,
+                    "remaining_count": 0, "completed": true
+                },
+                "meta": {}
+            }),
+            "adminSystemPurgeCacheFiles"
+            | "adminSystemPurgeCaptchaFiles"
+            | "adminSystemPurgeMemberListFiles"
+            | "adminSystemPurgeSessionFiles"
+            | "adminSystemPurgeThumbnailFiles" => {
+                let task = match operation_id {
+                    "adminSystemPurgeCacheFiles" => "cache_files",
+                    "adminSystemPurgeCaptchaFiles" => "captcha_files",
+                    "adminSystemPurgeMemberListFiles" => "member_list_files",
+                    "adminSystemPurgeSessionFiles" => "session_files",
+                    _ => "thumbnail_files",
+                };
+                serde_json::json!({
+                    "data": {
+                        "task": task, "status": "completed", "directory": "/data/cache",
+                        "deleted_count": 1, "deleted_paths": ["fixture.cache"],
+                        "message": null, "social_log_deleted_count": null
+                    },
+                    "meta": {}
+                })
+            }
             "adminListMails" | "adminSystemListMails" => {
                 let mails = self.mails.lock().unwrap().clone();
                 serde_json::json!({
@@ -5737,7 +5918,8 @@ impl ConnectorGateway for MockConnector {
             .lock()
             .unwrap()
             .push(operation_id.to_owned());
-        let body = input.body.as_ref().unwrap();
+        let empty_body = Value::Null;
+        let body = input.body.as_ref().unwrap_or(&empty_body);
         let data = match operation_id {
             "adminSendMail" => serde_json::json!({
                 "data": {
@@ -5775,6 +5957,16 @@ impl ConnectorGateway for MockConnector {
                     "mail_enabled": false,
                     "dry_run": body["dry_run"],
                     "recipients": [{"mb_id": "member01", "mb_email": "member@example.test"}]
+                },
+                "meta": {}
+            }),
+            "adminSystemBrowscapUpdate" => serde_json::json!({
+                "data": {
+                    "available": true, "plugin_path": "/plugin/browscap.php",
+                    "cache_directory": "/data/cache", "cache_file": "/data/cache/browscap_cache.php",
+                    "cache_exists": true, "php_version": "8.3.0",
+                    "pending_visit_count": 2, "updated": true,
+                    "cache_mtime": "2026-08-24T00:00:00+00:00"
                 },
                 "meta": {}
             }),
