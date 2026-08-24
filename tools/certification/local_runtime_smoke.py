@@ -2640,6 +2640,99 @@ def main() -> int:
     ):
         raise RuntimeError("R33 Push standard and legacy local queue readback failed")
 
+    phpinfo_path = "/api/v1/sites/owner-a-site/admin/system/phpinfo"
+    browscap_path = "/api/v1/sites/owner-a-site/admin/system/browscap"
+    phpinfo = request(
+        fleet_base, "GET", phpinfo_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        not phpinfo.get("php_version")
+        or not phpinfo.get("sapi")
+        or phpinfo.get("extension_count", 0) <= 0
+        or phpinfo.get("raw_html_withheld") is not True
+        or "html" in phpinfo
+        or "loaded_ini" in phpinfo
+        or "scanned_ini" in phpinfo
+    ):
+        raise RuntimeError("R34 phpinfo browser-safe summary failed")
+
+    browscap = request(
+        fleet_base, "GET", browscap_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    required_browscap_fields = {
+        "available", "plugin_path", "cache_directory", "cache_file",
+        "cache_exists", "php_version", "pending_visit_count",
+    }
+    if not required_browscap_fields.issubset(browscap):
+        raise RuntimeError("R34 Browscap status contract failed")
+
+    unconfirmed_browscap_update = request(
+        fleet_base, "POST", f"{browscap_path}/update",
+        body={"confirm_update": False},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    unconfirmed_browscap_convert = request(
+        fleet_base, "POST", f"{browscap_path}/convert",
+        body={"confirm_action": False, "rows": 1},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    if (
+        unconfirmed_browscap_update.get("error", {}).get("code")
+        != "external_effect_confirmation_required"
+        or unconfirmed_browscap_convert.get("error", {}).get("code")
+        != "mutation_confirmation_required"
+    ):
+        raise RuntimeError("R34 Browscap confirmation did not fail closed")
+
+    convert_status = "provider_unavailable"
+    if browscap.get("available") and browscap.get("cache_exists"):
+        converted = request(
+            fleet_base, "POST", f"{browscap_path}/convert",
+            body={"confirm_action": True, "rows": 1},
+            headers=fleet_headers(admin_cookie, admin_csrf),
+        ).json()
+        if converted.get("rows") != 1 or converted.get("processed_count", -1) < 0:
+            raise RuntimeError("R34 Browscap conversion readback failed")
+        convert_status = "passed"
+    else:
+        unavailable = request(
+            fleet_base, "POST", f"{browscap_path}/convert",
+            body={"confirm_action": True, "rows": 1},
+            headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+        ).json()
+        if not unavailable.get("error", {}).get("code"):
+            raise RuntimeError("R34 unavailable Browscap conversion did not fail closed")
+
+    maintenance_results = {}
+    for task in (
+        "cache-files", "captcha-files", "member-list-files",
+        "session-files", "thumbnail-files",
+    ):
+        path = f"/api/v1/sites/owner-a-site/admin/system/maintenance/{task}/purge"
+        unconfirmed = request(
+            fleet_base, "POST", path,
+            body={"confirm_action": False},
+            headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+        ).json()
+        if unconfirmed.get("error", {}).get("code") != "mutation_confirmation_required":
+            raise RuntimeError(f"R34 {task} confirmation did not fail closed")
+        result = request(
+            fleet_base, "POST", path,
+            body={"confirm_action": True},
+            headers=fleet_headers(admin_cookie, admin_csrf),
+        ).json()
+        expected_task = task.replace("-", "_")
+        if (
+            result.get("task") != expected_task
+            or result.get("status") not in {"completed", "skipped"}
+            or result.get("deleted_count", -1) < 0
+            or not isinstance(result.get("deleted_paths"), list)
+        ):
+            raise RuntimeError(f"R34 {task} result contract failed")
+        maintenance_results[task] = result.get("deleted_count", 0)
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -3041,6 +3134,19 @@ def main() -> int:
             "legacy_all_queue_readback": "passed",
             "explicit_confirmations_fail_closed": "passed",
             "local_queue_rows": canonical_push["queued"] + legacy_push["queued"],
+            "external_delivery_attempts": 0,
+        },
+        "r34_system_tools": {
+            "operations": 10,
+            "site_health_readback": "passed",
+            "phpinfo_browser_safe_summary": "passed",
+            "phpinfo_raw_html_exposed": False,
+            "browscap_status_readback": "passed",
+            "browscap_convert": convert_status,
+            "browscap_external_update_confirmation_fail_closed": "passed",
+            "browscap_external_update_attempts": 0,
+            "maintenance_confirmations_fail_closed": "passed",
+            "maintenance_results": maintenance_results,
             "external_delivery_attempts": 0,
         },
         "notifications": {
