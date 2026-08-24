@@ -79,6 +79,19 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def git_blob_and_sha256(path: Path, object_format: str) -> tuple[str, str]:
+    if object_format not in {"sha1", "sha256"}:
+        raise RuntimeError(f"unsupported Git object format: {object_format}")
+    object_digest = hashlib.new(object_format)
+    content_digest = hashlib.sha256()
+    object_digest.update(f"blob {path.stat().st_size}\0".encode("ascii"))
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            object_digest.update(chunk)
+            content_digest.update(chunk)
+    return object_digest.hexdigest(), content_digest.hexdigest()
+
+
 def safe_relative(value: str) -> str:
     if not value or "\x00" in value or "\\" in value:
         raise RuntimeError(f"unsafe source path: {value!r}")
@@ -126,6 +139,7 @@ def ensure_safe_directory_chain(root: Path, directory: Path) -> None:
 
 
 def git_tree_entries(repository: Path, revision: str, source_root: Path) -> list[SourceEntry]:
+    object_format = run("git", "rev-parse", "--show-object-format", cwd=repository)
     raw = subprocess.run(
         ("git", "ls-tree", "-r", "-z", "--full-tree", revision),
         cwd=repository,
@@ -152,16 +166,17 @@ def git_tree_entries(repository: Path, revision: str, source_root: Path) -> list
                 f"non-regular or symlink Git entry is forbidden: {mode} {object_type} {relative}"
             )
         source_path = ensure_regular_source(source_root, relative)
-        # Hash the checkout bytes, independent of the destination repository's
-        # .gitattributes. The upstream tree may legitimately contain CRLF files.
-        actual_object = run("git", "hash-object", "--no-filters", str(source_path), cwd=repository)
+        # Hash the checkout bytes as a Git blob in-process, independent of the
+        # destination repository's .gitattributes. This keeps the exact Git
+        # object check without spawning one process per file.
+        actual_object, content_sha256 = git_blob_and_sha256(source_path, object_format)
         if actual_object != object_id:
             raise RuntimeError(
                 f"source worktree differs from locked Git object: {relative} "
                 f"expected={object_id} actual={actual_object}"
             )
         entries.append(
-            SourceEntry(relative, mode, object_id, sha256_file(source_path), source_path)
+            SourceEntry(relative, mode, object_id, content_sha256, source_path)
         )
     if not entries:
         raise RuntimeError(f"Git source tree is empty: {revision}")

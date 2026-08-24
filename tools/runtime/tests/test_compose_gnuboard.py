@@ -143,6 +143,18 @@ class ComposeRuntimeTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary.cleanup()
 
+    def test_in_process_blob_hash_matches_git_without_filters(self) -> None:
+        source = Path(self.temporary.name) / "blob.txt"
+        source.write_bytes(b"line one\r\nline two\n")
+        object_id, content_sha256 = compose.git_blob_and_sha256(source, "sha1")
+        self.assertEqual(
+            git(self.fixture.root, "hash-object", "--no-filters", str(source)),
+            object_id,
+        )
+        self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(), content_sha256)
+        with self.assertRaisesRegex(RuntimeError, "unsupported Git object format"):
+            compose.git_blob_and_sha256(source, "md5")
+
     def test_prepare_is_stale_free_and_offline_verify_is_fail_closed(self) -> None:
         payload = compose.prepare(self.fixture.root, str(self.fixture.composer))
         self.assertEqual("prepared", payload["status"])
