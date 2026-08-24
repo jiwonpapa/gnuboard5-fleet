@@ -1751,6 +1751,29 @@ export interface TransferQueueSnapshot {
   concurrency_limit: number;
 }
 
+export interface NotificationTransportStatus {
+  telegram_transport_configured: boolean;
+  telegram_destination_configured: boolean;
+  vapid_public_key: string | null;
+  active_web_push_subscriptions: number;
+}
+
+export interface WebPushSubscriptionSummary {
+  subscription_id: string;
+  state: "active" | "revoked";
+  created_at: string;
+  updated_at: string;
+  revoked_at: string | null;
+}
+
+export interface WebPushSubscriptionInput {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+}
+
 const transport = new BrowserHttpTransport("/api/v1");
 
 export function getInstallStatus() {
@@ -1809,6 +1832,80 @@ export function getFleetSession() {
   return transport.request<FleetSession>({
     method: "GET",
     path: "/session",
+  });
+}
+
+export function getNotificationTransportStatus(siteId: string) {
+  return transport.request<NotificationTransportStatus>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/notifications/transports`,
+  });
+}
+
+export function putTelegramDestination(
+  siteId: string,
+  chatId: string,
+  csrfToken: string,
+) {
+  return transport.request<null, { chat_id: string }>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/notifications/telegram-destination`,
+    csrfToken,
+    body: { chat_id: chatId },
+  });
+}
+
+export function deleteTelegramDestination(siteId: string, csrfToken: string) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/notifications/telegram-destination`,
+    csrfToken,
+  });
+}
+
+export function listWebPushSubscriptions(siteId: string) {
+  return transport.request<WebPushSubscriptionSummary[]>({
+    method: "GET",
+    path: `/sites/${encodeURIComponent(siteId)}/notifications/web-push/subscriptions`,
+  });
+}
+
+export function createWebPushSubscription(
+  siteId: string,
+  input: WebPushSubscriptionInput,
+  csrfToken: string,
+) {
+  return transport.request<WebPushSubscriptionSummary, WebPushSubscriptionInput>({
+    method: "POST",
+    path: `/sites/${encodeURIComponent(siteId)}/notifications/web-push/subscriptions`,
+    csrfToken,
+    body: input,
+  });
+}
+
+export function rotateWebPushSubscription(
+  siteId: string,
+  subscriptionId: string,
+  input: WebPushSubscriptionInput,
+  csrfToken: string,
+) {
+  return transport.request<WebPushSubscriptionSummary, WebPushSubscriptionInput>({
+    method: "PUT",
+    path: `/sites/${encodeURIComponent(siteId)}/notifications/web-push/subscriptions/${encodeURIComponent(subscriptionId)}`,
+    csrfToken,
+    body: input,
+  });
+}
+
+export function revokeWebPushSubscription(
+  siteId: string,
+  subscriptionId: string,
+  csrfToken: string,
+) {
+  return transport.request<null>({
+    method: "DELETE",
+    path: `/sites/${encodeURIComponent(siteId)}/notifications/web-push/subscriptions/${encodeURIComponent(subscriptionId)}`,
+    csrfToken,
   });
 }
 

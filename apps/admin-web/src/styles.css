@@ -211,6 +211,39 @@ code {
   padding: 20px;
 }
 
+.notification-settings-grid {
+  margin-top: 22px;
+}
+
+.notification-subscription-list {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notification-subscription-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+}
+
+.notification-subscription-list li div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.notification-subscription-list li strong,
+.notification-subscription-list li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .member-search,
 .member-export-form {
   margin-bottom: 18px;

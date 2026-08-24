@@ -24,6 +24,7 @@ import { AdminPollsPage } from "./features/polls/AdminPollsPage";
 import { AdminPopupsPage } from "./features/popups/AdminPopupsPage";
 import { AdminPopularPage } from "./features/popular/AdminPopularPage";
 import { AdminPushPage } from "./features/push/AdminPushPage";
+import { NotificationSettingsPage } from "./features/notifications/NotificationSettingsPage";
 import { AdminMaintenancePage } from "./features/maintenance/AdminMaintenancePage";
 import { AdminBrowscapPage } from "./features/system-tools/AdminBrowscapPage";
 import { AdminPhpInfoPage } from "./features/system-tools/AdminPhpInfoPage";
@@ -167,6 +168,10 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/push"
               element={<AdminPushPage />}
+            />
+            <Route
+              path="/sites/:siteId/notifications"
+              element={<NotificationSettingsPage />}
             />
             <Route
               path="/sites/:siteId/admin/system-tools"
