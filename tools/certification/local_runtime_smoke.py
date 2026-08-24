@@ -2317,6 +2317,206 @@ def main() -> int:
     ):
         raise RuntimeError("R30 SMS contact cleanup did not restore baseline")
 
+    sms_template_groups_path = "/api/v1/sites/owner-a-site/admin/sms/template-groups"
+    sms_templates_path = "/api/v1/sites/owner-a-site/admin/sms/templates"
+    baseline_template_groups = request(
+        fleet_base, "GET", sms_template_groups_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    baseline_template_group_ids = sorted(
+        group.get("fg_no") for group in baseline_template_groups.get("groups", [])
+        if isinstance(group.get("fg_no"), int)
+    )
+    baseline_templates = request(
+        fleet_base, "GET", f"{sms_templates_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    baseline_template_ids = sorted(
+        template.get("fo_no") for template in baseline_templates.get("templates", [])
+        if isinstance(template.get("fo_no"), int)
+    )
+    virtual_group = next(
+        (group for group in baseline_template_groups.get("groups", []) if group.get("fg_no") == 0),
+        None,
+    )
+    if (
+        baseline_template_groups.get("total") != len(baseline_template_group_ids)
+        or virtual_group is None
+        or virtual_group.get("is_virtual") is not True
+        or baseline_templates.get("pagination", {}).get("total") != len(baseline_template_ids)
+    ):
+        raise RuntimeError("R31 SMS template baseline and virtual group failed")
+
+    template_source_group = request(
+        fleet_base, "POST", sms_template_groups_path,
+        body={"fg_name": "R31 원본 그룹", "fg_member": 1},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    template_target_group = request(
+        fleet_base, "POST", sms_template_groups_path,
+        body={"fg_name": "R31 대상 그룹", "fg_member": 0},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    template_source_group_id = template_source_group.get("fg_no")
+    template_target_group_id = template_target_group.get("fg_no")
+    if not all(
+        isinstance(value, int) and value > 0
+        for value in (template_source_group_id, template_target_group_id)
+    ):
+        raise RuntimeError("R31 SMS template group create failed")
+
+    template_source_group_path = f"{sms_template_groups_path}/{template_source_group_id}"
+    template_group_detail = request(
+        fleet_base, "GET", template_source_group_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if template_group_detail.get("fg_name") != "R31 원본 그룹" or template_group_detail.get("fg_member") != 1:
+        raise RuntimeError("R31 SMS template group detail failed")
+    updated_template_group = request(
+        fleet_base, "PUT", template_source_group_path,
+        body={"fg_name": "R31 원본 갱신", "fg_member": 0},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if updated_template_group.get("fg_name") != "R31 원본 갱신" or updated_template_group.get("fg_member") != 0:
+        raise RuntimeError("R31 SMS template group update/readback failed")
+
+    first_template = request(
+        fleet_base, "POST", sms_templates_path,
+        body={
+            "fg_no": template_source_group_id,
+            "fo_name": "R31 예약 확정", "fo_content": "예약이 확정되었습니다.",
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    second_template = request(
+        fleet_base, "POST", sms_templates_path,
+        body={
+            "fg_no": template_source_group_id,
+            "fo_name": "R31 배송 안내", "fo_content": "배송을 시작했습니다.",
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    first_template_id = first_template.get("fo_no")
+    second_template_id = second_template.get("fo_no")
+    if not all(isinstance(value, int) and value > 0 for value in (first_template_id, second_template_id)):
+        raise RuntimeError("R31 SMS template create failed")
+    template_detail = request(
+        fleet_base, "GET", f"{sms_templates_path}/{first_template_id}",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if template_detail.get("fo_content") != "예약이 확정되었습니다.":
+        raise RuntimeError("R31 SMS template detail failed")
+    updated_template = request(
+        fleet_base, "PUT", f"{sms_templates_path}/{first_template_id}",
+        body={"fo_name": "R31 예약 확정 갱신", "fo_content": "예약 확정 안내입니다."},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if updated_template.get("fo_name") != "R31 예약 확정 갱신" or updated_template.get("fo_content") != "예약 확정 안내입니다.":
+        raise RuntimeError("R31 SMS template update/readback failed")
+
+    filtered_templates = request(
+        fleet_base, "GET",
+        f"{sms_templates_path}?page=1&per_page=20&fg_no={template_source_group_id}&search_field=name&search=R31",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if filtered_templates.get("pagination", {}).get("total") != 2:
+        raise RuntimeError("R31 SMS template list/filter failed")
+
+    unconfirmed_template_batch = request(
+        fleet_base, "POST", f"{sms_templates_path}/batch",
+        body={
+            "confirm_action": False, "action": "move",
+            "template_ids": [first_template_id], "target_fg_no": 0,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    if unconfirmed_template_batch.get("error", {}).get("code") != "destructive_confirmation_required":
+        raise RuntimeError("R31 SMS template batch confirmation did not fail closed")
+    moved_to_virtual = request(
+        fleet_base, "POST", f"{sms_templates_path}/batch",
+        body={
+            "confirm_action": True, "action": "move",
+            "template_ids": [first_template_id], "target_fg_no": 0,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    moved_to_target = request(
+        fleet_base, "POST", f"{sms_templates_path}/batch",
+        body={
+            "confirm_action": True, "action": "move",
+            "template_ids": [first_template_id], "target_fg_no": template_target_group_id,
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if moved_to_virtual.get("affected") != 1 or moved_to_virtual.get("target_fg_no") != 0 or moved_to_target.get("affected") != 1:
+        raise RuntimeError("R31 SMS template batch virtual/target move failed")
+    moved_template_group = request(
+        fleet_base, "POST", f"{template_source_group_path}/move",
+        body={"target_fg_no": template_target_group_id},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if (
+        moved_template_group.get("from_fg_no") != template_source_group_id
+        or moved_template_group.get("target_fg_no") != template_target_group_id
+        or moved_template_group.get("affected") != 1
+    ):
+        raise RuntimeError("R31 SMS template group move failed")
+
+    deletable_template = request(
+        fleet_base, "POST", sms_templates_path,
+        body={"fg_no": template_source_group_id, "fo_name": "R31 삭제", "fo_content": "삭제 대상"},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    deletable_template_id = deletable_template.get("fo_no")
+    unconfirmed_template_delete = request(
+        fleet_base, "DELETE", f"{sms_templates_path}/{deletable_template_id}",
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    if unconfirmed_template_delete.get("error", {}).get("code") != "destructive_confirmation_required":
+        raise RuntimeError("R31 SMS template delete confirmation did not fail closed")
+    request(
+        fleet_base, "DELETE", f"{sms_templates_path}/{deletable_template_id}?confirm=true",
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(204,),
+    )
+
+    unconfirmed_template_clear = request(
+        fleet_base, "DELETE", f"{sms_template_groups_path}/{template_target_group_id}/templates",
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    if unconfirmed_template_clear.get("error", {}).get("code") != "destructive_confirmation_required":
+        raise RuntimeError("R31 SMS template group clear confirmation did not fail closed")
+    cleared_template_group = request(
+        fleet_base, "DELETE", f"{sms_template_groups_path}/{template_target_group_id}/templates?confirm=true",
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if cleared_template_group.get("deleted") != 2:
+        raise RuntimeError("R31 SMS template group clear failed")
+    unconfirmed_template_group_delete = request(
+        fleet_base, "DELETE", template_source_group_path,
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    if unconfirmed_template_group_delete.get("error", {}).get("code") != "destructive_confirmation_required":
+        raise RuntimeError("R31 SMS template group delete confirmation did not fail closed")
+    for group_id in (template_source_group_id, template_target_group_id):
+        request(
+            fleet_base, "DELETE", f"{sms_template_groups_path}/{group_id}?confirm=true",
+            headers=fleet_headers(admin_cookie, admin_csrf), expected=(204,),
+        )
+    final_template_groups = request(
+        fleet_base, "GET", sms_template_groups_path,
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    final_templates = request(
+        fleet_base, "GET", f"{sms_templates_path}?page=1&per_page=100",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        sorted(group.get("fg_no") for group in final_template_groups.get("groups", [])) != baseline_template_group_ids
+        or sorted(template.get("fo_no") for template in final_templates.get("templates", [])) != baseline_template_ids
+        or final_templates.get("pagination", {}).get("total") != len(baseline_template_ids)
+    ):
+        raise RuntimeError("R31 SMS template cleanup did not restore baseline")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -2689,6 +2889,18 @@ def main() -> int:
             "destructive_confirmations_fail_closed": "passed",
             "group_clear_and_delete_cleanup": "passed",
             "baseline_groups_preserved": baseline_sms_group_ids,
+            "external_delivery_attempts": 0,
+        },
+        "r31_sms_templates": {
+            "operations": 13,
+            "group_list_create_detail_update_move": "passed",
+            "template_list_create_detail_update": "passed",
+            "virtual_group_zero_move": "passed",
+            "batch_move": "passed",
+            "destructive_confirmations_fail_closed": "passed",
+            "group_clear_and_delete_cleanup": "passed",
+            "baseline_groups_preserved": baseline_template_group_ids,
+            "baseline_templates_preserved": baseline_template_ids,
             "external_delivery_attempts": 0,
         },
         "notifications": {
