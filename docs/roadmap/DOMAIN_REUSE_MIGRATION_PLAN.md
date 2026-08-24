@@ -67,8 +67,8 @@ R00에서 `make check-batch BATCH=Rxx`를 구현합니다. 각 배치는 아래
 
 ## 4. 배치 순서
 
-현재 manifest 상태는 R00~R30 `batch_pass`, R31 `active`, 나머지는
-`planned`입니다. 5차 R27~R28과 6차 R29~R30을 닫았고 전체 감사에는 81개 findings가 남아
+현재 manifest 상태는 R00~R31 `batch_pass`, R32 `active`, 나머지는
+`planned`입니다. 7차 R31을 닫았고 전체 감사에는 52개 findings가 남아
 있으므로 제품 기능 이관 완료를 뜻하지 않습니다.
 
 ### 4.1 이관 통제와 공통 기반
@@ -168,7 +168,7 @@ commit/push: 미실행
 
 ## 6. 현재 실행
 
-R00~R30과 6차 목표는 닫혔고 다음 목표 추진 단위는 7차의 R31 sms-templates입니다.
+R00~R31은 닫혔고 다음 목표 추진 단위는 7차의 R32 sms-messages입니다.
 
 1. R27 write-count의 legacy 3개와 Core operation 1개는 runtime·브라우저까지 닫았습니다.
 2. R28 mails의 legacy 19개와 Core 13개도 runtime·브라우저까지 닫았습니다.
@@ -176,7 +176,9 @@ R00~R30과 6차 목표는 닫혔고 다음 목표 추진 단위는 7차의 R31 s
 4. R29 sms config의 legacy 6개와 Core 3개를 typed 서버·웹과 공식 G5·Chromium readback으로 닫았습니다.
 5. R30 sms-contacts의 legacy 18개와 Core 15개를 주소록·그룹·일괄 처리·import/export의 typed 서버·웹과 공식 G5·Chromium readback으로 닫았습니다.
 6. R30 routine 검증의 외부 문자 발송은 0이며, 브라우저 CSV download event 비관측은 로컬 런타임 export readback과 구분해 기록했습니다.
-7. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
+7. R31 SMS 템플릿 legacy 16개와 Core 13개를 typed 서버·웹, 공식 G5 CRUD·이동·정리 readback으로 닫았습니다.
+8. R31 headed 브라우저는 미실행으로 분리하고 실런타임·React 회귀 증거만 주장합니다.
+9. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
 
 실행 명령:
 
@@ -184,6 +186,7 @@ R00~R30과 6차 목표는 닫혔고 다음 목표 추진 단위는 7차의 R31 s
 make check-batch BATCH=R29
 make check-batch BATCH=R30
 make check-batch BATCH=R31
+make check-batch BATCH=R32
 ```
 
 배치 gate가 PASS하더라도 전역 `make audit-migration-parity`는 R36 전까지
@@ -200,6 +203,18 @@ R30 closeout:
 - R30 finding: 0
 - 전역 잔여 finding: 81
 - 다음 R31 사전 probe: FAIL 29
+
+R31 closeout:
+
+- 구현 commit: `5398a515a0a3f3307ffc5957f1582a1ff5f7a08e`
+- tracked 증거: `docs/audits/evidence/R31_BATCH_GATE_PASS.json`
+- scope: legacy 16, Core 13, capability 0
+- reuse: 1 reused / 15 adapted / 0 redesigned / 0 deferred
+- 공식 G5 v5.6.32 local runtime 템플릿 13 operation readback PASS
+- headed 브라우저: NOT_RUN, 시각·상호작주장 제외
+- R31 finding: 0
+- 전역 잔여 finding: 52
+- 다음 R32 사전 probe: FAIL 18
 
 R00 closeout:
 

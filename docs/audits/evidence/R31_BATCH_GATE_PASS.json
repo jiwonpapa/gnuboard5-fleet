@@ -1,0 +1,120 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R31",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "5398a515a0a3f3307ffc5957f1582a1ff5f7a08e",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "5398a515a0a3f3307ffc5957f1582a1ff5f7a08e"
+  },
+  "generated_at": "2026-08-24T01:58:34Z",
+  "commands": [
+    "make audit-runtime-prepare",
+    "make check",
+    "make check-batch BATCH=R31",
+    "composer test (official G5 composed runtime)",
+    "BUILDX_BUILDER=g5-fleet-cert-builder make certification-clean certification-up",
+    "make certification-local-smoke",
+    "python3 -m tools.migration_parity.batch_cli --batch R30 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R31 --profile static",
+    "python3 -m tools.migration_parity.batch_cli --batch R32 --profile static"
+  ],
+  "results": {
+    "canonical_make_check": {
+      "component_gates": "PASS",
+      "terminal_status": "EXPECTED_GLOBAL_MIGRATION_FAIL",
+      "terminal_findings": 52
+    },
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "cargo_workspace_tests": "PASS",
+      "http_contract_tests": {"passed": 8, "failed": 0},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 77,
+      "web_tests": {"passed": 181, "failed": 0},
+      "web_build": "PASS"
+    },
+    "php_composed_runtime": {
+      "status": "PASS",
+      "official_g5_version": "5.6.32",
+      "tests": 877,
+      "assertions": 6735,
+      "failed": 0,
+      "skipped": 5
+    },
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "revision": "5398a515a0a3f3307ffc5957f1582a1ff5f7a08e",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "5398a515a0a3f3307ffc5957f1582a1ff5f7a08e",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "3adb0a54170d852437130ad706b29b979ae17766f15e9c726ce8b1e76ddd931b",
+      "sms_template_operations": 13,
+      "group_list_create_detail_update_move": "PASS",
+      "template_list_create_detail_update": "PASS",
+      "virtual_group_zero_move": "PASS",
+      "batch_move": "PASS",
+      "destructive_confirmations_fail_closed": "PASS",
+      "group_clear_and_delete_cleanup": "PASS",
+      "baseline_groups_preserved": [0],
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "NOT_RUN",
+      "reason": "Ephemeral local password and OTP entry was not authorized for browser transmission in this run.",
+      "claim_effect": "No headed-browser claim is made; required React workflow coverage is supported by scoped tests and official G5 local runtime readback."
+    },
+    "typed_operation_consumption": {
+      "operations": [
+        "adminBatchSmsTemplates",
+        "adminClearSmsTemplateGroup",
+        "adminCreateSmsTemplate",
+        "adminCreateSmsTemplateGroup",
+        "adminDeleteSmsTemplate",
+        "adminDeleteSmsTemplateGroup",
+        "adminGetSmsTemplate",
+        "adminGetSmsTemplateGroup",
+        "adminListSmsTemplateGroups",
+        "adminListSmsTemplates",
+        "adminMoveSmsTemplateGroup",
+        "adminUpdateSmsTemplate",
+        "adminUpdateSmsTemplateGroup"
+      ],
+      "new_site_scoped_axum_routes": 13,
+      "browser_same_origin_transport": "STATIC_PASS",
+      "browser_g5_secret_exposure": "NONE_BY_CONTRACT",
+      "external_effect_boundary": "CSRF + recent step-up + explicit confirmation; no SMS delivery"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 226, "added_r31_routes": 13},
+    "predecessor_regression": {"batch": "R30", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 16, "core_operations": 13, "required_capabilities": 0},
+    "reuse": {"reused": 1, "adapted": 15, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "global_migration": {"status": "FAIL", "findings": 52},
+    "next_batch_probe": {
+      "batch": "R32",
+      "status": "FAIL",
+      "scope": {"legacy": 12, "core_operations": 6, "required_capabilities": 0},
+      "findings": 18
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "5402d1cf140b7f19f976f1a693bee7b334b3d84c2d1afe9c6364fb1e966c46fa",
+    "migration_batches_before_closeout": "1bb690a863d51de119d63c51be7855eff65aa3c0def88f3253aaa4a13b34a592"
+  },
+  "source_reports": [
+    {"path": "output/audit/runs/20260824T014505Z-631c5f388b63/result.json", "sha256": "53a40810e020e997925b55e44e650c12b553bbf16882e9c557e8f7eccb6f3bbd"},
+    {"path": "output/audit/runs/migration-parity-20260824T015416Z-c9e5a69c/result.json", "sha256": "4f1c5b9bc78e78180b31791a1410fac89958d9af55b705c75f7596cd4586da6d"},
+    {"path": "output/audit/runs/migration-batch-R30-20260824T015531Z-08bf4f77/result.json", "sha256": "e951a2b21084788cdba3fe010550bcb7548daa2cb00290f7c55121e921cf6c1a"},
+    {"path": "output/audit/runs/migration-batch-R31-20260824T015531Z-3a9503bf/result.json", "sha256": "67209d3653ebf8644cadfe2fcc483bbf6ebee1b878b406f5fc4e5b41807eaa62"},
+    {"path": "output/audit/runs/migration-batch-R32-20260824T015532Z-cfb80898/result.json", "sha256": "3e1e8671de8526730be5dd0259d6c065ddbfdb92b9ca74067e27c94b0f9a9b0c"}
+  ],
+  "claim_limit": "R31 SMS template 13-operation typed DTO, Connector, explicit site_id Axum routes, same-origin responsive React workspace and official G5 5.6.32 local runtime CRUD, move, batch, destructive confirmation and cleanup readback only. Headed browser login was not performed, so no visual or interactive browser claim is made. Routine external SMS delivery stayed at zero. This is not package, staging, live-SMS or full-product certification; global migration remains FAIL with 52 findings."
+}

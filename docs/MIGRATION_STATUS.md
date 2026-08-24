@@ -2,21 +2,21 @@
 
 ## 현재 판정
 
-2026-08-21 R30 마감 기준 전체 이관 동등성 하네스 결과는
+2026-08-24 R31 마감 기준 전체 이관 동등성 하네스 결과는
 `MIGRATION_STATIC FAIL`입니다.
 
 - legacy inventory 510개 전체의 배치 소유권은 확정됐으며 현재 유효 매핑은
   다음과 같습니다.
-  - Tauri command 222/253
-  - React page 36/43
+  - Tauri command 235/253
+  - React page 37/43
   - Rust workspace member 21/21
-- frontend regression test 92/100
+- frontend regression test 94/100
   - Rust regression test 93/93
 - 서버 전환 필수 capability 9/13 구현 증명
-- typed Core operation 소비 158/189
-- 활성 server route 213개와 Core registry 189개는 존재하지만 전체 이관
+- typed Core operation 소비 171/189
+- 활성 server route 226개와 Core registry 189개는 존재하지만 전체 이관
   증거로 승격하지 않음
-- 전역 미완료 finding 81개
+- 전역 미완료 finding 52개
 
 아래 구현 목록은 현재 소스에 존재하는 기반 기능 inventory입니다. 전체
 legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B02부터 B10은
@@ -96,6 +96,7 @@ legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B
 - SMS 설정 3개와 SMS 주소록 15개 operation을 site-scoped typed 서버·웹으로 이관
 - 공식 G5 v5.6.32에서 주소록 그룹·연락처 CRUD, 일괄 복사·이동, import preview·확정, export·cleanup readback PASS
 - Chromium 1440×1000·375×812에서 OTP·recent step-up, 주소록 workflow와 내부 table scroll, 콘솔 오류·경고 0 PASS
+- SMS 템플릿 13개 operation을 site-scoped typed 서버·웹으로 이관하고 공식 G5 5.6.32에서 그룹·템플릿 CRUD, 미분류 이동·일괄 처리·정리 readback PASS
 
 현재 migration profile은 기존 Tauri snapshot의 provenance와 source closure만 이관 증거로 검증합니다. routine `make prepare/check`는 해당 snapshot의 Bun·Cargo·Tauri·네이티브 패키징 의존성을 준비하거나 빌드하지 않습니다. 이는 데스크톱 제품 지원 또는 서버판 구현 완료를 뜻하지 않습니다.
 
@@ -121,38 +122,35 @@ revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장�
 
 ## 현재 배치
 
-R00~R30은 tracked 증거로 닫혔습니다. 6차 R29 SMS 설정과 R30 SMS 주소록은
-각각 독립 gate·commit·push로 마감했습니다.
+R00~R31은 tracked 증거로 닫혔습니다. 7차의 첫 배치 R31 SMS 템플릿을
+독립 gate·commit·push로 마감했고 R32 SMS 메시지가 활성 배치입니다.
 
-- R30 구현 commit: `c19094f150083619ba1313295bc950f11da44462`
-- 증거: `docs/audits/evidence/R30_BATCH_GATE_PASS.json`
-- R30 scope: legacy 18, Core 15, capability 0
-- reuse: 1 reused / 17 adapted / 0 redesigned / 0 deferred
-- R30 scoped finding: 0
+- R31 구현 commit: `5398a515a0a3f3307ffc5957f1582a1ff5f7a08e`
+- 증거: `docs/audits/evidence/R31_BATCH_GATE_PASS.json`
+- R31 scope: legacy 16, Core 13, capability 0
+- reuse: 1 reused / 15 adapted / 0 redesigned / 0 deferred
+- R31 scoped finding: 0
 - `SERVER_STATIC_PASS`: 35/35
-- typed Core 소비: 158/189
-- Rust 테스트: 91 PASS, 1 ignored
-- 웹 테스트: 75 files, 174 PASS
-- PHP Connector: 876 tests, 6731 assertions, 5 skipped
-- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 SMS 주소록 15개 operation의
-  그룹·연락처 CRUD, 일괄 복사·이동, import preview·확정, export·cleanup readback PASS
+- typed Core 소비: 171/189
+- Rust workspace test: PASS, 1 remote certification ignored
+- 웹 테스트: 77 files, 181 PASS
+- PHP Connector: 877 tests, 6735 assertions, 5 skipped
+- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 SMS 템플릿 13개 operation의
+  그룹·템플릿 CRUD, 미분류 이동, 일괄 이동, 확인 차단·cleanup readback PASS
 - 실제 외부 문자 전달 시도: 0
-- Chromium 1440×1000·375×812, OTP 로그인·recent step-up·그룹 생성·
-  연락처 생성/수정·일괄 확인 차단·import preview, 콘솔 오류·경고 0 PASS
-- 브라우저 CSV action은 1행 생성 메시지까지 확인했으며 download event 비관측은
-  런타임 export readback과 분리해 기록
-- 다음 활성 배치: R31 sms-templates
-- R31 사전 probe: FAIL 29
+- headed 브라우저는 임시 비밀번호·OTP 입력 승인이 없어 미실행으로 분리 기록
+- 다음 활성 배치: R32 sms-messages
+- R32 사전 probe: FAIL 18
 - 목표 추진 차수:
   - 5차: R27~R28, write-count·mails — 완료
   - 6차: R29~R30, SMS 설정·주소록 — 완료
-  - 7차: R31~R32, SMS 템플릿·메시지 — 진행 대상
+  - 7차: R31~R32, SMS 템플릿·메시지 — R31 완료, R32 진행
   - 8차: R33~R34, Push·시스템 도구
   - 9차: R35~R36, 알림·PWA·전체 종결
 
 ```bash
-make check-batch BATCH=R31
+make check-batch BATCH=R32
 ```
 
-전체 완료는 아닙니다. 전역 감사 81개가 남아 있으며 R36 전까지
+전체 완료는 아닙니다. 전역 감사 52개가 남아 있으며 R36 전까지
 `MIGRATION_STATIC FAIL`을 유지합니다.
