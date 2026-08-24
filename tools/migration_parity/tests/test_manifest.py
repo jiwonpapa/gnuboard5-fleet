@@ -204,6 +204,8 @@ class ManifestTest(unittest.TestCase):
                 "adminResendSmsFailures",
                 "adminResendAllSmsBatch",
                 "adminCreateSmsMessage",
+                "adminCreatePushMessage",
+                "adminSendPush",
             },
             {
                 mapping["operation_id"]
