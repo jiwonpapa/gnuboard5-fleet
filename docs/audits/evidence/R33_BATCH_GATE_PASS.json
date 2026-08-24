@@ -1,0 +1,99 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R33",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "886c88663496d06d17ddd5204a1a758b4446a1c5",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "886c88663496d06d17ddd5204a1a758b4446a1c5"
+  },
+  "generated_at": "2026-08-24T02:47:16Z",
+  "commands": [
+    "make certification-local-smoke",
+    "make audit-runtime-prepare",
+    "make check",
+    "make check-batch BATCH=R33",
+    "composer test (official G5 composed runtime)",
+    "python3 -m tools.migration_parity.batch_cli --batch R34 --profile static"
+  ],
+  "results": {
+    "canonical_make_check": {
+      "component_gates": "PASS",
+      "terminal_status": "EXPECTED_GLOBAL_MIGRATION_FAIL",
+      "terminal_findings": 29
+    },
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "cargo_workspace_tests": "PASS",
+      "http_contract_tests": {"passed": 8, "failed": 0},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 83,
+      "web_tests": {"passed": 193, "failed": 0},
+      "web_build": "PASS"
+    },
+    "php_composed_runtime": {
+      "status": "PASS",
+      "official_g5_version": "5.6.32",
+      "tests": 877,
+      "assertions": 6735,
+      "failed": 0,
+      "skipped": 5
+    },
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "revision": "886c88663496d06d17ddd5204a1a758b4446a1c5",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "886c88663496d06d17ddd5204a1a758b4446a1c5",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "2c872f3db6bbd1bde1e8d18b20b368e73e8adfe683b5f4949fdca4a96c31e702",
+      "push_operations": 2,
+      "canonical_member_queue_readback": "PASS",
+      "legacy_all_queue_readback": "PASS",
+      "explicit_confirmations_fail_closed": "PASS",
+      "local_queue_rows": 3,
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "NOT_RUN",
+      "reason": "Ephemeral local password and OTP entry was not authorized for browser transmission in this run.",
+      "claim_effect": "No headed-browser claim is made; responsive workflow coverage is supported by React DOM tests and official G5 local queue readback."
+    },
+    "typed_operation_consumption": {
+      "operations": ["adminCreatePushMessage", "adminSendPush"],
+      "new_site_scoped_axum_routes": 2,
+      "browser_same_origin_transport": "STATIC_PASS",
+      "browser_g5_secret_exposure": "NONE_BY_CONTRACT",
+      "external_effect_boundary": "Both canonical and legacy operations are classified external_effect and require CSRF + recent step-up + explicit confirmation"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 234, "added_r33_routes": 2},
+    "predecessor_regression": {"batch": "R32", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 3, "core_operations": 2, "required_capabilities": 0},
+    "reuse": {"reused": 0, "adapted": 3, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "global_migration": {"status": "FAIL", "findings": 29},
+    "next_batch_probe": {
+      "batch": "R34",
+      "status": "FAIL",
+      "scope": {"legacy": 15, "core_operations": 10, "required_capabilities": 0},
+      "findings": 25
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "88c05673263bc87094a5ae55ae9834c32434a02e83e38869fcd5552062ddfbf9",
+    "migration_batches_before_closeout": "8cd964b8f5bd13d34c45d44aeac27fcf9a0e1080c5f601f8b9756efd987fc4f0"
+  },
+  "source_reports": [
+    {"path": "output/audit/runs/20260824T024604Z-419d05dc4fd5/result.json", "sha256": "fca05e2f7a62001356f7388dc16b7dcb800975b871c488e07555d3413d60ba74"},
+    {"path": "output/audit/runs/migration-parity-20260824T024620Z-0c1454b8/result.json", "sha256": "e5055f83308d4845e2ddb6f5a51c698283e21ec447f89d484641ede5a8225dcd"},
+    {"path": "output/audit/runs/migration-batch-R33-20260824T024627Z-508f1122/result.json", "sha256": "712e921f257445938050c9b5d7756e821e4cbb365d39d219130483ce0ac1de1c"},
+    {"path": "output/audit/runs/migration-batch-R34-20260824T024629Z-456332a2/result.json", "sha256": "732cbc8b8b463d4a0068bbe49610cac7e21c0122f5c09476d3bc789c426d5884"}
+  ],
+  "claim_limit": "R33 Push standard and legacy 2-operation typed DTO, explicit site_id Axum routes, same-origin responsive React workspace, external-effect risk correction and official G5 5.6.32 local queue readback only. Local certification wrote three queue rows but made zero external Web Push delivery attempts. Headed browser login was not performed, so no visual or interactive browser claim is made. This is not package, staging, live-Push or full-product certification; global migration remains FAIL with 29 findings."
+}

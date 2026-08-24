@@ -1313,8 +1313,13 @@
       "id": "R33",
       "sequence": 28,
       "title": "push",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R32"],
+      "completion": {
+        "implementation_commit": "886c88663496d06d17ddd5204a1a758b4446a1c5",
+        "evidence_path": "docs/audits/evidence/R33_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-24T02:47:16Z"
+      },
       "core": {
         "domains": ["push"],
         "operation_ids": [],
@@ -1340,7 +1345,7 @@
       "id": "R34",
       "sequence": 29,
       "title": "system tools·maintenance",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R33"],
       "core": {
         "domains": [],

@@ -2,21 +2,21 @@
 
 ## 현재 판정
 
-2026-08-24 R32 마감 기준 전체 이관 동등성 하네스 결과는
+2026-08-24 R33 마감 기준 전체 이관 동등성 하네스 결과는
 `MIGRATION_STATIC FAIL`입니다.
 
 - legacy inventory 510개 전체의 배치 소유권은 확정됐으며 현재 유효 매핑은
   다음과 같습니다.
-  - Tauri command 241/253
-  - React page 39/43
+  - Tauri command 243/253
+  - React page 40/43
   - Rust workspace member 21/21
 - frontend regression test 98/100
   - Rust regression test 93/93
 - 서버 전환 필수 capability 9/13 구현 증명
-- typed Core operation 소비 177/189
-- 활성 server route 232개와 Core registry 189개는 존재하지만 전체 이관
+- typed Core operation 소비 179/189
+- 활성 server route 234개와 Core registry 189개는 존재하지만 전체 이관
   증거로 승격하지 않음
-- 전역 미완료 finding 34개
+- 전역 미완료 finding 29개
 
 아래 구현 목록은 현재 소스에 존재하는 기반 기능 inventory입니다. 전체
 legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B02부터 B10은
@@ -53,7 +53,7 @@ legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B
 - 비쇼핑 관리자 184 + bootstrap 5, Shop Core 소비 0 고정
 - Rust site-bound Core proxy와 React lazy-loaded domain console 연결
 - 연결 OpenAPI schema 287개와 17-domain generated field parity 고정
-- risk-based step-up, DELETE 명시 확인, 외부 메일·SMS·Push 9개 routine 차단
+- risk-based step-up, DELETE 명시 확인, 외부 메일·SMS·Push 10개 routine 차단
 - G5 token refresh·logout의 서버 전용 암호화 수명주기 구현
 - SSH 개인키·known_hosts의 사용자·사이트 단위 서버 암호화 저장
 - 관리 대상 public·private IP DNS pin·재검증과 strict host key를 강제하는 OpenSSH adapter 구현
@@ -98,6 +98,7 @@ legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B
 - Chromium 1440×1000·375×812에서 OTP·recent step-up, 주소록 workflow와 내부 table scroll, 콘솔 오류·경고 0 PASS
 - SMS 템플릿 13개 operation을 site-scoped typed 서버·웹으로 이관하고 공식 G5 5.6.32에서 그룹·템플릿 CRUD, 미분류 이동·일괄 처리·정리 readback PASS
 - SMS 메시지 6개 operation을 site-scoped typed 서버·웹으로 이관하고 공식 G5 5.6.32에서 배치 목록·상세·전달 결과 readback과 외부 발송 확인 차단 PASS
+- Push 표준·레거시 2개 operation을 site-scoped typed 서버·웹으로 이관하고 공식 G5 5.6.32에서 회원·전체 대상 로컬 큐 readback과 외부 전달 0 PASS
 
 현재 migration profile은 기존 Tauri snapshot의 provenance와 source closure만 이관 증거로 검증합니다. routine `make prepare/check`는 해당 snapshot의 Bun·Cargo·Tauri·네이티브 패키징 의존성을 준비하거나 빌드하지 않습니다. 이는 데스크톱 제품 지원 또는 서버판 구현 완료를 뜻하지 않습니다.
 
@@ -123,35 +124,35 @@ revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장�
 
 ## 현재 배치
 
-R00~R32는 tracked 증거로 닫혔습니다. 7차 R31~R32를 각각 독립
-gate·commit·push로 마감했고 8차의 R33 Push가 활성 배치입니다.
+R00~R33은 tracked 증거로 닫혔습니다. 8차의 첫 배치 R33 Push를 독립
+gate·commit·push로 마감했고 R34 시스템 도구·유지보수가 활성 배치입니다.
 
-- R32 구현 commit: `3bc636941cf32eecaf01cf5db3d451547697597c`
-- 증거: `docs/audits/evidence/R32_BATCH_GATE_PASS.json`
-- R32 scope: legacy 12, Core 6, capability 0
-- reuse: 2 reused / 10 adapted / 0 redesigned / 0 deferred
-- R32 scoped finding: 0
+- R33 구현 commit: `886c88663496d06d17ddd5204a1a758b4446a1c5`
+- 증거: `docs/audits/evidence/R33_BATCH_GATE_PASS.json`
+- R33 scope: legacy 3, Core 2, capability 0
+- reuse: 0 reused / 3 adapted / 0 redesigned / 0 deferred
+- R33 scoped finding: 0
 - `SERVER_STATIC_PASS`: 35/35
-- typed Core 소비: 177/189
+- typed Core 소비: 179/189
 - Rust workspace test: PASS, 1 remote certification ignored
-- 웹 테스트: 81 files, 189 PASS
+- 웹 테스트: 83 files, 193 PASS
 - PHP Connector: 877 tests, 6735 assertions, 5 skipped
-- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 SMS 메시지 6개 operation의
-  배치 목록·상세·재시도·전달 결과 조회와 외부 발송 확인 차단 PASS
-- 실제 외부 문자 전달 시도: 0
+- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 Push 표준·레거시 2개 operation의
+  회원 지정·전체 대상 로컬 큐 3건과 명시 확인 차단 PASS
+- 실제 외부 Web Push 전달 시도: 0
 - headed 브라우저는 임시 비밀번호·OTP 입력 승인이 없어 미실행으로 분리 기록
-- 다음 활성 배치: R33 push
-- R33 사전 probe: FAIL 5
+- 다음 활성 배치: R34 system tools·maintenance
+- R34 사전 probe: FAIL 25
 - 목표 추진 차수:
   - 5차: R27~R28, write-count·mails — 완료
   - 6차: R29~R30, SMS 설정·주소록 — 완료
   - 7차: R31~R32, SMS 템플릿·메시지 — 완료
-  - 8차: R33~R34, Push·시스템 도구 — R33 진행
+  - 8차: R33~R34, Push·시스템 도구 — R33 완료, R34 진행
   - 9차: R35~R36, 알림·PWA·전체 종결
 
 ```bash
-make check-batch BATCH=R33
+make check-batch BATCH=R34
 ```
 
-전체 완료는 아닙니다. 전역 감사 34개가 남아 있으며 R36 전까지
+전체 완료는 아닙니다. 전역 감사 29개가 남아 있으며 R36 전까지
 `MIGRATION_STATIC FAIL`을 유지합니다.
