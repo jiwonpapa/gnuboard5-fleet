@@ -47,6 +47,7 @@ docker buildx build \
 docker image inspect "$caddy_image" >/dev/null 2>&1 || docker pull "$caddy_image"
 
 temporary=$(mktemp -d "${TMPDIR:-/tmp}/g5-fleet-package-smoke.XXXXXX")
+chmod 0700 "$temporary"
 state_dir="$temporary/state"
 env_file="$temporary/fleet.env"
 passphrase_file="$temporary/recovery-passphrase"
@@ -100,10 +101,20 @@ G5_FLEET_CADDY_IMAGE="$caddy_image" \
   "$root/deploy/scripts/install.sh" "$version_a" "$state_dir" "$env_file"
 
 bootstrap_value="package smoke value 2026"
+challenge_file="$temporary/install-challenge.json"
+completion_file="$temporary/install-completion.json"
 curl --fail --silent --show-error \
   -H 'content-type: application/json' \
-  --data "$(printf '{"login_name":"admin","password":"%s"}' "$bootstrap_value")" \
-  "http://127.0.0.1:$http_port/api/v1/bootstrap" >/dev/null
+  --data '{"login_name":"admin"}' \
+  --output "$challenge_file" \
+  "http://127.0.0.1:$http_port/api/v1/install/challenge"
+python3 -c 'import json, sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]); from tools.certification.local_runtime_smoke import current_totp; challenge=json.loads(Path(sys.argv[2]).read_text(encoding="utf-8")); Path(sys.argv[3]).write_text(json.dumps({"setup_token":challenge["setup_token"],"login_name":"admin","password":sys.argv[4],"totp_code":current_totp(challenge["manual_entry_key"])}), encoding="utf-8")' \
+  "$root" "$challenge_file" "$completion_file" "$bootstrap_value"
+chmod 0600 "$challenge_file" "$completion_file"
+curl --fail --silent --show-error \
+  -H 'content-type: application/json' \
+  --data-binary "@$completion_file" \
+  "http://127.0.0.1:$http_port/api/v1/install/complete" >/dev/null
 before_readback=$(offline_readback)
 case "$before_readback" in
   *'"users":1'*) ;;
