@@ -38,6 +38,7 @@ async fn fixture() -> (TempDir, TempDir, axum::Router) {
         .expect("test auth"),
         connector: Arc::new(g5_fleet_connector::ProductionConnectorGateway),
         notification_worker: None,
+        notification_public_config: Default::default(),
     });
     (web, data, app)
 }
@@ -125,7 +126,7 @@ async fn health_readiness_and_meta_contract_are_live() {
     let meta: MetaResponse = json(meta).await;
     assert_eq!(meta.api_version, "v1");
     assert_eq!(meta.product_name, "G5 Fleet");
-    assert_eq!(meta.database_schema_version, 3);
+    assert_eq!(meta.database_schema_version, 4);
     assert!(!meta.build_revision.is_empty());
     assert!(!meta.image_version.is_empty());
 }
@@ -166,6 +167,7 @@ async fn readiness_fails_closed_without_web_build() {
         .expect("test auth"),
         connector: Arc::new(g5_fleet_connector::ProductionConnectorGateway),
         notification_worker: None,
+        notification_public_config: Default::default(),
     });
     let response = app
         .oneshot(Request::get("/readyz").body(Body::empty()).unwrap())
@@ -588,6 +590,31 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("POST", "/api/v1/sites/{site_id}/transfers/{job_id}/retry",),
             ("POST", "/api/v1/sites/{site_id}/transfers/{job_id}/pause",),
             ("POST", "/api/v1/sites/{site_id}/notifications"),
+            ("GET", "/api/v1/sites/{site_id}/notifications/transports"),
+            (
+                "PUT",
+                "/api/v1/sites/{site_id}/notifications/telegram-destination"
+            ),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/notifications/telegram-destination"
+            ),
+            (
+                "GET",
+                "/api/v1/sites/{site_id}/notifications/web-push/subscriptions"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/notifications/web-push/subscriptions"
+            ),
+            (
+                "PUT",
+                "/api/v1/sites/{site_id}/notifications/web-push/subscriptions/{subscription_id}"
+            ),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/notifications/web-push/subscriptions/{subscription_id}"
+            ),
             ("GET", "/api/v1/sites/{site_id}/notifications/{outbox_id}",),
         ]
     );
@@ -1022,6 +1049,7 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap(),
         connector: Arc::new(mock.clone()),
         notification_worker: None,
+        notification_public_config: Default::default(),
     });
     let fleet_password = "correct horse battery staple";
     let (totp_secret, _) = complete_install(&app, "admin", fleet_password).await;
@@ -1180,6 +1208,123 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
     let duplicate: Value = json(duplicate).await;
     assert_eq!(duplicate["inserted"], false);
     assert_eq!(duplicate["notification"]["outbox_id"], first_outbox_id);
+
+    let telegram_destination = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            "/api/v1/sites/site-a/notifications/telegram-destination",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"chat_id":"-1001234567890"})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(telegram_destination.status(), StatusCode::NO_CONTENT);
+
+    let transport_status = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/notifications/transports",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(transport_status.status(), StatusCode::OK);
+    let transport_status: Value = json(transport_status).await;
+    assert_eq!(transport_status["telegram_transport_configured"], false);
+    assert_eq!(transport_status["telegram_destination_configured"], true);
+    assert_eq!(transport_status["vapid_public_key"], Value::Null);
+
+    let web_push_input = serde_json::json!({
+        "endpoint":"https://fcm.googleapis.com/fcm/send/browser-secret-a",
+        "keys":{
+            "p256dh":"BAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0-P0A",
+            "auth":"AQIDBAUGBwgJCgsMDQ4PEA"
+        }
+    });
+    let subscription = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/notifications/web-push/subscriptions",
+            Some(&cookie),
+            Some(&csrf),
+            Some(web_push_input),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(subscription.status(), StatusCode::CREATED);
+    let subscription: Value = json(subscription).await;
+    let subscription_id = subscription["subscription_id"].as_str().unwrap().to_owned();
+    assert_eq!(subscription["state"], "active");
+    assert!(subscription.get("endpoint").is_none());
+    assert!(subscription.get("keys").is_none());
+
+    let subscriptions = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/notifications/web-push/subscriptions",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    let subscriptions: Value = json(subscriptions).await;
+    assert_eq!(subscriptions.as_array().unwrap().len(), 1);
+    assert!(subscriptions[0].get("endpoint").is_none());
+
+    let rotated = app
+        .clone()
+        .oneshot(json_request(
+            Method::PUT,
+            &format!(
+                "/api/v1/sites/site-a/notifications/web-push/subscriptions/{subscription_id}"
+            ),
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({
+                "endpoint":"https://updates.push.services.mozilla.com/wpush/v2/browser-secret-b",
+                "keys":{
+                    "p256dh":"BAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0-P0A",
+                    "auth":"AQIDBAUGBwgJCgsMDQ4PEA"
+                }
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(rotated.status(), StatusCode::OK);
+
+    let revoked = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            &format!("/api/v1/sites/site-a/notifications/web-push/subscriptions/{subscription_id}"),
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(revoked.status(), StatusCode::NO_CONTENT);
+
+    let telegram_deleted = app
+        .clone()
+        .oneshot(json_request(
+            Method::DELETE,
+            "/api/v1/sites/site-a/notifications/telegram-destination",
+            Some(&cookie),
+            Some(&csrf),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(telegram_deleted.status(), StatusCode::NO_CONTENT);
 
     let private_key = [
         "-----BEGIN OPENSSH ",

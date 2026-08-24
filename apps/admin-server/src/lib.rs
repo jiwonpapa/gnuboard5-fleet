@@ -1,4 +1,5 @@
 mod api;
+mod notifications;
 
 use std::{
     env,
@@ -35,6 +36,9 @@ pub use api::{
     RecoveryCodesResponse, RequestContext, SecuritySettingsResponse, SessionResponse,
     TotpChallengeResponse,
 };
+pub use notifications::{
+    NotificationPublicConfig, NotificationRuntime, build_notification_runtime,
+};
 
 pub fn build_revision() -> String {
     env::var("G5_FLEET_BUILD_REVISION").unwrap_or_else(|_| DEFAULT_BUILD_REVISION.to_owned())
@@ -50,6 +54,7 @@ pub struct AppConfig {
     pub auth: AuthService,
     pub connector: Arc<dyn ConnectorGateway>,
     pub notification_worker: Option<NotificationWorker>,
+    pub notification_public_config: NotificationPublicConfig,
 }
 
 impl std::fmt::Debug for AppConfig {
@@ -62,6 +67,10 @@ impl std::fmt::Debug for AppConfig {
             .field(
                 "notification_worker",
                 &self.notification_worker.as_ref().map(|_| "<configured>"),
+            )
+            .field(
+                "notification_public_config",
+                &self.notification_public_config,
             )
             .finish()
     }

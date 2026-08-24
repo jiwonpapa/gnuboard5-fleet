@@ -70,9 +70,14 @@ async fn existing_schema_migration_is_explicit_preserves_rows_and_repairs_stale_
         include_str!("../migrations/0002_security_boundary.sql"),
     )
     .expect("v2 migration");
+    fs::write(
+        migration_dir.path().join("0003_install_auth_audit.sql"),
+        include_str!("../migrations/0003_install_auth_audit.sql"),
+    )
+    .expect("v3 migration");
     let migrator = Migrator::new(migration_dir.path())
         .await
-        .expect("load v2 migrations");
+        .expect("load v3 migrations");
     let database = data.path().join(DATABASE_FILENAME);
     let mut connection = SqliteConnection::connect_with(
         &SqliteConnectOptions::new()
@@ -81,16 +86,16 @@ async fn existing_schema_migration_is_explicit_preserves_rows_and_repairs_stale_
             .foreign_keys(true),
     )
     .await
-    .expect("create v2 database");
-    migrator.run(&mut connection).await.expect("migrate to v2");
+    .expect("create v3 database");
+    migrator.run(&mut connection).await.expect("migrate to v3");
     sqlx::query(
         "INSERT INTO installation_metadata \
-         (singleton, installation_id, schema_version) VALUES (1, ?, 2)",
+         (singleton, installation_id, schema_version) VALUES (1, ?, 3)",
     )
     .bind(INSTALLATION_ID)
     .execute(&mut connection)
     .await
-    .expect("v2 installation metadata");
+    .expect("v3 installation metadata");
     sqlx::query(
         "INSERT INTO fleet_users (user_id, login_name, password_hash) \
          VALUES ('legacy-user', 'legacy-admin', ?)",
@@ -104,7 +109,7 @@ async fn existing_schema_migration_is_explicit_preserves_rows_and_repairs_stale_
         schema: "g5-fleet.installation/v1".to_owned(),
         installation_id: INSTALLATION_ID.to_owned(),
         database_filename: DATABASE_FILENAME.to_owned(),
-        schema_version: 2,
+        schema_version: 3,
         created_at_unix: 1,
     };
     fs::write(
@@ -127,7 +132,7 @@ async fn existing_schema_migration_is_explicit_preserves_rows_and_repairs_stale_
     assert_eq!(migrated.readback().await.expect("readback").users, 1);
     migrated.close().await;
 
-    identity.schema_version = 2;
+    identity.schema_version = 3;
     fs::write(
         data.path().join("installation.json"),
         serde_json::to_vec(&identity).expect("serialize stale identity"),

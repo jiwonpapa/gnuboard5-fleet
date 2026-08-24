@@ -9,6 +9,7 @@ rust-version.workspace = true
 local-certification = ["g5-fleet-connector/local-certification"]
 
 [dependencies]
+async-trait.workspace = true
 axum.workspace = true
 base64.workspace = true
 g5-fleet-connector = { path = "../../crates/fleet-connector" }
@@ -26,6 +27,5 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 
 [dev-dependencies]
-async-trait.workspace = true
 http-body-util.workspace = true
 tower.workspace = true

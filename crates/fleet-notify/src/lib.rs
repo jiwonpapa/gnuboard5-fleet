@@ -11,6 +11,11 @@ use getrandom::fill as random_fill;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tokio::sync::Mutex;
+use url::Url;
+use web_push::{
+    ContentEncoding, SubscriptionInfo, VapidSignatureBuilder, WebPushMessageBuilder,
+    request_builder::build_request,
+};
 
 const DEFAULT_LEASE_SECONDS: u64 = 60;
 const DEFAULT_MAX_ATTEMPTS: i64 = 5;
@@ -316,6 +321,90 @@ pub struct TelegramAdapter<T> {
     destination_ref: String,
 }
 
+#[derive(Clone)]
+pub struct TelegramHttpTransport {
+    client: reqwest::Client,
+    bot_token: Arc<str>,
+}
+
+impl TelegramHttpTransport {
+    pub fn new(bot_token: String) -> NotifyResult<Self> {
+        if !(20..=256).contains(&bot_token.len())
+            || !bot_token
+                .chars()
+                .all(|character| character.is_ascii_alphanumeric() || ":_-".contains(character))
+        {
+            return Err(NotifyError::InvalidInput);
+        }
+        let client = reqwest::Client::builder()
+            .connect_timeout(Duration::from_secs(5))
+            .timeout(Duration::from_secs(15))
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .map_err(|_| NotifyError::InvalidInput)?;
+        Ok(Self {
+            client,
+            bot_token: Arc::from(bot_token),
+        })
+    }
+}
+
+#[derive(Deserialize)]
+struct TelegramApiResponse {
+    ok: bool,
+}
+
+#[async_trait]
+impl TelegramTransport for TelegramHttpTransport {
+    async fn send(&self, delivery: &TelegramDelivery) -> NotifyResult<()> {
+        let response = self
+            .client
+            .post(format!(
+                "https://api.telegram.org/bot{}/sendMessage",
+                self.bot_token
+            ))
+            .json(&serde_json::json!({
+                "chat_id": delivery.destination_ref,
+                "text": format!("{}\n\n{}", delivery.title, delivery.body),
+                "disable_web_page_preview": true,
+            }))
+            .send()
+            .await
+            .map_err(|_| NotifyError::Transient("telegram_network".to_owned()))?;
+        let status = response.status();
+        if status == reqwest::StatusCode::TOO_MANY_REQUESTS || status.is_server_error() {
+            return Err(NotifyError::Transient("telegram_retryable".to_owned()));
+        }
+        if !status.is_success() {
+            return Err(NotifyError::Permanent("telegram_rejected".to_owned()));
+        }
+        if response
+            .content_length()
+            .is_some_and(|length| length > 64 * 1024)
+        {
+            return Err(NotifyError::Transient(
+                "telegram_response_too_large".to_owned(),
+            ));
+        }
+        let body = response
+            .bytes()
+            .await
+            .map_err(|_| NotifyError::Transient("telegram_response".to_owned()))?;
+        if body.len() > 64 * 1024 {
+            return Err(NotifyError::Transient(
+                "telegram_response_too_large".to_owned(),
+            ));
+        }
+        let result: TelegramApiResponse = serde_json::from_slice(&body)
+            .map_err(|_| NotifyError::Transient("telegram_response".to_owned()))?;
+        if result.ok {
+            Ok(())
+        } else {
+            Err(NotifyError::Permanent("telegram_rejected".to_owned()))
+        }
+    }
+}
+
 impl<T> TelegramAdapter<T> {
     pub fn new(transport: T, destination_ref: String) -> NotifyResult<Self> {
         if destination_ref.is_empty() || destination_ref.len() > 128 {
@@ -347,9 +436,29 @@ impl<T: TelegramTransport> NotificationProvider for TelegramAdapter<T> {
     }
 }
 
+#[derive(Clone, PartialEq, Eq)]
+pub struct WebPushSubscription {
+    pub subscription_ref: String,
+    pub endpoint: String,
+    pub p256dh: String,
+    pub auth: String,
+}
+
+impl std::fmt::Debug for WebPushSubscription {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WebPushSubscription")
+            .field("subscription_ref", &self.subscription_ref)
+            .field("endpoint", &"<redacted>")
+            .field("p256dh", &"<redacted>")
+            .field("auth", &"<redacted>")
+            .finish()
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct WebPushDelivery {
-    pub subscription_ref: String,
+    pub subscription: WebPushSubscription,
     pub title: String,
     pub body: String,
     pub action_path: Option<String>,
@@ -362,17 +471,20 @@ pub trait WebPushTransport: Send + Sync {
 
 pub struct WebPushAdapter<T> {
     transport: T,
-    subscription_ref: String,
+    subscription: WebPushSubscription,
 }
 
 impl<T> WebPushAdapter<T> {
-    pub fn new(transport: T, subscription_ref: String) -> NotifyResult<Self> {
-        if subscription_ref.is_empty() || subscription_ref.len() > 128 {
+    pub fn new(transport: T, subscription: WebPushSubscription) -> NotifyResult<Self> {
+        if subscription.subscription_ref.is_empty()
+            || subscription.subscription_ref.len() > 128
+            || !valid_web_push_endpoint(&subscription.endpoint)
+        {
             return Err(NotifyError::InvalidInput);
         }
         Ok(Self {
             transport,
-            subscription_ref,
+            subscription,
         })
     }
 }
@@ -388,12 +500,125 @@ impl<T: WebPushTransport> NotificationProvider for WebPushAdapter<T> {
             .map_err(|_| NotifyError::InvalidInput)?;
         self.transport
             .send(&WebPushDelivery {
-                subscription_ref: self.subscription_ref.clone(),
+                subscription: self.subscription.clone(),
                 title: payload.title,
                 body: payload.body,
                 action_path: payload.action_path,
             })
             .await
+    }
+}
+
+#[derive(Clone)]
+pub struct WebPushHttpTransport {
+    client: reqwest::Client,
+    vapid_private_key: Arc<str>,
+    vapid_subject: Arc<str>,
+    public_key: Arc<str>,
+}
+
+impl WebPushHttpTransport {
+    pub fn new(vapid_private_key: String, vapid_subject: String) -> NotifyResult<Self> {
+        if !valid_vapid_subject(&vapid_subject) {
+            return Err(NotifyError::InvalidInput);
+        }
+        let partial = VapidSignatureBuilder::from_base64_no_sub(&vapid_private_key)
+            .map_err(|_| NotifyError::InvalidInput)?;
+        let public_key = URL_SAFE_NO_PAD.encode(partial.get_public_key());
+        let client = reqwest::Client::builder()
+            .connect_timeout(Duration::from_secs(5))
+            .timeout(Duration::from_secs(15))
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .map_err(|_| NotifyError::InvalidInput)?;
+        Ok(Self {
+            client,
+            vapid_private_key: Arc::from(vapid_private_key),
+            vapid_subject: Arc::from(vapid_subject),
+            public_key: Arc::from(public_key),
+        })
+    }
+
+    pub fn public_key(&self) -> &str {
+        &self.public_key
+    }
+
+    fn request(
+        &self,
+        delivery: &WebPushDelivery,
+    ) -> NotifyResult<(String, Vec<(String, String)>, Vec<u8>)> {
+        if !valid_web_push_endpoint(&delivery.subscription.endpoint) {
+            return Err(NotifyError::Permanent(
+                "web_push_endpoint_forbidden".to_owned(),
+            ));
+        }
+        let subscription = SubscriptionInfo::new(
+            delivery.subscription.endpoint.clone(),
+            delivery.subscription.p256dh.clone(),
+            delivery.subscription.auth.clone(),
+        );
+        let mut signature =
+            VapidSignatureBuilder::from_base64(&self.vapid_private_key, &subscription)
+                .map_err(|_| NotifyError::Permanent("web_push_invalid_key".to_owned()))?;
+        signature.add_claim("sub", self.vapid_subject.to_string());
+        let signature = signature
+            .build()
+            .map_err(|_| NotifyError::Permanent("web_push_invalid_signature".to_owned()))?;
+        let payload = serde_json::to_vec(&serde_json::json!({
+            "title": delivery.title,
+            "body": delivery.body,
+            "action_path": delivery.action_path,
+        }))
+        .map_err(|_| NotifyError::InvalidInput)?;
+        let mut builder = WebPushMessageBuilder::new(&subscription);
+        builder.set_ttl(3600);
+        builder.set_payload(ContentEncoding::Aes128Gcm, &payload);
+        builder.set_vapid_signature(signature);
+        let message = builder
+            .build()
+            .map_err(|_| NotifyError::Permanent("web_push_invalid_subscription".to_owned()))?;
+        let request = build_request::<Vec<u8>>(message);
+        let endpoint = request.uri().to_string();
+        let headers = request
+            .headers()
+            .iter()
+            .map(|(name, value)| {
+                value
+                    .to_str()
+                    .map(|value| (name.as_str().to_owned(), value.to_owned()))
+                    .map_err(|_| NotifyError::Permanent("web_push_invalid_header".to_owned()))
+            })
+            .collect::<NotifyResult<Vec<_>>>()?;
+        Ok((endpoint, headers, request.into_body()))
+    }
+}
+
+#[async_trait]
+impl WebPushTransport for WebPushHttpTransport {
+    async fn send(&self, delivery: &WebPushDelivery) -> NotifyResult<()> {
+        let (endpoint, headers, body) = self.request(delivery)?;
+        let mut outgoing = self.client.post(endpoint);
+        for (name, value) in headers {
+            outgoing = outgoing.header(name, value);
+        }
+        let response = outgoing
+            .body(body)
+            .send()
+            .await
+            .map_err(|_| NotifyError::Transient("web_push_network".to_owned()))?;
+        match response.status() {
+            status if status.is_success() => Ok(()),
+            reqwest::StatusCode::TOO_MANY_REQUESTS => {
+                Err(NotifyError::Transient("web_push_rate_limited".to_owned()))
+            }
+            status if status.is_server_error() => {
+                Err(NotifyError::Transient("web_push_retryable".to_owned()))
+            }
+            reqwest::StatusCode::NOT_FOUND | reqwest::StatusCode::GONE => {
+                Err(NotifyError::Permanent("subscription_gone".to_owned()))
+            }
+            _ => Err(NotifyError::Permanent("web_push_rejected".to_owned())),
+        }
     }
 }
 
@@ -411,6 +636,47 @@ fn valid_action_path(value: &str) -> bool {
         && !value.contains('\\')
         && !value.contains('\0')
         && value.len() <= 2048
+}
+
+pub fn valid_web_push_endpoint(value: &str) -> bool {
+    let Ok(url) = Url::parse(value) else {
+        return false;
+    };
+    if url.scheme() != "https"
+        || !url.username().is_empty()
+        || url.password().is_some()
+        || url.fragment().is_some()
+        || url.port().is_some_and(|port| port != 443)
+    {
+        return false;
+    }
+    let Some(host) = url.host_str().map(str::to_ascii_lowercase) else {
+        return false;
+    };
+    [
+        "googleapis.com",
+        "push.services.mozilla.com",
+        "push.apple.com",
+        "notify.windows.com",
+    ]
+    .iter()
+    .any(|suffix| host == *suffix || host.ends_with(&format!(".{suffix}")))
+}
+
+fn valid_vapid_subject(value: &str) -> bool {
+    if value.len() > 512 {
+        return false;
+    }
+    if let Some(address) = value.strip_prefix("mailto:") {
+        return address.contains('@') && !address.contains(char::is_whitespace);
+    }
+    Url::parse(value).is_ok_and(|url| {
+        url.scheme() == "https"
+            && url.host_str().is_some()
+            && url.username().is_empty()
+            && url.password().is_none()
+            && url.fragment().is_none()
+    })
 }
 
 fn retry_delay(base: u64, attempts: i64) -> u64 {
@@ -610,5 +876,53 @@ mod tests {
         let result = worker.run_once().await.unwrap().unwrap();
         assert_eq!(result.state, "dead_letter");
         assert_eq!(result.last_error_code.as_deref(), Some("subscription_gone"));
+    }
+
+    #[test]
+    fn production_transports_build_only_https_vendor_push_requests() {
+        assert!(
+            TelegramHttpTransport::new("1234567890:abcdefghijklmnopqrstuvwxyzABCDE".to_owned())
+                .is_ok()
+        );
+        assert!(TelegramHttpTransport::new("token".to_owned()).is_err());
+        assert!(valid_web_push_endpoint(
+            "https://fcm.googleapis.com/fcm/send/subscription"
+        ));
+        assert!(valid_web_push_endpoint(
+            "https://updates.push.services.mozilla.com/wpush/v2/subscription"
+        ));
+        assert!(!valid_web_push_endpoint(
+            "https://fcm.googleapis.com.evil.invalid/secret"
+        ));
+        assert!(!valid_web_push_endpoint("http://127.0.0.1/push"));
+
+        let transport = WebPushHttpTransport::new(
+            "IQ9Ur0ykXoHS9gzfYX0aBjy9lvdrjx_PFUXmie9YRcY".to_owned(),
+            "mailto:admin@example.com".to_owned(),
+        )
+        .unwrap();
+        let delivery = WebPushDelivery {
+            subscription: WebPushSubscription {
+                subscription_ref: "wps-fixture".to_owned(),
+                endpoint: "https://fcm.googleapis.com/fcm/send/subscription".to_owned(),
+                p256dh: "BLMbF9ffKBiWQLCKvTHb6LO8Nb6dcUh6TItC455vu2kElga6PQvUmaFyCdykxY2nOSSL3yKgfbmFLRTUaGv4yV8".to_owned(),
+                auth: "xS03Fi5ErfTNH_l9WHE9Ig".to_owned(),
+            },
+            title: "운영 알림".to_owned(),
+            body: "점검이 완료되었습니다.".to_owned(),
+            action_path: Some("/sites/site-a".to_owned()),
+        };
+        let (endpoint, headers, encrypted_body) = transport.request(&delivery).unwrap();
+        assert_eq!(endpoint, "https://fcm.googleapis.com/fcm/send/subscription");
+        assert!(headers.iter().any(|(name, value)| {
+            name.eq_ignore_ascii_case("content-encoding") && value == "aes128gcm"
+        }));
+        assert!(
+            headers
+                .iter()
+                .any(|(name, _)| { name.eq_ignore_ascii_case("authorization") })
+        );
+        assert!(!encrypted_body.is_empty());
+        assert!(!String::from_utf8_lossy(&encrypted_body).contains("점검이 완료"));
     }
 }

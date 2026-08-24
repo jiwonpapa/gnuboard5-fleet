@@ -1986,6 +1986,48 @@ def check_server_scaffold_contract(root: Path) -> str:
         ),
         (
             "GET",
+            "/api/v1/sites/{site_id}/notifications/transports",
+            "session",
+            True,
+        ),
+        (
+            "PUT",
+            "/api/v1/sites/{site_id}/notifications/telegram-destination",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "DELETE",
+            "/api/v1/sites/{site_id}/notifications/telegram-destination",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "GET",
+            "/api/v1/sites/{site_id}/notifications/web-push/subscriptions",
+            "session",
+            True,
+        ),
+        (
+            "POST",
+            "/api/v1/sites/{site_id}/notifications/web-push/subscriptions",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "PUT",
+            "/api/v1/sites/{site_id}/notifications/web-push/subscriptions/{subscription_id}",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "DELETE",
+            "/api/v1/sites/{site_id}/notifications/web-push/subscriptions/{subscription_id}",
+            "session_csrf_step_up",
+            True,
+        ),
+        (
+            "GET",
             "/api/v1/sites/{site_id}/notifications/{outbox_id}",
             "session",
             True,

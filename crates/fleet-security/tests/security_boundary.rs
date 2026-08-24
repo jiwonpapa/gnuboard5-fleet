@@ -215,6 +215,91 @@ async fn ssrf_metadata_redirect_and_dns_rebinding_are_rejected() {
     assert_eq!(credentials, SsrfError::UserInfoOrFragment);
 }
 
+#[tokio::test]
+async fn web_push_subscriptions_are_encrypted_site_bound_rotatable_and_revocable() {
+    let data = TempDir::new().expect("data");
+    let store = FleetStore::initialize(data.path(), "web-push-security-test")
+        .await
+        .expect("store");
+    store
+        .create_user("user-a", "admin-a", &[1_u8; 32])
+        .await
+        .expect("user a");
+    store
+        .create_user("user-b", "admin-b", &[2_u8; 32])
+        .await
+        .expect("user b");
+    store
+        .create_site("site-a", "user-a", "Site A", "https://a.example")
+        .await
+        .expect("site a");
+    store
+        .create_site("site-b", "user-b", "Site B", "https://b.example")
+        .await
+        .expect("site b");
+    let auth = AuthService::new(store.clone(), &[5_u8; 32]).expect("auth");
+    let p256dh =
+        "BAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0-P0A";
+    let auth_key = "AQIDBAUGBwgJCgsMDQ4PEA";
+    let created = auth
+        .create_web_push_subscription(
+            "user-a",
+            "site-a",
+            "https://fcm.googleapis.com/fcm/send/secret-a",
+            p256dh,
+            auth_key,
+        )
+        .await
+        .expect("create subscription");
+    assert_eq!(created.state, "active");
+    assert!(
+        auth.list_web_push_subscriptions("user-b", "site-a")
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    let material = auth
+        .active_web_push_subscription_materials("user-a", "site-a")
+        .await
+        .expect("decrypt owned subscription");
+    assert_eq!(material.len(), 1);
+    assert_eq!(
+        material[0].endpoint,
+        "https://fcm.googleapis.com/fcm/send/secret-a"
+    );
+    assert!(format!("{:?}", material[0]).contains("<redacted>"));
+    assert!(!format!("{:?}", material[0]).contains("secret-a"));
+
+    auth.rotate_web_push_subscription(
+        "user-a",
+        "site-a",
+        &created.subscription_id,
+        "https://updates.push.services.mozilla.com/wpush/v2/secret-b",
+        p256dh,
+        auth_key,
+    )
+    .await
+    .expect("rotate subscription");
+    let rotated = auth
+        .active_web_push_subscription_materials("user-a", "site-a")
+        .await
+        .expect("rotated readback");
+    assert_eq!(
+        rotated[0].endpoint,
+        "https://updates.push.services.mozilla.com/wpush/v2/secret-b"
+    );
+    auth.revoke_web_push_subscription("user-a", "site-a", &created.subscription_id)
+        .await
+        .expect("revoke subscription");
+    assert!(
+        auth.active_web_push_subscription_materials("user-a", "site-a")
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(store.readback().await.unwrap().web_push_subscriptions, 1);
+}
+
 #[cfg(feature = "local-certification")]
 #[tokio::test]
 async fn local_certification_guard_is_explicit_and_still_dns_pinned() {

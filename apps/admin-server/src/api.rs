@@ -71,7 +71,9 @@ use g5_fleet_connector::{
     ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse,
     CoreOperationSpec, MemberProfile, SiteOverview, core_operation, core_operations,
 };
-use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
+use g5_fleet_notify::{
+    NotificationChannel, NotificationPayload, NotifyError, valid_web_push_endpoint,
+};
 use g5_fleet_remote::{
     HostKeyInspection, RemoteError, SftpCommand, SftpResult, SshProfile, SshProfileSummary,
     TerminalProcess, TerminalTicket, TransferQueueSnapshot,
@@ -79,7 +81,7 @@ use g5_fleet_remote::{
 use g5_fleet_security::{AuthError, PrincipalSession, SecretPurpose, SystemResolver, UrlGuard};
 use g5_fleet_store::{
     AuditEntry, JobRecord, PortableBackupEnvelope, SiteImportSummary, SiteRecord, StoreError,
-    decrypt_portable_backup, encrypt_portable_backup,
+    WebPushSubscriptionSummary, decrypt_portable_backup, encrypt_portable_backup,
 };
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -300,6 +302,31 @@ struct EnqueueNotificationRequest {
     event_id: String,
     channel: NotificationChannel,
     payload: NotificationPayload,
+}
+
+#[derive(Debug, Deserialize)]
+struct TelegramDestinationRequest {
+    chat_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct WebPushSubscriptionKeysRequest {
+    p256dh: String,
+    auth: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct WebPushSubscriptionRequest {
+    endpoint: String,
+    keys: WebPushSubscriptionKeysRequest,
+}
+
+#[derive(Debug, Serialize)]
+struct NotificationTransportStatusResponse {
+    telegram_transport_configured: bool,
+    telegram_destination_configured: bool,
+    vapid_public_key: Option<String>,
+    active_web_push_subscriptions: usize,
 }
 
 #[derive(Debug, Serialize)]
@@ -973,6 +1000,22 @@ pub(crate) fn router() -> Router<AppState> {
             post(pause_transfer),
         )
         .route("/sites/{site_id}/notifications", post(enqueue_notification))
+        .route(
+            "/sites/{site_id}/notifications/transports",
+            get(notification_transport_status),
+        )
+        .route(
+            "/sites/{site_id}/notifications/telegram-destination",
+            put(put_telegram_destination).delete(delete_telegram_destination),
+        )
+        .route(
+            "/sites/{site_id}/notifications/web-push/subscriptions",
+            get(list_web_push_subscriptions).post(create_web_push_subscription),
+        )
+        .route(
+            "/sites/{site_id}/notifications/web-push/subscriptions/{subscription_id}",
+            put(rotate_web_push_subscription).delete(revoke_web_push_subscription),
+        )
         .route(
             "/sites/{site_id}/notifications/{outbox_id}",
             get(get_notification),
@@ -8781,6 +8824,249 @@ async fn enqueue_notification(
     }
 }
 
+async fn notification_transport_status(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let telegram_destination_configured = match state
+        .config
+        .auth
+        .decrypt_secret_for_connector(
+            &context.principal_id,
+            &site.site_id,
+            SecretPurpose::Notification,
+        )
+        .await
+    {
+        Ok(value) => !value.is_empty(),
+        Err(AuthError::Store(StoreError::NotFound)) => false,
+        Err(error) => return auth_error(error),
+    };
+    let subscriptions = match state
+        .config
+        .auth
+        .list_web_push_subscriptions(&context.principal_id, &site.site_id)
+        .await
+    {
+        Ok(value) => value,
+        Err(error) => return auth_error(error),
+    };
+    Json(NotificationTransportStatusResponse {
+        telegram_transport_configured: state
+            .config
+            .notification_public_config
+            .telegram_transport_configured,
+        telegram_destination_configured,
+        vapid_public_key: state
+            .config
+            .notification_public_config
+            .vapid_public_key
+            .clone(),
+        active_web_push_subscriptions: subscriptions
+            .iter()
+            .filter(|subscription| subscription.state == "active")
+            .count(),
+    })
+    .into_response()
+}
+
+async fn put_telegram_destination(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(payload): Json<TelegramDestinationRequest>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let chat_id = payload.chat_id.trim();
+    if chat_id.is_empty()
+        || chat_id.len() > 128
+        || !chat_id
+            .chars()
+            .all(|character| character.is_ascii_digit() || character == '-')
+    {
+        return api_error(
+            StatusCode::BAD_REQUEST,
+            "telegram_destination_invalid",
+            "Telegram chat ID is invalid.",
+        );
+    }
+    match state
+        .config
+        .auth
+        .put_secret(
+            &context.principal_id,
+            &site.site_id,
+            SecretPurpose::Notification,
+            chat_id.as_bytes(),
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn delete_telegram_destination(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    match state
+        .config
+        .auth
+        .delete_secret(
+            &context.principal_id,
+            &site.site_id,
+            SecretPurpose::Notification,
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn list_web_push_subscriptions(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, _, site) = match owned_site_context(&state, &headers, site_id, false).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    match state
+        .config
+        .auth
+        .list_web_push_subscriptions(&context.principal_id, &site.site_id)
+        .await
+    {
+        Ok(subscriptions) => Json::<Vec<WebPushSubscriptionSummary>>(subscriptions).into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn create_web_push_subscription(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(payload): Json<WebPushSubscriptionRequest>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    if !valid_web_push_endpoint(&payload.endpoint) {
+        return api_error(
+            StatusCode::BAD_REQUEST,
+            "web_push_endpoint_forbidden",
+            "Web Push endpoint is not an allowed HTTPS push service.",
+        );
+    }
+    match state
+        .config
+        .auth
+        .create_web_push_subscription(
+            &context.principal_id,
+            &site.site_id,
+            &payload.endpoint,
+            &payload.keys.p256dh,
+            &payload.keys.auth,
+        )
+        .await
+    {
+        Ok(subscription) => (StatusCode::CREATED, Json(subscription)).into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn rotate_web_push_subscription(
+    State(state): State<AppState>,
+    Path((site_id, subscription_id)): Path<(String, String)>,
+    headers: HeaderMap,
+    Json(payload): Json<WebPushSubscriptionRequest>,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    if !valid_web_push_endpoint(&payload.endpoint) {
+        return api_error(
+            StatusCode::BAD_REQUEST,
+            "web_push_endpoint_forbidden",
+            "Web Push endpoint is not an allowed HTTPS push service.",
+        );
+    }
+    match state
+        .config
+        .auth
+        .rotate_web_push_subscription(
+            &context.principal_id,
+            &site.site_id,
+            &subscription_id,
+            &payload.endpoint,
+            &payload.keys.p256dh,
+            &payload.keys.auth,
+        )
+        .await
+    {
+        Ok(subscription) => Json(subscription).into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
+async fn revoke_web_push_subscription(
+    State(state): State<AppState>,
+    Path((site_id, subscription_id)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    match state
+        .config
+        .auth
+        .revoke_web_push_subscription(&context.principal_id, &site.site_id, &subscription_id)
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => auth_error(error),
+    }
+}
+
 async fn get_notification(
     State(state): State<AppState>,
     Path((site_id, outbox_id)): Path<(String, String)>,
@@ -9139,6 +9425,11 @@ fn auth_error(error: AuthError) -> Response {
             StatusCode::BAD_REQUEST,
             "idle_timeout_policy",
             "Idle timeout must be between 5 and 1440 minutes.",
+        ),
+        AuthError::InvalidWebPushSubscription => api_error(
+            StatusCode::BAD_REQUEST,
+            "web_push_subscription_invalid",
+            "Web Push subscription keys are invalid.",
         ),
         AuthError::Store(error) => store_error(error),
         _ => api_error(

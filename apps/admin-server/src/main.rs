@@ -8,7 +8,9 @@ use std::{
 };
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use g5_fleet_admin_server::{AppConfig, build_revision, build_router, image_version};
+use g5_fleet_admin_server::{
+    AppConfig, build_notification_runtime, build_revision, build_router, image_version,
+};
 #[cfg(feature = "local-certification")]
 use g5_fleet_connector::LocalCertificationConnectorGateway;
 use g5_fleet_connector::ProductionConnectorGateway;
@@ -105,6 +107,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "G5_FLEET_MASTER_KEY_FILE",
     )?)?;
     let auth = AuthService::new(store, &master_key)?;
+    let notification_runtime = build_notification_runtime(
+        auth.clone(),
+        read_optional_secret(
+            "G5_FLEET_TELEGRAM_BOT_TOKEN",
+            "G5_FLEET_TELEGRAM_BOT_TOKEN_FILE",
+        )?,
+        read_optional_secret(
+            "G5_FLEET_VAPID_PRIVATE_KEY_BASE64",
+            "G5_FLEET_VAPID_PRIVATE_KEY_FILE",
+        )?,
+        env::var("G5_FLEET_VAPID_SUBJECT").ok(),
+    )?;
     let address: SocketAddr = env::var("G5_FLEET_BIND")
         .unwrap_or_else(|_| "127.0.0.1:8080".to_owned())
         .parse()?;
@@ -119,7 +133,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             web_root,
             auth,
             connector: connector_gateway()?,
-            notification_worker: None,
+            notification_worker: Some(notification_runtime.worker),
+            notification_public_config: notification_runtime.public_config,
         }),
     )
     .await?;
@@ -155,6 +170,23 @@ fn read_secret(value_name: &str, file_name: &str) -> Result<String, Box<dyn std:
         (Some(value), None) if !value.trim().is_empty() => Ok(value),
         (None, Some(path)) => read_secret_file(&path, file_name),
         _ => Err(format!("{value_name} or {file_name} is required for serve").into()),
+    }
+}
+
+fn read_optional_secret(
+    value_name: &str,
+    file_name: &str,
+) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    let value = env::var(value_name).ok();
+    let file = env::var_os(file_name).map(PathBuf::from);
+    match (value, file) {
+        (Some(_), Some(_)) => {
+            Err(format!("{value_name} and {file_name} are mutually exclusive").into())
+        }
+        (Some(value), None) if !value.trim().is_empty() => Ok(Some(value)),
+        (Some(_), None) => Err(format!("{value_name} must not be empty").into()),
+        (None, Some(path)) => read_secret_file(&path, file_name).map(Some),
+        (None, None) => Ok(None),
     }
 }
 

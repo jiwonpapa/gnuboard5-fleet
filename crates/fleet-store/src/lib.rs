@@ -19,8 +19,9 @@ pub use portable_backup::{
     PortableBackupEnvelope, PortableBackupImport, decrypt_portable_backup, encrypt_portable_backup,
 };
 pub use records::{
-    EncryptedSecretRecord, JobRecord, NotificationOutboxRecord, SessionRecord, SiteImportRecord,
-    SiteImportSummary, SiteRecord, UserCredential,
+    EncryptedSecretRecord, EncryptedWebPushSubscriptionRecord, JobRecord, NotificationOutboxRecord,
+    SessionRecord, SiteImportRecord, SiteImportSummary, SiteRecord, UserCredential,
+    WebPushSubscriptionSummary,
 };
 pub use security::{
     AuditEntry, EncryptedTotpSecret, InstallationSecurityState, PendingInstallChallenge,
@@ -34,7 +35,7 @@ use sqlx::{
 };
 use tokio::sync::Mutex;
 
-pub const EXPECTED_SCHEMA_VERSION: i64 = 3;
+pub const EXPECTED_SCHEMA_VERSION: i64 = 4;
 pub const APPLICATION_ID: i64 = 1_194_673_740;
 pub const DATABASE_FILENAME: &str = "fleet.sqlite3";
 pub const IDENTITY_FILENAME: &str = "installation.json";
@@ -81,6 +82,7 @@ pub struct StoreReadback {
     pub users: i64,
     pub sites: i64,
     pub outbox: i64,
+    pub web_push_subscriptions: i64,
     pub jobs: i64,
     pub audit_entries: i64,
 }
@@ -545,6 +547,7 @@ pub(crate) async fn readback_pool(pool: &SqlitePool) -> StoreResult<StoreReadbac
         users: table_count(pool, "fleet_users").await?,
         sites: table_count(pool, "sites").await?,
         outbox: table_count(pool, "notification_outbox").await?,
+        web_push_subscriptions: table_count(pool, "web_push_subscriptions").await?,
         jobs: table_count(pool, "jobs").await?,
         audit_entries: table_count(pool, "audit_log").await?,
     })

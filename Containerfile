@@ -11,6 +11,9 @@ RUN bun run build
 
 FROM rust:1.88-bookworm AS rust-builder
 WORKDIR /source
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y libssl-dev pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 COPY Cargo.toml Cargo.lock ./
 COPY contracts ./contracts
 COPY crates ./crates
@@ -27,7 +30,7 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.source="https://github.com/jiwonpapa/gnuboard5-fleet"
 
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y ca-certificates openssh-client \
+    && apt-get install --no-install-recommends -y ca-certificates libssl3 openssh-client \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 fleet \
     && useradd --uid 10001 --gid 10001 --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin fleet \

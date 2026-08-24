@@ -1697,6 +1697,55 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/notifications/transports",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "notification_transport_public_status"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/notifications/telegram-destination",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "encrypted_telegram_destination_upsert"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/notifications/telegram-destination",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "encrypted_telegram_destination_revoke"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/notifications/web-push/subscriptions",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "redacted_web_push_subscription_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/notifications/web-push/subscriptions",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "encrypted_web_push_subscription_create"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/notifications/web-push/subscriptions/{subscription_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "encrypted_web_push_subscription_rotate"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/notifications/web-push/subscriptions/{subscription_id}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "encrypted_web_push_subscription_revoke"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/notifications/{outbox_id}",
       "auth": "session",
       "site_context": true,

@@ -52,6 +52,30 @@ pub struct EncryptedSecretRecord {
     pub ciphertext: Vec<u8>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EncryptedWebPushSubscriptionRecord {
+    pub subscription_id: String,
+    pub owner_user_id: String,
+    pub site_id: String,
+    pub algorithm: String,
+    pub key_version: i64,
+    pub nonce: Vec<u8>,
+    pub ciphertext: Vec<u8>,
+    pub state: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub revoked_at: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct WebPushSubscriptionSummary {
+    pub subscription_id: String,
+    pub state: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub revoked_at: Option<String>,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct JobRecord {
     pub job_id: String,
@@ -532,6 +556,208 @@ impl FleetStore {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub async fn put_encrypted_web_push_subscription(
+        &self,
+        subscription_id: &str,
+        owner_user_id: &str,
+        site_id: &str,
+        endpoint_hash: &[u8],
+        algorithm: &str,
+        key_version: i64,
+        nonce: &[u8],
+        ciphertext: &[u8],
+    ) -> StoreResult<WebPushSubscriptionSummary> {
+        if self.owned_site(owner_user_id, site_id).await?.is_none() {
+            return Err(StoreError::AccessDenied);
+        }
+        let _writer = self.inner.writer.lock().await;
+        let mut transaction = self.inner.pool.begin().await?;
+        sqlx::query(
+            "INSERT INTO web_push_subscriptions \
+             (subscription_id, owner_user_id, site_id, endpoint_hash, algorithm, \
+             key_version, nonce, ciphertext) VALUES (?, ?, ?, ?, ?, ?, ?, ?) \
+             ON CONFLICT(owner_user_id, site_id, endpoint_hash) DO UPDATE SET \
+             subscription_id=excluded.subscription_id, algorithm=excluded.algorithm, key_version=excluded.key_version, \
+             nonce=excluded.nonce, ciphertext=excluded.ciphertext, state='active', \
+             revoked_at=NULL, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ', 'now')",
+        )
+        .bind(subscription_id)
+        .bind(owner_user_id)
+        .bind(site_id)
+        .bind(endpoint_hash)
+        .bind(algorithm)
+        .bind(key_version)
+        .bind(nonce)
+        .bind(ciphertext)
+        .execute(&mut *transaction)
+        .await?;
+        let summary =
+            fetch_web_push_summary_by_hash(&mut transaction, owner_user_id, site_id, endpoint_hash)
+                .await?
+                .ok_or(StoreError::NotFound)?;
+        transaction.commit().await?;
+        Ok(summary)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn rotate_encrypted_web_push_subscription(
+        &self,
+        subscription_id: &str,
+        owner_user_id: &str,
+        site_id: &str,
+        endpoint_hash: &[u8],
+        algorithm: &str,
+        key_version: i64,
+        nonce: &[u8],
+        ciphertext: &[u8],
+    ) -> StoreResult<WebPushSubscriptionSummary> {
+        let _writer = self.inner.writer.lock().await;
+        let result = sqlx::query(
+            "UPDATE web_push_subscriptions SET endpoint_hash = ?, algorithm = ?, \
+             key_version = ?, nonce = ?, ciphertext = ?, state = 'active', \
+             revoked_at = NULL, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') \
+             WHERE subscription_id = ? AND owner_user_id = ? AND site_id = ?",
+        )
+        .bind(endpoint_hash)
+        .bind(algorithm)
+        .bind(key_version)
+        .bind(nonce)
+        .bind(ciphertext)
+        .bind(subscription_id)
+        .bind(owner_user_id)
+        .bind(site_id)
+        .execute(&self.inner.pool)
+        .await?;
+        if result.rows_affected() != 1 {
+            return Err(StoreError::NotFound);
+        }
+        self.web_push_subscription_summary(owner_user_id, site_id, subscription_id)
+            .await?
+            .ok_or(StoreError::NotFound)
+    }
+
+    pub async fn owned_web_push_subscriptions(
+        &self,
+        owner_user_id: &str,
+        site_id: &str,
+    ) -> StoreResult<Vec<WebPushSubscriptionSummary>> {
+        let rows: Vec<(String, String, String, String, Option<String>)> = sqlx::query_as(
+            "SELECT subscription_id, state, created_at, updated_at, revoked_at \
+             FROM web_push_subscriptions WHERE owner_user_id = ? AND site_id = ? \
+             ORDER BY state, updated_at DESC, subscription_id",
+        )
+        .bind(owner_user_id)
+        .bind(site_id)
+        .fetch_all(&self.inner.pool)
+        .await?;
+        Ok(rows.into_iter().map(web_push_summary_from_row).collect())
+    }
+
+    pub async fn active_encrypted_web_push_subscriptions(
+        &self,
+        owner_user_id: &str,
+        site_id: &str,
+    ) -> StoreResult<Vec<EncryptedWebPushSubscriptionRecord>> {
+        type Row = (
+            String,
+            String,
+            String,
+            String,
+            i64,
+            Vec<u8>,
+            Vec<u8>,
+            String,
+            String,
+            String,
+            Option<String>,
+        );
+        let rows: Vec<Row> = sqlx::query_as(
+            "SELECT subscription_id, owner_user_id, site_id, algorithm, key_version, \
+             nonce, ciphertext, state, created_at, updated_at, revoked_at \
+             FROM web_push_subscriptions WHERE owner_user_id = ? AND site_id = ? \
+             AND state = 'active' ORDER BY updated_at DESC, subscription_id",
+        )
+        .bind(owner_user_id)
+        .bind(site_id)
+        .fetch_all(&self.inner.pool)
+        .await?;
+        Ok(rows
+            .into_iter()
+            .map(
+                |(
+                    subscription_id,
+                    owner_user_id,
+                    site_id,
+                    algorithm,
+                    key_version,
+                    nonce,
+                    ciphertext,
+                    state,
+                    created_at,
+                    updated_at,
+                    revoked_at,
+                )| EncryptedWebPushSubscriptionRecord {
+                    subscription_id,
+                    owner_user_id,
+                    site_id,
+                    algorithm,
+                    key_version,
+                    nonce,
+                    ciphertext,
+                    state,
+                    created_at,
+                    updated_at,
+                    revoked_at,
+                },
+            )
+            .collect())
+    }
+
+    pub async fn revoke_owned_web_push_subscription(
+        &self,
+        owner_user_id: &str,
+        site_id: &str,
+        subscription_id: &str,
+    ) -> StoreResult<()> {
+        let _writer = self.inner.writer.lock().await;
+        let result = sqlx::query(
+            "UPDATE web_push_subscriptions SET state = 'revoked', \
+             revoked_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), \
+             updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') \
+             WHERE owner_user_id = ? AND site_id = ? AND subscription_id = ? \
+             AND state = 'active'",
+        )
+        .bind(owner_user_id)
+        .bind(site_id)
+        .bind(subscription_id)
+        .execute(&self.inner.pool)
+        .await?;
+        if result.rows_affected() != 1 {
+            return Err(StoreError::NotFound);
+        }
+        Ok(())
+    }
+
+    async fn web_push_subscription_summary(
+        &self,
+        owner_user_id: &str,
+        site_id: &str,
+        subscription_id: &str,
+    ) -> StoreResult<Option<WebPushSubscriptionSummary>> {
+        let row: Option<(String, String, String, String, Option<String>)> = sqlx::query_as(
+            "SELECT subscription_id, state, created_at, updated_at, revoked_at \
+             FROM web_push_subscriptions WHERE owner_user_id = ? AND site_id = ? \
+             AND subscription_id = ?",
+        )
+        .bind(owner_user_id)
+        .bind(site_id)
+        .bind(subscription_id)
+        .fetch_optional(&self.inner.pool)
+        .await?;
+        Ok(row.map(web_push_summary_from_row))
+    }
+
     pub async fn create_job(
         &self,
         job_id: &str,
@@ -932,6 +1158,38 @@ type OutboxRow = (
     Option<String>,
     String,
 );
+
+type WebPushSummaryRow = (String, String, String, String, Option<String>);
+
+async fn fetch_web_push_summary_by_hash(
+    transaction: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    owner_user_id: &str,
+    site_id: &str,
+    endpoint_hash: &[u8],
+) -> StoreResult<Option<WebPushSubscriptionSummary>> {
+    let row: Option<WebPushSummaryRow> = sqlx::query_as(
+        "SELECT subscription_id, state, created_at, updated_at, revoked_at \
+         FROM web_push_subscriptions WHERE owner_user_id = ? AND site_id = ? \
+         AND endpoint_hash = ?",
+    )
+    .bind(owner_user_id)
+    .bind(site_id)
+    .bind(endpoint_hash)
+    .fetch_optional(&mut **transaction)
+    .await?;
+    Ok(row.map(web_push_summary_from_row))
+}
+
+fn web_push_summary_from_row(row: WebPushSummaryRow) -> WebPushSubscriptionSummary {
+    let (subscription_id, state, created_at, updated_at, revoked_at) = row;
+    WebPushSubscriptionSummary {
+        subscription_id,
+        state,
+        created_at,
+        updated_at,
+        revoked_at,
+    }
+}
 
 async fn fetch_outbox_by_event(
     transaction: &mut sqlx::Transaction<'_, sqlx::Sqlite>,

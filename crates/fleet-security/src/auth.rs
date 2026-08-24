@@ -9,7 +9,7 @@ use aes_gcm::{
 };
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier, password_hash::SaltString};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
-use g5_fleet_store::{FleetStore, StoreError};
+use g5_fleet_store::{FleetStore, StoreError, WebPushSubscriptionSummary};
 use sha2::{Digest, Sha256};
 use subtle::ConstantTimeEq;
 use totp_rs::{Algorithm, Secret, TOTP};
@@ -54,6 +54,8 @@ pub enum AuthError {
     Encryption,
     #[error("secret decryption failed")]
     Decryption,
+    #[error("web push subscription is invalid")]
+    InvalidWebPushSubscription,
     #[error(transparent)]
     Store(#[from] StoreError),
     #[error(transparent)]
@@ -111,6 +113,26 @@ pub struct TotpEnrollmentChallenge {
 pub struct InstallCompletion {
     pub principal_id: String,
     pub recovery_codes: Vec<String>,
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub struct WebPushSubscriptionMaterial {
+    pub subscription_id: String,
+    pub endpoint: String,
+    pub p256dh: String,
+    pub auth: String,
+}
+
+impl std::fmt::Debug for WebPushSubscriptionMaterial {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WebPushSubscriptionMaterial")
+            .field("subscription_id", &self.subscription_id)
+            .field("endpoint", &"<redacted>")
+            .field("p256dh", &"<redacted>")
+            .field("auth", &"<redacted>")
+            .finish()
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -785,6 +807,183 @@ impl AuthService {
             .map_err(|_| AuthError::Decryption)
     }
 
+    pub async fn create_web_push_subscription(
+        &self,
+        principal_id: &str,
+        site_id: &str,
+        endpoint: &str,
+        p256dh: &str,
+        auth: &str,
+    ) -> AuthResult<WebPushSubscriptionSummary> {
+        validate_web_push_material(endpoint, p256dh, auth)?;
+        let subscription_id = random_id("wps", 18)?;
+        let (nonce, ciphertext) = self.encrypt_web_push_material(
+            principal_id,
+            site_id,
+            &subscription_id,
+            endpoint,
+            p256dh,
+            auth,
+        )?;
+        self.store
+            .put_encrypted_web_push_subscription(
+                &subscription_id,
+                principal_id,
+                site_id,
+                &digest(endpoint.as_bytes()),
+                CIPHER_NAME,
+                KEY_VERSION,
+                &nonce,
+                &ciphertext,
+            )
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn rotate_web_push_subscription(
+        &self,
+        principal_id: &str,
+        site_id: &str,
+        subscription_id: &str,
+        endpoint: &str,
+        p256dh: &str,
+        auth: &str,
+    ) -> AuthResult<WebPushSubscriptionSummary> {
+        if subscription_id.is_empty() || subscription_id.len() > 128 {
+            return Err(AuthError::InvalidWebPushSubscription);
+        }
+        validate_web_push_material(endpoint, p256dh, auth)?;
+        let (nonce, ciphertext) = self.encrypt_web_push_material(
+            principal_id,
+            site_id,
+            subscription_id,
+            endpoint,
+            p256dh,
+            auth,
+        )?;
+        self.store
+            .rotate_encrypted_web_push_subscription(
+                subscription_id,
+                principal_id,
+                site_id,
+                &digest(endpoint.as_bytes()),
+                CIPHER_NAME,
+                KEY_VERSION,
+                &nonce,
+                &ciphertext,
+            )
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn list_web_push_subscriptions(
+        &self,
+        principal_id: &str,
+        site_id: &str,
+    ) -> AuthResult<Vec<WebPushSubscriptionSummary>> {
+        self.store
+            .owned_web_push_subscriptions(principal_id, site_id)
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn active_web_push_subscription_materials(
+        &self,
+        principal_id: &str,
+        site_id: &str,
+    ) -> AuthResult<Vec<WebPushSubscriptionMaterial>> {
+        let records = self
+            .store
+            .active_encrypted_web_push_subscriptions(principal_id, site_id)
+            .await?;
+        records
+            .into_iter()
+            .map(|record| {
+                if record.algorithm != CIPHER_NAME
+                    || record.key_version != KEY_VERSION
+                    || record.nonce.len() != 12
+                {
+                    return Err(AuthError::Decryption);
+                }
+                let aad = web_push_subscription_aad(principal_id, site_id, &record.subscription_id);
+                let plaintext = self
+                    .cipher
+                    .decrypt(
+                        record.nonce.as_slice().into(),
+                        Payload {
+                            msg: &record.ciphertext,
+                            aad: aad.as_bytes(),
+                        },
+                    )
+                    .map_err(|_| AuthError::Decryption)?;
+                let value: serde_json::Value =
+                    serde_json::from_slice(&plaintext).map_err(|_| AuthError::Decryption)?;
+                let endpoint = value
+                    .get("endpoint")
+                    .and_then(serde_json::Value::as_str)
+                    .ok_or(AuthError::Decryption)?;
+                let p256dh = value
+                    .get("p256dh")
+                    .and_then(serde_json::Value::as_str)
+                    .ok_or(AuthError::Decryption)?;
+                let auth = value
+                    .get("auth")
+                    .and_then(serde_json::Value::as_str)
+                    .ok_or(AuthError::Decryption)?;
+                validate_web_push_material(endpoint, p256dh, auth)
+                    .map_err(|_| AuthError::Decryption)?;
+                Ok(WebPushSubscriptionMaterial {
+                    subscription_id: record.subscription_id,
+                    endpoint: endpoint.to_owned(),
+                    p256dh: p256dh.to_owned(),
+                    auth: auth.to_owned(),
+                })
+            })
+            .collect()
+    }
+
+    pub async fn revoke_web_push_subscription(
+        &self,
+        principal_id: &str,
+        site_id: &str,
+        subscription_id: &str,
+    ) -> AuthResult<()> {
+        self.store
+            .revoke_owned_web_push_subscription(principal_id, site_id, subscription_id)
+            .await?;
+        Ok(())
+    }
+
+    fn encrypt_web_push_material(
+        &self,
+        principal_id: &str,
+        site_id: &str,
+        subscription_id: &str,
+        endpoint: &str,
+        p256dh: &str,
+        auth: &str,
+    ) -> AuthResult<(Vec<u8>, Vec<u8>)> {
+        let plaintext = serde_json::to_vec(&serde_json::json!({
+            "endpoint": endpoint,
+            "p256dh": p256dh,
+            "auth": auth,
+        }))
+        .map_err(|_| AuthError::Encryption)?;
+        let nonce = random_bytes(12)?;
+        let aad = web_push_subscription_aad(principal_id, site_id, subscription_id);
+        let ciphertext = self
+            .cipher
+            .encrypt(
+                nonce.as_slice().into(),
+                Payload {
+                    msg: &plaintext,
+                    aad: aad.as_bytes(),
+                },
+            )
+            .map_err(|_| AuthError::Encryption)?;
+        Ok((nonce, ciphertext))
+    }
+
     pub async fn delete_secret(
         &self,
         principal_id: &str,
@@ -856,6 +1055,28 @@ fn secret_aad(principal_id: &str, site_id: &str, purpose: SecretPurpose) -> Stri
         "g5-fleet/v1\0{principal_id}\0{site_id}\0{}",
         purpose.as_str()
     )
+}
+
+fn web_push_subscription_aad(principal_id: &str, site_id: &str, subscription_id: &str) -> String {
+    format!("g5-fleet/web-push/v1\0{principal_id}\0{site_id}\0{subscription_id}")
+}
+
+fn validate_web_push_material(endpoint: &str, p256dh: &str, auth: &str) -> AuthResult<()> {
+    let p256dh = URL_SAFE_NO_PAD
+        .decode(p256dh)
+        .map_err(|_| AuthError::InvalidWebPushSubscription)?;
+    let auth = URL_SAFE_NO_PAD
+        .decode(auth)
+        .map_err(|_| AuthError::InvalidWebPushSubscription)?;
+    if endpoint.is_empty()
+        || endpoint.len() > 4096
+        || p256dh.len() != 65
+        || p256dh.first() != Some(&4)
+        || auth.len() != 16
+    {
+        return Err(AuthError::InvalidWebPushSubscription);
+    }
+    Ok(())
 }
 
 fn install_totp_aad(login_name: &str) -> String {
