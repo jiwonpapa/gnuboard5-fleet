@@ -4260,6 +4260,83 @@ code {
   font-family: var(--display);
 }
 
+.sms-template-links,
+.sms-template-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sms-template-summary {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.sms-template-workspace {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.32fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.sms-template-main {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+
+.sms-template-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.sms-template-table button {
+  padding: 0;
+  border: 0;
+  color: var(--accent);
+  background: transparent;
+}
+
+.sms-template-table tr[data-selected="true"] td {
+  background: var(--accent-soft);
+}
+
+.sms-template-preview {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sms-template-editor,
+.sms-template-form-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.sms-template-form-grid {
+  grid-template-columns: minmax(180px, 0.42fr) minmax(0, 1fr);
+}
+
+.sms-template-form-grid label {
+  display: grid;
+  gap: 6px;
+}
+
+.sms-template-content {
+  grid-column: 1 / -1;
+}
+
+.sms-template-content textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 180px;
+  resize: vertical;
+}
+
+.sms-template-check input {
+  width: auto;
+}
+
 @media (max-width: 960px) {
   .points-page .point-filter,
   .points-workspace,
@@ -4282,7 +4359,8 @@ code {
   .mail-recipient-filter,
   .sms-config-workspace,
   .sms-contacts-workspace,
-  .sms-contact-detail-grid {
+  .sms-contact-detail-grid,
+  .sms-template-workspace {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -4353,12 +4431,22 @@ code {
   }
 
   .sms-contacts-summary,
-  .sms-contact-filter {
+  .sms-contact-filter,
+  .sms-template-summary,
+  .sms-template-form-grid {
     grid-template-columns: 1fr;
   }
 
   .sms-contact-table {
     min-width: 640px;
+  }
+
+  .sms-template-table {
+    min-width: 680px;
+  }
+
+  .sms-template-content {
+    grid-column: auto;
   }
 
   .sms-storage-warning {

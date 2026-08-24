@@ -1307,6 +1307,70 @@ export interface AdminSmsContactExport {
   with_hyphen: boolean;
 }
 
+export interface AdminSmsTemplateGroup {
+  fg_no: number;
+  fg_name: string;
+  fg_count: number;
+  fg_member: number;
+  is_virtual: boolean;
+}
+
+export interface AdminSmsTemplateGroupList {
+  groups: AdminSmsTemplateGroup[];
+  total: number;
+}
+
+export interface AdminSmsTemplateGroupCreate {
+  fg_name: string;
+  fg_member?: number;
+}
+
+export type AdminSmsTemplateGroupUpdate = Partial<AdminSmsTemplateGroupCreate>;
+
+export interface AdminSmsTemplate {
+  fo_no: number;
+  fg_no: number;
+  fg_name: string | null;
+  fg_member: number;
+  fo_name: string;
+  fo_content: string;
+  fo_datetime: string | null;
+}
+
+export interface AdminSmsTemplateList {
+  templates: AdminSmsTemplate[];
+  pagination: Pagination;
+}
+
+export interface AdminSmsTemplateListQuery {
+  page?: number;
+  per_page?: number;
+  fg_no?: number;
+  search_field?: "all" | "name" | "content";
+  search?: string;
+}
+
+export interface AdminSmsTemplateCreate {
+  fg_no?: number;
+  fo_name: string;
+  fo_content: string;
+}
+
+export type AdminSmsTemplateUpdate = Partial<AdminSmsTemplateCreate>;
+export type AdminSmsTemplateBatchAction = "delete" | "move";
+
+export interface AdminSmsTemplateBatch {
+  action: AdminSmsTemplateBatchAction;
+  template_ids: number[];
+  target_fg_no?: number;
+}
+
+export interface AdminSmsTemplateBatchResult {
+  action: AdminSmsTemplateBatchAction;
+  affected: number;
+  target_fg_no: number | null;
+}
+
 export interface AdminPointItem {
   po_id: number;
   mb_id: string;
@@ -3071,6 +3135,68 @@ export function exportAdminSmsContacts(siteId: string, query: AdminSmsContactExp
   if (query.with_hyphen !== undefined) search.set("with_hyphen", String(query.with_hyphen));
   const suffix = search.size ? `?${search.toString()}` : "";
   return transport.request<AdminSmsContactExport>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/contacts/export${suffix}` });
+}
+
+function adminSmsTemplateQuery(query: AdminSmsTemplateListQuery = {}): string {
+  const search = new URLSearchParams();
+  if (query.page !== undefined) search.set("page", String(query.page));
+  if (query.per_page !== undefined) search.set("per_page", String(query.per_page));
+  if (query.fg_no !== undefined) search.set("fg_no", String(query.fg_no));
+  if (query.search_field) search.set("search_field", query.search_field);
+  if (query.search) search.set("search", query.search);
+  return search.size ? `?${search.toString()}` : "";
+}
+
+export function listAdminSmsTemplateGroups(siteId: string) {
+  return transport.request<AdminSmsTemplateGroupList>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/template-groups` });
+}
+
+export function createAdminSmsTemplateGroup(siteId: string, input: AdminSmsTemplateGroupCreate, csrfToken: string) {
+  return transport.request<AdminSmsTemplateGroup, AdminSmsTemplateGroupCreate>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/template-groups`, csrfToken, body: input });
+}
+
+export function getAdminSmsTemplateGroup(siteId: string, fgNo: number) {
+  return transport.request<AdminSmsTemplateGroup>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/template-groups/${fgNo}` });
+}
+
+export function updateAdminSmsTemplateGroup(siteId: string, fgNo: number, input: AdminSmsTemplateGroupUpdate, csrfToken: string) {
+  return transport.request<AdminSmsTemplateGroup, AdminSmsTemplateGroupUpdate>({ method: "PUT", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/template-groups/${fgNo}`, csrfToken, body: input });
+}
+
+export function deleteAdminSmsTemplateGroup(siteId: string, fgNo: number, csrfToken: string) {
+  return transport.request<void>({ method: "DELETE", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/template-groups/${fgNo}?confirm=true`, csrfToken });
+}
+
+export function moveAdminSmsTemplateGroup(siteId: string, fgNo: number, targetFgNo: number, csrfToken: string) {
+  return transport.request<{ from_fg_no: number; target_fg_no: number; affected: number }, { target_fg_no: number }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/template-groups/${fgNo}/move`, csrfToken, body: { target_fg_no: targetFgNo } });
+}
+
+export function clearAdminSmsTemplateGroup(siteId: string, fgNo: number, csrfToken: string) {
+  return transport.request<{ fg_no: number; deleted: number }>({ method: "DELETE", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/template-groups/${fgNo}/templates?confirm=true`, csrfToken });
+}
+
+export function listAdminSmsTemplates(siteId: string, query: AdminSmsTemplateListQuery = {}) {
+  return transport.request<AdminSmsTemplateList>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/templates${adminSmsTemplateQuery(query)}` });
+}
+
+export function createAdminSmsTemplate(siteId: string, input: AdminSmsTemplateCreate, csrfToken: string) {
+  return transport.request<AdminSmsTemplate, AdminSmsTemplateCreate>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/templates`, csrfToken, body: input });
+}
+
+export function getAdminSmsTemplate(siteId: string, foNo: number) {
+  return transport.request<AdminSmsTemplate>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/templates/${foNo}` });
+}
+
+export function updateAdminSmsTemplate(siteId: string, foNo: number, input: AdminSmsTemplateUpdate, csrfToken: string) {
+  return transport.request<AdminSmsTemplate, AdminSmsTemplateUpdate>({ method: "PUT", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/templates/${foNo}`, csrfToken, body: input });
+}
+
+export function deleteAdminSmsTemplate(siteId: string, foNo: number, csrfToken: string) {
+  return transport.request<void>({ method: "DELETE", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/templates/${foNo}?confirm=true`, csrfToken });
+}
+
+export function batchAdminSmsTemplates(siteId: string, input: AdminSmsTemplateBatch, csrfToken: string) {
+  return transport.request<AdminSmsTemplateBatchResult, AdminSmsTemplateBatch & { confirm_action: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/templates/batch`, csrfToken, body: { ...input, confirm_action: true } });
 }
 
 export function listAdminPoints(siteId: string, query: AdminPointListQuery = {}) {
