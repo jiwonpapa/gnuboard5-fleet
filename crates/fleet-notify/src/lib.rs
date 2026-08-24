@@ -20,6 +20,7 @@ use web_push::{
 const DEFAULT_LEASE_SECONDS: u64 = 60;
 const DEFAULT_MAX_ATTEMPTS: i64 = 5;
 const DEFAULT_RETRY_BASE_SECONDS: u64 = 5;
+type WebPushRequestParts = (String, Vec<(String, String)>, Vec<u8>);
 
 #[derive(Debug, thiserror::Error)]
 pub enum NotifyError {
@@ -543,10 +544,7 @@ impl WebPushHttpTransport {
         &self.public_key
     }
 
-    fn request(
-        &self,
-        delivery: &WebPushDelivery,
-    ) -> NotifyResult<(String, Vec<(String, String)>, Vec<u8>)> {
+    fn request(&self, delivery: &WebPushDelivery) -> NotifyResult<WebPushRequestParts> {
         if !valid_web_push_endpoint(&delivery.subscription.endpoint) {
             return Err(NotifyError::Permanent(
                 "web_push_endpoint_forbidden".to_owned(),
