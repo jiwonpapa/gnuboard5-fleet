@@ -26,14 +26,31 @@ rollback() {
   echo "upgrade failed; restoring version=$old_version and verified backup" >&2
   compose stop caddy app >/dev/null 2>&1 || true
   set_env_value G5_FLEET_VERSION "$old_version" "$env_file"
+  failed="$state_dir/data.failed-upgrade-$stamp"
+  runtime_failed="$state_dir/data.runtime-failed-upgrade-$stamp"
+  candidate_name=".upgrade-rollback-$stamp"
+  candidate="$state_dir/backups/$candidate_name"
   if [ -d "$state_dir/data" ]; then
-    mv "$state_dir/data" "$state_dir/data.failed-upgrade-$stamp"
+    mv "$state_dir/data" "$failed"
   fi
   prepare_runtime_directory "$state_dir/data"
-  compose run --rm --no-deps app restore \
+  prepare_runtime_directory "$candidate"
+  if ! compose run --rm --no-deps app restore \
     "/var/backups/g5-fleet/$filename" \
     "/var/backups/g5-fleet/$filename.manifest.json" \
-    /var/lib/g5-fleet
+    "/var/backups/g5-fleet/$candidate_name"; then
+    rmdir "$state_dir/data" 2>/dev/null || mv "$state_dir/data" "$runtime_failed"
+    mv "$candidate" "$state_dir/data.restore-failed-upgrade-$stamp"
+    echo "rollback restore rejected; failed upgrade data retained at $failed" >&2
+    return 1
+  fi
+  if ! rmdir "$state_dir/data"; then
+    mv "$state_dir/data" "$runtime_failed"
+    mv "$candidate" "$state_dir/data.restore-failed-upgrade-$stamp"
+    echo "rollback restore rejected; runtime populated the empty data mount" >&2
+    return 1
+  fi
+  mv "$candidate" "$state_dir/data"
   start_and_verify
   echo "rollback verified: version=$old_version" >&2
 }
