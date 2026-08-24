@@ -67,8 +67,8 @@ R00에서 `make check-batch BATCH=Rxx`를 구현합니다. 각 배치는 아래
 
 ## 4. 배치 순서
 
-현재 manifest 상태는 R00~R34 `batch_pass`, R35 `active`, R36은
-`planned`입니다. 8차를 닫았고 전체 감사에는 4개 capability findings가 남아
+현재 manifest 상태는 R00~R35 `batch_pass`, R36 `active`입니다.
+9차의 R35를 닫았고 전체 감사에는 2개 capability findings가 남아
 있으므로 제품 기능 이관 완료를 뜻하지 않습니다.
 
 ### 4.1 이관 통제와 공통 기반
@@ -139,7 +139,7 @@ R28, 나머지 10개는 R34가 소유합니다.
 | 6차 (완료) | R29 sms config → R30 sms-contacts | Core 18 | SMS 설정과 주소록 CRUD·동기화 경계를 닫기 |
 | 7차 (완료) | R31 sms-templates → R32 sms-messages | Core 19 | SMS 템플릿·발송 작성·이력 workflow를 닫기 |
 | 8차 (완료) | R33 push → R34 system tools·maintenance | Core 12 | Push와 시스템 점검·정리 도구의 보안 경계를 닫기 |
-| 9차 | R35 알림·PWA → R36 전체 종결 | capability 4 | 전역 findings 0, package·staging·전체 readback 종결 |
+| 9차 (진행 중) | R35 알림·PWA → R36 전체 종결 | capability 4 | R35 완료, R36에서 전역 findings 0·package·staging·전체 readback 종결 |
 
 메일·SMS·Push는 routine 검증에서 실제 외부 발송을 금지하고 fake adapter와
 outbox readback으로 증명합니다. 실제 발송은 별도 `LIVE` 승인과 증거가
@@ -168,7 +168,7 @@ commit/push: 미실행
 
 ## 6. 현재 실행
 
-R00~R34는 닫혔고 다음 목표 추진 단위는 9차의 R35 알림·PWA입니다.
+R00~R35는 닫혔고 다음 목표 추진 단위는 9차의 R36 전체 종결입니다.
 
 1. R27 write-count의 legacy 3개와 Core operation 1개는 runtime·브라우저까지 닫았습니다.
 2. R28 mails의 legacy 19개와 Core 13개도 runtime·브라우저까지 닫았습니다.
@@ -185,6 +185,8 @@ R00~R34는 닫혔고 다음 목표 추진 단위는 9차의 R35 알림·PWA입�
 13. R34 시스템 도구·유지보수 legacy 15개와 Core 10개를 typed 서버·웹, 공식 G5 REST readback으로 닫았습니다.
 14. phpinfo 원문은 브라우저에서 차단하고 Browscap 외부 업데이트 시도는 0으로 유지했습니다.
 15. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
+16. R35 운영 Telegram·Web Push transport와 암호화 구독 생성·회전·폐기를 구현했습니다.
+17. 공식 G5 로컬 인증에서 알림 비밀 비노출·SSRF 경계·미설정 dead-letter와 외부 전송 0을 확인했습니다.
 
 실행 명령:
 
@@ -195,6 +197,7 @@ make check-batch BATCH=R31
 make check-batch BATCH=R32
 make check-batch BATCH=R33
 make check-batch BATCH=R34
+make check-batch BATCH=R35
 ```
 
 배치 gate가 PASS하더라도 전역 `make audit-migration-parity`는 R36 전까지
@@ -263,6 +266,19 @@ R34 closeout:
 - R34 finding: 0
 - 전역 잔여 finding: 4
 - 다음 R35 사전 probe: FAIL 2
+
+R35 closeout:
+
+- 구현 commit: `d486dc84cdafbf13369071620b3000da4f399bf6`
+- tracked 증거: `docs/audits/evidence/R35_BATCH_GATE_PASS.json`
+- scope: legacy 0, Core 0, capability 2
+- reuse: 4 reused / 14 adapted / 0 redesigned / 0 deferred
+- 공식 G5 v5.6.32 local runtime Telegram 목적지 암호화·Web Push 구독 생성·회전·폐기 PASS
+- headed browser: NOT_RUN, 시각·상호작용 주장 제외
+- 실제 Telegram·Web Push 외부 전송: NOT_RUN, routine 외부 전송 시도 0
+- R35 finding: 0
+- 전역 잔여 finding: 2
+- 다음 R36 사전 probe: FAIL 2
 
 R00 closeout:
 

@@ -1,0 +1,104 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R35",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "d486dc84cdafbf13369071620b3000da4f399bf6",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "d486dc84cdafbf13369071620b3000da4f399bf6"
+  },
+  "generated_at": "2026-08-24T04:02:11Z",
+  "commands": [
+    "make certification-local-smoke",
+    "make audit-runtime-prepare",
+    "make check",
+    "make check-batch BATCH=R35",
+    "composer test (official G5 composed runtime)",
+    "python3 -m tools.migration_parity.batch_cli --batch R36 --profile static"
+  ],
+  "results": {
+    "canonical_make_check": {
+      "component_gates": "PASS",
+      "terminal_status": "EXPECTED_GLOBAL_MIGRATION_FAIL",
+      "terminal_findings": 2
+    },
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "cargo_workspace_tests": "PASS",
+      "http_contract_tests": {"passed": 8, "failed": 0},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 87,
+      "web_tests": {"passed": 200, "failed": 0},
+      "web_build": "PASS"
+    },
+    "php_composed_runtime": {
+      "status": "PASS",
+      "official_g5_version": "5.6.32",
+      "tests": 877,
+      "assertions": 6735,
+      "failed": 0,
+      "skipped": 5
+    },
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "revision": "d486dc84cdafbf13369071620b3000da4f399bf6",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "d486dc84cdafbf13369071620b3000da4f399bf6",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "26592a1bbaaea72309cda3e574b49191db79a4cd28333ca2d8a12d8433f70499",
+      "telegram_destination_encrypted_readback": "PASS",
+      "web_push_subscription_create_rotate_revoke": "PASS",
+      "web_push_response_secret_exposure": "NONE",
+      "web_push_endpoint_ssrf_boundary": "PASS",
+      "unconfigured_delivery_state": "dead_letter",
+      "configured_external_transports": 0,
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "NOT_RUN",
+      "reason": "No headed-browser credential transmission was authorized for this closeout run.",
+      "claim_effect": "No visual or interactive browser claim is made; responsive workflow coverage is supported by React DOM tests."
+    },
+    "live_notification_delivery": {
+      "status": "NOT_RUN",
+      "reason": "No Telegram bot token or VAPID production secret was supplied for a LIVE-certified delivery.",
+      "claim_effect": "Production transports and encrypted subscription lifecycle are implemented, but external delivery success is not claimed."
+    },
+    "notification_contract": {
+      "telegram": "server-only token, encrypted per-site destination, HTTPS Bot API transport, retry and dead-letter",
+      "web_push": "server-only VAPID private key, encrypted principal-site subscription, vendor endpoint allowlist, RFC payload encryption",
+      "browser_secret_boundary": "VAPID public key only; subscription endpoint, p256dh, auth and Telegram destination are redacted",
+      "mutation_boundary": "authenticated principal, explicit site_id, CSRF and recent step-up"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 250, "added_r35_routes": 7},
+    "predecessor_regression": {"batch": "R34", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 0, "core_operations": 0, "required_capabilities": 2},
+    "reuse": {"reused": 4, "adapted": 14, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "global_migration": {"status": "FAIL", "findings": 2},
+    "next_batch_probe": {
+      "batch": "R36",
+      "status": "FAIL",
+      "scope": {"legacy": 0, "core_operations": 0, "required_capabilities": 2},
+      "findings": 2
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "886acdddbfd0667d87a7c6eda9df942be15f86f90512d720967dbdec18a9a1db",
+    "migration_batches_before_closeout": "e301cd17c7bcc5b5659023fc8757f4786f346e1101f81ebcfd792d2e13cfb8b4"
+  },
+  "source_reports": [
+    {"path": "output/audit/runs/20260824T035927Z-4296b0a22f14/result.json", "sha256": "858d25cde4c8b0b0daa5869272c679b36a55134c0a0abb8281f99fd8ecff3b1f"},
+    {"path": "output/audit/runs/migration-parity-20260824T035943Z-3579d46d/result.json", "sha256": "4e7f81cea5cb51dbb5bd269245db7e71758ad82bffeab1d31021a37acbfd9677"},
+    {"path": "output/audit/runs/migration-batch-R35-20260824T040035Z-dc78d9e4/result.json", "sha256": "9d61bd3917ab332b51f5897fe1d66de0e33c7caaa159fa7bcef9c92c1bcd8cde"},
+    {"path": "output/audit/runs/migration-batch-R36-20260824T040058Z-b2fe0a47/result.json", "sha256": "12a3c7362eddc0a38cf6ee21dedd891423cda7d430beea7d96cf15e3200d9ef2"}
+  ],
+  "claim_limit": "R35 proves production Telegram and Web Push transport code, encrypted site-scoped destination and subscription lifecycle, PWA cache safety, official G5 5.6.32 local readback, and fail-closed zero-external-delivery behavior at the implementation commit. Headed browser and real external notification delivery were not run, so no visual, interactive, or LIVE delivery claim is made. This is not package, staging, or full-product certification; global migration remains FAIL with two R36 capability findings."
+}

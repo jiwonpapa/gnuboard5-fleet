@@ -1398,8 +1398,13 @@
       "id": "R35",
       "sequence": 30,
       "title": "알림·PWA",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R34"],
+      "completion": {
+        "implementation_commit": "d486dc84cdafbf13369071620b3000da4f399bf6",
+        "evidence_path": "docs/audits/evidence/R35_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-24T04:02:11Z"
+      },
       "core": {
         "domains": [],
         "operation_ids": [],
@@ -1415,7 +1420,7 @@
       "id": "R36",
       "sequence": 31,
       "title": "전체 종결",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R35"],
       "core": {
         "domains": [],

@@ -2,7 +2,7 @@
 
 ## 현재 판정
 
-2026-08-24 R34 마감 기준 전체 이관 동등성 하네스 결과는
+2026-08-24 R35 마감 기준 전체 이관 동등성 하네스 결과는
 `MIGRATION_STATIC FAIL`입니다.
 
 - legacy inventory 510개 전체의 배치 소유권은 확정됐으며 현재 유효 매핑은
@@ -12,11 +12,11 @@
   - Rust workspace member 21/21
 - frontend regression test 100/100
 - Rust regression test 93/93
-- 서버 전환 필수 capability 9/13 구현 증명
+- 서버 전환 필수 capability 11/13 구현 증명
 - typed Core operation 소비 189/189
-- 활성 server route 243개와 Core registry 189개는 존재하지만 전체 이관
+- 활성 server route 250개와 Core registry 189개는 존재하지만 전체 이관
   증거로 승격하지 않음
-- 전역 미완료 finding 4개
+- 전역 미완료 finding 2개
 
 아래 구현 목록은 현재 소스에 존재하는 기반 기능 inventory입니다. 전체
 legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B02부터 B10은
@@ -63,7 +63,8 @@ legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B
 - 관측 host key, terminal 중단·재접속, SFTP readback·전송 중단·cleanup 스테이징 VM PASS
 - 터미널 ticket 교차 사용자·사이트 차단과 전송 실패·재시도·취소 상태 테스트 PASS
 - SQLite notification lease·retry·dedupe·dead-letter worker 구현
-- Telegram·Web Push injected adapter와 외부 네트워크 없는 fake delivery PASS
+- Telegram Bot API·Web Push VAPID 운영 transport와 외부 네트워크 없는 fake delivery PASS
+- 사이트별 Telegram 목적지와 PushSubscription의 AES-256-GCM 암호화 저장·회전·폐기 구현
 - 알림 payload 기본 민감정보 마스킹과 사용자·사이트 상태 격리 구현
 - PWA install manifest·service worker와 API·health·ready cache 금지 구현
 - canonical Shop 26개 Commerce SDK 계약과 Core import·소비 0 고정
@@ -125,26 +126,26 @@ revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장�
 
 ## 현재 배치
 
-R00~R34는 tracked 증거로 닫혔습니다. 8차 R33 Push와 R34 시스템
-도구·유지보수를 각각 독립 gate·commit·push로 마감했고 R35가 활성 배치입니다.
+R00~R35는 tracked 증거로 닫혔습니다. 9차의 첫 배치 R35 알림·PWA를
+독립 gate·commit·push로 마감했고 R36 전체 종결이 활성 배치입니다.
 
-- R34 구현 commit: `5330fc01293f7f414d971ce4a9a720e75e35aede`
-- 증거: `docs/audits/evidence/R34_BATCH_GATE_PASS.json`
-- R34 scope: legacy 15, Core 10, capability 0
-- reuse: 1 reused / 14 adapted / 0 redesigned / 0 deferred
-- R34 scoped finding: 0
+- R35 구현 commit: `d486dc84cdafbf13369071620b3000da4f399bf6`
+- 증거: `docs/audits/evidence/R35_BATCH_GATE_PASS.json`
+- R35 scope: legacy 0, Core 0, capability 2
+- reuse: 4 reused / 14 adapted / 0 redesigned / 0 deferred
+- R35 scoped finding: 0
 - `SERVER_STATIC_PASS`: 35/35
 - typed Core 소비: 189/189
 - Rust workspace test: PASS, 1 remote certification ignored
-- 웹 테스트: 85 files, 196 PASS
+- 웹 테스트: 87 files, 200 PASS
 - PHP Connector: 877 tests, 6735 assertions, 5 skipped
-- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 health·phpinfo 안전 요약·Browscap
-  상태와 유지보수 5종 REST readback PASS
-- stock G5 Browscap 플러그인 없음: 변환 `PROVIDER_UNAVAILABLE`
-- 실제 Browscap 외부 업데이트 시도: 0
+- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 Telegram 목적지 암호화
+  readback, Web Push 구독 생성·회전·폐기와 비밀 비노출 PASS
+- 운영 secret 미설정 알림 `dead_letter`, 실제 외부 전송 시도 0
+- 실제 Telegram·Web Push 외부 수신 성공은 `LIVE` 자격증명 미제공으로 미실행
 - headed 브라우저는 임시 비밀번호·OTP 입력 승인이 없어 미실행으로 분리 기록
-- 다음 활성 배치: R35 알림·PWA
-- R35 사전 probe: FAIL 2
+- 다음 활성 배치: R36 전체 종결
+- R36 사전 probe: FAIL 2
 - 목표 추진 차수:
   - 5차: R27~R28, write-count·mails — 완료
   - 6차: R29~R30, SMS 설정·주소록 — 완료
@@ -153,8 +154,8 @@ R00~R34는 tracked 증거로 닫혔습니다. 8차 R33 Push와 R34 시스템
   - 9차: R35~R36, 알림·PWA·전체 종결
 
 ```bash
-make check-batch BATCH=R35
+make check-batch BATCH=R36
 ```
 
-전체 완료는 아닙니다. 전역 감사 4개가 남아 있으며 R36 전까지
+전체 완료는 아닙니다. 전역 감사 2개가 남아 있으며 R36에서
 `MIGRATION_STATIC FAIL`을 유지합니다.
