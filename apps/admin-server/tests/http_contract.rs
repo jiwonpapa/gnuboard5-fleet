@@ -481,6 +481,37 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
                 "DELETE",
                 "/api/v1/sites/{site_id}/admin/sms/contacts/{bk_no}"
             ),
+            ("GET", "/api/v1/sites/{site_id}/admin/sms/template-groups"),
+            ("POST", "/api/v1/sites/{site_id}/admin/sms/template-groups"),
+            (
+                "GET",
+                "/api/v1/sites/{site_id}/admin/sms/template-groups/{fg_no}"
+            ),
+            (
+                "PUT",
+                "/api/v1/sites/{site_id}/admin/sms/template-groups/{fg_no}"
+            ),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/sms/template-groups/{fg_no}"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/sms/template-groups/{fg_no}/move"
+            ),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/sms/template-groups/{fg_no}/templates"
+            ),
+            ("GET", "/api/v1/sites/{site_id}/admin/sms/templates"),
+            ("POST", "/api/v1/sites/{site_id}/admin/sms/templates"),
+            ("POST", "/api/v1/sites/{site_id}/admin/sms/templates/batch"),
+            ("GET", "/api/v1/sites/{site_id}/admin/sms/templates/{fo_no}"),
+            ("PUT", "/api/v1/sites/{site_id}/admin/sms/templates/{fo_no}"),
+            (
+                "DELETE",
+                "/api/v1/sites/{site_id}/admin/sms/templates/{fo_no}"
+            ),
             ("GET", "/api/v1/sites/{site_id}/admin/points"),
             ("POST", "/api/v1/sites/{site_id}/admin/points"),
             ("DELETE", "/api/v1/sites/{site_id}/admin/points"),

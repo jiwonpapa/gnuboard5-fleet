@@ -1305,6 +1305,97 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/sms/template-groups",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_sms_template_group_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/sms/template-groups",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_sms_template_group_create"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/sms/template-groups/{fg_no}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_sms_template_group_get"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/sms/template-groups/{fg_no}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_sms_template_group_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/sms/template-groups/{fg_no}",
+      "auth": "session_csrf_step_up_confirm_mutation",
+      "site_context": true,
+      "purpose": "typed_sms_template_group_delete"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/sms/template-groups/{fg_no}/move",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_sms_template_group_move"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/sms/template-groups/{fg_no}/templates",
+      "auth": "session_csrf_step_up_confirm_mutation",
+      "site_context": true,
+      "purpose": "typed_sms_template_group_clear"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/sms/templates",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_sms_template_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/sms/templates",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_sms_template_create"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/sms/templates/batch",
+      "auth": "session_csrf_step_up_confirm_mutation",
+      "site_context": true,
+      "purpose": "typed_sms_template_batch"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/sms/templates/{fo_no}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_sms_template_get"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/sites/{site_id}/admin/sms/templates/{fo_no}",
+      "auth": "session_csrf_step_up",
+      "site_context": true,
+      "purpose": "typed_sms_template_update"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/sites/{site_id}/admin/sms/templates/{fo_no}",
+      "auth": "session_csrf_step_up_confirm_mutation",
+      "site_context": true,
+      "purpose": "typed_sms_template_delete"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/admin/points",
       "auth": "session",
       "site_context": true,

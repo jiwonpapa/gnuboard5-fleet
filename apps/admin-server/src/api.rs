@@ -51,15 +51,20 @@ use g5_fleet_connector::{
     AdminSmsContactGroupList, AdminSmsContactGroupMove, AdminSmsContactGroupMoveResult,
     AdminSmsContactGroupWrite, AdminSmsContactImport, AdminSmsContactImportResult,
     AdminSmsContactList, AdminSmsContactListQuery, AdminSmsContactUpdate, AdminSmsMemberSyncResult,
-    AdminSystemMailRecipientList, AdminSystemMailRecipientQuery, AdminSystemMailSendRequest,
-    AdminSystemMailSendResult, AdminSystemMailTemplateList, AdminSystemMailTestRequest,
-    AdminSystemMailTestResult, AdminSystemPermission, AdminSystemPermissionList,
-    AdminSystemPermissionListQuery, AdminSystemPermissionSave, AdminTheme, AdminThemeConfig,
-    AdminThemeList, AdminThemeUpdate, AdminVisitDelete, AdminVisitDeleteResult,
-    AdminVisitSearchQuery, AdminVisitSearchResult, AdminVisitStats, AdminVisitStatsQuery,
-    AdminWriteCountStats, AdminWriteCountStatsQuery, BasicConfig, ConnectorCredentials,
-    ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse,
-    CoreOperationSpec, MemberProfile, SiteOverview, core_operation, core_operations,
+    AdminSmsTemplate, AdminSmsTemplateBatch, AdminSmsTemplateBatchResult, AdminSmsTemplateCreate,
+    AdminSmsTemplateGroup, AdminSmsTemplateGroupClearResult, AdminSmsTemplateGroupCreate,
+    AdminSmsTemplateGroupList, AdminSmsTemplateGroupMove, AdminSmsTemplateGroupMoveResult,
+    AdminSmsTemplateGroupUpdate, AdminSmsTemplateList, AdminSmsTemplateListQuery,
+    AdminSmsTemplateUpdate, AdminSystemMailRecipientList, AdminSystemMailRecipientQuery,
+    AdminSystemMailSendRequest, AdminSystemMailSendResult, AdminSystemMailTemplateList,
+    AdminSystemMailTestRequest, AdminSystemMailTestResult, AdminSystemPermission,
+    AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
+    AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, AdminVisitDelete,
+    AdminVisitDeleteResult, AdminVisitSearchQuery, AdminVisitSearchResult, AdminVisitStats,
+    AdminVisitStatsQuery, AdminWriteCountStats, AdminWriteCountStatsQuery, BasicConfig,
+    ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest,
+    CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview, core_operation,
+    core_operations,
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
@@ -216,6 +221,13 @@ struct ConfirmedAdminSmsContactImportRequest {
     confirm_import: bool,
     #[serde(flatten)]
     import: AdminSmsContactImport,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedAdminSmsTemplateBatchRequest {
+    confirm_action: bool,
+    #[serde(flatten)]
+    batch: AdminSmsTemplateBatch,
 }
 
 #[derive(Debug, Deserialize)]
@@ -754,6 +766,38 @@ pub(crate) fn router() -> Router<AppState> {
             get(admin_sms_contact_get)
                 .put(admin_sms_contact_update)
                 .delete(admin_sms_contact_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/template-groups",
+            get(admin_sms_template_group_list).post(admin_sms_template_group_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/template-groups/{fg_no}",
+            get(admin_sms_template_group_get)
+                .put(admin_sms_template_group_update)
+                .delete(admin_sms_template_group_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/template-groups/{fg_no}/move",
+            post(admin_sms_template_group_move),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/template-groups/{fg_no}/templates",
+            axum::routing::delete(admin_sms_template_group_clear),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/templates",
+            get(admin_sms_template_list).post(admin_sms_template_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/templates/batch",
+            post(admin_sms_template_batch),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/templates/{fo_no}",
+            get(admin_sms_template_get)
+                .put(admin_sms_template_update)
+                .delete(admin_sms_template_delete),
         )
         .route(
             "/sites/{site_id}/admin/points",
@@ -6168,8 +6212,388 @@ fn destructive_confirmation_required(_action: &str) -> Response {
     api_error(
         StatusCode::BAD_REQUEST,
         "destructive_confirmation_required",
-        "This SMS contact operation requires explicit confirmation.",
+        "This operation requires explicit confirmation.",
     )
+}
+
+async fn sms_template_access(
+    state: &AppState,
+    headers: &HeaderMap,
+    site_id: String,
+    mutation: bool,
+) -> Result<(RequestContext, SiteRecord, ConnectorCredentials), Response> {
+    let (context, principal, site) = owned_site_context(state, headers, site_id, mutation).await?;
+    if mutation {
+        state
+            .config
+            .auth
+            .require_recent_step_up(&principal)
+            .map_err(auth_error)?;
+    }
+    let credentials = connector_credentials(state, &context, &site.site_id).await?;
+    Ok((context, site, credentials))
+}
+
+async fn admin_sms_template_group_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_template_access(&state, &headers, site_id, false).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_list_sms_template_groups(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsTemplateGroupList>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_template_group_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(create): Json<AdminSmsTemplateGroupCreate>,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_template_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_create_sms_template_group(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &create,
+        )
+        .await
+    {
+        Ok(result) => (StatusCode::CREATED, Json::<AdminSmsTemplateGroup>(result)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_template_group_get(
+    State(state): State<AppState>,
+    Path((site_id, fg_no)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_template_access(&state, &headers, site_id, false).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_get_sms_template_group(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fg_no,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsTemplateGroup>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_template_group_update(
+    State(state): State<AppState>,
+    Path((site_id, fg_no)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminSmsTemplateGroupUpdate>,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_template_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_update_sms_template_group(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fg_no,
+            &update,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsTemplateGroup>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_template_group_delete(
+    State(state): State<AppState>,
+    Path((site_id, fg_no)): Path<(String, i64)>,
+    Query(confirmation): Query<ConfirmedMutationQuery>,
+    headers: HeaderMap,
+) -> Response {
+    if confirmation.confirm != Some(true) {
+        return destructive_confirmation_required("SMS template group deletion");
+    }
+    let (context, site, credentials) =
+        match sms_template_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_delete_sms_template_group(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fg_no,
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_template_group_move(
+    State(state): State<AppState>,
+    Path((site_id, fg_no)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(move_request): Json<AdminSmsTemplateGroupMove>,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_template_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_move_sms_template_group(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fg_no,
+            &move_request,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsTemplateGroupMoveResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_template_group_clear(
+    State(state): State<AppState>,
+    Path((site_id, fg_no)): Path<(String, i64)>,
+    Query(confirmation): Query<ConfirmedMutationQuery>,
+    headers: HeaderMap,
+) -> Response {
+    if confirmation.confirm != Some(true) {
+        return destructive_confirmation_required("SMS template group clearing");
+    }
+    let (context, site, credentials) =
+        match sms_template_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_clear_sms_template_group(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fg_no,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsTemplateGroupClearResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_template_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminSmsTemplateListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_template_access(&state, &headers, site_id, false).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_list_sms_templates(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsTemplateList>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_template_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(create): Json<AdminSmsTemplateCreate>,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_template_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_create_sms_template(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &create,
+        )
+        .await
+    {
+        Ok(result) => (StatusCode::CREATED, Json::<AdminSmsTemplate>(result)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_template_get(
+    State(state): State<AppState>,
+    Path((site_id, fo_no)): Path<(String, i64)>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_template_access(&state, &headers, site_id, false).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_get_sms_template(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fo_no,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsTemplate>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_template_update(
+    State(state): State<AppState>,
+    Path((site_id, fo_no)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(update): Json<AdminSmsTemplateUpdate>,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_template_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_update_sms_template(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fo_no,
+            &update,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsTemplate>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_template_delete(
+    State(state): State<AppState>,
+    Path((site_id, fo_no)): Path<(String, i64)>,
+    Query(confirmation): Query<ConfirmedMutationQuery>,
+    headers: HeaderMap,
+) -> Response {
+    if confirmation.confirm != Some(true) {
+        return destructive_confirmation_required("SMS template deletion");
+    }
+    let (context, site, credentials) =
+        match sms_template_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_delete_sms_template(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            fo_no,
+        )
+        .await
+    {
+        Ok(()) => StatusCode::NO_CONTENT.into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_template_batch(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminSmsTemplateBatchRequest>,
+) -> Response {
+    if !confirmed.confirm_action {
+        return destructive_confirmation_required("SMS template batch action");
+    }
+    let (context, site, credentials) =
+        match sms_template_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_batch_sms_templates(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &confirmed.batch,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsTemplateBatchResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
 }
 
 async fn admin_point_list(

@@ -93,6 +93,13 @@ pub use g5_fleet_core::sms_contacts::{
     AdminSmsContactImport, AdminSmsContactImportResult, AdminSmsContactList,
     AdminSmsContactListQuery, AdminSmsContactSummary, AdminSmsContactUpdate, valid_sms_contact_id,
 };
+pub use g5_fleet_core::sms_templates::{
+    AdminSmsTemplate, AdminSmsTemplateBatch, AdminSmsTemplateBatchResult, AdminSmsTemplateCreate,
+    AdminSmsTemplateGroup, AdminSmsTemplateGroupClearResult, AdminSmsTemplateGroupCreate,
+    AdminSmsTemplateGroupList, AdminSmsTemplateGroupMove, AdminSmsTemplateGroupMoveResult,
+    AdminSmsTemplateGroupUpdate, AdminSmsTemplateList, AdminSmsTemplateListQuery,
+    AdminSmsTemplateUpdate, valid_sms_template_group_id, valid_sms_template_id,
+};
 pub use g5_fleet_core::theme::{
     AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, valid_theme_id,
 };
@@ -3589,6 +3596,357 @@ pub trait ConnectorGateway: Send + Sync {
         })
     }
 
+    async fn admin_list_sms_template_groups(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+    ) -> ConnectorResult<AdminSmsTemplateGroupList> {
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListSmsTemplateGroups",
+                &CoreExecuteRequest::default(),
+            )
+            .await?;
+        let envelope: SmsTemplateGroupListEnvelope =
+            typed_core_envelope("adminListSmsTemplateGroups", response)?;
+        Ok(AdminSmsTemplateGroupList {
+            total: envelope.meta.total.unwrap_or(envelope.data.len() as i64),
+            groups: envelope.data,
+        })
+    }
+
+    async fn admin_create_sms_template_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        create: &AdminSmsTemplateGroupCreate,
+    ) -> ConnectorResult<AdminSmsTemplateGroup> {
+        if !create.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminCreateSmsTemplateGroup",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(create).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminCreateSmsTemplateGroup", response)
+    }
+
+    async fn admin_get_sms_template_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fg_no: i64,
+    ) -> ConnectorResult<AdminSmsTemplateGroup> {
+        if !valid_sms_template_group_id(fg_no) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminGetSmsTemplateGroup",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("fg_no".to_owned(), fg_no.to_string())]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminGetSmsTemplateGroup", response)
+    }
+
+    async fn admin_update_sms_template_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fg_no: i64,
+        update: &AdminSmsTemplateGroupUpdate,
+    ) -> ConnectorResult<AdminSmsTemplateGroup> {
+        if fg_no <= 0 || !update.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminUpdateSmsTemplateGroup",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("fg_no".to_owned(), fg_no.to_string())]),
+                    body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminUpdateSmsTemplateGroup", response)
+    }
+
+    async fn admin_delete_sms_template_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fg_no: i64,
+    ) -> ConnectorResult<()> {
+        if fg_no <= 0 {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteSmsTemplateGroup",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("fg_no".to_owned(), fg_no.to_string())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_empty("adminDeleteSmsTemplateGroup", response)
+    }
+
+    async fn admin_move_sms_template_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fg_no: i64,
+        move_request: &AdminSmsTemplateGroupMove,
+    ) -> ConnectorResult<AdminSmsTemplateGroupMoveResult> {
+        if !valid_sms_template_group_id(fg_no)
+            || !valid_sms_template_group_id(move_request.target_fg_no)
+            || fg_no == move_request.target_fg_no
+        {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminMoveSmsTemplateGroup",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("fg_no".to_owned(), fg_no.to_string())]),
+                    body: Some(
+                        serde_json::to_value(move_request).map_err(|_| ConnectorError::Contract)?,
+                    ),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminMoveSmsTemplateGroup", response)
+    }
+
+    async fn admin_clear_sms_template_group(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fg_no: i64,
+    ) -> ConnectorResult<AdminSmsTemplateGroupClearResult> {
+        if !valid_sms_template_group_id(fg_no) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminClearSmsTemplateGroup",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("fg_no".to_owned(), fg_no.to_string())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminClearSmsTemplateGroup", response)
+    }
+
+    async fn admin_list_sms_templates(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminSmsTemplateListQuery,
+    ) -> ConnectorResult<AdminSmsTemplateList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListSmsTemplates",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                        ("fg_no", query.fg_no.map(|value| json!(value))),
+                        (
+                            "search_field",
+                            query.search_field.as_ref().map(|value| json!(value)),
+                        ),
+                        ("search", query.search.as_ref().map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<AdminSmsTemplate> =
+            typed_core_envelope("adminListSmsTemplates", response)?;
+        Ok(AdminSmsTemplateList {
+            templates: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_create_sms_template(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        create: &AdminSmsTemplateCreate,
+    ) -> ConnectorResult<AdminSmsTemplate> {
+        if !create.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminCreateSmsTemplate",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(create).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminCreateSmsTemplate", response)
+    }
+
+    async fn admin_get_sms_template(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fo_no: i64,
+    ) -> ConnectorResult<AdminSmsTemplate> {
+        if !valid_sms_template_id(fo_no) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminGetSmsTemplate",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("fo_no".to_owned(), fo_no.to_string())]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminGetSmsTemplate", response)
+    }
+
+    async fn admin_update_sms_template(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fo_no: i64,
+        update: &AdminSmsTemplateUpdate,
+    ) -> ConnectorResult<AdminSmsTemplate> {
+        if !valid_sms_template_id(fo_no) || !update.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminUpdateSmsTemplate",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("fo_no".to_owned(), fo_no.to_string())]),
+                    body: Some(serde_json::to_value(update).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminUpdateSmsTemplate", response)
+    }
+
+    async fn admin_delete_sms_template(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        fo_no: i64,
+    ) -> ConnectorResult<()> {
+        if !valid_sms_template_id(fo_no) {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminDeleteSmsTemplate",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("fo_no".to_owned(), fo_no.to_string())]),
+                    confirm_destructive: true,
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_empty("adminDeleteSmsTemplate", response)
+    }
+
+    async fn admin_batch_sms_templates(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        batch: &AdminSmsTemplateBatch,
+    ) -> ConnectorResult<AdminSmsTemplateBatchResult> {
+        if !batch.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminBatchSmsTemplates",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(batch).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminBatchSmsTemplates", response)
+    }
+
     async fn admin_search_visits(
         &self,
         base_url: &str,
@@ -4096,6 +4454,18 @@ struct SmsContactGroupListEnvelope {
 
 #[derive(Default, Deserialize)]
 struct SmsContactGroupListMeta {
+    total: Option<i64>,
+}
+
+#[derive(Deserialize)]
+struct SmsTemplateGroupListEnvelope {
+    data: Vec<AdminSmsTemplateGroup>,
+    #[serde(default)]
+    meta: SmsTemplateGroupListMeta,
+}
+
+#[derive(Default, Deserialize)]
+struct SmsTemplateGroupListMeta {
     total: Option<i64>,
 }
 
