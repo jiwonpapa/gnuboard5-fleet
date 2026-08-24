@@ -1,0 +1,113 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R34",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "5330fc01293f7f414d971ce4a9a720e75e35aede",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "5330fc01293f7f414d971ce4a9a720e75e35aede"
+  },
+  "generated_at": "2026-08-24T03:18:55Z",
+  "commands": [
+    "make certification-local-smoke",
+    "make audit-runtime-prepare",
+    "make check",
+    "make check-batch BATCH=R34",
+    "composer test (official G5 composed runtime)",
+    "python3 -m tools.migration_parity.batch_cli --batch R35 --profile static"
+  ],
+  "results": {
+    "canonical_make_check": {
+      "component_gates": "PASS",
+      "terminal_status": "EXPECTED_GLOBAL_MIGRATION_FAIL",
+      "terminal_findings": 4
+    },
+    "active_check": {
+      "cargo_fmt": "PASS",
+      "cargo_clippy": "PASS",
+      "cargo_workspace_tests": "PASS",
+      "http_contract_tests": {"passed": 8, "failed": 0},
+      "web_typecheck": "PASS",
+      "web_lint": "PASS",
+      "web_test_files": 85,
+      "web_tests": {"passed": 196, "failed": 0},
+      "web_build": "PASS"
+    },
+    "php_composed_runtime": {
+      "status": "PASS",
+      "official_g5_version": "5.6.32",
+      "tests": 877,
+      "assertions": 6735,
+      "failed": 0,
+      "skipped": 5
+    },
+    "server_static": {
+      "status": "PASS",
+      "proof_level": "SERVER_STATIC_PASS",
+      "revision": "5330fc01293f7f414d971ce4a9a720e75e35aede",
+      "checks": {"passed": 35, "failed": 0}
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "revision": "5330fc01293f7f414d971ce4a9a720e75e35aede",
+      "official_g5_version": "5.6.32",
+      "evidence_sha256": "7fd1251aadf04da4608fe6e2d63664e7d94a896c820fab4320f2731f5a7aaec2",
+      "site_health_readback": "PASS",
+      "phpinfo_browser_safe_summary": "PASS",
+      "phpinfo_raw_html_exposed": false,
+      "browscap_status_readback": "PASS",
+      "browscap_convert": "PROVIDER_UNAVAILABLE",
+      "browscap_external_update_attempts": 0,
+      "maintenance_operations": 5,
+      "maintenance_confirmations_fail_closed": "PASS",
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "NOT_RUN",
+      "reason": "No headed-browser credential transmission was authorized for this closeout run.",
+      "claim_effect": "No visual or interactive browser claim is made; responsive workflow coverage is supported by React DOM tests."
+    },
+    "typed_operation_consumption": {
+      "operations": [
+        "adminSystemBrowscapStatus",
+        "adminSystemBrowscapConvert",
+        "adminSystemBrowscapUpdate",
+        "adminSystemPurgeCacheFiles",
+        "adminSystemPurgeCaptchaFiles",
+        "adminSystemPurgeMemberListFiles",
+        "adminSystemPurgeSessionFiles",
+        "adminSystemPurgeThumbnailFiles",
+        "adminSystemPhpInfo",
+        "getHealth"
+      ],
+      "new_site_scoped_axum_routes": 9,
+      "browser_same_origin_transport": "STATIC_PASS",
+      "browser_g5_secret_exposure": "NONE_BY_CONTRACT",
+      "phpinfo_boundary": "Raw phpinfo HTML and ini paths are consumed by Rust but withheld from the browser response",
+      "external_effect_boundary": "Browscap update is classified external_effect and requires CSRF + recent step-up + explicit confirmation"
+    },
+    "route_registry": {"status": "PASS", "tracked_routes": 243, "added_r34_routes": 9},
+    "predecessor_regression": {"batch": "R33", "status": "PASS", "findings": 0},
+    "batch_scope": {"legacy": 15, "core_operations": 10, "required_capabilities": 0},
+    "reuse": {"reused": 1, "adapted": 14, "redesigned": 0, "deferred": 0},
+    "batch_findings": 0,
+    "global_migration": {"status": "FAIL", "findings": 4},
+    "next_batch_probe": {
+      "batch": "R35",
+      "status": "FAIL",
+      "scope": {"legacy": 0, "core_operations": 0, "required_capabilities": 2},
+      "findings": 2
+    }
+  },
+  "manifest_sha256": {
+    "migration_parity": "3fb845d838ca66f96a0a5010bbfcb0b025b2f00387a49f2a4ff1f5d948fe3de6",
+    "migration_batches_before_closeout": "48104908696ccd1080397ae4602f1668deeb9dc1041a46a10146f0b55fef7c2f"
+  },
+  "source_reports": [
+    {"path": "output/audit/runs/20260824T031605Z-d11b860a6537/result.json", "sha256": "a205faacafa06a4e01ab5956261a91fe00aee004c20d43697d8b69f12b223aa2"},
+    {"path": "output/audit/runs/migration-parity-20260824T031620Z-9ce86c05/result.json", "sha256": "617123305a6830bbd4365c4c43f9d607e2ecfce87c6597e188b23f7f70e175a9"},
+    {"path": "output/audit/runs/migration-batch-R34-20260824T031633Z-1c2667c1/result.json", "sha256": "6cc71e0e58b8500fd57ca7b050c434c453f5f1765b9e657a1da008faeed6e681"}
+  ],
+  "claim_limit": "R34 system tools and maintenance 10-operation typed DTO, explicit site_id Axum routes, same-origin responsive React workspaces and official G5 5.6.32 local REST readback only. Stock G5 lacked the Browscap plugin, so conversion is recorded as provider unavailable and no external Browscap update was attempted. Maintenance endpoints returned valid empty-directory results in the disposable local runtime. Headed browser login was not performed, so no visual or interactive browser claim is made. This is not package, staging, live notification or full-product certification; global migration remains FAIL with four capability findings."
+}

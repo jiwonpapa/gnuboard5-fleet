@@ -2,21 +2,21 @@
 
 ## 현재 판정
 
-2026-08-24 R33 마감 기준 전체 이관 동등성 하네스 결과는
+2026-08-24 R34 마감 기준 전체 이관 동등성 하네스 결과는
 `MIGRATION_STATIC FAIL`입니다.
 
 - legacy inventory 510개 전체의 배치 소유권은 확정됐으며 현재 유효 매핑은
   다음과 같습니다.
-  - Tauri command 243/253
-  - React page 40/43
+  - Tauri command 253/253
+  - React page 43/43
   - Rust workspace member 21/21
-- frontend regression test 98/100
-  - Rust regression test 93/93
+- frontend regression test 100/100
+- Rust regression test 93/93
 - 서버 전환 필수 capability 9/13 구현 증명
-- typed Core operation 소비 179/189
-- 활성 server route 234개와 Core registry 189개는 존재하지만 전체 이관
+- typed Core operation 소비 189/189
+- 활성 server route 243개와 Core registry 189개는 존재하지만 전체 이관
   증거로 승격하지 않음
-- 전역 미완료 finding 29개
+- 전역 미완료 finding 4개
 
 아래 구현 목록은 현재 소스에 존재하는 기반 기능 inventory입니다. 전체
 legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B02부터 B10은
@@ -99,6 +99,7 @@ legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B
 - SMS 템플릿 13개 operation을 site-scoped typed 서버·웹으로 이관하고 공식 G5 5.6.32에서 그룹·템플릿 CRUD, 미분류 이동·일괄 처리·정리 readback PASS
 - SMS 메시지 6개 operation을 site-scoped typed 서버·웹으로 이관하고 공식 G5 5.6.32에서 배치 목록·상세·전달 결과 readback과 외부 발송 확인 차단 PASS
 - Push 표준·레거시 2개 operation을 site-scoped typed 서버·웹으로 이관하고 공식 G5 5.6.32에서 회원·전체 대상 로컬 큐 readback과 외부 전달 0 PASS
+- 시스템 도구·유지보수 10개 operation을 typed 서버·웹으로 이관하고 phpinfo 원문 차단, Browscap 상태, 유지보수 5종 공식 G5 REST readback PASS
 
 현재 migration profile은 기존 Tauri snapshot의 provenance와 source closure만 이관 증거로 검증합니다. routine `make prepare/check`는 해당 snapshot의 Bun·Cargo·Tauri·네이티브 패키징 의존성을 준비하거나 빌드하지 않습니다. 이는 데스크톱 제품 지원 또는 서버판 구현 완료를 뜻하지 않습니다.
 
@@ -124,35 +125,36 @@ revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장�
 
 ## 현재 배치
 
-R00~R33은 tracked 증거로 닫혔습니다. 8차의 첫 배치 R33 Push를 독립
-gate·commit·push로 마감했고 R34 시스템 도구·유지보수가 활성 배치입니다.
+R00~R34는 tracked 증거로 닫혔습니다. 8차 R33 Push와 R34 시스템
+도구·유지보수를 각각 독립 gate·commit·push로 마감했고 R35가 활성 배치입니다.
 
-- R33 구현 commit: `886c88663496d06d17ddd5204a1a758b4446a1c5`
-- 증거: `docs/audits/evidence/R33_BATCH_GATE_PASS.json`
-- R33 scope: legacy 3, Core 2, capability 0
-- reuse: 0 reused / 3 adapted / 0 redesigned / 0 deferred
-- R33 scoped finding: 0
+- R34 구현 commit: `5330fc01293f7f414d971ce4a9a720e75e35aede`
+- 증거: `docs/audits/evidence/R34_BATCH_GATE_PASS.json`
+- R34 scope: legacy 15, Core 10, capability 0
+- reuse: 1 reused / 14 adapted / 0 redesigned / 0 deferred
+- R34 scoped finding: 0
 - `SERVER_STATIC_PASS`: 35/35
-- typed Core 소비: 179/189
+- typed Core 소비: 189/189
 - Rust workspace test: PASS, 1 remote certification ignored
-- 웹 테스트: 83 files, 193 PASS
+- 웹 테스트: 85 files, 196 PASS
 - PHP Connector: 877 tests, 6735 assertions, 5 skipped
-- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 Push 표준·레거시 2개 operation의
-  회원 지정·전체 대상 로컬 큐 3건과 명시 확인 차단 PASS
-- 실제 외부 Web Push 전달 시도: 0
+- `LOCAL_RUNTIME_PASS`: 공식 G5 5.6.32에서 health·phpinfo 안전 요약·Browscap
+  상태와 유지보수 5종 REST readback PASS
+- stock G5 Browscap 플러그인 없음: 변환 `PROVIDER_UNAVAILABLE`
+- 실제 Browscap 외부 업데이트 시도: 0
 - headed 브라우저는 임시 비밀번호·OTP 입력 승인이 없어 미실행으로 분리 기록
-- 다음 활성 배치: R34 system tools·maintenance
-- R34 사전 probe: FAIL 25
+- 다음 활성 배치: R35 알림·PWA
+- R35 사전 probe: FAIL 2
 - 목표 추진 차수:
   - 5차: R27~R28, write-count·mails — 완료
   - 6차: R29~R30, SMS 설정·주소록 — 완료
   - 7차: R31~R32, SMS 템플릿·메시지 — 완료
-  - 8차: R33~R34, Push·시스템 도구 — R33 완료, R34 진행
+  - 8차: R33~R34, Push·시스템 도구 — 완료
   - 9차: R35~R36, 알림·PWA·전체 종결
 
 ```bash
-make check-batch BATCH=R34
+make check-batch BATCH=R35
 ```
 
-전체 완료는 아닙니다. 전역 감사 29개가 남아 있으며 R36 전까지
+전체 완료는 아닙니다. 전역 감사 4개가 남아 있으며 R36 전까지
 `MIGRATION_STATIC FAIL`을 유지합니다.

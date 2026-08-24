@@ -1345,8 +1345,13 @@
       "id": "R34",
       "sequence": 29,
       "title": "system tools·maintenance",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R33"],
+      "completion": {
+        "implementation_commit": "5330fc01293f7f414d971ce4a9a720e75e35aede",
+        "evidence_path": "docs/audits/evidence/R34_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-24T03:18:55Z"
+      },
       "core": {
         "domains": [],
         "operation_ids": [
@@ -1393,7 +1398,7 @@
       "id": "R35",
       "sequence": 30,
       "title": "알림·PWA",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R34"],
       "core": {
         "domains": [],

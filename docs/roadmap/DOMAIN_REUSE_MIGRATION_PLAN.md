@@ -67,8 +67,8 @@ R00에서 `make check-batch BATCH=Rxx`를 구현합니다. 각 배치는 아래
 
 ## 4. 배치 순서
 
-현재 manifest 상태는 R00~R33 `batch_pass`, R34 `active`, 나머지는
-`planned`입니다. 8차 R33을 닫았고 전체 감사에는 29개 findings가 남아
+현재 manifest 상태는 R00~R34 `batch_pass`, R35 `active`, R36은
+`planned`입니다. 8차를 닫았고 전체 감사에는 4개 capability findings가 남아
 있으므로 제품 기능 이관 완료를 뜻하지 않습니다.
 
 ### 4.1 이관 통제와 공통 기반
@@ -138,7 +138,7 @@ R28, 나머지 10개는 R34가 소유합니다.
 | 5차 (완료) | R27 write-count → R28 mails | Core 14 | 작성 통계와 메일 관리·테스트 발송을 typed 서버·웹으로 닫기 |
 | 6차 (완료) | R29 sms config → R30 sms-contacts | Core 18 | SMS 설정과 주소록 CRUD·동기화 경계를 닫기 |
 | 7차 (완료) | R31 sms-templates → R32 sms-messages | Core 19 | SMS 템플릿·발송 작성·이력 workflow를 닫기 |
-| 8차 (진행) | R33 push → R34 system tools·maintenance | Core 12 | Push와 시스템 점검·정리 도구의 보안 경계를 닫기 |
+| 8차 (완료) | R33 push → R34 system tools·maintenance | Core 12 | Push와 시스템 점검·정리 도구의 보안 경계를 닫기 |
 | 9차 | R35 알림·PWA → R36 전체 종결 | capability 4 | 전역 findings 0, package·staging·전체 readback 종결 |
 
 메일·SMS·Push는 routine 검증에서 실제 외부 발송을 금지하고 fake adapter와
@@ -168,7 +168,7 @@ commit/push: 미실행
 
 ## 6. 현재 실행
 
-R00~R33은 닫혔고 다음 목표 추진 단위는 8차의 R34 system tools·maintenance입니다.
+R00~R34는 닫혔고 다음 목표 추진 단위는 9차의 R35 알림·PWA입니다.
 
 1. R27 write-count의 legacy 3개와 Core operation 1개는 runtime·브라우저까지 닫았습니다.
 2. R28 mails의 legacy 19개와 Core 13개도 runtime·브라우저까지 닫았습니다.
@@ -182,7 +182,9 @@ R00~R33은 닫혔고 다음 목표 추진 단위는 8차의 R34 system tools·ma
 10. R32 routine 검증의 외부 문자 전달 시도는 0이며 headed 브라우저 주장은 제외합니다.
 11. R33 Push legacy 3개와 Core 2개를 typed 서버·웹, 공식 G5 회원·전체 대상 로컬 큐 readback으로 닫았습니다.
 12. 표준 Push도 외부효과로 재분류했으며 routine 외부 Web Push 전달 시도는 0입니다.
-13. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
+13. R34 시스템 도구·유지보수 legacy 15개와 Core 10개를 typed 서버·웹, 공식 G5 REST readback으로 닫았습니다.
+14. phpinfo 원문은 브라우저에서 차단하고 Browscap 외부 업데이트 시도는 0으로 유지했습니다.
+15. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
 
 실행 명령:
 
@@ -247,6 +249,20 @@ R33 closeout:
 - R33 finding: 0
 - 전역 잔여 finding: 29
 - 다음 R34 사전 probe: FAIL 25
+
+R34 closeout:
+
+- 구현 commit: `5330fc01293f7f414d971ce4a9a720e75e35aede`
+- tracked 증거: `docs/audits/evidence/R34_BATCH_GATE_PASS.json`
+- scope: legacy 15, Core 10, capability 0
+- reuse: 1 reused / 14 adapted / 0 redesigned / 0 deferred
+- 공식 G5 v5.6.32 local runtime health·phpinfo 안전 요약·Browscap 상태·유지보수 5종 REST readback PASS
+- stock G5 Browscap 플러그인 없음: 변환 `PROVIDER_UNAVAILABLE`
+- headed 브라우저: NOT_RUN, 시각·상호작용 주장 제외
+- 실제 Browscap 외부 업데이트 시도: 0
+- R34 finding: 0
+- 전역 잔여 finding: 4
+- 다음 R35 사전 probe: FAIL 2
 
 R00 closeout:
 
