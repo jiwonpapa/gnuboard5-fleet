@@ -1491,6 +1491,21 @@ export interface AdminSmsSendResult {
   provider_ready: boolean;
 }
 
+export interface AdminPushMessageRequest {
+  title: string;
+  body: string;
+  type?: string;
+  target?: "all";
+  member_ids?: string[];
+}
+
+export interface AdminPushMessageResult {
+  requested_by: string;
+  target_count: number;
+  queued: number;
+  failed: number;
+}
+
 export interface AdminPointItem {
   po_id: number;
   mb_id: string;
@@ -3349,6 +3364,14 @@ export function resendAdminSmsFailures(siteId: string, wrNo: number, input: Admi
 
 export function resendAdminSmsBatchAll(siteId: string, wrNo: number, input: AdminSmsResendRequest, csrfToken: string) {
   return transport.request<AdminSmsSendResult, AdminSmsResendRequest & { confirm_send: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/history/batches/${wrNo}/resend-all`, csrfToken, body: { ...input, confirm_send: true } });
+}
+
+export function createAdminPushMessage(siteId: string, input: AdminPushMessageRequest, csrfToken: string) {
+  return transport.request<AdminPushMessageResult, AdminPushMessageRequest & { confirm_send: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/push/messages`, csrfToken, body: { ...input, confirm_send: true } });
+}
+
+export function sendAdminPushMessageLegacy(siteId: string, input: AdminPushMessageRequest, csrfToken: string) {
+  return transport.request<AdminPushMessageResult, AdminPushMessageRequest & { confirm_send: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/push/send`, csrfToken, body: { ...input, confirm_send: true } });
 }
 
 export function listAdminPoints(siteId: string, query: AdminPointListQuery = {}) {

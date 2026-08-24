@@ -88,8 +88,12 @@ describe("adminRouteRegistry", () => {
       label: "SMS 내역",
       delivery: "active",
     });
+    expect(resolveRouteMeta("/admin/push")).toMatchObject({
+      label: "Push",
+      delivery: "active",
+    });
     expect(adminRoutes.filter((route) => route.delivery === "active")).toHaveLength(
-      26,
+      27,
     );
     expect(groupedAdminRoutes().get("메시징")?.length).toBeGreaterThanOrEqual(6);
   });

@@ -23,6 +23,7 @@ import { AdminPointsPage } from "./features/points/AdminPointsPage";
 import { AdminPollsPage } from "./features/polls/AdminPollsPage";
 import { AdminPopupsPage } from "./features/popups/AdminPopupsPage";
 import { AdminPopularPage } from "./features/popular/AdminPopularPage";
+import { AdminPushPage } from "./features/push/AdminPushPage";
 import { AdminQaPage } from "./features/qa/AdminQaPage";
 import { AdminReportsPage } from "./features/reports/AdminReportsPage";
 import { AdminVisitsPage } from "./features/visits/AdminVisitsPage";
@@ -159,6 +160,10 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/sms-history"
               element={<AdminSmsHistoryPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/push"
+              element={<AdminPushPage />}
             />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />

@@ -4440,6 +4440,68 @@ code {
   white-space: pre-wrap;
 }
 
+.push-summary {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.push-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.push-editor,
+.push-editor label,
+.push-target-panel,
+.push-target-panel label,
+.push-target-options,
+.push-boundary-note {
+  display: grid;
+  gap: 10px;
+}
+
+.push-editor textarea,
+.push-target-panel textarea {
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+}
+
+.push-target-panel {
+  position: sticky;
+  top: 18px;
+}
+
+.push-target-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.push-target-options button {
+  display: grid;
+  gap: 4px;
+  min-height: 76px;
+  text-align: left;
+}
+
+.push-target-options button[data-active="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.push-target-options span,
+.push-boundary-note span {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.push-boundary-note {
+  padding: 14px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface-soft);
+}
+
 @media (max-width: 960px) {
   .points-page .point-filter,
   .points-workspace,
@@ -4467,6 +4529,14 @@ code {
   .sms-message-workspace,
   .sms-history-workspace {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .push-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .push-target-panel {
+    position: static;
   }
 
   .sms-message-targets {
@@ -4547,6 +4617,11 @@ code {
   .sms-history-summary,
   .sms-message-form-grid,
   .sms-history-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .push-summary,
+  .push-target-options {
     grid-template-columns: 1fr;
   }
 
