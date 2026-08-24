@@ -48,11 +48,15 @@ final class AdminSmsTemplateWriteStore extends AdminSmsTemplateStoreBase
             ]
         );
 
+        // MySQL may reset PDO::lastInsertId() after the group count UPDATE below.
+        // Capture the created template id while the INSERT is still the last write.
+        $templateId = $this->lastInsertId();
+
         if ($groupId > 0) {
             $this->syncTemplateGroupCount($groupId);
         }
 
-        return $this->queryStore()->findTemplate($this->lastInsertId()) ?? [];
+        return $this->queryStore()->findTemplate($templateId) ?? [];
     }
 
     /**

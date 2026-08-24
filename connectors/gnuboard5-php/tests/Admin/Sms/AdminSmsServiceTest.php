@@ -11,6 +11,20 @@ use PHPUnit\Framework\TestCase;
 
 final class AdminSmsServiceTest extends TestCase
 {
+    public function testTemplateCreateCapturesInsertIdBeforeGroupStatWrites(): void
+    {
+        $source = (string)file_get_contents(
+            dirname(__DIR__, 3) . '/api/v1/Admin/Sms/Repository/AdminSmsTemplateWriteStore.php'
+        );
+        $idPosition = strpos($source, '$templateId = $this->lastInsertId();');
+        $syncPosition = strpos($source, '$this->syncTemplateGroupCount($groupId);', (int)$idPosition);
+
+        self::assertNotFalse($idPosition);
+        self::assertNotFalse($syncPosition);
+        self::assertLessThan($syncPosition, $idPosition);
+        self::assertStringContainsString('findTemplate($templateId)', $source);
+    }
+
     public function testContactCreateCapturesInsertIdBeforeGroupStatWrites(): void
     {
         $source = (string)file_get_contents(
