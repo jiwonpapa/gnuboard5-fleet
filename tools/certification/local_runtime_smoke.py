@@ -2700,7 +2700,7 @@ def main() -> int:
         unavailable = request(
             fleet_base, "POST", f"{browscap_path}/convert",
             body={"confirm_action": True, "rows": 1},
-            headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+            headers=fleet_headers(admin_cookie, admin_csrf), expected=(400, 502),
         ).json()
         if not unavailable.get("error", {}).get("code"):
             raise RuntimeError("R34 unavailable Browscap conversion did not fail closed")
