@@ -3648,7 +3648,7 @@ def check_local_fake_notification(root: Path, channel: str) -> str:
         "local-runtime.json",
         "g5-fleet.local-runtime/v1",
     )
-    notifications = evidence.get("notifications")
+    notifications = evidence.get("r35_notifications_pwa")
     source = (root / "crates/fleet-notify/src/lib.rs").read_text(encoding="utf-8")
     required_test = {
         "telegram": "fake_delivery_retries_then_succeeds_without_external_send",
