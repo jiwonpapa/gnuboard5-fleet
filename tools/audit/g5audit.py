@@ -1821,6 +1821,8 @@ def check_server_scaffold_contract(root: Path) -> str:
         ("POST", "/api/v1/sites/{site_id}/admin/system/mails/test", "session_csrf_step_up_confirm_external", True),
         ("POST", "/api/v1/sites/{site_id}/admin/system/mails/send", "session_csrf_step_up_confirm_external", True),
         ("GET", "/api/v1/sites/{site_id}/admin/sms/config", "session", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/push/messages", "session_csrf_step_up_confirm_external", True),
+        ("POST", "/api/v1/sites/{site_id}/admin/push/send", "session_csrf_step_up_confirm_external", True),
         ("PUT", "/api/v1/sites/{site_id}/admin/sms/config", "session_csrf_step_up", True),
         ("POST", "/api/v1/sites/{site_id}/admin/sms/member-sync", "session_csrf_step_up_confirm_mutation", True),
         ("GET", "/api/v1/sites/{site_id}/admin/sms/contact-groups", "session", True),

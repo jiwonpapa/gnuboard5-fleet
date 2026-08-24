@@ -43,31 +43,31 @@ use g5_fleet_connector::{
     AdminPollList, AdminPollListQuery, AdminPollUpdate, AdminPopularList, AdminPopularListQuery,
     AdminPopularRankList, AdminPopularRankQuery, AdminPopularReset, AdminPopularResetResult,
     AdminPopup, AdminPopupCreate, AdminPopupList, AdminPopupListQuery, AdminPopupUpdate,
-    AdminQaBulkDelete, AdminQaBulkDeleteResult, AdminQaConfig, AdminQaConfigUpdate,
-    AdminReportItem, AdminReportList, AdminReportListQuery, AdminReportStats, AdminReportUpdate,
-    AdminSchemaCatalog, AdminSchemaDetail, AdminSmsConfig, AdminSmsConfigUpdate, AdminSmsContact,
-    AdminSmsContactBatch, AdminSmsContactBatchResult, AdminSmsContactCreate, AdminSmsContactExport,
-    AdminSmsContactExportQuery, AdminSmsContactGroup, AdminSmsContactGroupClearResult,
-    AdminSmsContactGroupList, AdminSmsContactGroupMove, AdminSmsContactGroupMoveResult,
-    AdminSmsContactGroupWrite, AdminSmsContactImport, AdminSmsContactImportResult,
-    AdminSmsContactList, AdminSmsContactListQuery, AdminSmsContactUpdate, AdminSmsDeliveryList,
-    AdminSmsDeliveryListQuery, AdminSmsMemberSyncResult, AdminSmsMessageBatchDetail,
-    AdminSmsMessageBatchDetailQuery, AdminSmsMessageBatchList, AdminSmsMessageBatchListQuery,
-    AdminSmsMessageCreateRequest, AdminSmsResendRequest, AdminSmsSendResult, AdminSmsTemplate,
-    AdminSmsTemplateBatch, AdminSmsTemplateBatchResult, AdminSmsTemplateCreate,
-    AdminSmsTemplateGroup, AdminSmsTemplateGroupClearResult, AdminSmsTemplateGroupCreate,
-    AdminSmsTemplateGroupList, AdminSmsTemplateGroupMove, AdminSmsTemplateGroupMoveResult,
-    AdminSmsTemplateGroupUpdate, AdminSmsTemplateList, AdminSmsTemplateListQuery,
-    AdminSmsTemplateUpdate, AdminSystemMailRecipientList, AdminSystemMailRecipientQuery,
-    AdminSystemMailSendRequest, AdminSystemMailSendResult, AdminSystemMailTemplateList,
-    AdminSystemMailTestRequest, AdminSystemMailTestResult, AdminSystemPermission,
-    AdminSystemPermissionList, AdminSystemPermissionListQuery, AdminSystemPermissionSave,
-    AdminTheme, AdminThemeConfig, AdminThemeList, AdminThemeUpdate, AdminVisitDelete,
-    AdminVisitDeleteResult, AdminVisitSearchQuery, AdminVisitSearchResult, AdminVisitStats,
-    AdminVisitStatsQuery, AdminWriteCountStats, AdminWriteCountStatsQuery, BasicConfig,
-    ConnectorCredentials, ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest,
-    CoreExecuteResponse, CoreOperationSpec, MemberProfile, SiteOverview, core_operation,
-    core_operations,
+    AdminPushMessageRequest, AdminPushMessageResult, AdminQaBulkDelete, AdminQaBulkDeleteResult,
+    AdminQaConfig, AdminQaConfigUpdate, AdminReportItem, AdminReportList, AdminReportListQuery,
+    AdminReportStats, AdminReportUpdate, AdminSchemaCatalog, AdminSchemaDetail, AdminSmsConfig,
+    AdminSmsConfigUpdate, AdminSmsContact, AdminSmsContactBatch, AdminSmsContactBatchResult,
+    AdminSmsContactCreate, AdminSmsContactExport, AdminSmsContactExportQuery, AdminSmsContactGroup,
+    AdminSmsContactGroupClearResult, AdminSmsContactGroupList, AdminSmsContactGroupMove,
+    AdminSmsContactGroupMoveResult, AdminSmsContactGroupWrite, AdminSmsContactImport,
+    AdminSmsContactImportResult, AdminSmsContactList, AdminSmsContactListQuery,
+    AdminSmsContactUpdate, AdminSmsDeliveryList, AdminSmsDeliveryListQuery,
+    AdminSmsMemberSyncResult, AdminSmsMessageBatchDetail, AdminSmsMessageBatchDetailQuery,
+    AdminSmsMessageBatchList, AdminSmsMessageBatchListQuery, AdminSmsMessageCreateRequest,
+    AdminSmsResendRequest, AdminSmsSendResult, AdminSmsTemplate, AdminSmsTemplateBatch,
+    AdminSmsTemplateBatchResult, AdminSmsTemplateCreate, AdminSmsTemplateGroup,
+    AdminSmsTemplateGroupClearResult, AdminSmsTemplateGroupCreate, AdminSmsTemplateGroupList,
+    AdminSmsTemplateGroupMove, AdminSmsTemplateGroupMoveResult, AdminSmsTemplateGroupUpdate,
+    AdminSmsTemplateList, AdminSmsTemplateListQuery, AdminSmsTemplateUpdate,
+    AdminSystemMailRecipientList, AdminSystemMailRecipientQuery, AdminSystemMailSendRequest,
+    AdminSystemMailSendResult, AdminSystemMailTemplateList, AdminSystemMailTestRequest,
+    AdminSystemMailTestResult, AdminSystemPermission, AdminSystemPermissionList,
+    AdminSystemPermissionListQuery, AdminSystemPermissionSave, AdminTheme, AdminThemeConfig,
+    AdminThemeList, AdminThemeUpdate, AdminVisitDelete, AdminVisitDeleteResult,
+    AdminVisitSearchQuery, AdminVisitSearchResult, AdminVisitStats, AdminVisitStatsQuery,
+    AdminWriteCountStats, AdminWriteCountStatsQuery, BasicConfig, ConnectorCredentials,
+    ConnectorError, ConnectorHealth, ConnectorLogin, CoreExecuteRequest, CoreExecuteResponse,
+    CoreOperationSpec, MemberProfile, SiteOverview, core_operation, core_operations,
 };
 use g5_fleet_notify::{NotificationChannel, NotificationPayload, NotifyError};
 use g5_fleet_remote::{
@@ -200,6 +200,13 @@ struct ConfirmedAdminSystemMailSendRequest {
     confirm_send: bool,
     #[serde(flatten)]
     send: AdminSystemMailSendRequest,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedAdminPushMessageRequest {
+    confirm_send: bool,
+    #[serde(flatten)]
+    message: AdminPushMessageRequest,
 }
 
 #[derive(Debug, Deserialize)]
@@ -739,6 +746,14 @@ pub(crate) fn router() -> Router<AppState> {
         .route(
             "/sites/{site_id}/admin/sms/config",
             get(admin_sms_config_get).put(admin_sms_config_update),
+        )
+        .route(
+            "/sites/{site_id}/admin/push/messages",
+            post(admin_push_message_create),
+        )
+        .route(
+            "/sites/{site_id}/admin/push/send",
+            post(admin_push_send_legacy),
         )
         .route(
             "/sites/{site_id}/admin/sms/member-sync",
@@ -5708,6 +5723,75 @@ fn external_confirmation_required() -> Response {
         "external_effect_confirmation_required",
         "External delivery action requires explicit confirmation.",
     )
+}
+
+async fn admin_push_message_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminPushMessageRequest>,
+) -> Response {
+    admin_push_operation(state, site_id, headers, confirmed, false).await
+}
+
+async fn admin_push_send_legacy(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminPushMessageRequest>,
+) -> Response {
+    admin_push_operation(state, site_id, headers, confirmed, true).await
+}
+
+async fn admin_push_operation(
+    state: AppState,
+    site_id: String,
+    headers: HeaderMap,
+    confirmed: ConfirmedAdminPushMessageRequest,
+    legacy: bool,
+) -> Response {
+    if !confirmed.confirm_send {
+        return external_confirmation_required();
+    }
+    let (context, principal, site) = match owned_site_context(&state, &headers, site_id, true).await
+    {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    if let Err(error) = state.config.auth.require_recent_step_up(&principal) {
+        return auth_error(error);
+    }
+    let credentials = match connector_credentials(&state, &context, &site.site_id).await {
+        Ok(value) => value,
+        Err(response) => return response,
+    };
+    let result = if legacy {
+        state
+            .config
+            .connector
+            .admin_send_push_legacy(
+                &site.base_url,
+                &context.request_id,
+                &credentials.access_token,
+                &confirmed.message,
+            )
+            .await
+    } else {
+        state
+            .config
+            .connector
+            .admin_create_push_message(
+                &site.base_url,
+                &context.request_id,
+                &credentials.access_token,
+                &confirmed.message,
+            )
+            .await
+    };
+    match result {
+        Ok(result) => Json::<AdminPushMessageResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
 }
 
 async fn admin_sms_config_get(

@@ -446,6 +446,8 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
             ("POST", "/api/v1/sites/{site_id}/admin/system/mails/test"),
             ("POST", "/api/v1/sites/{site_id}/admin/system/mails/send"),
             ("GET", "/api/v1/sites/{site_id}/admin/sms/config"),
+            ("POST", "/api/v1/sites/{site_id}/admin/push/messages"),
+            ("POST", "/api/v1/sites/{site_id}/admin/push/send"),
             ("PUT", "/api/v1/sites/{site_id}/admin/sms/config"),
             ("POST", "/api/v1/sites/{site_id}/admin/sms/member-sync"),
             ("GET", "/api/v1/sites/{site_id}/admin/sms/contact-groups"),

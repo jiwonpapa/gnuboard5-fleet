@@ -1185,6 +1185,20 @@
       "purpose": "typed_sms_config_get"
     },
     {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/push/messages",
+      "auth": "session_csrf_step_up_confirm_external",
+      "site_context": true,
+      "purpose": "typed_push_message_create_fail_closed"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/push/send",
+      "auth": "session_csrf_step_up_confirm_external",
+      "site_context": true,
+      "purpose": "typed_push_send_legacy_fail_closed"
+    },
+    {
       "method": "PUT",
       "path": "/api/v1/sites/{site_id}/admin/sms/config",
       "auth": "session_csrf_step_up",

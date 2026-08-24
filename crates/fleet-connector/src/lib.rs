@@ -75,6 +75,7 @@ pub use g5_fleet_core::popups::{
     AdminPopup, AdminPopupCreate, AdminPopupList, AdminPopupListQuery, AdminPopupUpdate,
     valid_popup_id,
 };
+pub use g5_fleet_core::push::{AdminPushMessageRequest, AdminPushMessageResult};
 pub use g5_fleet_core::qa::{
     AdminQaBulkDelete, AdminQaBulkDeleteResult, AdminQaConfig, AdminQaConfigUpdate,
 };
@@ -3115,6 +3116,64 @@ pub trait ConnectorGateway: Send + Sync {
             )
             .await?;
         typed_core_data("adminSystemSendMemberMail", response)
+    }
+
+    async fn admin_create_push_message(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        message: &AdminPushMessageRequest,
+    ) -> ConnectorResult<AdminPushMessageResult> {
+        self.admin_push_operation(
+            base_url,
+            request_id,
+            access_token,
+            "adminCreatePushMessage",
+            message,
+        )
+        .await
+    }
+
+    async fn admin_send_push_legacy(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        message: &AdminPushMessageRequest,
+    ) -> ConnectorResult<AdminPushMessageResult> {
+        self.admin_push_operation(base_url, request_id, access_token, "adminSendPush", message)
+            .await
+    }
+
+    async fn admin_push_operation(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        operation_id: &str,
+        message: &AdminPushMessageRequest,
+    ) -> ConnectorResult<AdminPushMessageResult> {
+        if !matches!(operation_id, "adminCreatePushMessage" | "adminSendPush")
+            || !message.is_valid()
+        {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .external_execute(
+                base_url,
+                request_id,
+                access_token,
+                operation_id,
+                &CoreExecuteRequest {
+                    body: Some(
+                        serde_json::to_value(message).map_err(|_| ConnectorError::Contract)?,
+                    ),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data(operation_id, response)
     }
 
     async fn admin_get_sms_config(
