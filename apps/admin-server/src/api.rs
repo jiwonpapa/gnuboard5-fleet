@@ -126,6 +126,12 @@ struct LoginRequest {
 }
 
 #[derive(Deserialize)]
+struct CreateUserRequest {
+    login_name: String,
+    password: String,
+}
+
+#[derive(Deserialize)]
 struct StepUpRequest {
     password: String,
     totp_code: Option<String>,
@@ -392,6 +398,14 @@ pub struct InstallCompleteResponse {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RecoveryCodesResponse {
+    pub recovery_codes: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UserBootstrapResponse {
+    pub principal_id: String,
+    pub manual_entry_key: String,
+    pub otpauth_uri: String,
     pub recovery_codes: Vec<String>,
 }
 
@@ -1148,17 +1162,30 @@ async fn session(State(state): State<AppState>, headers: HeaderMap) -> Response 
 async fn create_user(
     State(state): State<AppState>,
     headers: HeaderMap,
-    Json(_payload): Json<serde_json::Value>,
+    Json(payload): Json<CreateUserRequest>,
 ) -> Response {
-    let (_, _principal) = match mutation_context(&state, &headers, None).await {
+    let (_, principal) = match mutation_context(&state, &headers, None).await {
         Ok(value) => value,
         Err(response) => return response,
     };
-    api_error(
-        StatusCode::CONFLICT,
-        "user_totp_enrollment_required",
-        "Additional administrators require a dedicated OTP enrollment flow.",
-    )
+    match state
+        .config
+        .auth
+        .create_user(&principal, &payload.login_name, &payload.password)
+        .await
+    {
+        Ok(bootstrap) => (
+            StatusCode::CREATED,
+            Json(UserBootstrapResponse {
+                principal_id: bootstrap.principal_id,
+                manual_entry_key: bootstrap.manual_entry_key,
+                otpauth_uri: bootstrap.otpauth_uri,
+                recovery_codes: bootstrap.recovery_codes,
+            }),
+        )
+            .into_response(),
+        Err(error) => auth_error(error),
+    }
 }
 
 async fn logout(State(state): State<AppState>, headers: HeaderMap) -> Response {

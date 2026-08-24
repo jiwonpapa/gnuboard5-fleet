@@ -49,6 +49,7 @@
 
 - SQLite 손상·누락 시 자동 재생성하지 않는 fail-closed 저장 정책을 적용했습니다.
 - 브라우저에 G5 JWT·refresh token·SSH private key를 전달하지 않는 서버 보안 경계를 적용했습니다.
+- 추가 관리자 생성을 최근 step-up과 원자적 OTP·복구 코드 프로비저닝에 귀속하고, 2사용자×2사이트 격리를 실제 HTTP·Chromium 증거로 강화했습니다.
 
 [Unreleased]: https://github.com/jiwonpapa/gnuboard5-fleet/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/jiwonpapa/gnuboard5-fleet/releases/tag/v0.1.0

@@ -71,19 +71,22 @@ async fn two_users_two_sites_sessions_csrf_and_secrets_are_isolated() {
         .authenticate(&admin_tokens.session_token)
         .await
         .expect("refreshed admin session");
-    let user_id = auth
+    let user_bootstrap = auth
         .create_user(&admin, "operator", USER_PASSWORD)
         .await
         .expect("second user");
+    let user_totp_code =
+        generate_current_totp_code(&user_bootstrap.manual_entry_key, "G5 Fleet", "operator")
+            .expect("second user TOTP");
     let user_tokens = auth
-        .login("operator", USER_PASSWORD)
+        .login_with_factor("operator", USER_PASSWORD, Some(&user_totp_code), None)
         .await
         .expect("user login");
     let user = auth
         .authenticate(&user_tokens.session_token)
         .await
         .expect("user session");
-    assert_eq!(user.principal_id, user_id);
+    assert_eq!(user.principal_id, user_bootstrap.principal_id);
     assert_ne!(admin.web_session_id, user.web_session_id);
 
     store

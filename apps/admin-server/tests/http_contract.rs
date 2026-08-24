@@ -1120,12 +1120,46 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         ))
         .await
         .unwrap();
-    assert_eq!(create_peer.status(), StatusCode::CONFLICT);
-    let create_peer: ErrorEnvelope = json(create_peer).await;
-    assert_eq!(
-        create_peer.error.code, "user_totp_enrollment_required",
-        "password-only Fleet administrators must not be created"
-    );
+    assert_eq!(create_peer.status(), StatusCode::CREATED);
+    let create_peer: g5_fleet_admin_server::UserBootstrapResponse = json(create_peer).await;
+    assert_eq!(create_peer.recovery_codes.len(), 10);
+
+    let peer_without_totp = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/auth/login",
+            None,
+            None,
+            Some(serde_json::json!({
+                "login_name": "peer",
+                "password": "another durable peer password"
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(peer_without_totp.status(), StatusCode::UNAUTHORIZED);
+
+    let peer_with_totp = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/auth/login",
+            None,
+            None,
+            Some(serde_json::json!({
+                "login_name": "peer",
+                "password": "another durable peer password",
+                "totp_code": g5_fleet_security::generate_current_totp_code(
+                    &create_peer.manual_entry_key,
+                    "G5 Fleet",
+                    "peer"
+                ).unwrap()
+            })),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(peer_with_totp.status(), StatusCode::OK);
 
     let site = app
         .clone()

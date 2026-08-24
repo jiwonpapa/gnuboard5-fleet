@@ -56,6 +56,60 @@ pub struct AuditEntry {
 }
 
 impl FleetStore {
+    #[allow(clippy::too_many_arguments)]
+    pub async fn create_user_with_totp(
+        &self,
+        actor_user_id: &str,
+        user_id: &str,
+        login_name: &str,
+        password_hash: &[u8],
+        totp_nonce: &[u8],
+        totp_ciphertext: &[u8],
+        recovery_codes: &[(String, Vec<u8>)],
+    ) -> StoreResult<()> {
+        let _writer = self.inner.writer.lock().await;
+        let mut transaction = self.inner.pool.begin().await?;
+        sqlx::query(
+            "INSERT INTO fleet_users (user_id, login_name, password_hash) VALUES (?, ?, ?)",
+        )
+        .bind(user_id)
+        .bind(login_name)
+        .bind(password_hash)
+        .execute(&mut *transaction)
+        .await?;
+        sqlx::query(
+            "INSERT INTO user_security_settings \
+             (user_id, totp_enabled, totp_nonce, totp_ciphertext) VALUES (?, 1, ?, ?)",
+        )
+        .bind(user_id)
+        .bind(totp_nonce)
+        .bind(totp_ciphertext)
+        .execute(&mut *transaction)
+        .await?;
+        for (code_id, code_hash) in recovery_codes {
+            sqlx::query(
+                "INSERT INTO recovery_codes (recovery_code_id, user_id, code_hash) \
+                 VALUES (?, ?, ?)",
+            )
+            .bind(code_id)
+            .bind(user_id)
+            .bind(code_hash)
+            .execute(&mut *transaction)
+            .await?;
+        }
+        sqlx::query(
+            "INSERT INTO audit_log \
+             (principal_id, action, outcome, details_json) \
+             VALUES (?, 'users.create', 'success', ?)",
+        )
+        .bind(actor_user_id)
+        .bind(serde_json::json!({"target_user_id": user_id, "totp_forced": true}).to_string())
+        .execute(&mut *transaction)
+        .await?;
+        transaction.commit().await?;
+        Ok(())
+    }
+
     pub async fn installation_security_state(&self) -> StoreResult<InstallationSecurityState> {
         let (state, setup_login_name): (String, Option<String>) = sqlx::query_as(
             "SELECT state, setup_login_name FROM installation_security WHERE singleton = 1",

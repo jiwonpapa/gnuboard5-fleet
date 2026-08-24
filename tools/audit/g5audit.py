@@ -3549,6 +3549,11 @@ def check_local_provider_identity(root: Path) -> str:
 
 def check_local_browser_e2e(root: Path) -> str:
     runtime_path = root / ".cache/evidence/local-runtime.json"
+    runtime = certification_evidence(
+        root,
+        "local-runtime.json",
+        "g5-fleet.local-runtime/v1",
+    )
     browser = certification_evidence(
         root,
         "browser-e2e.json",
@@ -3556,6 +3561,16 @@ def check_local_browser_e2e(root: Path) -> str:
     )
     if browser.get("parent_local_runtime_sha256") != sha256(runtime_path):
         raise ValueError("browser E2E parent local-runtime evidence mismatch")
+    fleet = runtime.get("fleet")
+    if (
+        not isinstance(fleet, dict)
+        or fleet.get("users") != 2
+        or fleet.get("sites") != 2
+        or fleet.get("owner_site_counts") != {"fleet-admin": 1, "fleet-peer": 1}
+        or fleet.get("cross_owner_access") != "not_found_both_directions"
+        or fleet.get("peer_forced_totp_login") != "passed"
+    ):
+        raise ValueError("local 2-user x 2-site isolation proof is incomplete")
     sessions = browser.get("sessions")
     assertions = browser.get("assertions")
     if (

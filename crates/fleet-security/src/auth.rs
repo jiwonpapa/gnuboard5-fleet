@@ -115,6 +115,14 @@ pub struct InstallCompletion {
     pub recovery_codes: Vec<String>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UserBootstrap {
+    pub principal_id: String,
+    pub manual_entry_key: String,
+    pub otpauth_uri: String,
+    pub recovery_codes: Vec<String>,
+}
+
 #[derive(Clone, PartialEq, Eq)]
 pub struct WebPushSubscriptionMaterial {
     pub subscription_id: String,
@@ -384,16 +392,34 @@ impl AuthService {
         actor: &PrincipalSession,
         login_name: &str,
         password: &str,
-    ) -> AuthResult<String> {
+    ) -> AuthResult<UserBootstrap> {
         self.require_recent_step_up(actor)?;
         validate_password(password)?;
         validate_login_name(login_name)?;
         let user_id = random_id("usr", 18)?;
         let password_hash = hash_password(password)?;
+        let (secret, manual_entry_key, otpauth_uri) =
+            create_totp_enrollment_challenge(TOTP_ISSUER, login_name)?;
+        let (totp_nonce, totp_ciphertext) =
+            self.encrypt_bound(&user_totp_aad(&user_id), secret.as_bytes())?;
+        let (recovery_codes, recovery_records) = recovery_code_material()?;
         self.store
-            .create_user(&user_id, login_name, password_hash.as_bytes())
+            .create_user_with_totp(
+                &actor.principal_id,
+                &user_id,
+                login_name,
+                password_hash.as_bytes(),
+                &totp_nonce,
+                &totp_ciphertext,
+                &recovery_records,
+            )
             .await?;
-        Ok(user_id)
+        Ok(UserBootstrap {
+            principal_id: user_id,
+            manual_entry_key,
+            otpauth_uri,
+            recovery_codes,
+        })
     }
 
     pub async fn authenticate(&self, session_token: &str) -> AuthResult<PrincipalSession> {

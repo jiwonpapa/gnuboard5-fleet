@@ -231,14 +231,6 @@ def main() -> int:
     setup_token = challenge.get("setup_token")
     if not isinstance(totp_secret, str) or not isinstance(setup_token, str):
         raise RuntimeError("Fleet install challenge readback failed")
-    args.browser_env.parent.mkdir(parents=True, exist_ok=True)
-    browser_env_fd = os.open(
-        args.browser_env,
-        os.O_WRONLY | os.O_CREAT | os.O_EXCL,
-        0o600,
-    )
-    with os.fdopen(browser_env_fd, "w", encoding="utf-8") as browser_env:
-        browser_env.write(f"G5_CERT_FLEET_TOTP_SECRET={totp_secret}\n")
     completion = request(
         fleet_base,
         "POST",
@@ -259,6 +251,40 @@ def main() -> int:
         env["G5_CERT_FLEET_ADMIN_VALUE"],
         totp_secret,
     )
+    peer_login_name = "fleet-peer"
+    peer_password = "fleet peer browser certification password"
+    peer_bootstrap = request(
+        fleet_base,
+        "POST",
+        "/api/v1/users",
+        body={"login_name": peer_login_name, "password": peer_password},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+        expected=(201,),
+    ).json()
+    peer_totp_secret = peer_bootstrap.get("manual_entry_key")
+    if (
+        not isinstance(peer_bootstrap.get("principal_id"), str)
+        or not isinstance(peer_totp_secret, str)
+        or len(peer_bootstrap.get("recovery_codes", [])) != 10
+    ):
+        raise RuntimeError("Fleet peer forced-TOTP bootstrap readback failed")
+    peer_cookie, peer_csrf = fleet_login(
+        fleet_base,
+        peer_login_name,
+        peer_password,
+        peer_totp_secret,
+    )
+    args.browser_env.parent.mkdir(parents=True, exist_ok=True)
+    browser_env_fd = os.open(
+        args.browser_env,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+        0o600,
+    )
+    with os.fdopen(browser_env_fd, "w", encoding="utf-8") as browser_env:
+        browser_env.write(f"G5_CERT_FLEET_TOTP_SECRET={totp_secret}\n")
+        browser_env.write(f"G5_CERT_FLEET_PEER_ID={peer_login_name}\n")
+        browser_env.write(f"G5_CERT_FLEET_PEER_VALUE={peer_password}\n")
+        browser_env.write(f"G5_CERT_FLEET_PEER_TOTP_SECRET={peer_totp_secret}\n")
     request(
         fleet_base,
         "POST",
@@ -270,6 +296,32 @@ def main() -> int:
         },
         headers=fleet_headers(admin_cookie, admin_csrf),
         expected=(201,),
+    )
+    request(
+        fleet_base,
+        "POST",
+        "/api/v1/sites",
+        body={
+            "site_id": "owner-b-site",
+            "display_name": "Owner B G5",
+            "base_url": g5_base,
+        },
+        headers=fleet_headers(peer_cookie, peer_csrf),
+        expected=(201,),
+    )
+    request(
+        fleet_base,
+        "GET",
+        "/api/v1/sites/owner-b-site",
+        headers=fleet_headers(admin_cookie),
+        expected=(404,),
+    )
+    request(
+        fleet_base,
+        "GET",
+        "/api/v1/sites/owner-a-site",
+        headers=fleet_headers(peer_cookie),
+        expected=(404,),
     )
     connector_health = request(
         fleet_base,
@@ -3006,6 +3058,14 @@ def main() -> int:
     ).json()
     if [row.get("site_id") for row in admin_sites] != ["owner-a-site"]:
         raise RuntimeError("admin site ownership readback mismatch")
+    peer_sites = request(
+        fleet_base,
+        "GET",
+        "/api/v1/sites",
+        headers=fleet_headers(peer_cookie),
+    ).json()
+    if [row.get("site_id") for row in peer_sites] != ["owner-b-site"]:
+        raise RuntimeError("peer site ownership readback mismatch")
     final_config = request(
         fleet_base,
         "GET",
@@ -3041,13 +3101,15 @@ def main() -> int:
             "shop_installed": True,
         },
         "fleet": {
-            "users": 1,
-            "sites": 1,
+            "users": 2,
+            "sites": 2,
             "owner_site_counts": {
                 env["G5_CERT_FLEET_ADMIN_ID"]: len(admin_sites),
+                peer_login_name: len(peer_sites),
             },
-            "cross_owner_access": "not_exercised_in_r12_scope",
+            "cross_owner_access": "not_found_both_directions",
             "otp_install_login_step_up": "passed",
+            "peer_forced_totp_login": "passed",
             "connector_health": connector_health,
         },
         "mutation": {

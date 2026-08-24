@@ -34,7 +34,7 @@ pub const DEFAULT_IMAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub use api::{
     InstallChallengeResponse, InstallCompleteResponse, InstallStatusResponse, LoginResponse,
     RecoveryCodesResponse, RequestContext, SecuritySettingsResponse, SessionResponse,
-    TotpChallengeResponse,
+    TotpChallengeResponse, UserBootstrapResponse,
 };
 pub use notifications::{
     NotificationPublicConfig, NotificationRuntime, build_notification_runtime,

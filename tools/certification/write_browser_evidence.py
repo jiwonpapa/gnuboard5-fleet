@@ -62,6 +62,16 @@ def main() -> int:
         or local_runtime.get("revision") != revision
     ):
         raise RuntimeError("browser evidence local runtime parent is stale")
+    fleet = local_runtime.get("fleet")
+    if (
+        not isinstance(fleet, dict)
+        or fleet.get("users") != 2
+        or fleet.get("sites") != 2
+        or fleet.get("owner_site_counts") != {"fleet-admin": 1, "fleet-peer": 1}
+        or fleet.get("cross_owner_access") != "not_found_both_directions"
+        or fleet.get("peer_forced_totp_login") != "passed"
+    ):
+        raise RuntimeError("browser evidence requires real 2-user x 2-site local proof")
     payload = {
         "schema": "g5-fleet.browser-e2e/v1",
         "status": "passed",
