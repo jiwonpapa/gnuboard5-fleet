@@ -8,6 +8,8 @@
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-24
+
 ### Added
 
 - Keep a Changelog 기반 제품 변경 기록과 SemVer 기반 릴리스 정책.
@@ -32,6 +34,9 @@
 - SMS 템플릿 그룹·템플릿 CRUD, 미분류 그룹, 이동·일괄 처리를 명시 확인과 외부 문자 발송 0 경계로 제공하는 R31 반응형 작업대.
 - SMS 발송 작성과 배치·전달 이력 조회, 실패·전체 재발송을 명시 확인과 외부 문자 발송 0 경계로 제공하는 R32 반응형 작업대.
 - 전체·회원 지정 Push 작성과 표준·레거시 큐 등록을 OTP·명시 확인, 외부 전달 0 경계로 제공하는 R33 반응형 작업대.
+- PHP 시스템 정보·Browscap·캐시·세션·썸네일 정리를 명시 확인과 재조회로 제공하는 R34 반응형 작업대.
+- 서버 비밀 경계의 Telegram Bot API 전송과 VAPID 기반 Web Push 구독 생성·회전·폐기를 제공하는 R35 알림 작업대.
+- 모든 관리자 도메인을 명시적 `site_id` URL에 귀속하고 봉인된 데스크톱 워크플로우의 typed server·web 소비를 종결한 R36 전환.
 
 ### Changed
 
@@ -45,4 +50,5 @@
 - SQLite 손상·누락 시 자동 재생성하지 않는 fail-closed 저장 정책을 적용했습니다.
 - 브라우저에 G5 JWT·refresh token·SSH private key를 전달하지 않는 서버 보안 경계를 적용했습니다.
 
-[Unreleased]: https://github.com/jiwonpapa/gnuboard5-fleet/commits/main
+[Unreleased]: https://github.com/jiwonpapa/gnuboard5-fleet/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/jiwonpapa/gnuboard5-fleet/releases/tag/v0.1.0
