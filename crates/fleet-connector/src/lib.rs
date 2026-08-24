@@ -93,6 +93,13 @@ pub use g5_fleet_core::sms_contacts::{
     AdminSmsContactImport, AdminSmsContactImportResult, AdminSmsContactList,
     AdminSmsContactListQuery, AdminSmsContactSummary, AdminSmsContactUpdate, valid_sms_contact_id,
 };
+pub use g5_fleet_core::sms_messages::{
+    AdminSmsDelivery, AdminSmsDeliveryList, AdminSmsDeliveryListQuery, AdminSmsDuplicateSummary,
+    AdminSmsManualTarget, AdminSmsMessageBatch, AdminSmsMessageBatchDetail,
+    AdminSmsMessageBatchDetailQuery, AdminSmsMessageBatchList, AdminSmsMessageBatchListQuery,
+    AdminSmsMessageCreateRequest, AdminSmsResendRequest, AdminSmsRetryBatch, AdminSmsSendResult,
+    valid_sms_message_batch_id,
+};
 pub use g5_fleet_core::sms_templates::{
     AdminSmsTemplate, AdminSmsTemplateBatch, AdminSmsTemplateBatchResult, AdminSmsTemplateCreate,
     AdminSmsTemplateGroup, AdminSmsTemplateGroupClearResult, AdminSmsTemplateGroupCreate,
@@ -3594,6 +3601,210 @@ pub trait ConnectorGateway: Send + Sync {
             with_hyphen: envelope.meta.with_hyphen.unwrap_or(true),
             items: envelope.data,
         })
+    }
+
+    async fn admin_list_sms_message_batches(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminSmsMessageBatchListQuery,
+    ) -> ConnectorResult<AdminSmsMessageBatchList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListSmsMessageBatches",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                        ("search", query.search.as_ref().map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<AdminSmsMessageBatch> =
+            typed_core_envelope("adminListSmsMessageBatches", response)?;
+        Ok(AdminSmsMessageBatchList {
+            batches: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_get_sms_message_batch(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        wr_no: i64,
+        query: &AdminSmsMessageBatchDetailQuery,
+    ) -> ConnectorResult<AdminSmsMessageBatchDetail> {
+        if !valid_sms_message_batch_id(wr_no) || !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminGetSmsMessageBatch",
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("wr_no".to_owned(), wr_no.to_string())]),
+                    query: query_map([
+                        ("wr_renum", query.wr_renum.map(|value| json!(value))),
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                        (
+                            "search_field",
+                            query.search_field.as_ref().map(|value| json!(value)),
+                        ),
+                        ("search", query.search.as_ref().map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminGetSmsMessageBatch", response)
+    }
+
+    async fn admin_list_sms_deliveries(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        query: &AdminSmsDeliveryListQuery,
+    ) -> ConnectorResult<AdminSmsDeliveryList> {
+        if !query.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .core_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminListSmsDeliveries",
+                &CoreExecuteRequest {
+                    query: query_map([
+                        ("page", query.page.map(|value| json!(value))),
+                        ("per_page", query.per_page.map(|value| json!(value))),
+                        (
+                            "search_field",
+                            query.search_field.as_ref().map(|value| json!(value)),
+                        ),
+                        ("search", query.search.as_ref().map(|value| json!(value))),
+                    ]),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let envelope: TypedListEnvelope<AdminSmsDelivery> =
+            typed_core_envelope("adminListSmsDeliveries", response)?;
+        Ok(AdminSmsDeliveryList {
+            deliveries: envelope.data,
+            pagination: envelope.pagination,
+        })
+    }
+
+    async fn admin_create_sms_message(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        send: &AdminSmsMessageCreateRequest,
+    ) -> ConnectorResult<AdminSmsSendResult> {
+        if !send.is_valid() {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .external_execute(
+                base_url,
+                request_id,
+                access_token,
+                "adminCreateSmsMessage",
+                &CoreExecuteRequest {
+                    body: Some(serde_json::to_value(send).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data("adminCreateSmsMessage", response)
+    }
+
+    async fn admin_resend_sms_failures(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        wr_no: i64,
+        resend: &AdminSmsResendRequest,
+    ) -> ConnectorResult<AdminSmsSendResult> {
+        self.admin_resend_sms_batch(
+            base_url,
+            request_id,
+            access_token,
+            "adminResendSmsFailures",
+            wr_no,
+            resend,
+        )
+        .await
+    }
+
+    async fn admin_resend_all_sms_batch(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        wr_no: i64,
+        resend: &AdminSmsResendRequest,
+    ) -> ConnectorResult<AdminSmsSendResult> {
+        self.admin_resend_sms_batch(
+            base_url,
+            request_id,
+            access_token,
+            "adminResendAllSmsBatch",
+            wr_no,
+            resend,
+        )
+        .await
+    }
+
+    async fn admin_resend_sms_batch(
+        &self,
+        base_url: &str,
+        request_id: &str,
+        access_token: &str,
+        operation_id: &str,
+        wr_no: i64,
+        resend: &AdminSmsResendRequest,
+    ) -> ConnectorResult<AdminSmsSendResult> {
+        if !matches!(
+            operation_id,
+            "adminResendSmsFailures" | "adminResendAllSmsBatch"
+        ) || !valid_sms_message_batch_id(wr_no)
+            || !resend.is_valid()
+        {
+            return Err(ConnectorError::InvalidCoreRequest);
+        }
+        let response = self
+            .external_execute(
+                base_url,
+                request_id,
+                access_token,
+                operation_id,
+                &CoreExecuteRequest {
+                    path: BTreeMap::from([("wr_no".to_owned(), wr_no.to_string())]),
+                    body: Some(serde_json::to_value(resend).map_err(|_| ConnectorError::Contract)?),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        typed_core_data(operation_id, response)
     }
 
     async fn admin_list_sms_template_groups(

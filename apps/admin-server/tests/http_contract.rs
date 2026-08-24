@@ -481,6 +481,24 @@ fn tracked_route_registry_matches_the_scaffold_contract() {
                 "DELETE",
                 "/api/v1/sites/{site_id}/admin/sms/contacts/{bk_no}"
             ),
+            ("GET", "/api/v1/sites/{site_id}/admin/sms/history/batches"),
+            (
+                "GET",
+                "/api/v1/sites/{site_id}/admin/sms/history/batches/{wr_no}"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/sms/history/batches/{wr_no}/resend-failures"
+            ),
+            (
+                "POST",
+                "/api/v1/sites/{site_id}/admin/sms/history/batches/{wr_no}/resend-all"
+            ),
+            (
+                "GET",
+                "/api/v1/sites/{site_id}/admin/sms/history/deliveries"
+            ),
+            ("POST", "/api/v1/sites/{site_id}/admin/sms/messages"),
             ("GET", "/api/v1/sites/{site_id}/admin/sms/template-groups"),
             ("POST", "/api/v1/sites/{site_id}/admin/sms/template-groups"),
             (

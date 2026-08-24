@@ -19,6 +19,7 @@ pub mod qa;
 pub mod reports;
 pub mod sms;
 pub mod sms_contacts;
+pub mod sms_messages;
 pub mod sms_templates;
 pub mod theme;
 pub mod visits;

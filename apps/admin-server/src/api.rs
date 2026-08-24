@@ -50,8 +50,11 @@ use g5_fleet_connector::{
     AdminSmsContactExportQuery, AdminSmsContactGroup, AdminSmsContactGroupClearResult,
     AdminSmsContactGroupList, AdminSmsContactGroupMove, AdminSmsContactGroupMoveResult,
     AdminSmsContactGroupWrite, AdminSmsContactImport, AdminSmsContactImportResult,
-    AdminSmsContactList, AdminSmsContactListQuery, AdminSmsContactUpdate, AdminSmsMemberSyncResult,
-    AdminSmsTemplate, AdminSmsTemplateBatch, AdminSmsTemplateBatchResult, AdminSmsTemplateCreate,
+    AdminSmsContactList, AdminSmsContactListQuery, AdminSmsContactUpdate, AdminSmsDeliveryList,
+    AdminSmsDeliveryListQuery, AdminSmsMemberSyncResult, AdminSmsMessageBatchDetail,
+    AdminSmsMessageBatchDetailQuery, AdminSmsMessageBatchList, AdminSmsMessageBatchListQuery,
+    AdminSmsMessageCreateRequest, AdminSmsResendRequest, AdminSmsSendResult, AdminSmsTemplate,
+    AdminSmsTemplateBatch, AdminSmsTemplateBatchResult, AdminSmsTemplateCreate,
     AdminSmsTemplateGroup, AdminSmsTemplateGroupClearResult, AdminSmsTemplateGroupCreate,
     AdminSmsTemplateGroupList, AdminSmsTemplateGroupMove, AdminSmsTemplateGroupMoveResult,
     AdminSmsTemplateGroupUpdate, AdminSmsTemplateList, AdminSmsTemplateListQuery,
@@ -202,6 +205,20 @@ struct ConfirmedAdminSystemMailSendRequest {
 #[derive(Debug, Deserialize)]
 struct ConfirmedAdminSmsMemberSyncRequest {
     confirm_sync: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedAdminSmsMessageCreateRequest {
+    confirm_send: bool,
+    #[serde(flatten)]
+    send: AdminSmsMessageCreateRequest,
+}
+
+#[derive(Debug, Deserialize)]
+struct ConfirmedAdminSmsResendRequest {
+    confirm_send: bool,
+    #[serde(flatten)]
+    resend: AdminSmsResendRequest,
 }
 
 #[derive(Debug, Deserialize)]
@@ -766,6 +783,30 @@ pub(crate) fn router() -> Router<AppState> {
             get(admin_sms_contact_get)
                 .put(admin_sms_contact_update)
                 .delete(admin_sms_contact_delete),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/history/batches",
+            get(admin_sms_message_batch_list),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/history/batches/{wr_no}",
+            get(admin_sms_message_batch_get),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/history/batches/{wr_no}/resend-failures",
+            post(admin_sms_message_batch_resend_failures),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/history/batches/{wr_no}/resend-all",
+            post(admin_sms_message_batch_resend_all),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/history/deliveries",
+            get(admin_sms_delivery_list),
+        )
+        .route(
+            "/sites/{site_id}/admin/sms/messages",
+            post(admin_sms_message_create),
         )
         .route(
             "/sites/{site_id}/admin/sms/template-groups",
@@ -5665,7 +5706,7 @@ fn external_confirmation_required() -> Response {
     api_error(
         StatusCode::BAD_REQUEST,
         "external_effect_confirmation_required",
-        "External mail action requires explicit confirmation.",
+        "External delivery action requires explicit confirmation.",
     )
 }
 
@@ -6214,6 +6255,201 @@ fn destructive_confirmation_required(_action: &str) -> Response {
         "destructive_confirmation_required",
         "This operation requires explicit confirmation.",
     )
+}
+
+async fn sms_message_access(
+    state: &AppState,
+    headers: &HeaderMap,
+    site_id: String,
+    mutation: bool,
+) -> Result<(RequestContext, SiteRecord, ConnectorCredentials), Response> {
+    let (context, principal, site) = owned_site_context(state, headers, site_id, mutation).await?;
+    if mutation {
+        state
+            .config
+            .auth
+            .require_recent_step_up(&principal)
+            .map_err(auth_error)?;
+    }
+    let credentials = connector_credentials(state, &context, &site.site_id).await?;
+    Ok((context, site, credentials))
+}
+
+async fn admin_sms_message_batch_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminSmsMessageBatchListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_message_access(&state, &headers, site_id, false).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_list_sms_message_batches(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsMessageBatchList>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_message_batch_get(
+    State(state): State<AppState>,
+    Path((site_id, wr_no)): Path<(String, i64)>,
+    Query(query): Query<AdminSmsMessageBatchDetailQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_message_access(&state, &headers, site_id, false).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_get_sms_message_batch(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            wr_no,
+            &query,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsMessageBatchDetail>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_delivery_list(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Query(query): Query<AdminSmsDeliveryListQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let (context, site, credentials) =
+        match sms_message_access(&state, &headers, site_id, false).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_list_sms_deliveries(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &query,
+        )
+        .await
+    {
+        Ok(result) => Json::<AdminSmsDeliveryList>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_message_create(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminSmsMessageCreateRequest>,
+) -> Response {
+    if !confirmed.confirm_send {
+        return external_confirmation_required();
+    }
+    let (context, site, credentials) =
+        match sms_message_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    match state
+        .config
+        .connector
+        .admin_create_sms_message(
+            &site.base_url,
+            &context.request_id,
+            &credentials.access_token,
+            &confirmed.send,
+        )
+        .await
+    {
+        Ok(result) => (StatusCode::CREATED, Json::<AdminSmsSendResult>(result)).into_response(),
+        Err(error) => connector_error(error),
+    }
+}
+
+async fn admin_sms_message_batch_resend_failures(
+    State(state): State<AppState>,
+    Path((site_id, wr_no)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminSmsResendRequest>,
+) -> Response {
+    admin_sms_message_batch_resend(state, site_id, wr_no, headers, confirmed, false).await
+}
+
+async fn admin_sms_message_batch_resend_all(
+    State(state): State<AppState>,
+    Path((site_id, wr_no)): Path<(String, i64)>,
+    headers: HeaderMap,
+    Json(confirmed): Json<ConfirmedAdminSmsResendRequest>,
+) -> Response {
+    admin_sms_message_batch_resend(state, site_id, wr_no, headers, confirmed, true).await
+}
+
+async fn admin_sms_message_batch_resend(
+    state: AppState,
+    site_id: String,
+    wr_no: i64,
+    headers: HeaderMap,
+    confirmed: ConfirmedAdminSmsResendRequest,
+    resend_all: bool,
+) -> Response {
+    if !confirmed.confirm_send {
+        return external_confirmation_required();
+    }
+    let (context, site, credentials) =
+        match sms_message_access(&state, &headers, site_id, true).await {
+            Ok(value) => value,
+            Err(response) => return response,
+        };
+    let result = if resend_all {
+        state
+            .config
+            .connector
+            .admin_resend_all_sms_batch(
+                &site.base_url,
+                &context.request_id,
+                &credentials.access_token,
+                wr_no,
+                &confirmed.resend,
+            )
+            .await
+    } else {
+        state
+            .config
+            .connector
+            .admin_resend_sms_failures(
+                &site.base_url,
+                &context.request_id,
+                &credentials.access_token,
+                wr_no,
+                &confirmed.resend,
+            )
+            .await
+    };
+    match result {
+        Ok(result) => Json::<AdminSmsSendResult>(result).into_response(),
+        Err(error) => connector_error(error),
+    }
 }
 
 async fn sms_template_access(

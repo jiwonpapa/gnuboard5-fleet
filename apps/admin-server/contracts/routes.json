@@ -1305,6 +1305,48 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/sms/history/batches",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_sms_message_batch_list"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/sms/history/batches/{wr_no}",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_sms_message_batch_detail"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/sms/history/batches/{wr_no}/resend-failures",
+      "auth": "session_csrf_step_up_confirm_external",
+      "site_context": true,
+      "purpose": "typed_sms_resend_failures_fail_closed"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/sms/history/batches/{wr_no}/resend-all",
+      "auth": "session_csrf_step_up_confirm_external",
+      "site_context": true,
+      "purpose": "typed_sms_resend_all_fail_closed"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sites/{site_id}/admin/sms/history/deliveries",
+      "auth": "session",
+      "site_context": true,
+      "purpose": "typed_sms_delivery_list"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sites/{site_id}/admin/sms/messages",
+      "auth": "session_csrf_step_up_confirm_external",
+      "site_context": true,
+      "purpose": "typed_sms_message_send_fail_closed"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/sites/{site_id}/admin/sms/template-groups",
       "auth": "session",
       "site_context": true,
