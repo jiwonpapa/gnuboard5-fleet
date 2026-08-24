@@ -4,7 +4,9 @@ import {
   addAdminBoardGroupMember,
   addAdminLegacyGroupMember,
   batchAdminSmsContacts,
+  batchAdminSmsTemplates,
   clearAdminSmsContactGroup,
+  clearAdminSmsTemplateGroup,
   connectorLogin,
   connectorLogout,
   connectorRefresh,
@@ -19,6 +21,8 @@ import {
   createAdminLegacyGroup,
   createAdminSmsContact,
   createAdminSmsContactGroup,
+  createAdminSmsTemplate,
+  createAdminSmsTemplateGroup,
   deleteAdminBoardGroup,
   deleteAdminBoardGroupMember,
   deleteAdminBoard,
@@ -36,6 +40,8 @@ import {
   deleteAdminAuthByMember,
   deleteAdminSmsContact,
   deleteAdminSmsContactGroup,
+  deleteAdminSmsTemplate,
+  deleteAdminSmsTemplateGroup,
   deleteAdminSystemPermission,
   exportAdminMembers,
   exportAdminSmsContacts,
@@ -56,6 +62,8 @@ import {
   getAdminSmsConfig,
   getAdminSmsContact,
   getAdminSmsContactGroup,
+  getAdminSmsTemplate,
+  getAdminSmsTemplateGroup,
   getAdminLegacyPoll,
   getAdminSystemPoll,
   getAdminLegacyGroup,
@@ -80,6 +88,8 @@ import {
   listAdminSystemMailRecipients,
   listAdminSmsContactGroups,
   listAdminSmsContacts,
+  listAdminSmsTemplateGroups,
+  listAdminSmsTemplates,
   openTerminalSocket,
   patchAdminBoardGroup,
   saveAdminSystemPermission,
@@ -91,6 +101,7 @@ import {
   sendAdminSystemMemberMail,
   importAdminSmsContacts,
   moveAdminSmsContactGroup,
+  moveAdminSmsTemplateGroup,
   syncAdminSmsMembers,
   grantAdminPoint,
   deductAdminPoint,
@@ -105,6 +116,8 @@ import {
   updateAdminSmsConfig,
   updateAdminSmsContact,
   updateAdminSmsContactGroup,
+  updateAdminSmsTemplate,
+  updateAdminSmsTemplateGroup,
   updateAdminQaConfig,
   updateAdminReport,
   updateAdminLegacyPoll,
@@ -667,5 +680,45 @@ describe("remote Fleet transport", () => {
     ]);
     expect(JSON.parse(String(fetcher.mock.calls[12]?.[1]?.body))).toMatchObject({ confirm_action: true });
     expect(JSON.parse(String(fetcher.mock.calls[13]?.[1]?.body))).toMatchObject({ confirm_import: true, dry_run: false });
+  });
+
+  it("consumes all thirteen R31 SMS template operations with destructive confirmations", async () => {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => {
+      void _input; void _init;
+      return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    await listAdminSmsTemplateGroups("site-a");
+    await createAdminSmsTemplateGroup("site-a", { fg_name: "Fleet", fg_member: 1 }, "csrf-1");
+    await getAdminSmsTemplateGroup("site-a", 2);
+    await updateAdminSmsTemplateGroup("site-a", 2, { fg_name: "Fleet 2" }, "csrf-1");
+    await deleteAdminSmsTemplateGroup("site-a", 2, "csrf-1");
+    await moveAdminSmsTemplateGroup("site-a", 2, 0, "csrf-1");
+    await clearAdminSmsTemplateGroup("site-a", 2, "csrf-1");
+    await listAdminSmsTemplates("site-a", { page: 1, per_page: 20, fg_no: 0, search_field: "name", search: "Fleet" });
+    await createAdminSmsTemplate("site-a", { fg_no: 0, fo_name: "Fleet", fo_content: "Body" }, "csrf-1");
+    await batchAdminSmsTemplates("site-a", { action: "move", template_ids: [7], target_fg_no: 0 }, "csrf-1");
+    await getAdminSmsTemplate("site-a", 7);
+    await updateAdminSmsTemplate("site-a", 7, { fo_name: "Fleet 2" }, "csrf-1");
+    await deleteAdminSmsTemplate("site-a", 7, "csrf-1");
+    expect(fetcher.mock.calls.map(([input, init]) => [String(input), init?.method])).toEqual([
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/template-groups", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/template-groups", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/template-groups/2", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/template-groups/2", "PUT"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/template-groups/2?confirm=true", "DELETE"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/template-groups/2/move", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/template-groups/2/templates?confirm=true", "DELETE"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/templates?page=1&per_page=20&fg_no=0&search_field=name&search=Fleet", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/templates", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/templates/batch", "POST"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/templates/7", "GET"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/templates/7", "PUT"],
+      ["http://localhost:3000/api/v1/sites/site-a/admin/sms/templates/7?confirm=true", "DELETE"],
+    ]);
+    expect(JSON.parse(String(fetcher.mock.calls[9]?.[1]?.body))).toMatchObject({ confirm_action: true, target_fg_no: 0 });
+    for (const index of [1, 3, 4, 5, 6, 8, 9, 11, 12]) {
+      expect(new Headers(fetcher.mock.calls[index]?.[1]?.headers).get("x-csrf-token")).toBe("csrf-1");
+    }
   });
 });
