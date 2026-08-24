@@ -11,6 +11,22 @@
 필요하지 않습니다. data, backup, secret은 지정한 state directory 아래
 bind mount로 보존됩니다.
 
+## 선택 운영 알림
+
+Telegram과 Web Push는 기본 설치에서 비활성입니다. 활성화할 때만 다음
+서버 전용 값을 컨테이너에 주입합니다.
+
+- `G5_FLEET_TELEGRAM_BOT_TOKEN_FILE`: Telegram Bot token을 담은 절대 경로
+- `G5_FLEET_VAPID_PRIVATE_KEY_FILE`: URL-safe base64 P-256 private key 파일
+- `G5_FLEET_VAPID_SUBJECT`: `mailto:` 또는 HTTPS 연락처
+
+secret file은 state directory의 `secrets/` 아래 `0600`으로 만들고 read-only
+mount합니다. 원문 값은 Compose, Git, 브라우저나 로그에 넣지 않습니다.
+관리자는 HTTPS 웹의 `알림 전달 설정`에서 OTP 재인증 후 사이트별 Telegram
+chat ID와 브라우저 구독을 저장·회전·폐기합니다. chat ID와 PushSubscription
+원문은 master key로 application-level 암호화됩니다. 설정하지 않은 channel은
+외부 요청 없이 dead-letter 처리됩니다.
+
 ## 신규 설치
 
 ```bash

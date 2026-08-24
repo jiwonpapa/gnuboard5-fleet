@@ -2733,6 +2733,125 @@ def main() -> int:
             raise RuntimeError(f"R34 {task} result contract failed")
         maintenance_results[task] = result.get("deleted_count", 0)
 
+    notification_base = "/api/v1/sites/owner-a-site/notifications"
+    transport_status = request(
+        fleet_base, "GET", f"{notification_base}/transports",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        transport_status.get("telegram_transport_configured") is not False
+        or transport_status.get("telegram_destination_configured") is not False
+        or transport_status.get("vapid_public_key") is not None
+        or transport_status.get("active_web_push_subscriptions") != 0
+    ):
+        raise RuntimeError("R35 local notification transport baseline is not fail-closed")
+    request(
+        fleet_base, "PUT", f"{notification_base}/telegram-destination",
+        body={"chat_id": "-1001234567890"},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(204,),
+    )
+    destination_status = request(
+        fleet_base, "GET", f"{notification_base}/transports",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if destination_status.get("telegram_destination_configured") is not True:
+        raise RuntimeError("R35 Telegram encrypted destination readback failed")
+
+    subscription_input = {
+        "endpoint": "https://fcm.googleapis.com/fcm/send/local-certification-a",
+        "keys": {
+            "p256dh": "BAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0-P0A",
+            "auth": "AQIDBAUGBwgJCgsMDQ4PEA",
+        },
+    }
+    subscription = request(
+        fleet_base, "POST", f"{notification_base}/web-push/subscriptions",
+        body=subscription_input,
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    subscription_id = subscription.get("subscription_id")
+    if (
+        not isinstance(subscription_id, str)
+        or subscription.get("state") != "active"
+        or "endpoint" in subscription
+        or "keys" in subscription
+    ):
+        raise RuntimeError("R35 Web Push create response exposed or lost subscription state")
+    subscription_list = request(
+        fleet_base, "GET", f"{notification_base}/web-push/subscriptions",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        len(subscription_list) != 1
+        or subscription_list[0].get("subscription_id") != subscription_id
+        or "endpoint" in subscription_list[0]
+        or "keys" in subscription_list[0]
+    ):
+        raise RuntimeError("R35 Web Push redacted list readback failed")
+    rotated = request(
+        fleet_base, "PUT",
+        f"{notification_base}/web-push/subscriptions/{subscription_id}",
+        body={
+            **subscription_input,
+            "endpoint": "https://updates.push.services.mozilla.com/wpush/v2/local-certification-b",
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if rotated.get("subscription_id") != subscription_id or rotated.get("state") != "active":
+        raise RuntimeError("R35 Web Push rotation readback failed")
+    forbidden_subscription = request(
+        fleet_base, "POST", f"{notification_base}/web-push/subscriptions",
+        body={**subscription_input, "endpoint": "http://127.0.0.1/private"},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    if forbidden_subscription.get("error", {}).get("code") != "web_push_endpoint_forbidden":
+        raise RuntimeError("R35 Web Push endpoint SSRF boundary failed")
+
+    queued_notification = request(
+        fleet_base, "POST", notification_base,
+        body={
+            "event_id": "r35-local-no-provider",
+            "channel": "web_push",
+            "payload": {
+                "title": "로컬 알림",
+                "body": "외부 전송 없는 dead-letter 확인",
+                "action_path": "/sites/owner-a-site/notifications",
+            },
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(201,),
+    ).json()
+    notification_id = queued_notification.get("notification", {}).get("outbox_id")
+    notification_state = "pending"
+    for _ in range(30):
+        notification = request(
+            fleet_base, "GET", f"{notification_base}/{notification_id}",
+            headers=fleet_headers(admin_cookie),
+        ).json()
+        notification_state = notification.get("state")
+        if notification_state == "dead_letter":
+            break
+        time.sleep(0.1)
+    if notification_state != "dead_letter":
+        raise RuntimeError("R35 unconfigured Web Push delivery did not fail closed")
+    request(
+        fleet_base, "DELETE",
+        f"{notification_base}/web-push/subscriptions/{subscription_id}",
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(204,),
+    )
+    request(
+        fleet_base, "DELETE", f"{notification_base}/telegram-destination",
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(204,),
+    )
+    final_transport_status = request(
+        fleet_base, "GET", f"{notification_base}/transports",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        final_transport_status.get("telegram_destination_configured") is not False
+        or final_transport_status.get("active_web_push_subscriptions") != 0
+    ):
+        raise RuntimeError("R35 notification destination cleanup readback failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -3149,7 +3268,14 @@ def main() -> int:
             "maintenance_results": maintenance_results,
             "external_delivery_attempts": 0,
         },
-        "notifications": {
+        "r35_notifications_pwa": {
+            "transport_implementations": ["telegram", "web_push"],
+            "configured_external_transports": 0,
+            "telegram_destination_encrypted_readback": "passed",
+            "web_push_subscription_create_rotate_revoke": "passed",
+            "web_push_response_secret_exposure": "none",
+            "web_push_endpoint_ssrf_boundary": "passed",
+            "unconfigured_delivery_state": "dead_letter",
             "external_delivery_attempts": 0,
         },
     }

@@ -41,6 +41,8 @@ make check-batch BATCH=R14
 
 개발 서버는 최초 한 번 `G5_FLEET_INSTALLATION_ID=local-fleet-01 cargo run -p g5-fleet-admin-server -- init-store`로 저장소를 명시적으로 초기화합니다. 이후 32-byte master key를 Base64로 `G5_FLEET_MASTER_KEY_BASE64`에 주입하고 `cargo run -p g5-fleet-admin-server -- serve`로 실행합니다. 웹주소에 처음 접속하면 관리자 → OTP 검증 → 일회성 복구 코드 확인을 모두 마쳐야 로그인 화면이 열립니다. OTP 비활성화와 OTP 없이 추가 관리자를 만드는 API는 정책상 거부됩니다. 기본 데이터 경로는 `data`, 웹 경로는 `apps/admin-web/dist`입니다. master key는 DB·Git에 넣지 않으며 DB backup과 별도로 보관합니다.
 
+운영 알림은 선택 기능입니다. Telegram은 `G5_FLEET_TELEGRAM_BOT_TOKEN_FILE`, Web Push는 `G5_FLEET_VAPID_PRIVATE_KEY_FILE`과 `G5_FLEET_VAPID_SUBJECT`를 서버에만 설정합니다. 사이트별 Telegram chat ID와 브라우저 PushSubscription은 관리자 OTP 재인증 뒤 AES-256-GCM으로 저장되며 브라우저 응답에는 endpoint·p256dh·auth 원문이 반환되지 않습니다. 운영 secret이 없으면 worker가 외부 전송을 시도하지 않고 해당 알림을 fail-closed 처리합니다.
+
 서버 설치·백업·업그레이드는 [`서버 패키지 운영 문서`](docs/operations/SERVER_PACKAGE.md)를 따릅니다. 기본 Compose는 Axum+React `app`과 Caddy만 사용하며 별도 PostgreSQL·Redis container를 설치하지 않습니다.
 
 ## 버전과 변경 기록
