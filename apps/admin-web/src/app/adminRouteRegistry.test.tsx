@@ -3,11 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
   adminRoutes,
   groupedAdminRoutes,
+  routePathForSite,
   resolveRouteMeta,
+  selectedSiteId,
 } from "./adminRouteRegistry";
 
 describe("adminRouteRegistry", () => {
-  it("preserves legacy navigation and exposes only migrated domains as active", () => {
+  it("preserves legacy navigation and exposes every migrated domain as active", () => {
     expect(resolveRouteMeta("/admin/members")).toMatchObject({
       label: "회원",
       delivery: "active",
@@ -104,9 +106,21 @@ describe("adminRouteRegistry", () => {
       label: "유지보수",
       delivery: "active",
     });
+    expect(resolveRouteMeta("/admin/permissions")?.delivery).toBe("active");
+    expect(resolveRouteMeta("/admin/boards")?.delivery).toBe("active");
+    expect(resolveRouteMeta("/admin/contents")?.delivery).toBe("active");
     expect(adminRoutes.filter((route) => route.delivery === "active")).toHaveLength(
-      30,
+      adminRoutes.length,
     );
     expect(groupedAdminRoutes().get("메시징")?.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("binds domain navigation to an explicit site without a global active site", () => {
+    expect(selectedSiteId("/sites/site-a/admin/members")).toBe("site-a");
+    expect(selectedSiteId("/admin/members")).toBeUndefined();
+    expect(routePathForSite("/admin/members", "site a")).toBe(
+      "/sites/site%20a/admin/members",
+    );
+    expect(routePathForSite("/admin/members")).toBe("/admin/members");
   });
 });

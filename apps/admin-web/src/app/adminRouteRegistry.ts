@@ -91,10 +91,25 @@ export const adminRoutes: readonly AdminRouteMeta[] = [
     label,
     group,
     description: `${label} 도메인 작업면입니다.`,
-    delivery: ["members", "groups", "faqs", "menus", "layouts", "theme", "points", "polls", "popups", "popular", "visits", "reports", "qa", "write-count", "mails", "sms", "sms-contacts", "sms-templates", "sms-messages", "sms-history", "push", "notifications", "system-tools", "maintenance"].includes(slug) ? "active" as const : "planned" as const,
+    delivery: "active" as const,
     legacySource,
   })),
 ];
+
+export function selectedSiteId(pathname: string): string | undefined {
+  const match = /^\/sites\/([^/]+)(?:\/|$)/.exec(pathname);
+  if (!match) return undefined;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return undefined;
+  }
+}
+
+export function routePathForSite(path: `/${string}`, siteId?: string): string {
+  if (!siteId || !path.startsWith("/admin/")) return path;
+  return `/sites/${encodeURIComponent(siteId)}${path}`;
+}
 
 export function resolveRouteMeta(pathname: string): AdminRouteMeta | undefined {
   return adminRoutes.find((route) => route.path === pathname);

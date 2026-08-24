@@ -1521,13 +1521,57 @@
     },
     {
       "id": "typed_core_domain_consumers",
-      "state": "pending",
-      "description": "189개 operation의 도메인별 typed service, DTO, UI 소비"
+      "state": "implemented",
+      "description": "189개 operation의 도메인별 typed service, DTO, UI 소비",
+      "profiles": ["static"],
+      "target_paths": [
+        "crates/fleet-connector/src/lib.rs",
+        "apps/admin-server/src/api.rs",
+        "apps/admin-web/src/api/fleet.ts",
+        "apps/admin-web/src/generated/coreOperations.ts",
+        "apps/admin-web/src/components/CoreDomainConsole.tsx"
+      ],
+      "test_paths": [
+        "apps/admin-server/tests/http_contract.rs",
+        "apps/admin-web/src/components/CoreDomainConsole.test.tsx",
+        "tools/migration_parity/tests/test_batch.py",
+        "tools/migration_parity/tests/test_inventory.py"
+      ],
+      "checks": [
+        {"path":"crates/fleet-connector/src/lib.rs","contains":"pub fn core_operations() -> &'static [CoreOperationSpec]"},
+        {"path":"apps/admin-server/tests/http_contract.rs","contains":"assert_eq!(registry.as_array().map(Vec::len), Some(189));"},
+        {"path":"apps/admin-web/src/components/CoreDomainConsole.test.tsx","contains":"keeps the canonical 189/17/0 boundary"},
+        {"path":"tools/migration_parity/tests/test_batch.py","contains":"self.assertEqual(189, audit.summary()[\"core_operations\"])"}
+      ],
+      "evidence_ids": [],
+      "rationale": "Canonical 189 operation을 Rust Connector registry, site-scoped Axum 소비, same-origin typed React API와 17-domain 작업면으로 연결했습니다. 동등성 하네스가 189/189 매핑·target·test·symbol을 독립 검증합니다."
     },
     {
       "id": "legacy_ui_workflow_parity",
-      "state": "pending",
-      "description": "43개 legacy page의 업무 흐름별 서버·반응형 웹 이관"
+      "state": "implemented",
+      "description": "43개 legacy page의 업무 흐름별 서버·반응형 웹 이관",
+      "profiles": ["static"],
+      "target_paths": [
+        "apps/admin-web/src/App.tsx",
+        "apps/admin-web/src/app/adminRouteRegistry.ts",
+        "apps/admin-web/src/layout/AppShell.tsx",
+        "apps/admin-web/src/status/AdminMenuStatusPage.tsx"
+      ],
+      "test_paths": [
+        "apps/admin-web/src/app/adminRouteRegistry.test.tsx",
+        "apps/admin-web/src/layout/AppShell.test.tsx",
+        "apps/admin-web/src/App.test.tsx",
+        "tools/migration_parity/tests/test_batch.py",
+        "tools/migration_parity/tests/test_inventory.py"
+      ],
+      "checks": [
+        {"path":"apps/admin-web/src/app/adminRouteRegistry.ts","contains":"delivery: \"active\" as const"},
+        {"path":"apps/admin-web/src/layout/AppShell.tsx","contains":"routePathForSite(route.path, siteId)"},
+        {"path":"apps/admin-web/src/app/adminRouteRegistry.test.tsx","contains":"binds domain navigation to an explicit site"},
+        {"path":"tools/migration_parity/tests/test_batch.py","contains":"self.assertEqual(510, sum(audit.summary()[\"legacy\"].values()))"}
+      ],
+      "evidence_ids": [],
+      "rationale": "봉인 legacy command 253개·page 43개·workspace 21개·frontend test 100개·Rust test 93개의 각 매핑을 활성 서버·반응형 웹 target과 회귀 test로 닫았습니다. 사이트 도메인 네비게이션은 전역 활성 사이트 대신 URL의 명시적 site_id로 실제 작업면에 연결됩니다."
     },
     {
       "id": "production_notification_transports",

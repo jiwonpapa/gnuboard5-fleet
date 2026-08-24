@@ -5,16 +5,19 @@ import { describe, expect, it } from "vitest";
 import { AdminMenuStatusPage } from "./AdminMenuStatusPage";
 
 describe("AdminMenuStatusPage", () => {
-  it("shows the legacy source and refuses to present a generic console as done", () => {
+  it("requires explicit site selection for a completed domain workflow", () => {
     render(
       <MemoryRouter initialEntries={["/admin/members"]}>
         <AdminMenuStatusPage />
       </MemoryRouter>,
     );
     expect(
-      screen.getByRole("heading", { name: "회원 작업면 준비 상태" }),
+      screen.getByRole("heading", { name: "회원 사이트 선택" }),
     ).toBeVisible();
     expect(screen.getByText("members/AdminMembersPage.tsx")).toBeVisible();
-    expect(screen.getByText(/범용 JSON console을 완료 화면으로/)).toBeVisible();
+    expect(screen.getByRole("link", { name: "사이트 목록으로 이동" })).toHaveAttribute(
+      "href",
+      "/sites",
+    );
   });
 });

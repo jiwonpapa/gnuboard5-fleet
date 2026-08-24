@@ -1,11 +1,19 @@
 import {
   adminRoutes,
   groupedAdminRoutes,
+  routePathForSite,
   resolveRouteMeta,
+  selectedSiteId,
   type AdminRouteMeta,
 } from "../app/adminRouteRegistry";
 
-export { adminRoutes, groupedAdminRoutes, resolveRouteMeta };
+export {
+  adminRoutes,
+  groupedAdminRoutes,
+  routePathForSite,
+  resolveRouteMeta,
+  selectedSiteId,
+};
 export type { AdminRouteMeta };
 
 export function deliveryLabel(delivery: AdminRouteMeta["delivery"]): string {

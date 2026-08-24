@@ -26,6 +26,25 @@ describe("legacy AppShell reuse", () => {
     expect(screen.getByText("1.0.0")).toBeVisible();
   });
 
+  it("routes every domain link through the selected site context", () => {
+    render(
+      <MemoryRouter initialEntries={["/sites/site-a"]}>
+        <AppShell serverState="online">
+          <p>작업면</p>
+        </AppShell>
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("link", { name: /회원ON/ })).toHaveAttribute(
+      "href",
+      "/sites/site-a/admin/members",
+    );
+    expect(screen.getByRole("link", { name: /알림 전달ON/ })).toHaveAttribute(
+      "href",
+      "/sites/site-a/admin/notifications",
+    );
+    expect(screen.getByText("site-a")).toBeVisible();
+  });
+
   it("keeps header and sidebar interaction independently testable", () => {
     const toggle = vi.fn();
     const navigate = vi.fn();

@@ -1,7 +1,11 @@
 import { useState, type ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
-import { groupedAdminRoutes } from "./navigation";
+import {
+  groupedAdminRoutes,
+  routePathForSite,
+  selectedSiteId,
+} from "./navigation";
 
 export type ShellServerState = "checking" | "offline" | "online";
 
@@ -79,6 +83,8 @@ export function AppShellSidebar(props: {
   onNavigate: () => void;
   serverState: ShellServerState;
 }) {
+  const location = useLocation();
+  const siteId = selectedSiteId(location.pathname);
   return (
     <aside
       id="primary-navigation"
@@ -94,7 +100,7 @@ export function AppShellSidebar(props: {
             {routes.map((route) => (
               <NavLink
                 key={route.path}
-                to={route.path}
+                to={routePathForSite(route.path, siteId)}
                 end={route.path === "/"}
                 onClick={props.onNavigate}
               >
@@ -109,8 +115,12 @@ export function AppShellSidebar(props: {
       </nav>
       <div className="sidebar-context">
         <span className="context-kicker">선택된 사이트</span>
-        <strong>아직 연결되지 않음</strong>
-        <span>모든 요청은 명시적인 사이트 경계에서 실행됩니다.</span>
+        <strong>{siteId ?? "아직 선택되지 않음"}</strong>
+        <span>
+          {siteId
+            ? "사이트 메뉴는 현재 site_id에만 귀속됩니다."
+            : "사이트 목록에서 관리 대상을 선택하십시오."}
+        </span>
       </div>
       <ServerBadge state={props.serverState} />
     </aside>

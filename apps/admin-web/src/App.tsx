@@ -174,6 +174,10 @@ export default function App() {
               element={<NotificationSettingsPage />}
             />
             <Route
+              path="/sites/:siteId/admin/notifications"
+              element={<NotificationSettingsPage />}
+            />
+            <Route
               path="/sites/:siteId/admin/system-tools"
               element={<AdminPhpInfoPage />}
             />
