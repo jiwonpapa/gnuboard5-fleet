@@ -2517,6 +2517,75 @@ def main() -> int:
     ):
         raise RuntimeError("R31 SMS template cleanup did not restore baseline")
 
+    sms_message_batches_path = "/api/v1/sites/owner-a-site/admin/sms/history/batches"
+    sms_deliveries_path = "/api/v1/sites/owner-a-site/admin/sms/history/deliveries"
+    sms_messages_path = "/api/v1/sites/owner-a-site/admin/sms/messages"
+    sms_batches = request(
+        fleet_base, "GET", f"{sms_message_batches_path}?page=1&per_page=20&search=R32",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    batch_9401 = next(
+        (batch for batch in sms_batches.get("batches", []) if batch.get("wr_no") == 9401),
+        None,
+    )
+    if (
+        batch_9401 is None
+        or batch_9401.get("wr_total") != 2
+        or batch_9401.get("wr_success") != 1
+        or batch_9401.get("wr_failure") != 1
+    ):
+        raise RuntimeError("R32 SMS message batch list readback failed")
+
+    sms_batch_detail = request(
+        fleet_base, "GET",
+        f"{sms_message_batches_path}/9401?wr_renum=0&page=1&per_page=20&search_field=name&search=R32",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        sms_batch_detail.get("wr_no") != 9401
+        or sms_batch_detail.get("wr_renum") != 0
+        or sms_batch_detail.get("deliveries_pagination", {}).get("total") != 2
+        or len(sms_batch_detail.get("retry_batches", [])) != 1
+    ):
+        raise RuntimeError("R32 SMS message batch detail readback failed")
+
+    sms_deliveries = request(
+        fleet_base, "GET",
+        f"{sms_deliveries_path}?page=1&per_page=20&search_field=hp&search=010",
+        headers=fleet_headers(admin_cookie),
+    ).json()
+    if (
+        sms_deliveries.get("pagination", {}).get("total") != 2
+        or {item.get("hs_code") for item in sms_deliveries.get("deliveries", [])} != {"0000", "9999"}
+    ):
+        raise RuntimeError("R32 SMS delivery list readback failed")
+
+    unconfirmed_sms_send = request(
+        fleet_base, "POST", sms_messages_path,
+        body={
+            "confirm_send": False,
+            "message": "R32 외부 발송 차단",
+            "manual_targets": [{"name": "R32", "phone": "01012345678"}],
+            "group_ids": [], "contact_ids": [], "member_levels": [],
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    unconfirmed_resend_failures = request(
+        fleet_base, "POST", f"{sms_message_batches_path}/9401/resend-failures",
+        body={"confirm_send": False, "wr_renum": 0},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    unconfirmed_resend_all = request(
+        fleet_base, "POST", f"{sms_message_batches_path}/9401/resend-all",
+        body={"confirm_send": False, "wr_renum": 0},
+        headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+    ).json()
+    if any(
+        payload.get("error", {}).get("code") != "external_effect_confirmation_required"
+        for payload in (unconfirmed_sms_send, unconfirmed_resend_failures, unconfirmed_resend_all)
+    ):
+        raise RuntimeError("R32 SMS external action confirmation did not fail closed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -2901,6 +2970,15 @@ def main() -> int:
             "group_clear_and_delete_cleanup": "passed",
             "baseline_groups_preserved": baseline_template_group_ids,
             "baseline_templates_preserved": baseline_template_ids,
+            "external_delivery_attempts": 0,
+        },
+        "r32_sms_messages": {
+            "operations": 6,
+            "batch_list_readback": "passed",
+            "batch_detail_retry_and_delivery_readback": "passed",
+            "delivery_list_filter_readback": "passed",
+            "external_action_confirmations_fail_closed": "passed",
+            "seeded_batch_preserved": 9401,
             "external_delivery_attempts": 0,
         },
         "notifications": {

@@ -282,6 +282,16 @@ CREATE TABLE IF NOT EXISTS g5_sms5_history (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 INSERT INTO g5_sms5_config (cf_phone, cf_datetime)
 VALUES ('02-1234-5678', NOW());
+INSERT INTO g5_sms5_write
+  (wr_no, wr_renum, wr_reply, wr_message, wr_booking, wr_total, wr_re_total, wr_success, wr_failure, wr_datetime, wr_memo)
+VALUES
+  (9401, 0, '02-1234-5678', 'R32 기준 발송', '0000-00-00 00:00:00', 2, 1, 1, 1, '2026-08-24 09:00:00', ''),
+  (9401, 1, '02-1234-5678', 'R32 기준 재시도', '0000-00-00 00:00:00', 1, 0, 1, 0, '2026-08-24 09:05:00', '');
+INSERT INTO g5_sms5_history
+  (wr_no, wr_renum, bg_no, mb_no, mb_id, bk_no, hs_name, hs_hp, hs_datetime, hs_flag, hs_code, hs_memo, hs_log)
+VALUES
+  (9401, 0, 1, 0, '', 0, 'R32 성공', '01012345678', '2026-08-24 09:00:01', 0, '0000', '성공', ''),
+  (9401, 0, 1, 0, '', 0, 'R32 실패', '01087654321', '2026-08-24 09:00:02', 1, '9999', '실패', 'provider disabled');
 INSERT INTO g5_sms5_book_group
   (bg_no, bg_name, bg_count, bg_member, bg_nomember, bg_receipt, bg_reject)
 VALUES (1, '미분류', 0, 0, 0, 0, 0);
