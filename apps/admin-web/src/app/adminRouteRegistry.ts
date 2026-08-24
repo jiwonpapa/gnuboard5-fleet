@@ -80,7 +80,8 @@ export const adminRoutes: readonly AdminRouteMeta[] = [
     ["SMS 설정", "sms", "메시징", "system/AdminSmsConfigPage.tsx"],
     ["SMS 연락처", "sms-contacts", "메시징", "sms-contacts/AdminSmsContactsPage.tsx"],
     ["SMS 템플릿", "sms-templates", "메시징", "sms-templates/AdminSmsTemplatesPage.tsx"],
-    ["SMS 내역", "sms-messages", "메시징", "sms-history/AdminSmsHistoryPage.tsx"],
+    ["SMS 발송", "sms-messages", "메시징", "sms-messages/AdminSmsMessagesPage.tsx"],
+    ["SMS 내역", "sms-history", "메시징", "sms-history/AdminSmsHistoryPage.tsx"],
     ["Push", "push", "메시징", "push/AdminPushPage.tsx"],
     ["시스템 도구", "system-tools", "시스템", "system-tools/AdminPhpInfoPage.tsx"],
     ["유지보수", "maintenance", "시스템", "maintenance/AdminMaintenancePage.tsx"],
@@ -89,7 +90,7 @@ export const adminRoutes: readonly AdminRouteMeta[] = [
     label,
     group,
     description: `${label} 도메인 작업면입니다.`,
-    delivery: ["members", "groups", "faqs", "menus", "layouts", "theme", "points", "polls", "popups", "popular", "visits", "reports", "qa", "write-count", "mails", "sms", "sms-contacts"].includes(slug) ? "active" as const : "planned" as const,
+    delivery: ["members", "groups", "faqs", "menus", "layouts", "theme", "points", "polls", "popups", "popular", "visits", "reports", "qa", "write-count", "mails", "sms", "sms-contacts", "sms-templates", "sms-messages", "sms-history"].includes(slug) ? "active" as const : "planned" as const,
     legacySource,
   })),
 ];

@@ -4337,6 +4337,109 @@ code {
   width: auto;
 }
 
+.sms-message-summary,
+.sms-history-summary {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.sms-message-workspace,
+.sms-history-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.sms-message-editor,
+.sms-history-detail,
+.sms-message-form-grid {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.sms-message-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sms-message-form-grid label,
+.sms-history-detail label {
+  display: grid;
+  gap: 6px;
+}
+
+.sms-message-body {
+  grid-column: 1 / -1;
+}
+
+.sms-message-body textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+
+.sms-message-targets {
+  position: sticky;
+  top: 18px;
+}
+
+.sms-history-tabs,
+.sms-history-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sms-history-tabs button[aria-selected="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.sms-history-filter input {
+  flex: 1 1 280px;
+}
+
+.sms-history-table button {
+  padding: 0;
+  border: 0;
+  color: var(--accent);
+  background: transparent;
+}
+
+.sms-history-table tr[data-selected="true"] td {
+  background: var(--accent-soft);
+}
+
+.sms-history-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.sms-history-detail-grid div {
+  padding: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.sms-history-detail-grid dt {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.sms-history-detail-grid dd {
+  margin: 3px 0 0;
+  font-family: var(--display);
+}
+
+.sms-history-message {
+  padding: 14px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface-soft);
+  white-space: pre-wrap;
+}
+
 @media (max-width: 960px) {
   .points-page .point-filter,
   .points-workspace,
@@ -4360,8 +4463,14 @@ code {
   .sms-config-workspace,
   .sms-contacts-workspace,
   .sms-contact-detail-grid,
-  .sms-template-workspace {
+  .sms-template-workspace,
+  .sms-message-workspace,
+  .sms-history-workspace {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sms-message-targets {
+    position: static;
   }
 
   .sms-summary-grid {
@@ -4433,7 +4542,11 @@ code {
   .sms-contacts-summary,
   .sms-contact-filter,
   .sms-template-summary,
-  .sms-template-form-grid {
+  .sms-template-form-grid,
+  .sms-message-summary,
+  .sms-history-summary,
+  .sms-message-form-grid,
+  .sms-history-detail-grid {
     grid-template-columns: 1fr;
   }
 

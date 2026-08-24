@@ -1371,6 +1371,126 @@ export interface AdminSmsTemplateBatchResult {
   target_fg_no: number | null;
 }
 
+export interface AdminSmsDuplicateSummary {
+  total: number;
+  phones: string[];
+}
+
+export interface AdminSmsMessageBatch {
+  wr_no: number;
+  wr_renum: number;
+  wr_reply: string | null;
+  wr_message: string | null;
+  wr_booking: string | null;
+  wr_total: number;
+  wr_re_total: number;
+  wr_success: number;
+  wr_failure: number;
+  wr_datetime: string | null;
+  wr_memo: string | null;
+  duplicate_summary: AdminSmsDuplicateSummary | null;
+}
+
+export interface AdminSmsRetryBatch {
+  wr_no: number;
+  wr_renum: number;
+  wr_total: number;
+  wr_success: number;
+  wr_failure: number;
+  wr_datetime: string | null;
+}
+
+export interface AdminSmsDelivery {
+  hs_no: number;
+  wr_no: number | null;
+  wr_renum: number | null;
+  bg_no: number | null;
+  bg_name: string | null;
+  mb_id: string | null;
+  bk_no: number | null;
+  hs_name: string | null;
+  hs_hp: string | null;
+  hs_datetime: string | null;
+  hs_flag: number | null;
+  hs_code: string | null;
+  hs_memo: string | null;
+  hs_log: string | null;
+  wr_message: string | null;
+  wr_datetime: string | null;
+  wr_booking: string | null;
+}
+
+export interface AdminSmsMessageBatchList {
+  batches: AdminSmsMessageBatch[];
+  pagination: Pagination;
+}
+
+export interface AdminSmsMessageBatchListQuery {
+  page?: number;
+  per_page?: number;
+  search?: string;
+}
+
+export interface AdminSmsMessageBatchDetail extends AdminSmsMessageBatch {
+  retry_batches: AdminSmsRetryBatch[];
+  deliveries: AdminSmsDelivery[];
+  deliveries_pagination: Pagination;
+}
+
+export interface AdminSmsMessageBatchDetailQuery {
+  wr_renum?: number;
+  page?: number;
+  per_page?: number;
+  search_field?: "name" | "hp";
+  search?: string;
+}
+
+export interface AdminSmsDeliveryList {
+  deliveries: AdminSmsDelivery[];
+  pagination: Pagination;
+}
+
+export interface AdminSmsDeliveryListQuery {
+  page?: number;
+  per_page?: number;
+  search_field?: "name" | "hp" | "bk_no";
+  search?: string;
+}
+
+export interface AdminSmsManualTarget {
+  name?: string;
+  phone: string;
+}
+
+export interface AdminSmsMessageCreateRequest {
+  message?: string;
+  template_id?: number;
+  reply?: string;
+  booking_at?: string;
+  group_ids: number[];
+  contact_ids: number[];
+  member_levels: number[];
+  manual_targets: AdminSmsManualTarget[];
+}
+
+export interface AdminSmsResendRequest {
+  wr_renum?: number;
+  booking_at?: string;
+}
+
+export interface AdminSmsSendResult {
+  write_no: number;
+  write_renum: number;
+  reply: string | null;
+  message: string | null;
+  booking_at: string | null;
+  total: number;
+  success: number;
+  failure: number;
+  duplicate_summary: AdminSmsDuplicateSummary | null;
+  provider_ready: boolean;
+}
+
 export interface AdminPointItem {
   po_id: number;
   mb_id: string;
@@ -3197,6 +3317,38 @@ export function deleteAdminSmsTemplate(siteId: string, foNo: number, csrfToken: 
 
 export function batchAdminSmsTemplates(siteId: string, input: AdminSmsTemplateBatch, csrfToken: string) {
   return transport.request<AdminSmsTemplateBatchResult, AdminSmsTemplateBatch & { confirm_action: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/templates/batch`, csrfToken, body: { ...input, confirm_action: true } });
+}
+
+function adminSmsMessageQuery(query: object): string {
+  const search = new URLSearchParams();
+  for (const [name, value] of Object.entries(query as Record<string, unknown>)) {
+    if (value !== undefined && value !== "") search.set(name, String(value));
+  }
+  return search.size ? `?${search.toString()}` : "";
+}
+
+export function listAdminSmsMessageBatches(siteId: string, query: AdminSmsMessageBatchListQuery = {}) {
+  return transport.request<AdminSmsMessageBatchList>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/history/batches${adminSmsMessageQuery(query)}` });
+}
+
+export function getAdminSmsMessageBatch(siteId: string, wrNo: number, query: AdminSmsMessageBatchDetailQuery = {}) {
+  return transport.request<AdminSmsMessageBatchDetail>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/history/batches/${wrNo}${adminSmsMessageQuery(query)}` });
+}
+
+export function listAdminSmsDeliveries(siteId: string, query: AdminSmsDeliveryListQuery = {}) {
+  return transport.request<AdminSmsDeliveryList>({ method: "GET", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/history/deliveries${adminSmsMessageQuery(query)}` });
+}
+
+export function createAdminSmsMessage(siteId: string, input: AdminSmsMessageCreateRequest, csrfToken: string) {
+  return transport.request<AdminSmsSendResult, AdminSmsMessageCreateRequest & { confirm_send: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/messages`, csrfToken, body: { ...input, confirm_send: true } });
+}
+
+export function resendAdminSmsFailures(siteId: string, wrNo: number, input: AdminSmsResendRequest, csrfToken: string) {
+  return transport.request<AdminSmsSendResult, AdminSmsResendRequest & { confirm_send: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/history/batches/${wrNo}/resend-failures`, csrfToken, body: { ...input, confirm_send: true } });
+}
+
+export function resendAdminSmsBatchAll(siteId: string, wrNo: number, input: AdminSmsResendRequest, csrfToken: string) {
+  return transport.request<AdminSmsSendResult, AdminSmsResendRequest & { confirm_send: true }>({ method: "POST", path: `/sites/${encodeURIComponent(siteId)}/admin/sms/history/batches/${wrNo}/resend-all`, csrfToken, body: { ...input, confirm_send: true } });
 }
 
 export function listAdminPoints(siteId: string, query: AdminPointListQuery = {}) {

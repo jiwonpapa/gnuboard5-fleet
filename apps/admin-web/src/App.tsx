@@ -31,6 +31,8 @@ import { AdminMailsPage } from "./features/mails/AdminMailsPage";
 import { AdminSmsConfigPage } from "./features/sms/AdminSmsConfigPage";
 import { AdminSmsContactsPage } from "./features/sms-contacts/AdminSmsContactsPage";
 import { AdminSmsTemplatesPage } from "./features/sms-templates/AdminSmsTemplatesPage";
+import { AdminSmsHistoryPage } from "./features/sms-history/AdminSmsHistoryPage";
+import { AdminSmsMessagesPage } from "./features/sms-messages/AdminSmsMessagesPage";
 import { SecuritySettingsPage } from "./features/security/SecuritySettingsPage";
 import { SiteActivationPage } from "./features/sites/SiteActivationPage";
 import { SiteDashboardPage } from "./features/sites/SiteDashboardPage";
@@ -149,6 +151,14 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/sms-templates"
               element={<AdminSmsTemplatesPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/sms-messages"
+              element={<AdminSmsMessagesPage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/sms-history"
+              element={<AdminSmsHistoryPage />}
             />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />
