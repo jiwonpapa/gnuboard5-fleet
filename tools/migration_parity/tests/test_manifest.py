@@ -206,6 +206,16 @@ class ManifestTest(unittest.TestCase):
                 "adminCreateSmsMessage",
                 "adminCreatePushMessage",
                 "adminSendPush",
+                "adminSystemBrowscapStatus",
+                "adminSystemBrowscapConvert",
+                "adminSystemBrowscapUpdate",
+                "adminSystemPurgeCacheFiles",
+                "adminSystemPurgeCaptchaFiles",
+                "adminSystemPurgeMemberListFiles",
+                "adminSystemPurgeSessionFiles",
+                "adminSystemPurgeThumbnailFiles",
+                "adminSystemPhpInfo",
+                "getHealth",
             },
             {
                 mapping["operation_id"]
