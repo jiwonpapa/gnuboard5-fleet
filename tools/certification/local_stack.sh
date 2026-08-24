@@ -280,6 +280,17 @@ CREATE TABLE IF NOT EXISTS g5_sms5_history (
   PRIMARY KEY (hs_no), KEY wr_no (wr_no), KEY mb_no (mb_no), KEY bk_no (bk_no),
   KEY hs_hp (hs_hp), KEY hs_code (hs_code), KEY bg_no (bg_no), KEY mb_id (mb_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+CREATE TABLE IF NOT EXISTS g5_push_log (
+  pl_id int(11) NOT NULL AUTO_INCREMENT,
+  mb_id varchar(20) NOT NULL,
+  pl_title varchar(255) NOT NULL,
+  pl_body text NOT NULL,
+  pl_type varchar(50) NOT NULL DEFAULT 'manual',
+  pl_status varchar(30) NOT NULL DEFAULT 'sent',
+  pl_datetime datetime NOT NULL,
+  PRIMARY KEY (pl_id),
+  KEY idx_member_datetime (mb_id, pl_datetime)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 INSERT INTO g5_sms5_config (cf_phone, cf_datetime)
 VALUES ('02-1234-5678', NOW());
 INSERT INTO g5_sms5_write

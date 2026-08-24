@@ -2586,6 +2586,60 @@ def main() -> int:
     ):
         raise RuntimeError("R32 SMS external action confirmation did not fail closed")
 
+    push_messages_path = "/api/v1/sites/owner-a-site/admin/push/messages"
+    push_legacy_path = "/api/v1/sites/owner-a-site/admin/push/send"
+    unconfirmed_pushes = [
+        request(
+            fleet_base, "POST", path,
+            body={
+                "confirm_send": False,
+                "title": "R33 외부 전달 차단",
+                "body": "routine Web Push 차단 검증",
+                "type": "manual",
+                "member_ids": [member_id],
+            },
+            headers=fleet_headers(admin_cookie, admin_csrf), expected=(400,),
+        ).json()
+        for path in (push_messages_path, push_legacy_path)
+    ]
+    if any(
+        payload.get("error", {}).get("code") != "external_effect_confirmation_required"
+        for payload in unconfirmed_pushes
+    ):
+        raise RuntimeError("R33 Push external action confirmation did not fail closed")
+
+    canonical_push = request(
+        fleet_base, "POST", push_messages_path,
+        body={
+            "confirm_send": True,
+            "title": "R33 표준 큐",
+            "body": "로컬 DB 큐 readback",
+            "type": "manual",
+            "member_ids": [member_id],
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    legacy_push = request(
+        fleet_base, "POST", push_legacy_path,
+        body={
+            "confirm_send": True,
+            "title": "R33 호환 큐",
+            "body": "로컬 DB 큐 readback",
+            "type": "manual",
+            "target": "all",
+        },
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    if (
+        canonical_push.get("target_count") != 1
+        or canonical_push.get("queued") != 1
+        or canonical_push.get("failed") != 0
+        or legacy_push.get("target_count", 0) < 2
+        or legacy_push.get("queued") != legacy_push.get("target_count")
+        or legacy_push.get("failed") != 0
+    ):
+        raise RuntimeError("R33 Push standard and legacy local queue readback failed")
+
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -2979,6 +3033,14 @@ def main() -> int:
             "delivery_list_filter_readback": "passed",
             "external_action_confirmations_fail_closed": "passed",
             "seeded_batch_preserved": 9401,
+            "external_delivery_attempts": 0,
+        },
+        "r33_push": {
+            "operations": 2,
+            "canonical_member_queue_readback": "passed",
+            "legacy_all_queue_readback": "passed",
+            "explicit_confirmations_fail_closed": "passed",
+            "local_queue_rows": canonical_push["queued"] + legacy_push["queued"],
             "external_delivery_attempts": 0,
         },
         "notifications": {
