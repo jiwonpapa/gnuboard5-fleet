@@ -6055,6 +6055,8 @@ impl G5Client {
             "adminCreateMailTest"
                 | "adminSendMail"
                 | "adminSendTestMail"
+                | "adminCreatePushMessage"
+                | "adminSendPush"
                 | "adminSystemSendMemberMail"
                 | "adminSystemSendMailTest"
         ) {

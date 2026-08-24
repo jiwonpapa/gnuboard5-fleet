@@ -2379,6 +2379,7 @@ def check_server_route_registry(root: Path) -> str:
         "adminCreateMailTest",
         "adminSendMail",
         "adminSendTestMail",
+        "adminCreatePushMessage",
         "adminSendPush",
         "adminCreateSmsMessage",
         "adminResendAllSmsBatch",
@@ -2425,7 +2426,7 @@ def check_server_route_registry(root: Path) -> str:
         raise ValueError("Core Axum registry/proxy policy tests incomplete")
     return (
         "canonical active 189 = admin 184 + bootstrap 5, Shop 0; "
-        "site-bound Rust registry/proxy와 외부효과 9개 routine 차단 확인"
+        "site-bound Rust registry/proxy와 외부효과 10개 routine 차단 확인"
     )
 
 

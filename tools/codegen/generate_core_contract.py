@@ -41,6 +41,7 @@ EXTERNAL_EFFECTS = {
     "adminCreateMailTest",
     "adminSendMail",
     "adminSendTestMail",
+    "adminCreatePushMessage",
     "adminSendPush",
     "adminCreateSmsMessage",
     "adminResendAllSmsBatch",

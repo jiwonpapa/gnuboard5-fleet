@@ -4758,7 +4758,7 @@
       "tags": [
         "Admin: Push"
       ],
-      "risk": "write",
+      "risk": "external_effect",
       "transport": "core_proxy",
       "requires_step_up": true,
       "parameters": [],
