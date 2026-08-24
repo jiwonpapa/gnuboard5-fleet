@@ -1275,8 +1275,13 @@
       "id": "R32",
       "sequence": 27,
       "title": "sms-messages",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R31"],
+      "completion": {
+        "implementation_commit": "3bc636941cf32eecaf01cf5db3d451547697597c",
+        "evidence_path": "docs/audits/evidence/R32_BATCH_GATE_PASS.json",
+        "closed_at": "2026-08-24T02:30:44Z"
+      },
       "core": {
         "domains": ["sms-messages"],
         "operation_ids": [],
@@ -1308,7 +1313,7 @@
       "id": "R33",
       "sequence": 28,
       "title": "push",
-      "state": "planned",
+      "state": "active",
       "depends_on": ["R32"],
       "core": {
         "domains": ["push"],

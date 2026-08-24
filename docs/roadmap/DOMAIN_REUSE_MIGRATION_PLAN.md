@@ -67,8 +67,8 @@ R00에서 `make check-batch BATCH=Rxx`를 구현합니다. 각 배치는 아래
 
 ## 4. 배치 순서
 
-현재 manifest 상태는 R00~R31 `batch_pass`, R32 `active`, 나머지는
-`planned`입니다. 7차 R31을 닫았고 전체 감사에는 52개 findings가 남아
+현재 manifest 상태는 R00~R32 `batch_pass`, R33 `active`, 나머지는
+`planned`입니다. 7차 R31~R32를 닫았고 전체 감사에는 34개 findings가 남아
 있으므로 제품 기능 이관 완료를 뜻하지 않습니다.
 
 ### 4.1 이관 통제와 공통 기반
@@ -137,8 +137,8 @@ R28, 나머지 10개는 R34가 소유합니다.
 |---|---|---:|---|
 | 5차 (완료) | R27 write-count → R28 mails | Core 14 | 작성 통계와 메일 관리·테스트 발송을 typed 서버·웹으로 닫기 |
 | 6차 (완료) | R29 sms config → R30 sms-contacts | Core 18 | SMS 설정과 주소록 CRUD·동기화 경계를 닫기 |
-| 7차 | R31 sms-templates → R32 sms-messages | Core 19 | SMS 템플릿·발송 작성·이력 workflow를 닫기 |
-| 8차 | R33 push → R34 system tools·maintenance | Core 12 | Push와 시스템 점검·정리 도구의 보안 경계를 닫기 |
+| 7차 (완료) | R31 sms-templates → R32 sms-messages | Core 19 | SMS 템플릿·발송 작성·이력 workflow를 닫기 |
+| 8차 (진행) | R33 push → R34 system tools·maintenance | Core 12 | Push와 시스템 점검·정리 도구의 보안 경계를 닫기 |
 | 9차 | R35 알림·PWA → R36 전체 종결 | capability 4 | 전역 findings 0, package·staging·전체 readback 종결 |
 
 메일·SMS·Push는 routine 검증에서 실제 외부 발송을 금지하고 fake adapter와
@@ -168,7 +168,7 @@ commit/push: 미실행
 
 ## 6. 현재 실행
 
-R00~R31은 닫혔고 다음 목표 추진 단위는 7차의 R32 sms-messages입니다.
+R00~R32는 닫혔고 다음 목표 추진 단위는 8차의 R33 push입니다.
 
 1. R27 write-count의 legacy 3개와 Core operation 1개는 runtime·브라우저까지 닫았습니다.
 2. R28 mails의 legacy 19개와 Core 13개도 runtime·브라우저까지 닫았습니다.
@@ -178,7 +178,9 @@ R00~R31은 닫혔고 다음 목표 추진 단위는 7차의 R32 sms-messages입�
 6. R30 routine 검증의 외부 문자 발송은 0이며, 브라우저 CSV download event 비관측은 로컬 런타임 export readback과 구분해 기록했습니다.
 7. R31 SMS 템플릿 legacy 16개와 Core 13개를 typed 서버·웹, 공식 G5 CRUD·이동·정리 readback으로 닫았습니다.
 8. R31 headed 브라우저는 미실행으로 분리하고 실런타임·React 회귀 증거만 주장합니다.
-9. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
+9. R32 SMS 메시지 legacy 12개와 Core 6개를 typed 서버·웹, 공식 G5 배치·전달 이력 readback과 외부 발송 확인 차단으로 닫았습니다.
+10. R32 routine 검증의 외부 문자 전달 시도는 0이며 headed 브라우저 주장은 제외합니다.
+11. global parity는 R36 전까지 FAIL 상태와 잔여 수를 그대로 공개합니다.
 
 실행 명령:
 
@@ -187,6 +189,7 @@ make check-batch BATCH=R29
 make check-batch BATCH=R30
 make check-batch BATCH=R31
 make check-batch BATCH=R32
+make check-batch BATCH=R33
 ```
 
 배치 gate가 PASS하더라도 전역 `make audit-migration-parity`는 R36 전까지
@@ -215,6 +218,19 @@ R31 closeout:
 - R31 finding: 0
 - 전역 잔여 finding: 52
 - 다음 R32 사전 probe: FAIL 18
+
+R32 closeout:
+
+- 구현 commit: `3bc636941cf32eecaf01cf5db3d451547697597c`
+- tracked 증거: `docs/audits/evidence/R32_BATCH_GATE_PASS.json`
+- scope: legacy 12, Core 6, capability 0
+- reuse: 2 reused / 10 adapted / 0 redesigned / 0 deferred
+- 공식 G5 v5.6.32 local runtime SMS 메시지 6 operation readback·확인 차단 PASS
+- headed 브라우저: NOT_RUN, 시각·상호작용 주장 제외
+- 실제 외부 문자 전달 시도: 0
+- R32 finding: 0
+- 전역 잔여 finding: 34
+- 다음 R33 사전 probe: FAIL 5
 
 R00 closeout:
 
