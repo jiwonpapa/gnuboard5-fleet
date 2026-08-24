@@ -86,7 +86,13 @@ export function hydrateAdminConfig(
 ): AdminConfig {
   const values: AdminConfig = { ...config };
   for (const field of schema.sections.flatMap((section) => section.fields)) {
-    if (values[field.name] === undefined) {
+    const value = values[field.name];
+    if (
+      value === undefined ||
+      (field.required &&
+        (field.input_type === "select" || field.input_type === "radio") &&
+        value.trim() === "")
+    ) {
       values[field.name] = normalizeDefault(field);
     }
   }
@@ -130,7 +136,17 @@ export function checkedConfigValue(value: string | undefined): boolean {
 }
 
 function normalizeDefault(field: AdminFieldSchema): string {
-  if (field.default_value === null) return "";
+  if (field.default_value === null) {
+    return field.required ? (field.options[0]?.value ?? "") : "";
+  }
   if (typeof field.default_value === "boolean") return field.default_value ? "1" : "0";
-  return String(field.default_value);
+  const value = String(field.default_value);
+  if (
+    value === "" &&
+    field.required &&
+    (field.input_type === "select" || field.input_type === "radio")
+  ) {
+    return field.options[0]?.value ?? "";
+  }
+  return value;
 }

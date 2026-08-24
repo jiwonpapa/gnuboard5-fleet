@@ -252,7 +252,7 @@ def main() -> int:
         totp_secret,
     )
     peer_login_name = "fleet-peer"
-    peer_password = "fleet peer browser certification password"
+    peer_password = "fleet-peer-browser-certification-password"
     peer_bootstrap = request(
         fleet_base,
         "POST",

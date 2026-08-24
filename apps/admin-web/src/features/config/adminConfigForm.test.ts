@@ -50,6 +50,25 @@ describe("adminConfigForm", () => {
       .toEqual({ cf_title: "Fleet" });
   });
 
+  it("normalizes an empty required select to its declared default", () => {
+    const selectField = {
+      ...titleField,
+      name: "cf_captcha",
+      label: "캡챠 선택",
+      input_type: "select" as const,
+      default_value: "kcaptcha",
+      options: [
+        { value: "kcaptcha", label: "Kcaptcha" },
+        { value: "recaptcha", label: "reCAPTCHA V2" },
+      ],
+    };
+    const selectSchema = schema();
+    selectSchema.sections[0].fields = [selectField];
+    selectSchema.fields_by_name = { cf_captcha: selectField };
+    expect(hydrateAdminConfig({ cf_captcha: "" }, selectSchema))
+      .toEqual({ cf_captcha: "kcaptcha" });
+  });
+
   it("reuses the legacy schema integrity and required-field guards", () => {
     expect(validateAdminFieldSchema("config", schema())).toEqual(schema());
     expect(validateAdminConfigValues({ cf_title: "" }, schema()))
