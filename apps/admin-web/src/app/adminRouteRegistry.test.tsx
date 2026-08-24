@@ -118,6 +118,7 @@ describe("adminRouteRegistry", () => {
   it("binds domain navigation to an explicit site without a global active site", () => {
     expect(selectedSiteId("/sites/site-a/admin/members")).toBe("site-a");
     expect(selectedSiteId("/admin/members")).toBeUndefined();
+    expect(selectedSiteId("/sites/new")).toBeUndefined();
     expect(routePathForSite("/admin/members", "site a")).toBe(
       "/sites/site%20a/admin/members",
     );

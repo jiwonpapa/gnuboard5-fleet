@@ -100,7 +100,8 @@ export function selectedSiteId(pathname: string): string | undefined {
   const match = /^\/sites\/([^/]+)(?:\/|$)/.exec(pathname);
   if (!match) return undefined;
   try {
-    return decodeURIComponent(match[1]);
+    const siteId = decodeURIComponent(match[1]);
+    return siteId === "new" ? undefined : siteId;
   } catch {
     return undefined;
   }
