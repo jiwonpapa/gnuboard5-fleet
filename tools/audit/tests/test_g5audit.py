@@ -164,11 +164,11 @@ class G5AuditTest(unittest.TestCase):
         self.assertIn("CSRF", MODULE.check_security_csrf(MODULE.ROOT))
         self.assertIn("DNS pin", MODULE.check_security_ssrf(MODULE.ROOT))
         self.assertIn(
-            "Telegram injected adapter",
+            "Telegram production HTTP",
             MODULE.check_telegram_contract(MODULE.ROOT),
         )
         self.assertIn(
-            "Web Push injected adapter",
+            "Web Push VAPID HTTP",
             MODULE.check_web_push_contract(MODULE.ROOT),
         )
         self.assertIn("cache 금지", MODULE.check_pwa_cache_safety(MODULE.ROOT))

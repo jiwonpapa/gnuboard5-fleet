@@ -3071,26 +3071,31 @@ def check_notification_boundary(root: Path) -> str:
     return "Telegram·Web Push 기본 경계와 외부 발송 금지 확인"
 
 
-def _notification_contract_source(root: Path) -> tuple[str, str, str]:
+def _notification_contract_source(root: Path) -> tuple[str, str, str, str, str]:
     crate_path = root / "crates/fleet-notify/src/lib.rs"
     cargo_path = root / "crates/fleet-notify/Cargo.toml"
     store_path = root / "crates/fleet-store/src/records.rs"
-    for path in (crate_path, cargo_path, store_path):
+    runtime_path = root / "apps/admin-server/src/notifications.rs"
+    main_path = root / "apps/admin-server/src/main.rs"
+    for path in (crate_path, cargo_path, store_path, runtime_path, main_path):
         if not path.is_file() or path.is_symlink():
             raise ValueError(f"notification source missing or unsafe: {path.relative_to(root)}")
     return (
         crate_path.read_text(encoding="utf-8"),
         cargo_path.read_text(encoding="utf-8"),
         store_path.read_text(encoding="utf-8"),
+        runtime_path.read_text(encoding="utf-8"),
+        main_path.read_text(encoding="utf-8"),
     )
 
 
 def check_telegram_contract(root: Path) -> str:
-    source, cargo, store = _notification_contract_source(root)
+    source, cargo, store, runtime, main = _notification_contract_source(root)
     required = (
         "NotificationWorker",
         "TelegramAdapter",
         "TelegramTransport",
+        "TelegramHttpTransport",
         "FakeProvider",
         "enqueue_notification_deduplicated",
         "scoped_event_id",
@@ -3100,8 +3105,10 @@ def check_telegram_contract(root: Path) -> str:
     missing = [token for token in required if token not in source and token not in store]
     if missing:
         raise ValueError(f"Telegram outbox contract missing: {missing}")
-    if "reqwest" in cargo or "TcpStream" in source:
-        raise ValueError("routine notification crate contains direct external network transport")
+    if "reqwest.workspace = true" not in cargo or "redirect(reqwest::redirect::Policy::none())" not in source:
+        raise ValueError("Telegram production HTTP transport boundary is incomplete")
+    if "SiteTelegramProvider" not in runtime or "G5_FLEET_TELEGRAM_BOT_TOKEN_FILE" not in main:
+        raise ValueError("Telegram production runtime is not server-owned or file-secret configurable")
     if (
         "claim_due_notification" not in store
         or "dead_letter_notification" not in store
@@ -3109,14 +3116,15 @@ def check_telegram_contract(root: Path) -> str:
         or "attempts = attempts + 1" not in store
     ):
         raise ValueError("notification lease/retry/dead-letter persistence is incomplete")
-    return "Telegram injected adapter와 SQLite lease·retry·dedupe·dead-letter, fake-only routine delivery 확인"
+    return "Telegram production HTTP·injected fake adapter와 SQLite lease·retry·dedupe·dead-letter 확인"
 
 
 def check_web_push_contract(root: Path) -> str:
-    source, cargo, store = _notification_contract_source(root)
+    source, cargo, store, runtime, main = _notification_contract_source(root)
     required = (
         "WebPushAdapter",
         "WebPushTransport",
+        "WebPushHttpTransport",
         "WebPushDelivery",
         "fake_permanent_failure_moves_web_push_to_dead_letter",
         "provider_not_configured",
@@ -3124,15 +3132,17 @@ def check_web_push_contract(root: Path) -> str:
     missing = [token for token in required if token not in source]
     if missing:
         raise ValueError(f"Web Push outbox contract missing: {missing}")
-    if "reqwest" in cargo or "TcpStream" in source:
-        raise ValueError("routine Web Push tests could perform external delivery")
+    if "web-push.workspace = true" not in cargo or "valid_web_push_endpoint" not in source:
+        raise ValueError("Web Push encryption or endpoint boundary is incomplete")
+    if "SiteWebPushProvider" not in runtime or "G5_FLEET_VAPID_PRIVATE_KEY_FILE" not in main:
+        raise ValueError("Web Push production runtime is not server-owned or file-secret configurable")
     if "UNIQUE(event_id, channel)" not in (
         root / "crates/fleet-store/migrations/0001_control_plane.sql"
     ).read_text(encoding="utf-8"):
         raise ValueError("notification event/channel dedupe constraint missing")
     if "owned_notification" not in store:
         raise ValueError("notification owner/site readback boundary missing")
-    return "Web Push injected adapter와 영구실패 dead-letter·owner/site 격리 fake delivery 확인"
+    return "Web Push VAPID HTTP·injected fake adapter와 영구실패 dead-letter·owner/site 격리 확인"
 
 
 def check_pwa_cache_safety(root: Path) -> str:
