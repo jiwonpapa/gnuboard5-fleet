@@ -3575,6 +3575,110 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap();
     assert_eq!(json::<Value>(point_cleanup).await["total_rows"], 0);
 
+    // R34 system tools keep raw phpinfo out of the browser and require explicit mutation confirmation.
+    let phpinfo = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/system/phpinfo",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(phpinfo.status(), StatusCode::OK);
+    let phpinfo: Value = json(phpinfo).await;
+    assert_eq!(phpinfo["php_version"], "8.3.0");
+    assert_eq!(phpinfo["raw_html_withheld"], true);
+    assert!(phpinfo.get("html").is_none());
+    assert!(!phpinfo.to_string().contains("secret-token"));
+
+    let browscap = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-a/admin/system/browscap",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(browscap.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(browscap).await["pending_visit_count"], 2);
+
+    for path in [
+        "/api/v1/sites/site-a/admin/system/browscap/convert",
+        "/api/v1/sites/site-a/admin/system/maintenance/cache-files/purge",
+        "/api/v1/sites/site-a/admin/system/maintenance/captcha-files/purge",
+        "/api/v1/sites/site-a/admin/system/maintenance/member-list-files/purge",
+        "/api/v1/sites/site-a/admin/system/maintenance/session-files/purge",
+        "/api/v1/sites/site-a/admin/system/maintenance/thumbnail-files/purge",
+    ] {
+        let unconfirmed = app
+            .clone()
+            .oneshot(json_request(
+                Method::POST,
+                path,
+                Some(&cookie),
+                Some(&csrf),
+                Some(serde_json::json!({"confirm_action": false})),
+            ))
+            .await
+            .unwrap();
+        assert_eq!(unconfirmed.status(), StatusCode::BAD_REQUEST, "{path}");
+        assert_eq!(
+            json::<ErrorEnvelope>(unconfirmed).await.error.code,
+            "mutation_confirmation_required"
+        );
+    }
+
+    let converted = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/system/browscap/convert",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"confirm_action": true, "rows": 25})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(converted.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(converted).await["rows"], 25);
+
+    let purged = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/system/maintenance/cache-files/purge",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"confirm_action": true})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(purged.status(), StatusCode::OK);
+    assert_eq!(json::<Value>(purged).await["task"], "cache_files");
+
+    let unconfirmed_update = app
+        .clone()
+        .oneshot(json_request(
+            Method::POST,
+            "/api/v1/sites/site-a/admin/system/browscap/update",
+            Some(&cookie),
+            Some(&csrf),
+            Some(serde_json::json!({"confirm_update": false})),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(unconfirmed_update.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        json::<ErrorEnvelope>(unconfirmed_update).await.error.code,
+        "external_effect_confirmation_required"
+    );
+
     let registry = app
         .clone()
         .oneshot(json_request(
@@ -3846,110 +3950,6 @@ async fn site_lifecycle_dashboard_diagnostics_and_portable_backup_are_live() {
         .await
         .unwrap();
     assert_eq!(wrong_password.status(), StatusCode::BAD_REQUEST);
-
-    // R34 system tools keep raw phpinfo out of the browser and require explicit mutation confirmation.
-    let phpinfo = app
-        .clone()
-        .oneshot(json_request(
-            Method::GET,
-            "/api/v1/sites/site-a/admin/system/phpinfo",
-            Some(&cookie),
-            None,
-            None,
-        ))
-        .await
-        .unwrap();
-    assert_eq!(phpinfo.status(), StatusCode::OK);
-    let phpinfo: Value = json(phpinfo).await;
-    assert_eq!(phpinfo["php_version"], "8.3.0");
-    assert_eq!(phpinfo["raw_html_withheld"], true);
-    assert!(phpinfo.get("html").is_none());
-    assert!(!phpinfo.to_string().contains("secret-token"));
-
-    let browscap = app
-        .clone()
-        .oneshot(json_request(
-            Method::GET,
-            "/api/v1/sites/site-a/admin/system/browscap",
-            Some(&cookie),
-            None,
-            None,
-        ))
-        .await
-        .unwrap();
-    assert_eq!(browscap.status(), StatusCode::OK);
-    assert_eq!(json::<Value>(browscap).await["pending_visit_count"], 2);
-
-    for path in [
-        "/api/v1/sites/site-a/admin/system/browscap/convert",
-        "/api/v1/sites/site-a/admin/system/maintenance/cache-files/purge",
-        "/api/v1/sites/site-a/admin/system/maintenance/captcha-files/purge",
-        "/api/v1/sites/site-a/admin/system/maintenance/member-list-files/purge",
-        "/api/v1/sites/site-a/admin/system/maintenance/session-files/purge",
-        "/api/v1/sites/site-a/admin/system/maintenance/thumbnail-files/purge",
-    ] {
-        let unconfirmed = app
-            .clone()
-            .oneshot(json_request(
-                Method::POST,
-                path,
-                Some(&cookie),
-                Some(&csrf),
-                Some(serde_json::json!({"confirm_action": false})),
-            ))
-            .await
-            .unwrap();
-        assert_eq!(unconfirmed.status(), StatusCode::BAD_REQUEST, "{path}");
-        assert_eq!(
-            json::<ErrorEnvelope>(unconfirmed).await.error.code,
-            "mutation_confirmation_required"
-        );
-    }
-
-    let converted = app
-        .clone()
-        .oneshot(json_request(
-            Method::POST,
-            "/api/v1/sites/site-a/admin/system/browscap/convert",
-            Some(&cookie),
-            Some(&csrf),
-            Some(serde_json::json!({"confirm_action": true, "rows": 25})),
-        ))
-        .await
-        .unwrap();
-    assert_eq!(converted.status(), StatusCode::OK);
-    assert_eq!(json::<Value>(converted).await["rows"], 25);
-
-    let purged = app
-        .clone()
-        .oneshot(json_request(
-            Method::POST,
-            "/api/v1/sites/site-a/admin/system/maintenance/cache-files/purge",
-            Some(&cookie),
-            Some(&csrf),
-            Some(serde_json::json!({"confirm_action": true})),
-        ))
-        .await
-        .unwrap();
-    assert_eq!(purged.status(), StatusCode::OK);
-    assert_eq!(json::<Value>(purged).await["task"], "cache_files");
-
-    let unconfirmed_update = app
-        .clone()
-        .oneshot(json_request(
-            Method::POST,
-            "/api/v1/sites/site-a/admin/system/browscap/update",
-            Some(&cookie),
-            Some(&csrf),
-            Some(serde_json::json!({"confirm_update": false})),
-        ))
-        .await
-        .unwrap();
-    assert_eq!(unconfirmed_update.status(), StatusCode::BAD_REQUEST);
-    assert_eq!(
-        json::<ErrorEnvelope>(unconfirmed_update).await.error.code,
-        "external_effect_confirmation_required"
-    );
 
     let delete = app
         .clone()
