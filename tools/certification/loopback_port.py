@@ -12,6 +12,9 @@ def select_port(requested: str | None = None) -> int:
     if not re.fullmatch(r"[0-9]{1,5}", value) or not 0 <= int(value) <= 65535:
         raise ValueError("certification port must be an integer from 0 to 65535")
     with socket.socket() as probe:
+        # Match the server listener: recently closed connections may remain in
+        # TIME_WAIT, but a live listener must still fail (no SO_REUSEPORT).
+        probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         probe.bind(("127.0.0.1", int(value)))
         return probe.getsockname()[1]
 

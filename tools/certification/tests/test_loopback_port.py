@@ -13,6 +13,7 @@ class LoopbackPortTests(unittest.TestCase):
     def test_busy_port_is_not_replaced_with_another_origin(self) -> None:
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))
+            listener.listen(1)
             with self.assertRaises(OSError):
                 select_port(str(listener.getsockname()[1]))
 
