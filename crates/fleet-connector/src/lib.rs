@@ -6227,6 +6227,8 @@ impl G5Client {
             .await
             .map_err(|_| ConnectorError::Transport)?;
         let status = response.status();
+        #[cfg(feature = "local-certification")]
+        certification_response(request_id, operation_id, status.as_u16());
         if !status.is_success() {
             return Err(ConnectorError::Http(status.as_u16()));
         }
@@ -6319,6 +6321,11 @@ impl G5Client {
         access_token: Option<&str>,
         body: Option<Value>,
     ) -> ConnectorResult<T> {
+        #[cfg(feature = "local-certification")]
+        let certification_operation = core_operations().iter().find(|operation| {
+            operation.method == method.as_str()
+                && operation.path.strip_prefix('/') == Some(relative)
+        });
         #[cfg(not(test))]
         self.guard
             .revalidate_before_connect(&self.target)
@@ -6344,10 +6351,31 @@ impl G5Client {
             .await
             .map_err(|_| ConnectorError::Transport)?;
         let status = response.status();
+        #[cfg(feature = "local-certification")]
+        if let Some(operation) = certification_operation {
+            certification_response(request_id, &operation.operation_id, status.as_u16());
+        }
         if !status.is_success() {
             return Err(ConnectorError::Http(status.as_u16()));
         }
         response.json().await.map_err(|_| ConnectorError::Contract)
+    }
+}
+
+// Only compiled into the loopback certification build. Never record URLs,
+// headers, tokens, request/response bodies, or user data in execution receipts.
+#[cfg(feature = "local-certification")]
+fn certification_response(request_id: &str, operation_id: &str, status: u16) {
+    if request_id.starts_with("r36-") {
+        eprintln!(
+            "G5_CERTIFICATION_EVENT {}",
+            serde_json::json!({
+                "schema": "g5-fleet.provider-response/v1",
+                "request_id": request_id,
+                "operation_id": operation_id,
+                "upstream_status": status,
+            })
+        );
     }
 }
 

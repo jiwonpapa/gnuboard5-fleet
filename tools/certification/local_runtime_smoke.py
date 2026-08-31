@@ -10,6 +10,8 @@ import json
 import os
 import re
 import struct
+import subprocess
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,6 +19,11 @@ from typing import Any
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from tools.certification.execution_capture import ExecutionCapture, clean_revision  # noqa: E402
+
+CAPTURE: ExecutionCapture | None = None
 
 
 def sha256(path: Path) -> str:
@@ -67,6 +74,9 @@ def request(
         request_headers["content-type"] = "application/json"
     if headers:
         request_headers.update(headers)
+    observed_id = CAPTURE.request_id() if CAPTURE else None
+    if observed_id:
+        request_headers["x-request-id"] = observed_id
     connection = http.client.HTTPConnection(base.hostname, base.port, timeout=15)
     try:
         connection.request(method, path, body=encoded, headers=request_headers)
@@ -81,6 +91,11 @@ def request(
     if response.status not in expected:
         detail = response.body.decode(errors="replace")[:2000]
         raise RuntimeError(f"{method} {path} returned {response.status}: {detail}")
+    if CAPTURE and observed_id:
+        CAPTURE.observe(
+            observed_id, base_url, method, path, response.status, response.body,
+            sys._getframe(1).f_lineno,
+        )
     return response
 
 
@@ -147,6 +162,7 @@ def fleet_headers(cookie: str, csrf: str | None = None) -> dict[str, str]:
 
 
 def main() -> int:
+    global CAPTURE
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--session",
@@ -159,6 +175,10 @@ def main() -> int:
         default=ROOT / ".cache/evidence/local-runtime.json",
     )
     parser.add_argument(
+        "--execution-output", type=Path,
+        default=ROOT / ".cache/evidence/r36-provider-execution.json",
+    )
+    parser.add_argument(
         "--browser-env",
         type=Path,
         default=ROOT / ".cache/certification/local/browser.env",
@@ -168,6 +188,23 @@ def main() -> int:
     env = load_env(args.session)
     g5_base = env["G5_CERT_G5_URL"]
     fleet_base = env["G5_CERT_FLEET_URL"]
+    if clean_revision(ROOT) != env["G5_CERT_REVISION"]:
+        raise RuntimeError("local certification session is stale")
+    CAPTURE = ExecutionCapture(ROOT, env["G5_CERT_REVISION"], fleet_base)
+    project = env.get("G5_CERT_PROJECT", "")
+    if not re.fullmatch(r"g5-fleet-local-certification-[a-z0-9-]+", project):
+        raise RuntimeError("isolated per-run certification project is required")
+    network_internal = subprocess.check_output(
+        ["docker", "network", "inspect", "--format", "{{.Internal}}", f"{project}_certification"],
+        text=True,
+    ).strip()
+    if network_internal != "true":
+        raise RuntimeError("G5 fixture must not have external network egress")
+    if sha256(ROOT / "target/debug/g5-fleet-admin-server") != env.get("G5_CERT_FLEET_BINARY_SHA256"):
+        raise RuntimeError("local certification binary fingerprint changed")
+    fleet_meta = request(fleet_base, "GET", "/api/v1/meta").json()
+    if fleet_meta.get("build_revision") != env["G5_CERT_REVISION"]:
+        raise RuntimeError("running Fleet revision does not match this execution")
 
     upstream = json.loads((ROOT / "UPSTREAMS.lock.json").read_text(encoding="utf-8"))[
         "upstreams"
@@ -252,7 +289,7 @@ def main() -> int:
         totp_secret,
     )
     peer_login_name = "fleet-peer"
-    peer_password = "fleet-peer-browser-certification-password"
+    peer_password = env["G5_CERT_FLEET_PEER_VALUE"]
     peer_bootstrap = request(
         fleet_base,
         "POST",
@@ -355,6 +392,8 @@ def main() -> int:
         headers=fleet_headers(admin_cookie, admin_csrf),
     )
 
+    CAPTURE.checkpoint("install-connector-config", "OTP install/login and owner isolation guards passed",
+                       "connector health/login and baseline configuration were read back")
     member_path = f"/api/v1/sites/owner-a-site/admin/members/{member_id}"
     member_list = request(
         fleet_base,
@@ -434,6 +473,8 @@ def main() -> int:
         if deleted_media.get("mb_id") != member_id or not deleted_media.get("deleted"):
             raise RuntimeError(f"R12 member {kind} delete readback failed")
 
+    CAPTURE.checkpoint("members-read-update-media", "member detail/update/level fields were read back",
+                       "member media upload and delete responses were checked")
     canonical_groups_path = "/api/v1/sites/owner-a-site/admin/board-groups"
     initial_groups = request(
         fleet_base,
@@ -491,6 +532,7 @@ def main() -> int:
     if patched_group.get("gr_subject") != "Fleet certification patched":
         raise RuntimeError("R13 canonical group patch failed")
 
+    CAPTURE.checkpoint("groups-create-update", "canonical group creation, detail, update and patch fields checked")
     boards_path = "/api/v1/sites/owner-a-site/admin/boards"
     initial_boards = request(
         fleet_base,
@@ -595,6 +637,7 @@ def main() -> int:
     ):
         raise RuntimeError("R14 board cleanup readback failed")
 
+    CAPTURE.checkpoint("boards-roundtrip", "create/update/copy fields read back", "new-post and board cleanup checked")
     contents_path = "/api/v1/sites/owner-a-site/admin/contents"
     initial_contents = request(
         fleet_base,
@@ -674,6 +717,7 @@ def main() -> int:
     if any(row.get("co_id") == "fleetcontent" for row in content_cleanup.get("items", [])):
         raise RuntimeError("R15 content cleanup readback failed")
 
+    CAPTURE.checkpoint("contents-roundtrip", "HTML mode and empty mobile content preserved", "deleted content absent from list")
     faq_masters_path = "/api/v1/sites/owner-a-site/admin/faq-masters"
     initial_faq_masters = request(
         fleet_base,
@@ -830,6 +874,7 @@ def main() -> int:
     if any(row.get("fm_id") == faq_master_id for row in faq_cleanup.get("items", [])):
         raise RuntimeError("R16 FAQ cleanup readback failed")
 
+    CAPTURE.checkpoint("faqs-roundtrip", "master/item CRUD and header/footer image assertions passed", "FAQ cleanup list verified")
     menus_path = "/api/v1/sites/owner-a-site/admin/menus"
     initial_menus = request(
         fleet_base,
@@ -929,6 +974,7 @@ def main() -> int:
     if any(row.get("me_id") == menu_id for row in menu_cleanup.get("items", [])):
         raise RuntimeError("R17 menu cleanup readback failed")
 
+    CAPTURE.checkpoint("menus-roundtrip", "menu CRUD and canonical/legacy reorder read back", "created menu removed")
     layouts_path = "/api/v1/sites/owner-a-site/admin/layouts"
     initial_layouts = request(
         fleet_base,
@@ -1035,6 +1081,7 @@ def main() -> int:
     if reset_schema.get("widgets") != []:
         raise RuntimeError("R18 layout widget cleanup readback failed")
 
+    CAPTURE.checkpoint("layouts-roundtrip", "widget add/update/reorder/delete schema read back", "empty widget cleanup verified")
     theme_config_path = "/api/v1/sites/owner-a-site/admin/theme"
     themes_path = "/api/v1/sites/owner-a-site/admin/themes"
     initial_theme_config = request(
@@ -1132,6 +1179,7 @@ def main() -> int:
     ):
         raise RuntimeError("R19 theme rollback readback failed")
 
+    CAPTURE.checkpoint("themes-roundtrip", "desktop disable/apply state read back", "original theme configuration restored")
     points_path = "/api/v1/sites/owner-a-site/admin/points"
     point_summary_path = f"{points_path}/summary?mb_id={member_id}"
     baseline_point_summary = request(
@@ -1295,6 +1343,7 @@ def main() -> int:
     ):
         raise RuntimeError("R20 point cleanup list readback failed")
 
+    CAPTURE.checkpoint("points-roundtrip", "canonical/legacy point changes read back", "ledger and member balance restored")
     system_polls_path = "/api/v1/sites/owner-a-site/admin/system/polls"
     legacy_polls_path = "/api/v1/sites/owner-a-site/admin/polls"
     baseline_system_polls = request(
@@ -1456,6 +1505,7 @@ def main() -> int:
     ):
         raise RuntimeError("R21 poll cleanup readback failed")
 
+    CAPTURE.checkpoint("polls-roundtrip", "canonical/legacy poll fields and aliases checked", "both lists restored to baseline")
     system_popups_path = "/api/v1/sites/owner-a-site/admin/system/popups"
     legacy_popups_path = "/api/v1/sites/owner-a-site/admin/popups"
     baseline_system_popups = request(
@@ -1561,6 +1611,7 @@ def main() -> int:
     ):
         raise RuntimeError("R22 popup cleanup readback failed")
 
+    CAPTURE.checkpoint("popups-roundtrip", "canonical/legacy popup sparse updates read back", "created popups removed")
     popular_path = "/api/v1/sites/owner-a-site/admin/popular"
     popular_baseline = request(
         fleet_base, "GET", f"{popular_path}?page=1&per_page=20",
@@ -1629,6 +1680,7 @@ def main() -> int:
     ):
         raise RuntimeError("R23 popular cleanup readback failed")
 
+    CAPTURE.checkpoint("popular-roundtrip", "seeded terms/date filter and ranks checked", "range/final reset counts read back")
     reports_path = "/api/v1/sites/owner-a-site/admin/reports"
     report_baseline = request(
         fleet_base, "GET", f"{reports_path}?page=1&per_page=20",
@@ -1705,6 +1757,7 @@ def main() -> int:
     ):
         raise RuntimeError("R25 report rollback readback failed")
 
+    CAPTURE.checkpoint("reports-roundtrip", "list/filter/stats and status update read back", "original report fields restored")
     qa_config_path = "/api/v1/sites/owner-a-site/admin/system/qa-config"
     qa_config = request(
         fleet_base, "GET", qa_config_path,
@@ -1771,6 +1824,7 @@ def main() -> int:
     )
     request(g5_base, "GET", "/api/v1/qa/9001", headers=authorization)
 
+    CAPTURE.checkpoint("qa-roundtrip", "QA settings restored after update", "targeted deletion and untargeted preservation checked")
     write_count_path = "/api/v1/sites/owner-a-site/admin/write-count/stats"
     write_count = request(
         fleet_base,
@@ -1817,6 +1871,7 @@ def main() -> int:
     ):
         raise RuntimeError("R27 write-count period filter failed")
 
+    CAPTURE.checkpoint("write-count-readback", "seeded post/comment counts, board/date and monthly buckets checked")
     mail_path = "/api/v1/sites/owner-a-site/admin/mails"
     baseline_mails = request(
         fleet_base, "GET", f"{mail_path}?page=1&per_page=20",
@@ -1976,6 +2031,9 @@ def main() -> int:
     ):
         raise RuntimeError("R28 mail cleanup did not restore baseline")
 
+    CAPTURE.checkpoint("mail-safe-roundtrip", "mail disabled/dry-run response fields checked",
+                       "template/log readback and cleanup verified; real delivery not certified",
+                       external_delivery_disabled=True)
     sms_config_path = "/api/v1/sites/owner-a-site/admin/sms/config"
     direct_sms_baseline = request(
         g5_base, "GET", "/api/v1/admin/sms/config", headers=authorization,
@@ -2123,6 +2181,7 @@ def main() -> int:
     ):
         raise RuntimeError("R29 SMS browser-safe cleanup readback failed")
 
+    CAPTURE.checkpoint("sms-config-roundtrip", "settings and member contact sync read back", "contacts/config restored without delivery")
     sms_groups_path = "/api/v1/sites/owner-a-site/admin/sms/contact-groups"
     sms_contacts_path = "/api/v1/sites/owner-a-site/admin/sms/contacts"
     baseline_sms_groups = request(
@@ -2369,6 +2428,7 @@ def main() -> int:
     ):
         raise RuntimeError("R30 SMS contact cleanup did not restore baseline")
 
+    CAPTURE.checkpoint("sms-contacts-roundtrip", "group/contact CRUD, batch, import/export checked", "created contacts/groups removed")
     sms_template_groups_path = "/api/v1/sites/owner-a-site/admin/sms/template-groups"
     sms_templates_path = "/api/v1/sites/owner-a-site/admin/sms/templates"
     baseline_template_groups = request(
@@ -2569,6 +2629,7 @@ def main() -> int:
     ):
         raise RuntimeError("R31 SMS template cleanup did not restore baseline")
 
+    CAPTURE.checkpoint("sms-templates-roundtrip", "group/template CRUD, virtual/batch/group moves checked", "baseline groups/templates preserved")
     sms_message_batches_path = "/api/v1/sites/owner-a-site/admin/sms/history/batches"
     sms_deliveries_path = "/api/v1/sites/owner-a-site/admin/sms/history/deliveries"
     sms_messages_path = "/api/v1/sites/owner-a-site/admin/sms/messages"
@@ -2638,6 +2699,8 @@ def main() -> int:
     ):
         raise RuntimeError("R32 SMS external action confirmation did not fail closed")
 
+    CAPTURE.checkpoint("sms-history-safe-boundary", "seeded batches/retries/deliveries read back",
+                       "send/resend without confirmation rejected; real delivery not certified")
     push_messages_path = "/api/v1/sites/owner-a-site/admin/push/messages"
     push_legacy_path = "/api/v1/sites/owner-a-site/admin/push/send"
     unconfirmed_pushes = [
@@ -2692,6 +2755,9 @@ def main() -> int:
     ):
         raise RuntimeError("R33 Push standard and legacy local queue readback failed")
 
+    CAPTURE.checkpoint("push-local-queue", "canonical/legacy local queue counts checked",
+                       "unconfirmed delivery rejected; no external transport configured",
+                       external_delivery_disabled=True)
     phpinfo_path = "/api/v1/sites/owner-a-site/admin/system/phpinfo"
     browscap_path = "/api/v1/sites/owner-a-site/admin/system/browscap"
     phpinfo = request(
@@ -2785,6 +2851,8 @@ def main() -> int:
             raise RuntimeError(f"R34 {task} result contract failed")
         maintenance_results[task] = result.get("deleted_count", 0)
 
+    CAPTURE.checkpoint("system-tools", "PHP info summary and Browscap availability checked",
+                       "maintenance results checked; unavailable/skipped results do not certify success")
     notification_base = "/api/v1/sites/owner-a-site/notifications"
     transport_status = request(
         fleet_base, "GET", f"{notification_base}/transports",
@@ -2904,6 +2972,8 @@ def main() -> int:
     ):
         raise RuntimeError("R35 notification destination cleanup readback failed")
 
+    CAPTURE.checkpoint("notifications-local-boundary", "encrypted destination/subscription lifecycle checked",
+                       "unconfigured transport remains fail-closed and fixtures removed")
     canonical_members_path = f"{canonical_group_path}/members"
     request(
         fleet_base,
@@ -3075,6 +3145,9 @@ def main() -> int:
     if final_config.get("cf_10") != baseline:
         raise RuntimeError("Fleet mutation cleanup did not restore provider baseline")
 
+    CAPTURE.checkpoint("groups-cleanup-and-final-isolation", "canonical/legacy membership and group cleanup checked",
+                       "member soft-delete date checked; configuration and owner site lists read back")
+    execution_receipt = CAPTURE.finish(args.session.parent / "fleet.log", args.execution_output)
     runtime_manifest = json.loads(
         (ROOT / ".cache/composed/gnuboard5-php.manifest.json").read_text(
             encoding="utf-8"
@@ -3084,6 +3157,8 @@ def main() -> int:
         "schema": "g5-fleet.local-runtime/v1",
         "status": "passed",
         "revision": env["G5_CERT_REVISION"],
+        "execution_run_id": execution_receipt["run_id"],
+        "execution_receipt_sha256": sha256(args.execution_output),
         "openapi_sha256": sha256(
             ROOT / "connectors/gnuboard5-php/api/docs/openapi.yaml"
         ),

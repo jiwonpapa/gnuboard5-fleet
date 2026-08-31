@@ -1,9 +1,8 @@
-# B10 제품 인증 실행
+# 제품 인증 실행 (R36 종결 기준)
 
 ## 1. local runtime
 
 ```bash
-make certification-clean
 make certification-up
 make certification-local-smoke
 ```
@@ -14,26 +13,30 @@ make certification-local-smoke
 자격정보는 ignored `.cache/certification/local/session.env`에 `0600`으로
 저장합니다.
 
+기존 session이 있으면 먼저 소유권과 보존할 DB·키·증거를 확인합니다.
+`certification-clean`은 확인 없이 선행하는 준비 명령이 아닙니다.
+새 실행은 고유 Compose project와 외부 연결이 차단된 G5 네트워크를 사용합니다.
+종료는 PID뿐 아니라 실행 시작 시각과 명령이 일치할 때만 허용합니다.
+
 HTTP E2E는 G5 provider 직접 수정·원복과 Fleet 2사용자×2사이트 격리를
 실행하고 `.cache/evidence/local-runtime.json`을 만듭니다.
+실제 Rust→PHP 응답은 요청 ID로 도메인 readback checkpoint에 연결됩니다.
+`.cache/evidence/r36-provider-execution.json`은 불변 원본 case의 hash와
+실제로 관측한/아직 관측하지 못한 Core API 목록을 기록합니다. HTTP 200,
+직접 PHP 호출, mock 또는 skip만으로 Fleet 소비 완료를 인증하지 않습니다.
 
-## 2. Chromium browser
+## 2. Codex 내장 브라우저
 
-`playwright-cli` named session을 `fleet-admin`, `fleet-peer`로 분리합니다.
-두 session에서 각각 자신의 site 하나만 표시되고 다른 사용자의 site가
-표시되지 않는지 확인합니다. 관리자 session은 Connector login,
-`cf_10` 수정·재조회·원복까지 수행합니다.
+사용자 지정에 따라 Codex 내장 브라우저만 사용합니다. 별도 headed 브라우저를
+시작하지 않습니다. 비밀번호·OTP 입력 직전에 테스트 계정·목적지를 확인받으며
+cookie 주입으로 로그인을 우회하지 않습니다.
 
-스크린샷과 trace는 `output/playwright/`에 둔 뒤 다음 명령으로
-부모 local evidence에 결속합니다.
-
-```bash
-tools/certification/write_browser_evidence.py \
-  --admin-screenshot /absolute/output/playwright/admin.png \
-  --peer-screenshot /absolute/output/playwright/peer.png \
-  --trace /absolute/output/playwright/local-e2e-trace.zip
-make audit-local
-```
+관리자와 동료 계정에서 자신의 site만 보이는지 검증하고, 실제 Connector 로그인,
+도메인 저장·재조회·원복 및 모바일 viewport를 확인합니다. 각 워크플로우는
+관측 case, 화면 증거와 현재 revision/부모 실행 ID에 결속되어야 합니다.
+기존 `write_browser_evidence.py`의 일반 PASS/스크린샷 파일만으로 항목별
+브라우저 검증을 대체하지 않습니다. 내장 브라우저의 항목별 증거 연결은
+R36 C단계에서 마감합니다.
 
 종료:
 
@@ -45,12 +48,14 @@ make certification-clean
 ## 3. package
 
 ```bash
-make package-build VERSION=b10-local
+make package-build VERSION="$RELEASE_VERSION"
 make package-smoke
 make audit-package
 ```
 
 `package-build`는 clean Git과 Docker BuildKit, Docker Scout를 요구합니다.
+`RELEASE_VERSION`은 루트 Cargo·웹·Compose와 일치하고 CHANGELOG에 ISO 날짜로
+확정된 SemVer이어야 합니다. 임의 `b10-local` 같은 문자열은 릴리스 버전이 아닙니다.
 `package-smoke`는 임시 state를 자동 정리하며 외부 알림을 발송하지
 않습니다.
 

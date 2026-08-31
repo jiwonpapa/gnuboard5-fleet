@@ -22,25 +22,47 @@ env_value() {
 }
 
 compose() {
-  docker compose --project-name "$project" \
+  session_project=$(env_value G5_CERT_PROJECT "$session_file" 2>/dev/null || printf '%s' "$project")
+  case "$session_project" in
+    g5-fleet-local-certification|g5-fleet-local-certification-*) ;;
+    *) echo "unsafe certification Compose project" >&2; return 1 ;;
+  esac
+  case "$session_project" in
+    *[!a-z0-9-]*) echo "invalid certification Compose project" >&2; return 1 ;;
+  esac
+  docker compose --project-name "$session_project" \
     --env-file "$session_file" -f "$compose_file" "$@"
 }
 
 stop_stack() {
   if [ -f "$session_file" ]; then
     fleet_pid=$(env_value G5_CERT_FLEET_PID "$session_file" 2>/dev/null || true)
-    if [ -n "$fleet_pid" ]; then
-      kill "$fleet_pid" >/dev/null 2>&1 || true
+    case "$fleet_pid" in
+      ''|*[!0-9]*) fleet_pid='' ;;
+    esac
+    if [ -n "$fleet_pid" ] && kill -0 "$fleet_pid" >/dev/null 2>&1; then
+      expected_start=$(env_value G5_CERT_FLEET_STARTED_AT "$session_file" 2>/dev/null || true)
+      actual_start=$(LC_ALL=C ps -p "$fleet_pid" -o lstart= | sed 's/^[[:space:]]*//')
+      actual_command=$(ps -p "$fleet_pid" -o command=)
+      if [ -z "$expected_start" ] || [ "$expected_start" != "$actual_start" ] || \
+         [ "$actual_command" != "$root/target/debug/g5-fleet-admin-server serve" ]; then
+        echo "refusing to stop an unverified/reused certification PID: $fleet_pid" >&2
+        return 1
+      fi
+      kill "$fleet_pid"
       count=0
       while kill -0 "$fleet_pid" >/dev/null 2>&1 && [ "$count" -lt 20 ]; do
         count=$((count + 1))
         sleep 1
       done
+      if kill -0 "$fleet_pid" >/dev/null 2>&1; then
+        echo "certification process did not stop; state preserved" >&2
+        return 1
+      fi
     fi
-    compose down --volumes >/dev/null 2>&1 || true
+    compose down --volumes >/dev/null
   else
-    docker compose --project-name "$project" -f "$compose_file" down --volumes \
-      >/dev/null 2>&1 || true
+    echo "no certification session; no processes or volumes were changed"
   fi
 }
 
@@ -72,8 +94,6 @@ cleanup_failed_up() {
     stop_stack
   fi
 }
-trap cleanup_failed_up EXIT HUP INT TERM
-
 [ ! -e "$session_file" ] || {
   echo "local certification state already exists; run local_stack.sh clean" >&2
   exit 1
@@ -83,12 +103,15 @@ test "$(git -C "$root" status --porcelain --untracked-files=no)" = "" || {
   exit 1
 }
 python3 "$root/tools/runtime/compose_gnuboard.py" --verify-only >/dev/null
+# A rejected `up` must not stop a pre-existing stack from its EXIT trap.
+trap cleanup_failed_up EXIT HUP INT TERM
 
 umask 077
 mkdir -p "$state_root/fleet-data"
 g5_port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
 fleet_port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
 revision=$(git -C "$root" rev-parse HEAD)
+project="g5-fleet-local-certification-$(printf '%s' "$revision" | cut -c1-12)-$(openssl rand -hex 4)"
 g5_commit=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["upstreams"][0]["commit"])' "$root/UPSTREAMS.lock.json")
 g5_image="g5-fleet/local-g5:${g5_commit%????????????????????????????}"
 db_value=$(openssl rand -hex 24)
@@ -100,6 +123,7 @@ fleet_peer_value=$(openssl rand -hex 18)
 master_value=$(openssl rand -base64 32 | tr -d '\r\n')
 
 cat > "$session_file" <<EOF
+G5_CERT_PROJECT=$project
 G5_CERT_DB_IMAGE=mariadb:11.4.7
 G5_CERT_G5_IMAGE=$g5_image
 G5_CERT_DB_NAME=g5cert
@@ -359,6 +383,8 @@ SQL
 (cd "$root/apps/admin-web" && bun run build >/dev/null)
 (cd "$root" && cargo build -p g5-fleet-admin-server \
   --features local-certification --locked --offline >/dev/null)
+fleet_binary_sha=$(shasum -a 256 "$root/target/debug/g5-fleet-admin-server" | awk '{print $1}')
+printf '%s\n' "G5_CERT_FLEET_BINARY_SHA256=$fleet_binary_sha" >> "$session_file"
 G5_FLEET_DATA_DIR="$state_root/fleet-data" \
 G5_FLEET_INSTALLATION_ID="local-certification-$revision" \
   "$root/target/debug/g5-fleet-admin-server" init-store >/dev/null
@@ -367,12 +393,18 @@ export G5_FLEET_MASTER_KEY_BASE64="$master_value"
 export G5_FLEET_BIND="127.0.0.1:$fleet_port"
 export G5_FLEET_WEB_DIR="$root/apps/admin-web/dist"
 export G5_FLEET_CERTIFICATION_MODE=local
+export G5_FLEET_BUILD_REVISION="$revision"
+# Never inherit real notification credentials into a routine local fixture.
+unset G5_FLEET_TELEGRAM_BOT_TOKEN G5_FLEET_TELEGRAM_BOT_TOKEN_FILE
+unset G5_FLEET_VAPID_PRIVATE_KEY_BASE64 G5_FLEET_VAPID_PRIVATE_KEY_FILE G5_FLEET_VAPID_SUBJECT
 nohup "$root/target/debug/g5-fleet-admin-server" serve \
   > "$state_root/fleet.log" 2>&1 </dev/null &
 fleet_pid=$!
 unset G5_FLEET_DATA_DIR G5_FLEET_MASTER_KEY_BASE64 G5_FLEET_BIND
-unset G5_FLEET_WEB_DIR G5_FLEET_CERTIFICATION_MODE
+unset G5_FLEET_WEB_DIR G5_FLEET_CERTIFICATION_MODE G5_FLEET_BUILD_REVISION
 printf '%s\n' "G5_CERT_FLEET_PID=$fleet_pid" >> "$session_file"
+fleet_started_at=$(LC_ALL=C ps -p "$fleet_pid" -o lstart= | sed 's/^[[:space:]]*//')
+printf '%s\n' "G5_CERT_FLEET_STARTED_AT=$fleet_started_at" >> "$session_file"
 
 count=0
 until curl --fail --silent --show-error \

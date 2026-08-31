@@ -42,8 +42,15 @@ ignored output에 보존하고 최종 완료 문서는 그 결과와 정확한 �
 
 A 구현: 문서 정정, hash-bound 원본 case 검증, 항목별 증거 종류·Git SHA·
 OpenAPI SHA·G5 commit·부모 실행 ID·시각 검증과 실패 항목의 valid 집계 제외.
-하네스 회귀 36개와 전역 정적 감사 PASS를 확인했고 전체 `make check`는
-별도로 검증합니다. B의 실제 실행 producer와 증거 연결은 아직 미완료입니다.
+하네스 회귀 36개와 전역 정적 감사 PASS를 확인했고 `0a76e05`로 커밋·푸시했습니다.
+전체 `make check`는 PHP 원본 캐시 읽기 지연으로 중단되어 재검증 대상입니다.
+
+B 진행 중: 요청 ID별 실제 Rust→PHP 응답과 성공한 도메인 checkpoint를
+수집하는 producer를 구현했습니다. HTTP 200만 있는 경우, 직접 PHP 호출,
+skip, 잘못된 실행 ID는 소비 증거가 아닙니다. 외부 발송은 별도 safe boundary로
+기록합니다. 항목별 증거 연결과 실제 실행 coverage 측정은 아직 미완료입니다.
+이전 로컬 설치 상태를 보존하며 실행별 Compose project와 PID 시작 시각을
+검사하여 다른 실행을 잘못 종료하지 않도록 했습니다.
 
 R36은 전체 종결 전까지 `active`입니다. 정적 매핑 완료와 제품
 출하 완료를 분리하며 package/staging을 생략한 채 전체 완료를 선언하지 않습니다.
