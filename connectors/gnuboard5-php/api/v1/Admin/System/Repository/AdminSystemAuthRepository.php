@@ -52,6 +52,11 @@ final class AdminSystemAuthRepository extends AdminBaseRepository
              LIMIT {$perPage} OFFSET {$offset}",
             $params
         );
+        foreach ($items as &$item) {
+            // Public System API uses compact r/w/d; stock G5 stores a MySQL SET.
+            $item['au_auth'] = str_replace(',', '', (string)($item['au_auth'] ?? ''));
+        }
+        unset($item);
 
         return [
             'total' => $total,
@@ -62,6 +67,7 @@ final class AdminSystemAuthRepository extends AdminBaseRepository
     public function upsertAuth(string $memberId, string $menu, string $auth): void
     {
         $table = $this->tables()->get('auth');
+        $storedAuth = implode(',', str_split($auth));
         $this->executeStatement(
             "INSERT INTO {$table} (mb_id, au_menu, au_auth)
              VALUES (:mb_id, :au_menu, :au_auth)
@@ -69,8 +75,8 @@ final class AdminSystemAuthRepository extends AdminBaseRepository
             [
                 'mb_id' => $memberId,
                 'au_menu' => $menu,
-                'au_auth' => $auth,
-                'u_au_auth' => $auth,
+                'au_auth' => $storedAuth,
+                'u_au_auth' => $storedAuth,
             ]
         );
     }
