@@ -58,11 +58,13 @@ describe("AdminFaqsPage", () => {
     expect(await screen.findByText("배송은?")).toBeVisible();
     expect(api.listAdminFaqMasters).toHaveBeenCalledWith("site-a", expect.objectContaining({ page: 1 }));
     expect(api.listAdminFaqs).toHaveBeenCalledWith("site-a", expect.objectContaining({ fm_id: 7 }));
+    expect(api.listAdminFaqs).toHaveBeenCalledTimes(1);
   });
 
   it("sends only changed FAQ fields and verifies save by readback", async () => {
     renderPage();
     fireEvent.click(await screen.findByText("배송은?"));
+    await waitFor(() => expect(screen.getByLabelText("답변 내용")).toHaveValue("답변"));
     fireEvent.change(await screen.findByLabelText("답변 내용"), { target: { value: "변경 답변" } });
     fireEvent.click(screen.getAllByRole("button", { name: "저장·재조회" })[1]);
     await waitFor(() => expect(api.updateAdminFaq).toHaveBeenCalledWith(
@@ -71,6 +73,29 @@ describe("AdminFaqsPage", () => {
     expect(api.getAdminFaq).toHaveBeenCalledWith("site-a", 3);
     await waitFor(() => expect(api.listAdminFaqMasters).toHaveBeenCalledTimes(2));
     expect(api.getAdminFaqMaster).toHaveBeenCalledWith("site-a", 7);
+  });
+
+  it("keeps the editor disabled until the selected FAQ detail arrives", async () => {
+    let resolveDetail!: (value: typeof faq) => void;
+    api.getAdminFaq.mockReturnValueOnce(new Promise<typeof faq>((resolve) => { resolveDetail = resolve; }));
+    renderPage();
+    fireEvent.click(await screen.findByText("배송은?"));
+    expect(screen.getByLabelText("답변 내용")).toBeDisabled();
+    expect(screen.getAllByRole("button", { name: "저장·재조회" })[1]).toBeDisabled();
+    resolveDetail(faq);
+    await waitFor(() => expect(screen.getByLabelText("답변 내용")).toHaveValue("답변"));
+    expect(screen.getByLabelText("답변 내용")).toBeEnabled();
+    expect(api.createAdminFaq).not.toHaveBeenCalled();
+  });
+
+  it("loads the requested FAQ page without a duplicate selection-reset request", async () => {
+    api.listAdminFaqs.mockResolvedValue({ items: [faq], pagination: { ...pagination, last_page: 2, has_next: true } });
+    renderPage();
+    await screen.findByText("배송은?");
+    fireEvent.click(screen.getAllByRole("button", { name: "다음" })[1]);
+    await waitFor(() => expect(api.listAdminFaqs).toHaveBeenCalledWith("site-a", { page: 2, per_page: 20, fm_id: 7 }));
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "다음" })[1]).toBeDisabled());
+    expect(api.listAdminFaqs).toHaveBeenCalledTimes(2);
   });
 
   it("deletes a master only behind explicit confirmation", async () => {

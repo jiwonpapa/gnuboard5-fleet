@@ -116,6 +116,7 @@ export function AdminFaqsPage() {
         setSelectedMaster(detail);
         setMasterDraft(faqMasterToDraft(detail));
         setFaqs(faqResult.items);
+        setFaqPage(1);
         setFaqLastPage(faqResult.pagination.last_page ?? 1);
         setSelectedFaq(null);
         setFaqDraft({ ...emptyAdminFaqDraft, fm_id: String(first.fm_id) });
@@ -125,21 +126,37 @@ export function AdminFaqsPage() {
     return () => { active = false; };
   }, [masterPage, siteId]);
 
-  useEffect(() => {
-    const fmId = selectedMaster?.fm_id;
-    if (!fmId) return;
-    let active = true;
-    void listAdminFaqs(siteId, { page: faqPage, per_page: 20, fm_id: fmId })
-      .then((result) => {
-        if (!active) return;
-        setFaqs(result.items);
-        setFaqLastPage(result.pagination.last_page ?? 1);
-        setSelectedFaq(null);
-        setFaqDraft({ ...emptyAdminFaqDraft, fm_id: String(fmId) });
-      })
-      .catch((caught) => active && setError(errorMessage(caught, "FAQ 문항을 읽지 못했습니다.")));
-    return () => { active = false; };
-  }, [faqPage, siteId, selectedMaster?.fm_id]);
+  // Initial loading and selectMaster already load the item list. A second
+  // effect on selectedMaster used to clear an item selected while it resolved.
+  async function changeFaqPage(value: number | ((current: number) => number)) {
+    if (!selectedMaster || busy) return;
+    const page = typeof value === "function" ? value(faqPage) : value;
+    setBusy(true);
+    setError("");
+    try {
+      await reloadFaqs(selectedMaster.fm_id, page);
+      setFaqPage(page);
+    } catch (caught) {
+      setError(errorMessage(caught, "FAQ 문항을 읽지 못했습니다."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function selectFaq(faId: number) {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const detail = await getAdminFaq(siteId, faId);
+      setSelectedFaq(detail);
+      setFaqDraft(faqToDraft(detail));
+    } catch (caught) {
+      setError(errorMessage(caught, "FAQ 상세를 읽지 못했습니다."));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function newMaster() {
     setSelectedMaster(null);
@@ -339,11 +356,11 @@ export function AdminFaqsPage() {
             ]}
             emptyMessage={selectedMaster ? "등록된 FAQ 문항이 없습니다." : "먼저 FAQ 분류를 선택하십시오."}
             getRowKey={(item: AdminFaqItem) => String(item.fa_id)}
-            onRowClick={(item: AdminFaqItem) => void getAdminFaq(siteId, item.fa_id).then((detail) => { setSelectedFaq(detail); setFaqDraft(faqToDraft(detail)); }).catch((caught) => setError(errorMessage(caught, "FAQ 상세를 읽지 못했습니다.")))}
+            onRowClick={(item: AdminFaqItem) => void selectFaq(item.fa_id)}
             rows={faqs}
             selectedKey={selectedFaq ? String(selectedFaq.fa_id) : undefined}
           />
-          <Pagination page={faqPage} lastPage={faqLastPage} busy={busy || !selectedMaster} setPage={setFaqPage} />
+          <Pagination page={faqPage} lastPage={faqLastPage} busy={busy || !selectedMaster} setPage={(value) => void changeFaqPage(value)} />
         </div>
 
         <form className="member-editor" onSubmit={saveFaq}>
