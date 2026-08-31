@@ -5,6 +5,8 @@ root=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd -P)
 state_root="$root/.cache/certification/local"
 session_file="$state_root/session.env"
 compose_file="$root/tools/certification/local-g5.compose.yaml"
+certification_target="$root/target/local-certification"
+fleet_binary="$certification_target/debug/g5-fleet-admin-server"
 project="g5-fleet-local-certification"
 command=${1:-}
 
@@ -45,7 +47,7 @@ stop_stack() {
       actual_start=$(LC_ALL=C ps -p "$fleet_pid" -o lstart= | sed 's/^[[:space:]]*//')
       actual_command=$(ps -p "$fleet_pid" -o command=)
       if [ -z "$expected_start" ] || [ "$expected_start" != "$actual_start" ] || \
-         [ "$actual_command" != "$root/target/debug/g5-fleet-admin-server serve" ]; then
+         [ "$actual_command" != "$fleet_binary serve" ]; then
         echo "refusing to stop an unverified/reused certification PID: $fleet_pid" >&2
         return 1
       fi
@@ -383,13 +385,13 @@ COMMIT;
 SQL
 
 (cd "$root/apps/admin-web" && bun run build >/dev/null)
-(cd "$root" && cargo build -p g5-fleet-admin-server \
+(cd "$root" && CARGO_TARGET_DIR="$certification_target" cargo build -p g5-fleet-admin-server \
   --features local-certification --locked --offline >/dev/null)
-fleet_binary_sha=$(shasum -a 256 "$root/target/debug/g5-fleet-admin-server" | awk '{print $1}')
+fleet_binary_sha=$(shasum -a 256 "$fleet_binary" | awk '{print $1}')
 printf '%s\n' "G5_CERT_FLEET_BINARY_SHA256=$fleet_binary_sha" >> "$session_file"
 G5_FLEET_DATA_DIR="$state_root/fleet-data" \
 G5_FLEET_INSTALLATION_ID="local-certification-$revision" \
-  "$root/target/debug/g5-fleet-admin-server" init-store >/dev/null
+  "$fleet_binary" init-store >/dev/null
 export G5_FLEET_DATA_DIR="$state_root/fleet-data"
 export G5_FLEET_MASTER_KEY_BASE64="$master_value"
 export G5_FLEET_BIND="127.0.0.1:$fleet_port"
@@ -399,7 +401,7 @@ export G5_FLEET_BUILD_REVISION="$revision"
 # Never inherit real notification credentials into a routine local fixture.
 unset G5_FLEET_TELEGRAM_BOT_TOKEN G5_FLEET_TELEGRAM_BOT_TOKEN_FILE
 unset G5_FLEET_VAPID_PRIVATE_KEY_BASE64 G5_FLEET_VAPID_PRIVATE_KEY_FILE G5_FLEET_VAPID_SUBJECT
-nohup "$root/target/debug/g5-fleet-admin-server" serve \
+nohup "$fleet_binary" serve \
   > "$state_root/fleet.log" 2>&1 </dev/null &
 fleet_pid=$!
 unset G5_FLEET_DATA_DIR G5_FLEET_MASTER_KEY_BASE64 G5_FLEET_BIND

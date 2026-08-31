@@ -12,6 +12,9 @@ make certification-local-smoke
 `local-certification` Fleet binary를 loopback에 기동합니다. 임시
 자격정보는 ignored `.cache/certification/local/session.env`에 `0600`으로
 저장합니다.
+인증 바이너리는 `target/local-certification`에 별도 빌드합니다. 기본 target을
+공유하면 동시에 실행한 Cargo 통합 테스트가 실행 중인 인증 바이너리를
+일반 빌드로 교체할 수 있으므로 공유하지 않습니다.
 
 기존 session이 있으면 먼저 소유권과 보존할 DB·키·증거를 확인합니다.
 `certification-clean`은 확인 없이 선행하는 준비 명령이 아닙니다.

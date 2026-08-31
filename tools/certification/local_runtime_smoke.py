@@ -206,7 +206,7 @@ def main() -> int:
     ))
     if set(provider_networks) != {f"{project}_certification"}:
         raise RuntimeError("G5 fixture is attached to an unexpected network")
-    if sha256(ROOT / "target/debug/g5-fleet-admin-server") != env.get("G5_CERT_FLEET_BINARY_SHA256"):
+    if sha256(ROOT / "target/local-certification/debug/g5-fleet-admin-server") != env.get("G5_CERT_FLEET_BINARY_SHA256"):
         raise RuntimeError("local certification binary fingerprint changed")
     fleet_meta = request(fleet_base, "GET", "/api/v1/meta").json()
     if fleet_meta.get("build_revision") != env["G5_CERT_REVISION"]:
