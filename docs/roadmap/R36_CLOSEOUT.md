@@ -43,7 +43,8 @@ ignored output에 보존하고 최종 완료 문서는 그 결과와 정확한 �
 A 구현: 문서 정정, hash-bound 원본 case 검증, 항목별 증거 종류·Git SHA·
 OpenAPI SHA·G5 commit·부모 실행 ID·시각 검증과 실패 항목의 valid 집계 제외.
 하네스 회귀 36개와 전역 정적 감사 PASS를 확인했고 `0a76e05`로 커밋·푸시했습니다.
-전체 `make check`는 PHP 원본 캐시 읽기 지연으로 중단되어 재검증 대상입니다.
+PHP 원본 캐시 읽기 지연과 audit dependency manifest 갱신 후 `38fb6ce` 기준
+전체 `make check`가 PASS했습니다. 이후 변경은 해당 revision에서 다시 검증합니다.
 
 B 진행 중: 요청 ID별 실제 Rust→PHP 응답과 성공한 도메인 checkpoint를
 수집하는 producer를 구현했습니다. HTTP 200만 있는 경우, 직접 PHP 호출,

@@ -59,13 +59,27 @@ services:
       SETUP_ENABLED: "false"
       ADMIN_SMS_ENABLED: "true"
       G5_INDEPENDENT: "true"
-    ports:
-      - "127.0.0.1:${G5_CERT_G5_PORT:?set G5_CERT_G5_PORT}:80"
     security_opt:
       - no-new-privileges:true
     networks:
       - certification
 
+  # Docker does not publish ports from an internal-only network. This fixed
+  # inbound relay exposes G5 on loopback without giving PHP an egress route.
+  ingress:
+    image: caddy:2.10.2-alpine
+    command: ["caddy", "reverse-proxy", "--from", "http://0.0.0.0:80", "--to", "http://g5:80"]
+    depends_on:
+      - g5
+    ports:
+      - "127.0.0.1:${G5_CERT_G5_PORT:?set G5_CERT_G5_PORT}:80"
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - ingress
+      - certification
+
 networks:
   certification:
     internal: true
+  ingress:

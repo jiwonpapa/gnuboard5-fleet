@@ -200,6 +200,12 @@ def main() -> int:
     ).strip()
     if network_internal != "true":
         raise RuntimeError("G5 fixture must not have external network egress")
+    provider_networks = json.loads(subprocess.check_output(
+        ["docker", "inspect", "--format", "{{json .NetworkSettings.Networks}}", f"{project}-g5-1"],
+        text=True,
+    ))
+    if set(provider_networks) != {f"{project}_certification"}:
+        raise RuntimeError("G5 fixture is attached to an unexpected network")
     if sha256(ROOT / "target/debug/g5-fleet-admin-server") != env.get("G5_CERT_FLEET_BINARY_SHA256"):
         raise RuntimeError("local certification binary fingerprint changed")
     fleet_meta = request(fleet_base, "GET", "/api/v1/meta").json()

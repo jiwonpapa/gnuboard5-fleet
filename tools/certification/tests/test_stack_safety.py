@@ -6,8 +6,21 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import yaml
+
 
 class StackSafetyTests(unittest.TestCase):
+    def test_only_inbound_relay_can_reach_non_internal_network(self) -> None:
+        compose = yaml.safe_load((Path(__file__).resolve().parents[1] / "local-g5.compose.yaml").read_text())
+        self.assertTrue(compose["networks"]["certification"]["internal"])
+        for service in ("g5", "db"):
+            self.assertEqual(["certification"], compose["services"][service]["networks"])
+            self.assertNotIn("ports", compose["services"][service])
+        ingress = compose["services"]["ingress"]
+        self.assertEqual({"ingress", "certification"}, set(ingress["networks"]))
+        self.assertTrue(all(value.startswith("127.0.0.1:") for value in ingress["ports"]))
+        self.assertIn("http://g5:80", ingress["command"])
+
     def setUp(self) -> None:
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

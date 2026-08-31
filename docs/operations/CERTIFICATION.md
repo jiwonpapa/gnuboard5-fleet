@@ -16,6 +16,8 @@ make certification-local-smoke
 기존 session이 있으면 먼저 소유권과 보존할 DB·키·증거를 확인합니다.
 `certification-clean`은 확인 없이 선행하는 준비 명령이 아닙니다.
 새 실행은 고유 Compose project와 외부 연결이 차단된 G5 네트워크를 사용합니다.
+테스트용 HTTP relay만 loopback에 공개하며 PHP·MariaDB는 내부 네트워크에만
+연결됩니다. 이 G5 공급자 fixture는 Fleet의 원컨테이너 제품 배포와 별개입니다.
 종료는 PID뿐 아니라 실행 시작 시각과 명령이 일치할 때만 허용합니다.
 
 HTTP E2E는 G5 provider 직접 수정·원복과 Fleet 2사용자×2사이트 격리를
