@@ -116,7 +116,7 @@ trap cleanup_failed_up EXIT HUP INT TERM
 umask 077
 mkdir -p "$state_root/fleet-data"
 g5_port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
-fleet_port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
+fleet_port=$(python3 "$root/tools/certification/loopback_port.py")
 revision=$(git -C "$root" rev-parse HEAD)
 project="g5-fleet-local-certification-$(printf '%s' "$revision" | cut -c1-12)-$(openssl rand -hex 4)"
 g5_commit=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["upstreams"][0]["commit"])' "$root/UPSTREAMS.lock.json")

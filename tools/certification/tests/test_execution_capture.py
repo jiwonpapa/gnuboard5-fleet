@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from tools.certification.execution_capture import EVENT_PREFIX, ExecutionCapture
+from tools.certification.execution_capture import EVENT_PREFIX, ExecutionCapture, provider_command_bindings
 from tools.migration_parity.runtime import validate_evidence_file
 
 
@@ -16,6 +16,7 @@ class ExecutionCaptureTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
         for name, value in {
+            "governance/MIGRATION_PARITY.json": {"core_operation_mappings": [], "mappings": {"tauri_commands": []}},
             "UPSTREAMS.lock.json": {"upstreams": [{"id": "gnuboard5", "commit": "b" * 40}]},
             "contracts/core-operations.json": {"operations": [
                 {"operation_id": "getMember", "method": "GET", "path": "/admin/members/{id}", "risk": "read"},
@@ -54,6 +55,28 @@ class ExecutionCaptureTests(unittest.TestCase):
         cases = self.capture.cases(self.event(request_id))
         self.assertEqual([{ "category": "core_operations", "item_id": "getMember"}], cases[0]["subjects"])
         self.assertEqual("provider_readback", cases[0]["kind"])
+
+    def test_command_binding_requires_actual_matching_operation(self) -> None:
+        self.capture.command_bindings = {"getMember": ["legacy_get_member"], "exportMembers": ["legacy_export"]}
+        request_id = self.observe()
+        self.capture.checkpoint("member", "member field readback")
+        subjects = self.capture.cases(self.event(request_id))[0]["subjects"]
+        self.assertIn({"category": "tauri_commands", "item_id": "legacy_get_member"}, subjects)
+        self.assertNotIn({"category": "tauri_commands", "item_id": "legacy_export"}, subjects)
+
+    def test_explicit_operation_binding_cannot_reuse_unrelated_method(self) -> None:
+        check = {"path": "crates/fleet-connector/src/lib.rs", "contains": "async fn get_member"}
+        row = {"legacy_id": "legacy_get", "provider_operation_id": "getMember", "checks": [check]}
+        manifest = {"core_operation_mappings": [{"operation_id": "getMember", "checks": [dict(check)]}],
+                    "mappings": {"tauri_commands": [row]}}
+        self.assertEqual({"getMember": ["legacy_get"]}, provider_command_bindings(manifest))
+        row["provider_operation_id"] = "unknown"
+        with self.assertRaises(ValueError):
+            provider_command_bindings(manifest)
+        row["provider_operation_id"] = "getMember"
+        check["contains"] = "async fn delete_member"
+        with self.assertRaises(ValueError):
+            provider_command_bindings(manifest)
 
     def test_catalog_or_http_success_without_provider_event_is_not_proof(self) -> None:
         self.observe()

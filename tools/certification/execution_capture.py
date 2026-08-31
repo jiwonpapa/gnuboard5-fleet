@@ -43,6 +43,31 @@ def write_json(path: Path, data: dict[str, Any], *, immutable: bool = False) -> 
     os.replace(temporary, path)
 
 
+def provider_command_bindings(manifest: dict[str, Any]) -> dict[str, list[str]]:
+    """Require an explicit operation ID sharing the mapped connector function."""
+    core = {row["operation_id"]: row for row in manifest["core_operation_mappings"]}
+    bindings: dict[str, list[str]] = {}
+    seen: set[str] = set()
+    for row in manifest["mappings"]["tauri_commands"]:
+        operation_id = row.get("provider_operation_id")
+        if operation_id is None:
+            continue
+        if row["legacy_id"] in seen or operation_id not in core:
+            raise ValueError("duplicate or unknown provider command binding")
+        seen.add(row["legacy_id"])
+        connector_checks = {
+            check["contains"] for check in row["checks"]
+            if check["path"] == "crates/fleet-connector/src/lib.rs"
+            and re.fullmatch(r"async fn [a-z_][a-z_0-9]*", check.get("contains", ""))
+        }
+        if not any(check.get("contains") in connector_checks
+                   and check["path"] == "crates/fleet-connector/src/lib.rs"
+                   for check in core[operation_id]["checks"]):
+            raise ValueError("provider binding does not share the canonical connector function")
+        bindings.setdefault(operation_id, []).append(row["legacy_id"])
+    return bindings
+
+
 class ExecutionCapture:
     def __init__(self, root: Path, revision: str, fleet_base: str) -> None:
         self.root = root
@@ -54,6 +79,9 @@ class ExecutionCapture:
             row["operation_id"]: row
             for row in json.loads((root / "contracts/core-operations.json").read_bytes())["operations"]
         }
+        self.command_bindings = provider_command_bindings(json.loads(
+            (root / "governance/MIGRATION_PARITY.json").read_bytes(),
+        ))
         self.observations: list[dict[str, Any]] = []
         self.checkpoints: list[dict[str, Any]] = []
         self.next_index = 0
@@ -185,6 +213,10 @@ class ExecutionCapture:
                         "subjects": [
                             {"category": "core_operations", "item_id": value}
                             for value in sorted(subjects)
+                        ] + [
+                            {"category": "tauri_commands", "item_id": command}
+                            for value in sorted(subjects)
+                            for command in self.command_bindings.get(value, [])
                         ],
                     })
         if not cases:
@@ -195,7 +227,8 @@ class ExecutionCapture:
         if clean_revision(self.root) != self.revision or execution_inputs(self.root) != self.inputs:
             raise RuntimeError("checkout/provider inputs changed during execution")
         cases = self.cases(server_log.read_text(encoding="utf-8"))
-        observed = sorted({subject["item_id"] for case in cases for subject in case["subjects"]})
+        observed = sorted({subject["item_id"] for case in cases for subject in case["subjects"]
+                           if subject["category"] == "core_operations"})
         missing = sorted(set(self.operations) - set(observed))
         if require_complete and missing:
             raise RuntimeError("required Core execution cases missing: " + ", ".join(missing))
@@ -221,6 +254,8 @@ class ExecutionCapture:
             "coverage": {
                 "observed_core_operations": observed,
                 "unobserved_core_operations": missing,
+                "observed_legacy_commands": sorted({subject["item_id"] for case in cases for subject in case["subjects"]
+                                                     if subject["category"] == "tauri_commands"}),
                 "browser_workflows": 0,
             },
         }
