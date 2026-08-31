@@ -3244,7 +3244,7 @@ def main() -> int:
         raise RuntimeError("R36 connector refresh failed")
     request(fleet_base, "POST", f"{connector_base}/logout", headers=fleet_headers(admin_cookie, admin_csrf), expected=(204,))
     disconnected = request(fleet_base, "GET", "/api/v1/sites/owner-a-site/config/basic",
-                           headers=fleet_headers(admin_cookie), expected=(401,)).json()
+                           headers=fleet_headers(admin_cookie), expected=(503,)).json()
     if disconnected.get("error", {}).get("code") != "connector_login_required":
         raise RuntimeError("R36 connector logout did not remove stored credentials")
     request(fleet_base, "POST", f"{connector_base}/login",
