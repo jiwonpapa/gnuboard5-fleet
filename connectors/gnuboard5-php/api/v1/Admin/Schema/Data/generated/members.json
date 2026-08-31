@@ -6,7 +6,7 @@
     "adm/member_form.php"
   ],
   "layout": null,
-  "generated_at": "2026-07-23T03:44:05.269329+00:00",
+  "generated_at": "2026-08-31T08:28:26.293093+00:00",
   "field_count": 63,
   "section_count": 5,
   "source": {
@@ -15,8 +15,8 @@
     "repo_field_file": "api/v1/Admin/Member/Repository/AdminMemberMutationRepository.php",
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_member",
-    "extractor_version": 5,
-    "source_hash": "01e4bafb634ca865b9aa4c68f0b35933759587ef801db3b4df52e28666772a31"
+    "extractor_version": 6,
+    "source_hash": "4b93a6150b9fd7256a6264b4d6226ee0bc6a1bde6b9d65ebc8d1912be3fd261b"
   },
   "sections": [
     {
@@ -617,7 +617,7 @@
           "required": false,
           "create_only": false,
           "readonly_on_update": false,
-          "description": "이미지 크기는 넓이 ' . $config['cf_member_icon_width'] . '픽셀 높이 ' . $config['cf_member_icon_height'] . '픽셀 로 해주세요.",
+          "description": "환경설정에서 지정한 회원 아이콘 너비와 높이에 맞춘 이미지를 사용합니다.",
           "options": [],
           "default_value": null
         },
@@ -629,7 +629,7 @@
           "required": false,
           "create_only": false,
           "readonly_on_update": false,
-          "description": "이미지 크기는 넓이 ' . $config['cf_member_img_width'] . '픽셀 높이 ' . $config['cf_member_img_height'] . '픽셀 로 해주세요.",
+          "description": "환경설정에서 지정한 회원 이미지 너비와 높이에 맞춘 이미지를 사용합니다.",
           "options": [],
           "default_value": null
         }

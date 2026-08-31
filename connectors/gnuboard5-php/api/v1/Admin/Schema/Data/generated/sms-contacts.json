@@ -8,7 +8,7 @@
     "adm/sms_admin/num_book_file.php"
   ],
   "layout": null,
-  "generated_at": "2026-07-23T03:44:05.261444+00:00",
+  "generated_at": "2026-08-31T08:28:26.285262+00:00",
   "field_count": 10,
   "section_count": 3,
   "source": {
@@ -17,8 +17,8 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": null,
-    "extractor_version": 5,
-    "source_hash": "42de57c019a0ff0864464c5cb0a426056512292571a2006627dae9e669e64916"
+    "extractor_version": 6,
+    "source_hash": "5c83eedb823bfc5d3d12e2d477dca45f2c11f8e39b991647ff19597beee48b4f"
   },
   "sections": [
     {

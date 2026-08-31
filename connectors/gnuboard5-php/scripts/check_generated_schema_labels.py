@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -15,11 +16,12 @@ class SchemaAudit:
     scanned_files: int
     raw_labels: tuple[tuple[str, str], ...]
     fixme_labels: tuple[tuple[str, str, str], ...]
+    code_fragments: tuple[tuple[str, str], ...]
     default_values: tuple[tuple[str, str, Any], ...]
 
     @property
     def passed(self) -> bool:
-        return self.scanned_files > 0 and not self.raw_labels and not self.fixme_labels
+        return self.scanned_files > 0 and not self.raw_labels and not self.fixme_labels and not self.code_fragments
 
 
 def audit_generated_schemas(root: Path) -> SchemaAudit:
@@ -29,6 +31,7 @@ def audit_generated_schemas(root: Path) -> SchemaAudit:
 
     raw_labels: list[tuple[str, str]] = []
     fixme_labels: list[tuple[str, str, str]] = []
+    code_fragments: list[tuple[str, str]] = []
     default_values: list[tuple[str, str, Any]] = []
 
     for path in paths:
@@ -55,6 +58,11 @@ def audit_generated_schemas(root: Path) -> SchemaAudit:
                     raw_labels.append((path.name, name))
                 if label.startswith("FIXME_"):
                     fixme_labels.append((path.name, name, label))
+                description = field.get("description")
+                if isinstance(description, str) and re.search(
+                    r"<\?php|\$[A-Za-z_]|\bG5_[A-Z0-9_]+\b|['\"]\s*\.\s*['\"]|\b(?:str_replace|sprintf|array|ini_get|get_[a-z_]+)\(", description
+                ):
+                    code_fragments.append((path.name, name))
                 if "default_value" in field:
                     default_values.append((path.name, name, field["default_value"]))
 
@@ -62,6 +70,7 @@ def audit_generated_schemas(root: Path) -> SchemaAudit:
         scanned_files=len(paths),
         raw_labels=tuple(raw_labels),
         fixme_labels=tuple(fixme_labels),
+        code_fragments=tuple(code_fragments),
         default_values=tuple(default_values),
     )
 
@@ -70,6 +79,7 @@ def print_report(audit: SchemaAudit) -> None:
     print("scanned_file_count=", audit.scanned_files)
     print("raw_label_count=", len(audit.raw_labels))
     print("fixme_label_count=", len(audit.fixme_labels))
+    print("php_fragment_count=", len(audit.code_fragments))
     print("default_value_sample=")
     for default_item in audit.default_values[:20]:
         print(default_item)
@@ -82,6 +92,8 @@ def print_report(audit: SchemaAudit) -> None:
         print("fixme_label_hits=")
         for fixme_item in audit.fixme_labels[:20]:
             print(fixme_item)
+    if audit.code_fragments:
+        print("php_fragment_hits=", audit.code_fragments)
 
 
 def parse_args() -> argparse.Namespace:

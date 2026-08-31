@@ -2,7 +2,7 @@
 
 ## 현재 판정
 
-2026-08-31 기준선 `94c8a1c4e6c932f754b81effae2d558e39d4f770`을 재검사한
+2026-08-31 검증 지점 `677bec690ad107aca47f5946191d83cc8f7042c2`의
 전체 이관 정적 동등성 결과는 `MIGRATION_STATIC_PASS`, finding 0개입니다.
 이는 구현·회귀 테스트의 **정적 매핑** 판정이며 실사용 검증 완료가 아닙니다.
 
@@ -18,11 +18,15 @@
 - 활성 server route 250개와 Core registry 189개는 존재하지만 전체 이관
   증거로 승격하지 않음
 - 정적 미완료 finding 0개
-- runtime profile은 FAIL: 699개 항목(legacy 510 + Core 189)의 실행 증거
-  연결 누락과 R04 원격 증거의 SHA 불일치·기간 만료 2개, 총 701 findings
+- Core 실행 증거 189/189: 실제 provider readback 178개, routine 외부 발송
+  차단 확인 11개. 실행 중 PHP 8,524개 파일을 composed source와 SHA-256 대조
+- runtime profile은 FAIL: legacy 510개 실행 증거 연결 누락과 R04 원격
+  증거의 SHA 불일치·기간 만료 2개, 총 512 findings
 - 등록된 32개 배치 중 31개 `batch_pass`, R36 `active`
 
-현재 코드의 local G5 실행 기록은 존재하지만 browser, package, staging
+위 수치는 `677bec6`에서 전체 `make check`와 runtime 감사를 실행한 결과입니다.
+후속 FAQ·schema 설명 수정이 포함된 HEAD 전체의 재인증은 아직 아닙니다.
+내장 브라우저는 6개 참조 페이지의 예비 관측만 진행했고 package, staging
 기록은 서로 다른 이전 SHA입니다. 기록의 status만 복사하거나 날짜·SHA를
 바꿔 갱신하지 않습니다. 항목별 실제 실행 case와 원본 artifact를 연결하고
 현재 코드에서 필요한 검증을 재실행해야 합니다.
@@ -115,7 +119,8 @@ legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B
 
 ## 아직 인증하지 않는 것
 
-- 실제 G5 runtime 대상 Core 189개 route 실행·실데이터 field readback
+- 후속 수정이 포함된 HEAD의 전체 legacy 510개 실행 동등성과 UI 43개 workflow
+- Core 실행 확인과 별개인 모든 schema field 값의 전수 저장·readback
 - R04에서 인증한 사설 스테이징 VM 외 production SSH/SFTP 대상
 - Telegram/Web Push 실제 발송
 

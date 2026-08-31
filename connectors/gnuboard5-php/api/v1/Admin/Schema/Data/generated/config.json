@@ -11,7 +11,7 @@
     "mobile": "accordion",
     "single_open": true
   },
-  "generated_at": "2026-07-23T03:44:05.252320+00:00",
+  "generated_at": "2026-08-31T08:28:26.275609+00:00",
   "field_count": 153,
   "section_count": 13,
   "source": {
@@ -20,8 +20,8 @@
     "repo_field_file": "api/v1/Admin/Config/Repository/AdminConfigUpdateBuilder.php",
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_config",
-    "extractor_version": 5,
-    "source_hash": "16abfd6cf38ff8fe4ccf4955219b7f90a089e41ecc8defdcf1aa23ffd6aba0fe"
+    "extractor_version": 6,
+    "source_hash": "7216da0d5a7d7750211fef41be162822a82be2a4cbfccbc1efb96a59f51e87b7"
   },
   "sections": [
     {
@@ -501,7 +501,7 @@
           "required": true,
           "create_only": false,
           "readonly_on_update": false,
-          "description": "kcaptcha 사용시 ' . str_replace(array('recaptcha_inv', 'recaptcha",
+          "description": "Kcaptcha의 mp3 디렉터리에 있는 음성 폴더를 선택합니다.",
           "options": [],
           "default_value": "",
           "option_source": {
@@ -1725,7 +1725,7 @@
           "required": false,
           "create_only": false,
           "readonly_on_update": false,
-          "description": "전송유형을 SMS로 선택하시면 최대 80바이트까지 전송하실 수 있으며 LMS로 선택하시면 90바이트 이하는 SMS로, 그 이상은 \" . G5_ICODE_LMS_MAX_LENGTH . \"바이트까지 LMS로 전송됩니다. 요금은 건당 SMS는 16원, LMS는 48원입니다.",
+          "description": "전송 형식을 선택합니다. SMS/LMS의 메시지 길이 제한과 요금은 사용 중인 문자 공급자의 기준을 확인하십시오.",
           "options": [
             {
               "value": "",

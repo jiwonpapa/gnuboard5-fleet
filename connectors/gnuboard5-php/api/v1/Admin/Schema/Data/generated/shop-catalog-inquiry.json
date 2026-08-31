@@ -6,7 +6,7 @@
     "adm/shop_admin/itemqaform.php"
   ],
   "layout": null,
-  "generated_at": "2026-07-23T03:44:05.288307+00:00",
+  "generated_at": "2026-08-31T08:28:26.313554+00:00",
   "field_count": 13,
   "section_count": 1,
   "source": {
@@ -15,8 +15,8 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_shop_item_qa",
-    "extractor_version": 5,
-    "source_hash": "0277d2943e1e82bd5cc5b4da227d5343ab4d677cc172665a1870a3e1de940bda"
+    "extractor_version": 6,
+    "source_hash": "2eb1ac097f4977e4309e565b2388ca51dd18c4405264c119e803ed1e1b422531"
   },
   "sections": [
     {

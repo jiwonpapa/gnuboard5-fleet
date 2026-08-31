@@ -6,7 +6,7 @@
     "adm/contentform.php"
   ],
   "layout": null,
-  "generated_at": "2026-07-23T03:44:05.273748+00:00",
+  "generated_at": "2026-08-31T08:28:26.298346+00:00",
   "field_count": 12,
   "section_count": 1,
   "source": {
@@ -15,8 +15,8 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_content",
-    "extractor_version": 5,
-    "source_hash": "2e5aa46267b5cf69745246c03ddfb709ee5d8054f05767e44be3ce298b14ac56"
+    "extractor_version": 6,
+    "source_hash": "26626c063364e930f2222b884e532c40d358c3a47da66bdddc86899c4118b64e"
   },
   "sections": [
     {

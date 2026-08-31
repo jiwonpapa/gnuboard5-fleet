@@ -7,7 +7,7 @@
     "adm/sms_admin/config.php"
   ],
   "layout": null,
-  "generated_at": "2026-07-23T03:44:05.256221+00:00",
+  "generated_at": "2026-08-31T08:28:26.279814+00:00",
   "field_count": 8,
   "section_count": 1,
   "source": {
@@ -16,8 +16,8 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": null,
-    "extractor_version": 5,
-    "source_hash": "eadd8779f3f1409eb25fb7a0a767ea8c6d259f921c7929f54790e4759cd19d48"
+    "extractor_version": 6,
+    "source_hash": "5c9e7ab4b5b2b546d973f12bce1659df5bc163d1f141643700df6a320782af6f"
   },
   "sections": [
     {
@@ -55,7 +55,7 @@
           "required": false,
           "create_only": false,
           "readonly_on_update": false,
-          "description": "전송유형을 SMS로 선택하시면 최대 80바이트까지 전송하실 수 있으며 LMS로 선택하시면 90바이트 이하는 SMS로, 그 이상은 \".G5_ICODE_LMS_MAX_LENGTH.\"바이트까지 LMS로 전송됩니다. 요금은 건당 SMS는 16원, LMS는 48원입니다.",
+          "description": "전송 형식을 선택합니다. SMS/LMS의 메시지 길이 제한과 요금은 사용 중인 문자 공급자의 기준을 확인하십시오.",
           "options": [
             {
               "value": "",

@@ -6,7 +6,7 @@
     "adm/faqmasterform.php"
   ],
   "layout": null,
-  "generated_at": "2026-07-23T03:44:05.277202+00:00",
+  "generated_at": "2026-08-31T08:28:26.302235+00:00",
   "field_count": 9,
   "section_count": 2,
   "source": {
@@ -15,8 +15,8 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_faq_master",
-    "extractor_version": 5,
-    "source_hash": "c76e80530108543f0d3f96fda43278bfd20fdb8013a430ed41f3e2ea0d61ce7f"
+    "extractor_version": 6,
+    "source_hash": "06a778250bfd69e08284d582cfa8420a8769fe1cf3149263c2244165af4f809f"
   },
   "sections": [
     {

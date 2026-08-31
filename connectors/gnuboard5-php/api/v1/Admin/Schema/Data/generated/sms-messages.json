@@ -7,7 +7,7 @@
     "adm/sms_admin/sms_write_form.php"
   ],
   "layout": null,
-  "generated_at": "2026-07-23T03:44:05.262390+00:00",
+  "generated_at": "2026-08-31T08:28:26.286280+00:00",
   "field_count": 8,
   "section_count": 4,
   "source": {
@@ -16,8 +16,8 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": null,
-    "extractor_version": 5,
-    "source_hash": "c8b549285f4c56d1fec383c258ed80b013d73c63ebfea49d3ec6e0049d092ff9"
+    "extractor_version": 6,
+    "source_hash": "45e3eb279b9945cf91fbb8d8bef58c932764bc36686708d714f6d192e00f7f9c"
   },
   "sections": [
     {

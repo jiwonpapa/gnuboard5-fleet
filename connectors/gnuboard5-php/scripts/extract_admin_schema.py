@@ -15,13 +15,14 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
+LEGACY_ROOT: Path | None = None
 SCHEMA_ROOT = ROOT / "api" / "v1" / "Admin" / "Schema"
 MANIFEST_PATH = SCHEMA_ROOT / "schema-domains.json"
 OUTPUT_DIR = SCHEMA_ROOT / "Data" / "generated"
 INSTALL_SQL_PATH = ROOT / "install" / "gnuboard5.sql"
 SHOP_SQL_PATH = ROOT / "install" / "gnuboard5shop.sql"
 DEFAULT_TABLE_SQL_PATHS = [str(INSTALL_SQL_PATH.relative_to(ROOT)), str(SHOP_SQL_PATH.relative_to(ROOT))]
-EXTRACTOR_VERSION = 5
+EXTRACTOR_VERSION = 6
 VOLATILE_KEYS = {"generated_at"}
 NO_DEFAULT = object()
 PHP_PLACEHOLDER_PREFIX = "__PHP_BLOCK_"
@@ -62,6 +63,15 @@ DYNAMIC_SQL_DEFAULTS = {
 }
 
 PHP_BLOCK_PATTERN = re.compile(r"<\?(?:php|=).*?\?>", flags=re.S)
+
+
+def source_path(relative: str) -> Path:
+    path = ROOT / relative
+    # The Fleet repository separates the PHP overlay from the locked G5 input.
+    # Only upstream forms and install SQL may fall back, never provider code.
+    if not path.is_file() and LEGACY_ROOT is not None and Path(relative).parts[0] in {"adm", "install"}:
+        return LEGACY_ROOT / relative
+    return path
 
 
 def strip_php(text: str) -> str:
@@ -212,9 +222,9 @@ def resolve_table_sql_paths(config: dict[str, Any]) -> list[str]:
 def extract_table_columns(table_name: str, table_sql_paths: list[str]) -> tuple[list[dict[str, Any]], list[str]]:
     pattern = rf"CREATE TABLE IF NOT EXISTS `{re.escape(table_name)}` \((.*?)\)\s*ENGINE="
     for relative_path in dict.fromkeys(table_sql_paths):
-        table_sql_path = ROOT / relative_path
+        table_sql_path = source_path(relative_path)
         if not table_sql_path.is_file():
-            raise SystemExit(f"{table_sql_path.relative_to(ROOT)} SQL 파일이 존재하지 않습니다.")
+            raise SystemExit(f"{relative_path} SQL 파일이 존재하지 않습니다.")
 
         sql = table_sql_path.read_text(encoding="utf-8")
         match = re.search(pattern, sql, flags=re.S)
@@ -716,10 +726,20 @@ def normalize_default_value(value: Any, data_type: str) -> Any:
 
 
 def find_literal_help(row_html: str) -> str | None:
-    match = re.search(r"help\((['\"])(.*?)\1\)", row_html, flags=re.S)
+    # Accept one complete PHP string literal, never a concatenation/expression.
+    # The previous non-greedy backreference consumed quotes inside nested calls
+    # and leaked PHP source (including variable names) into the rendered help.
+    match = re.search(r'''help\(\s*(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)')\s*\)''', row_html, flags=re.S)
     if match is None:
         return None
-    value = clean_text(match.group(2))
+    quoted = match.group(1)
+    if quoted is not None:
+        if re.search(r"(?<!\\)\$", quoted):
+            return None
+        literal = quoted.replace('\\"', '"').replace('\\n', '\n').replace('\\r', '\r')
+    else:
+        literal = match.group(2).replace("\\'", "'")
+    value = clean_text(literal.replace('\\\\', '\\'))
     return value or None
 
 
@@ -1062,7 +1082,7 @@ def compute_source_hash(
             source_paths.append(str(table_source_path))
 
     for relative_path in sorted(dict.fromkeys(source_paths)):
-        path = ROOT / relative_path
+        path = source_path(relative_path)
         if not path.is_file():
             raise SystemExit(f"schema source 파일이 없습니다: {relative_path}")
         hasher.update(relative_path.encode("utf-8"))
@@ -1081,7 +1101,7 @@ def build_domain_schema(
     sections: list[dict[str, str]] = []
     raw_forms: list[str] = []
     for legacy_form in legacy_forms:
-        form_path = ROOT / legacy_form["path"]
+        form_path = source_path(legacy_form["path"])
         raw_html = form_path.read_text(encoding="utf-8")
         raw_forms.append(raw_html)
         default_section = legacy_form.get("default_section") or config.get("default_section")
@@ -1303,11 +1323,17 @@ def parse_args() -> argparse.Namespace:
         default=str(MANIFEST_PATH),
         help="schema domain manifest 경로",
     )
+    parser.add_argument("--legacy-root", type=Path, help="분리된 공식 G5 adm/install 입력 디렉터리")
     return parser.parse_args()
 
 
 def main() -> int:
+    global LEGACY_ROOT
     args = parse_args()
+    if args.legacy_root is not None:
+        LEGACY_ROOT = args.legacy_root.resolve()
+        if not (LEGACY_ROOT / "install/gnuboard5.sql").is_file():
+            raise SystemExit("legacy root에 공식 G5 설치 SQL이 없습니다.")
     manifest_path = Path(args.manifest).resolve()
     manifest_document, domain_map = load_manifest(manifest_path)
     manifest_relative_path = str(manifest_path.relative_to(ROOT))

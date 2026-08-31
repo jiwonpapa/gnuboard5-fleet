@@ -3,6 +3,7 @@ ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 export PYTHONDONTWRITEBYTECODE := 1
 
 .NOTPARALLEL: bootstrap prepare check
+.PHONY: test-connector-scripts check-connector-schema
 .PHONY: doctor bootstrap prepare check check-batch test-versioning check-versioning test-audit test-migration-parity test-upstream test-runtime test-package test-certification runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-migration-parity audit-migration-batch audit-migration-runtime audit-migration-staging audit-server-scaffold audit-server-static audit-local audit-package audit-staging upstream-sync upstream-audit upstream-verify secret-scan package-build package-smoke certification-up certification-down certification-clean certification-local-smoke staging-rehearsal staging-smoke
 
 doctor:
@@ -42,6 +43,13 @@ test-package:
 
 test-certification:
 	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s tools/certification/tests -p 'test_*.py'
+
+test-connector-scripts:
+	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s connectors/gnuboard5-php/scripts/tests -p 'test_*.py'
+
+check-connector-schema:
+	cd "$(ROOT)" && $(PYTHON) connectors/gnuboard5-php/scripts/extract_admin_schema.py --mode check --legacy-root .cache/composed/gnuboard5-php
+	cd "$(ROOT)" && $(PYTHON) connectors/gnuboard5-php/scripts/check_generated_schema_labels.py --root connectors/gnuboard5-php/api/v1/Admin/Schema/Data/generated
 
 runtime-prepare:
 	cd "$(ROOT)" && $(PYTHON) tools/runtime/compose_gnuboard.py
@@ -140,7 +148,9 @@ check:
 	+$(MAKE) test-runtime
 	+$(MAKE) test-package
 	+$(MAKE) test-certification
+	+$(MAKE) test-connector-scripts
 	+$(MAKE) runtime-verify
+	+$(MAKE) check-connector-schema
 	+$(MAKE) audit-runtime-verify
 	+$(MAKE) active-check
 	+$(MAKE) audit-server-static

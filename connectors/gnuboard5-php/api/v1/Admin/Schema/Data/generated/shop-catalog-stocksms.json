@@ -6,7 +6,7 @@
     "adm/shop_admin/itemstocksms.php"
   ],
   "layout": null,
-  "generated_at": "2026-07-23T03:44:05.290700+00:00",
+  "generated_at": "2026-08-31T08:28:26.317249+00:00",
   "field_count": 7,
   "section_count": 1,
   "source": {
@@ -15,8 +15,8 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_shop_item_stocksms",
-    "extractor_version": 5,
-    "source_hash": "513b34229e335f6eb25a4a04551e7b2491bb1285247887abad704e69659c90f8"
+    "extractor_version": 6,
+    "source_hash": "3e3232a3f9f33d084673c329be0efa3e3d4585c2e608627e4a9082e9c555fdde"
   },
   "sections": [
     {

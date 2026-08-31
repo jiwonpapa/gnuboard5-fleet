@@ -6,7 +6,7 @@
     "adm/board_form.php"
   ],
   "layout": null,
-  "generated_at": "2026-07-23T03:44:05.238962+00:00",
+  "generated_at": "2026-08-31T08:28:26.260608+00:00",
   "field_count": 96,
   "section_count": 7,
   "source": {
@@ -15,8 +15,8 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_board",
-    "extractor_version": 5,
-    "source_hash": "94dd2fbfb643c4326f67f2c262ad7229de898291e9eaee401e0be966cf65717c"
+    "extractor_version": 6,
+    "source_hash": "adb30e2a8787ea515785e81919a2ea5a24df3aa4c41577d71dda18ea747b0f0f"
   },
   "sections": [
     {
@@ -113,7 +113,7 @@
           "required": false,
           "create_only": false,
           "readonly_on_update": false,
-          "description": "분류와 분류 사이는 | 로 구분하세요. (예: 질문|답변) 첫자로 #은 입력하지 마세요. (예: #질문|#답변 [X])'.\"\\n\".'분류명에 일부 특수문자 ()/ 는 사용할수 없습니다.",
+          "description": "분류는 | 로 구분하며 첫 글자로 #을 사용할 수 없습니다. 분류명에 (, ), / 특수문자를 사용할 수 없습니다. 예: 질문|답변",
           "options": [],
           "default_value": false
         },
@@ -125,7 +125,7 @@
           "required": false,
           "create_only": false,
           "readonly_on_update": false,
-          "description": "분류와 분류 사이는 | 로 구분하세요. (예: 질문|답변) 첫자로 #은 입력하지 마세요. (예: #질문|#답변 [X])'.\"\\n\".'분류명에 일부 특수문자 ()/ 는 사용할수 없습니다.",
+          "description": "분류는 | 로 구분하며 첫 글자로 #을 사용할 수 없습니다. 분류명에 (, ), / 특수문자를 사용할 수 없습니다. 예: 질문|답변",
           "options": [],
           "default_value": ""
         },
@@ -889,7 +889,7 @@
           "required": true,
           "create_only": false,
           "readonly_on_update": false,
-          "description": "최대 '.ini_get(\"upload_max_filesize\").' 이하 업로드 가능, 1 MB = 1,048,576 bytes",
+          "description": "PHP의 upload_max_filesize 설정 이하로 업로드할 수 있습니다. 1 MiB = 1,048,576바이트입니다.",
           "options": [],
           "default_value": 1048576
         },

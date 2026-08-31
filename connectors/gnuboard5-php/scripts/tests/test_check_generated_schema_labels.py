@@ -52,6 +52,17 @@ class GeneratedSchemaLabelAuditTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "inventory is empty"):
                 audit_generated_schemas(Path(directory))
 
+    def test_php_expression_in_description_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.write_schema(root, [{
+                "name": "avatar", "label": "회원 이미지",
+                "description": "너비 ' . $config['width'] . ' 픽셀",
+            }])
+            audit = audit_generated_schemas(root)
+        self.assertFalse(audit.passed)
+        self.assertEqual((("sample.json", "avatar"),), audit.code_fragments)
+
     def test_malformed_fields_fail_closed(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -7,7 +7,7 @@
     "adm/mail_select_form.php"
   ],
   "layout": null,
-  "generated_at": "2026-07-23T03:44:05.265544+00:00",
+  "generated_at": "2026-08-31T08:28:26.289492+00:00",
   "field_count": 14,
   "section_count": 3,
   "source": {
@@ -16,8 +16,8 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": null,
-    "extractor_version": 5,
-    "source_hash": "aa7fc9d1528d376025650c5ca444d03282d48b611a351a6180a32792f8cb1f6f"
+    "extractor_version": 6,
+    "source_hash": "51f1d5cc4a2980718a926733be49fff5e3ad83de69d287f6e447028b8caf38dc"
   },
   "sections": [
     {
@@ -244,7 +244,7 @@
           "required": false,
           "create_only": false,
           "readonly_on_update": false,
-          "description": "메일 주소에 단어 포함 (예 : @\" . htmlspecialchars(preg_replace('#^(www[^\\.]*\\.){1}#', '', $_SERVER['HTTP_HOST'])) .",
+          "description": "메일 주소에 포함된 문자열로 수신자를 필터링합니다. 예: @example.com",
           "options": [],
           "default_value": null
         },

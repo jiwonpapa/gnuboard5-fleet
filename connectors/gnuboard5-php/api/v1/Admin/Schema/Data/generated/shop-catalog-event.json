@@ -6,7 +6,7 @@
     "adm/shop_admin/itemeventform.php"
   ],
   "layout": null,
-  "generated_at": "2026-07-23T03:44:05.290085+00:00",
+  "generated_at": "2026-08-31T08:28:26.316308+00:00",
   "field_count": 16,
   "section_count": 1,
   "source": {
@@ -15,8 +15,8 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_shop_event",
-    "extractor_version": 5,
-    "source_hash": "3531c0dfa770fe30e71a2cd025b8a1bd52aedaa2268ced984dc11aa39861c607"
+    "extractor_version": 6,
+    "source_hash": "3d03b3724d3b9cf19e9de75f394b98201eec7e9a2443fc99b52941f16bef281e"
   },
   "sections": [
     {
@@ -45,7 +45,7 @@
           "required": false,
           "create_only": false,
           "readonly_on_update": false,
-          "description": "기본으로 제공하는 스킨은 '.str_replace(G5_PATH.'/', '', G5_SHOP_SKIN_PATH).'/list.*.skin.php 입니다.'.PHP_EOL.G5_SHOP_DIR.'/event.php?ev_id=1234567890&skin=userskin.php 처럼 직접 만든 스킨을 사용할 수도 있습니다.",
+          "description": "기본 PC 상점 스킨의 list.*.skin.php 또는 직접 만든 이벤트 스킨을 사용합니다.",
           "options": [],
           "default_value": "",
           "option_source": {
@@ -63,7 +63,7 @@
           "required": false,
           "create_only": false,
           "readonly_on_update": false,
-          "description": "기본으로 제공하는 스킨은 '.str_replace(G5_PATH.'/', '', G5_MSHOP_SKIN_PATH).'/list.*.skin.php 입니다.'.PHP_EOL.G5_SHOP_DIR.'/event.php?ev_id=1234567890&skin=userskin.php 처럼 직접 만든 스킨을 사용할 수도 있습니다.",
+          "description": "기본 모바일 상점 스킨의 list.*.skin.php 또는 직접 만든 이벤트 스킨을 사용합니다.",
           "options": [],
           "default_value": "",
           "option_source": {
@@ -117,7 +117,7 @@
           "required": true,
           "create_only": false,
           "readonly_on_update": false,
-          "description": "한 페이지에 출력할 이미지 줄 수를 설정합니다.\\n한 페이지에 표시되는 상품수는 (1줄당 이미지 수 x 줄 수) 입니다.",
+          "description": "한 페이지에 출력할 이미지 줄 수를 설정합니다. 한 페이지에 표시되는 상품수는 (1줄당 이미지 수 x 줄 수) 입니다.",
           "options": [],
           "default_value": "0"
         },
@@ -165,7 +165,7 @@
           "required": true,
           "create_only": false,
           "readonly_on_update": false,
-          "description": "한 페이지에 출력할 이미지 줄 수를 설정합니다.\\n한 페이지에 표시되는 상품수는 (1줄당 이미지 수 x 줄 수) 입니다.",
+          "description": "한 페이지에 출력할 이미지 줄 수를 설정합니다. 한 페이지에 표시되는 상품수는 (1줄당 이미지 수 x 줄 수) 입니다.",
           "options": [],
           "default_value": "0"
         },
