@@ -9,6 +9,11 @@ certification_target="$root/target/local-certification"
 fleet_binary="$certification_target/debug/g5-fleet-admin-server"
 project="g5-fleet-local-certification"
 command=${1:-}
+mode=${2:-}
+case "$mode" in
+  ''|--foreground) ;;
+  *) echo "usage: local_stack.sh up [--foreground]|down|clean" >&2; exit 1 ;;
+esac
 
 for dependency in docker git curl openssl python3 cargo bun; do
   command -v "$dependency" >/dev/null 2>&1 || {
@@ -85,7 +90,7 @@ case "$command" in
     ;;
   up) ;;
   *)
-    echo "usage: local_stack.sh up|down|clean" >&2
+    echo "usage: local_stack.sh up [--foreground]|down|clean" >&2
     exit 1
     ;;
 esac
@@ -424,3 +429,9 @@ done
 stack_ready=1
 trap - EXIT HUP INT TERM
 echo "LOCAL_CERTIFICATION_STACK_READY session=$session_file"
+if [ "$mode" = "--foreground" ]; then
+  # Agent terminals reap background process groups when their command exits.
+  # Keep the owner command alive during HTTP and in-app browser verification.
+  trap 'stop_stack' HUP INT TERM
+  wait "$fleet_pid"
+fi

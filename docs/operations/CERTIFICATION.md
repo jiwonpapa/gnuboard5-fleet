@@ -7,6 +7,10 @@ make certification-up
 make certification-local-smoke
 ```
 
+명령 종료 시 background process를 정리하는 에이전트 터미널에서는
+`tools/certification/local_stack.sh up --foreground`를 실행 세션으로 유지한
+뒤 다른 세션에서 smoke와 내장 브라우저 검증을 실행합니다.
+
 `certification-up`은 clean Git revision과 prepared runtime을 요구합니다.
 공식 G5 v5.6.32+PHP Connector image, 임시 MariaDB와 test-only
 `local-certification` Fleet binary를 loopback에 기동합니다. 임시
