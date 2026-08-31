@@ -39,10 +39,8 @@ final class AdminSystemBrowscapService
     {
         $this->assertBrowscapAvailable();
         $this->context->ensureDirectory($this->context->dataPath() . '/cache');
-        $this->loadBrowscapLibrary();
-
         try {
-            $browscap = new \phpbrowscap\Browscap($this->context->dataPath() . '/cache');
+            $browscap = $this->createBrowscap();
             $browscap->updateMethod = 'cURL';
             $browscap->cacheFilename = 'browscap_cache.php';
             $browscap->updateCache();
@@ -86,10 +84,8 @@ final class AdminSystemBrowscapService
             ];
         }
 
-        $this->loadBrowscapLibrary();
-
         try {
-            $browscap = new \phpbrowscap\Browscap($this->context->dataPath() . '/cache');
+            $browscap = $this->createBrowscap();
             $browscap->doAutoUpdate = false;
             $browscap->cacheFilename = 'browscap_cache.php';
         } catch (\Throwable $exception) {
@@ -152,7 +148,7 @@ final class AdminSystemBrowscapService
             && is_file($this->context->browscapPluginPath());
     }
 
-    private function loadBrowscapLibrary(): void
+    private function createBrowscap(): object
     {
         $pluginPath = $this->context->browscapPluginPath();
         if (!is_file($pluginPath)) {
@@ -161,9 +157,17 @@ final class AdminSystemBrowscapService
 
         require_once $pluginPath;
 
-        if (!class_exists(\phpbrowscap\Browscap::class)) {
-            throw ApiException::serverError('Browscap 클래스를 로드하지 못했습니다.');
+        // Stock G5 5.6.x ships the global class; older/custom installations may
+        // ship the namespaced variant. Resolve only these known library names.
+        foreach ([\Browscap::class, \phpbrowscap\Browscap::class] as $class) {
+            if (class_exists($class, false)
+                && method_exists($class, 'getBrowser')
+                && method_exists($class, 'updateCache')) {
+                return new $class($this->context->dataPath() . '/cache');
+            }
         }
+
+        throw ApiException::serverError('Browscap 클래스를 로드하지 못했습니다.');
     }
 
     private function browserProperty(mixed $browserInfo, string $property): string

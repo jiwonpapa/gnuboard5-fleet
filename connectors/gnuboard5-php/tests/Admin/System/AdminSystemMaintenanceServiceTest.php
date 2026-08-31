@@ -6,6 +6,9 @@ namespace Tests\Admin\System;
 
 use Api\Admin\System\Repository\AdminSystemMaintenanceRepository;
 use Api\Admin\System\Service\AdminSystemMaintenanceService;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 final class AdminSystemMaintenanceServiceTest extends TestCase
@@ -132,6 +135,51 @@ final class AdminSystemMaintenanceServiceTest extends TestCase
         $this->assertSame(50, $result['rows']);
         $this->assertSame(0, $result['total_pending_before']);
         $this->assertSame(0, $result['processed_count']);
+        $this->assertSame(0, $result['remaining_count']);
+        $this->assertTrue($result['completed']);
+    }
+
+    public static function browscapClassVariants(): array
+    {
+        return ['stock G5' => [''], 'namespaced library' => ['namespace phpbrowscap;']];
+    }
+
+    #[DataProvider('browscapClassVariants')]
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testConvertBrowscapProcessesPendingRowsWithSupportedLibrary(string $namespace): void
+    {
+        $projectRoot = $this->createProjectRootWithBrowscapPlugin();
+        file_put_contents($projectRoot . '/plugin/browscap/Browscap.php', '<?php ' . $namespace . <<<'PHP'
+
+class Browscap {
+    public bool $doAutoUpdate = true;
+    public string $cacheFilename = '';
+    public function __construct(string $cache) {}
+    public function updateCache(): void { throw new \RuntimeException('network update forbidden'); }
+    public function getBrowser(string $agent): object {
+        if ($agent !== 'FleetTest' || $this->doAutoUpdate || $this->cacheFilename !== 'browscap_cache.php') {
+            throw new \RuntimeException('invalid conversion configuration');
+        }
+        return (object)['Comment' => 'FixtureBrowser', 'Platform' => 'FixtureOS', 'Device_Type' => 'Desktop'];
+    }
+}
+PHP);
+        $dataPath = $this->createDataPath();
+        mkdir($dataPath . '/cache', 0777, true);
+        file_put_contents($dataPath . '/cache/browscap_cache.php', '<?php return [];');
+        $repository = $this->createMock(AdminSystemMaintenanceRepository::class);
+        $repository->expects($this->exactly(2))->method('countVisitRowsMissingBrowscap')
+            ->willReturnOnConsecutiveCalls(1, 0);
+        $repository->expects($this->once())->method('listVisitRowsMissingBrowscap')->with(10)
+            ->willReturn([['vi_id' => 7, 'vi_agent' => 'FleetTest']]);
+        $repository->expects($this->once())->method('updateVisitBrowscap')
+            ->with(7, 'FixtureBrowser', 'FixtureOS', 'Desktop');
+
+        $service = new AdminSystemMaintenanceService($repository, $projectRoot, $dataPath);
+        $result = $service->convertBrowscap(['mb_level' => 10], ['rows' => 10]);
+
+        $this->assertSame(1, $result['processed_count']);
         $this->assertSame(0, $result['remaining_count']);
         $this->assertTrue($result['completed']);
     }

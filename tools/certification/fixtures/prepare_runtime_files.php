@@ -16,7 +16,7 @@ if (file_exists($target)) {
 }
 $values = [
     'source_version' => 'fleet-r36-synthetic-input',
-    'cache_version' => \phpbrowscap\Browscap::CACHE_FILE_VERSION,
+    'cache_version' => \Browscap::CACHE_FILE_VERSION,
     'properties' => ['browser_name', 'browser_name_regex', 'browser_name_pattern', 'Parent', 'Comment', 'Platform', 'Device_Type'],
     'browsers' => ['fleet' => serialize([4 => 'FleetTestBrowser', 5 => 'FixtureOS', 6 => 'Desktop'])],
     'userAgents' => ['fleet' => 'FleetR36Agent'],
@@ -36,7 +36,7 @@ foreach ([
         throw new RuntimeException('cannot write certification fixture');
     }
 }
-$browser = new \phpbrowscap\Browscap($cache);
+$browser = new \Browscap($cache);
 $browser->doAutoUpdate = false;
 $browser->cacheFilename = 'browscap_cache.php';
 $info = $browser->getBrowser('FleetR36Agent');

@@ -15,6 +15,8 @@
 
 ### Fixed
 
+- 기본 G5에 포함된 전역 Browscap 클래스를 인식하지 못해 실제 방문 로그
+  변환이 실패하던 문제를 수정하고 namespaced 라이브러리 호환을 유지했습니다.
 - 이관 상태 문서를 최신 정적 매핑과 실행 증거 미종결 상태로 정정했습니다.
 - runtime 이관 감사가 다른 기능의 PASS나 mock 결과를 재사용하지 못하도록
   항목별 관측 case·assertion·원본 artifact hash·parent run 검증을 추가했습니다.
