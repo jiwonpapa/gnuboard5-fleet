@@ -155,8 +155,10 @@ docker buildx build \
 compose up -d
 
 count=0
+install_probe="$state_root/install-probe.html"
 until curl --fail --silent --show-error \
-  "http://127.0.0.1:$g5_port/install/" >/dev/null; do
+  --output "$install_probe" "http://127.0.0.1:$g5_port/install/" && \
+  grep -Fq 'form action="./install_config.php"' "$install_probe"; do
   count=$((count + 1))
   [ "$count" -lt 90 ] || {
     compose logs g5 db >&2

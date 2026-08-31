@@ -20,6 +20,7 @@ class StackSafetyTests(unittest.TestCase):
         self.assertEqual({"ingress", "certification"}, set(ingress["networks"]))
         self.assertTrue(all(value.startswith("127.0.0.1:") for value in ingress["ports"]))
         self.assertIn("http://g5:80", ingress["command"])
+        self.assertEqual(":80", ingress["command"][ingress["command"].index("--from") + 1])
 
     def setUp(self) -> None:
         temporary = tempfile.TemporaryDirectory()

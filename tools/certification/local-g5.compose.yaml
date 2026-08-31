@@ -68,7 +68,7 @@ services:
   # inbound relay exposes G5 on loopback without giving PHP an egress route.
   ingress:
     image: caddy:2.10.2-alpine
-    command: ["caddy", "reverse-proxy", "--from", "http://0.0.0.0:80", "--to", "http://g5:80"]
+    command: ["caddy", "reverse-proxy", "--from", ":80", "--to", "http://g5:80"]
     depends_on:
       - g5
     ports:
