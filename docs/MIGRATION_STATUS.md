@@ -2,8 +2,9 @@
 
 ## 현재 판정
 
-2026-08-24 R35 마감 기준 전체 이관 동등성 하네스 결과는
-`MIGRATION_STATIC FAIL`입니다.
+2026-08-31 기준선 `94c8a1c4e6c932f754b81effae2d558e39d4f770`을 재검사한
+전체 이관 정적 동등성 결과는 `MIGRATION_STATIC_PASS`, finding 0개입니다.
+이는 구현·회귀 테스트의 **정적 매핑** 판정이며 실사용 검증 완료가 아닙니다.
 
 - legacy inventory 510개 전체의 배치 소유권은 확정됐으며 현재 유효 매핑은
   다음과 같습니다.
@@ -12,11 +13,19 @@
   - Rust workspace member 21/21
 - frontend regression test 100/100
 - Rust regression test 93/93
-- 서버 전환 필수 capability 11/13 구현 증명
+- 서버 전환 필수 capability 13/13 정적 구현 증명
 - typed Core operation 소비 189/189
 - 활성 server route 250개와 Core registry 189개는 존재하지만 전체 이관
   증거로 승격하지 않음
-- 전역 미완료 finding 2개
+- 정적 미완료 finding 0개
+- runtime profile은 FAIL: 699개 항목(legacy 510 + Core 189)의 실행 증거
+  연결 누락과 R04 원격 증거의 SHA 불일치·기간 만료 2개, 총 701 findings
+- 등록된 32개 배치 중 31개 `batch_pass`, R36 `active`
+
+현재 코드의 local G5 실행 기록은 존재하지만 browser, package, staging
+기록은 서로 다른 이전 SHA입니다. 기록의 status만 복사하거나 날짜·SHA를
+바꿔 갱신하지 않습니다. 항목별 실제 실행 case와 원본 artifact를 연결하고
+현재 코드에서 필요한 검증을 재실행해야 합니다.
 
 아래 구현 목록은 현재 소스에 존재하는 기반 기능 inventory입니다. 전체
 legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B02부터 B10은
@@ -110,10 +119,11 @@ legacy 기능·UI·테스트가 이관됐다는 완료 목록이 아닙니다. B
 - R04에서 인증한 사설 스테이징 VM 외 production SSH/SFTP 대상
 - Telegram/Web Push 실제 발송
 
-현재 revision은 routine `SERVER_STATIC_PASS`와 별도로 공식 G5·Chromium
-`LOCAL_RUNTIME_PASS`, OCI 설치·upgrade·backup·restore·rollback
-`PACKAGE_PASS`를 확보했습니다. 이 두 등급은 외부 staging이나 실제 알림
-발송 증거를 대신하지 않습니다.
+과거 공식 G5·Chromium local 및 OCI 설치·upgrade·backup·restore·rollback
+성공 기록은 보존합니다. 그러나 현재 SHA의 browser/package/staging
+인증으로 승격하지 않습니다. 2026-08-31 재조회에서 browser는 `27883c6`,
+package는 `f23bd1c`, staging은 `fac6a92` 기준이므로 현재 판정은 stale입니다.
+외부 Telegram·Web Push 발송은 승인된 LIVE 범위가 아니며 계속 미실행입니다.
 
 B10 staging target은 기존 PHP staging과 분리된 libvirt VM입니다.
 provider ID는 VM identity에 고정하고, 사설 HTTPS origin은 IP SAN과 내부
@@ -128,6 +138,11 @@ revision의 `make audit-staging`이 전부 PASS일 때만 B10 완료를 주장�
 
 R00~R35는 tracked 증거로 닫혔습니다. 9차의 첫 배치 R35 알림·PWA를
 독립 gate·commit·push로 마감했고 R36 전체 종결이 활성 배치입니다.
+R36 내부 작업 순서와 완료 조건은
+[`R36_CLOSEOUT.md`](roadmap/R36_CLOSEOUT.md)를 따릅니다.
+
+아래 R35 수치는 해당 배치 마감 당시의 역사적 증거이며 현재 재실행 결과가
+아닙니다.
 
 - R35 구현 commit: `d486dc84cdafbf13369071620b3000da4f399bf6`
 - 증거: `docs/audits/evidence/R35_BATCH_GATE_PASS.json`
@@ -145,7 +160,8 @@ R00~R35는 tracked 증거로 닫혔습니다. 9차의 첫 배치 R35 알림·PWA
 - 실제 Telegram·Web Push 외부 수신 성공은 `LIVE` 자격증명 미제공으로 미실행
 - headed 브라우저는 임시 비밀번호·OTP 입력 승인이 없어 미실행으로 분리 기록
 - 다음 활성 배치: R36 전체 종결
-- R36 사전 probe: FAIL 2
+- R36 정적 probe: 2026-08-31 PASS, scoped/global finding 0
+- R36 실행 증거 probe: FAIL 701, 항목별 실행 증명·최신화가 남음
 - 목표 추진 차수:
   - 5차: R27~R28, write-count·mails — 완료
   - 6차: R29~R30, SMS 설정·주소록 — 완료
@@ -157,5 +173,5 @@ R00~R35는 tracked 증거로 닫혔습니다. 9차의 첫 배치 R35 알림·PWA
 make check-batch BATCH=R36
 ```
 
-전체 완료는 아닙니다. 전역 감사 2개가 남아 있으며 R36에서
-`MIGRATION_STATIC FAIL`을 유지합니다.
+전체 완료는 아닙니다. 정적 매핑은 닫혔지만 실행 증거·내장 브라우저·동일 SHA
+패키지·스테이징 검증을 마감하기 전에는 R36을 `batch_pass`로 바꾸지 않습니다.

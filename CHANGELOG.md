@@ -8,6 +8,12 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- 이관 상태 문서를 최신 정적 매핑과 실행 증거 미종결 상태로 정정했습니다.
+- runtime 이관 감사가 다른 기능의 PASS나 mock 결과를 재사용하지 못하도록
+  항목별 관측 case·assertion·원본 artifact hash·parent run 검증을 추가했습니다.
+
 ## [0.1.0] - 2026-08-24
 
 ### Added

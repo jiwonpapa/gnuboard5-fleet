@@ -9,17 +9,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .execution import execution_timestamp, safe_evidence_path, validate_execution_claims
 from .model import Finding
 
 
 def _parse_timestamp(value: Any) -> datetime | None:
-    if not isinstance(value, str):
-        return None
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return execution_timestamp(value)
     except ValueError:
         return None
-    return parsed.astimezone(UTC)
 
 
 def validate_evidence_file(
@@ -29,6 +27,7 @@ def validate_evidence_file(
     git_revision: str,
     max_age_hours: int,
     owner_id: str,
+    required_items: set[tuple[str, str]] | None = None,
 ) -> list[Finding]:
     findings: list[Finding] = []
     relative = evidence.get("path")
@@ -40,18 +39,19 @@ def validate_evidence_file(
                 item_id=owner_id,
             )
         ]
-    path = root / relative
-    if not path.is_file():
+    try:
+        path = safe_evidence_path(root, relative)
+    except (OSError, ValueError) as error:
         return [
             Finding(
-                "evidence.file_missing",
-                f"runtime evidence 파일이 없습니다: {relative}",
+                "evidence.path_unsafe",
+                f"{relative}: {error}",
                 item_id=owner_id,
             )
         ]
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+    except (OSError, ValueError) as error:
         return [
             Finding(
                 "evidence.invalid_json",
@@ -59,6 +59,9 @@ def validate_evidence_file(
                 item_id=owner_id,
             )
         ]
+
+    if not isinstance(data, dict):
+        return [Finding("evidence.invalid_json", "evidence must be an object", item_id=owner_id)]
 
     expected_status = evidence.get("status", "PASS")
     actual_status = data.get("status")
@@ -99,6 +102,13 @@ def validate_evidence_file(
                     item_id=owner_id,
                 )
             )
+    findings.extend(validate_execution_claims(
+        root,
+        data,
+        required_items=required_items or set(),
+        git_revision=git_revision,
+        owner_id=owner_id,
+    ))
     return findings
 
 

@@ -302,7 +302,7 @@ def _audit_core_operation_mappings(
     profile: str,
     allowed_roots: tuple[Path, ...],
     evidence_registry: dict[str, Any],
-) -> tuple[list[Finding], dict[str, int], set[str]]:
+) -> tuple[list[Finding], dict[str, int], set[str], set[str]]:
     findings: list[Finding] = []
     evidence_to_validate: set[str] = set()
     items = active.categories.get("core_operations", [])
@@ -408,7 +408,7 @@ def _audit_core_operation_mappings(
         "deferred": 0,
         "unmapped": len(unmapped_ids),
     }
-    return findings, coverage, evidence_to_validate
+    return findings, coverage, evidence_to_validate, valid_ids
 
 
 def audit_parity(
@@ -427,6 +427,7 @@ def audit_parity(
 ]:
     findings = [*legacy.anomalies, *active.anomalies]
     coverage: dict[str, dict[str, int]] = {}
+    valid_items: dict[str, set[str]] = {}
     evidence_to_validate: set[str] = set()
     allowed_roots = tuple(
         (root / value).resolve() for value in manifest["policy"]["allowed_target_roots"]
@@ -593,8 +594,9 @@ def audit_parity(
             "deferred": deferred,
             "unmapped": len(unmapped_ids),
         }
+        valid_items[category] = valid_mapping_ids
 
-    operation_findings, operation_coverage, operation_evidence = (
+    operation_findings, operation_coverage, operation_evidence, valid_operations = (
         _audit_core_operation_mappings(
             root,
             manifest,
@@ -606,6 +608,7 @@ def audit_parity(
     )
     findings.extend(operation_findings)
     coverage["core_operations"] = operation_coverage
+    valid_items["core_operations"] = valid_operations
     evidence_to_validate.update(operation_evidence)
 
     for category, expectation in manifest["active_expectations"].items():
@@ -710,15 +713,48 @@ def audit_parity(
 
     if profile in ("runtime", "staging"):
         max_age = int(manifest["policy"].get("runtime_evidence_max_age_hours", 24))
+        # An evidence id is not proof that the mapped item ran.  Bind every
+        # legacy/Core consumer to observed cases in the hash-checked raw report.
+        evidence_items: dict[str, set[tuple[str, str]]] = {}
+        entries = [
+            (category, entry.get("legacy_id"), entry)
+            for category in LEGACY_CATEGORIES
+            for entry in manifest["mappings"][category]
+            if isinstance(entry, dict)
+        ] + [
+            ("core_operations", entry.get("operation_id"), entry)
+            for entry in manifest["core_operation_mappings"]
+            if isinstance(entry, dict)
+        ]
+        for category, item_id, entry in entries:
+            ids = entry.get("evidence_ids", [])
+            if not isinstance(ids, list):
+                continue
+            for evidence_id in ids:
+                if isinstance(evidence_id, str) and isinstance(item_id, str):
+                    evidence_items.setdefault(evidence_id, set()).add((category, item_id))
         for evidence_id in sorted(evidence_to_validate):
-            findings.extend(
-                validate_evidence_file(
-                    root,
-                    evidence_registry[evidence_id],
-                    git_revision=git_revision,
-                    max_age_hours=max_age,
-                    owner_id=evidence_id,
-                )
+            consumers = evidence_items.get(evidence_id, set())
+            receipt_findings = validate_evidence_file(
+                root,
+                evidence_registry[evidence_id],
+                git_revision=git_revision,
+                max_age_hours=max_age,
+                owner_id=evidence_id,
+                required_items=consumers,
             )
+            findings.extend(receipt_findings)
+            invalid_items = {
+                (finding.category, finding.item_id)
+                for finding in receipt_findings
+                if finding.code == "evidence.item_unverified"
+            }
+            if any(finding.code != "evidence.item_unverified" for finding in receipt_findings):
+                invalid_items.update(consumers)
+            for category, item_id in invalid_items:
+                if category in valid_items:
+                    valid_items[category].discard(item_id)
+        for category, ids in valid_items.items():
+            coverage[category]["valid"] = len(ids)
 
     return findings, coverage, capability_summary, evidence_to_validate

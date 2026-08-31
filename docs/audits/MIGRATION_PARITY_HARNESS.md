@@ -8,24 +8,24 @@ registry를 검사할 뿐, desktop snapshot 전체가 서버·웹으로 이관�
 
 전체 전환 완료 판정은 별도 모듈인 `tools/migration_parity`,
 `governance/MIGRATION_PARITY.json`과
-`governance/MIGRATION_BATCHES.json`만 담당합니다. 현재 정적 감사
-결과는 `FAIL`입니다.
+`governance/MIGRATION_BATCHES.json`만 담당합니다. 2026-08-31 기준선
+`94c8a1c`의 정적 결과는 `PASS`, 실행 증거 결과는 `FAIL`입니다.
 
 | legacy 감사 축 | 기준선 | 유효 매핑 | 현재 판정 |
 |---|---:|---:|---|
-| Tauri command | 253 | 34 | PARTIAL |
-| React page | 43 | 9 | PARTIAL |
-| Rust workspace member | 21 | 17 | PARTIAL |
-| frontend regression test | 100 | 33 | PARTIAL |
-| Rust regression test | 93 | 71 | PARTIAL |
-| Core operation typed 소비 | 189 | 0 | FAIL |
-| 서버 전환 필수 capability | 13 | 8 | PARTIAL |
+| Tauri command | 253 | 253 | STATIC PASS |
+| React page | 43 | 43 | STATIC PASS |
+| Rust workspace member | 21 | 21 | STATIC PASS |
+| frontend regression test | 100 | 100 | STATIC PASS |
+| Rust regression test | 93 | 93 | STATIC PASS |
+| Core operation typed 소비 | 189 | 189 | STATIC PASS |
+| 서버 전환 필수 capability | 13 | 13 | STATIC PASS |
 
-R01 공통 기반 49개, R02 설치·인증·보안 66개, R03 사이트·활동·backup
-57개를 닫아 전역 finding을 712개에서 540개로 줄였습니다. 활성 server route 52개와 Core registry
-189개는 현황 inventory입니다. 이
-숫자만으로 253개 command, 43개 page 또는 실제 업무 흐름의 이관을
-인증하지 않습니다.
+R00~R35의 31개 배치는 닫혔고 R36 전체 종결이 활성 상태입니다.
+정적 매핑 712개(legacy 510 + Core 189 + capability 13)는 유효하지만,
+runtime에서는 legacy/Core 699개에 항목별 실행 증거가 연결되지 않았습니다.
+R04 원격 증거의 SHA/기간 문제 2개를 포함해 runtime finding은 701개입니다.
+이 숫자는 기능 701개의 실패 횟수가 아니라 증거 감사의 미종결 수입니다.
 
 ## 구조
 
@@ -35,6 +35,7 @@ R01 공통 기반 49개, R02 설치·인증·보안 66개, R03 사이트·활동
 - `manifest.py`: 매핑 계약과 허용 값 검증
 - `parity.py`: baseline, 1:1 매핑, target, test, symbol, capability 검증
 - `runtime.py`: Git revision·시간에 결속된 evidence와 실시간 staging probe
+- `execution.py`: 항목별 관측 case, assertion, 증거 등급, 원본 artifact hash·parent run 검증
 - `batch.py`: legacy·Core operation·capability의 단일 배치 소유권과 scoped finding
 - `batch_cli.py`: 선택 배치 gate와 전역 잔여 findings 동시 보고
 - `report.py`: 원자적 JSON 결과 기록
@@ -74,7 +75,25 @@ R01 공통 기반 49개, R02 설치·인증·보안 66개, R03 사이트·활동
 - symlink 또는 저장소 밖 경로
 - pending 필수 capability
 - runtime/staging profile의 evidence 누락, status·Git revision 불일치, stale
+- 등록한 evidence ID에 해당 항목의 관측 case·assertion이 없는 경우
+- raw artifact의 hash·크기·parent run·SHA 불일치 또는 실패/skip case
+- regression/mock만으로 Core provider readback이나 실제 browser workflow를 대체한 경우
 - staging profile의 실시간 HTTPS probe 실패
+
+### 실행 receipt
+
+legacy/Core 항목의 runtime evidence는 `g5-fleet.migration-execution/v1`
+receipt입니다. 각 receipt의 `artifacts`는 `g5-fleet.execution-cases/v1`
+원본 JSON을 상대 경로·SHA-256·크기·run ID로 연결합니다. 원본에는 동일
+Git SHA와 부모 run ID, 실제 실행한 `cases`가 있어야 합니다. 각 case는
+고유 ID, PASS, 비어 있지 않은 assertion, 검증 종류와 관측한
+`category`/`item_id` subjects를 가집니다.
+
+Core operation은 `provider_readback` 또는 외부 발송을 하지 않는
+`safe_external_boundary` case가 필요합니다. React page에는
+`browser_workflow`가 필요하며, 단위 regression 결과만으로 대체하지 않습니다.
+테스트·crate 매핑에는 실행된 `regression` case를 연결합니다. 원본을 생성하는
+실행기가 관측한 범위만 subjects에 기록하며 수동 일괄 PASS 작성은 금지합니다.
 
 정상 감사 실패는 종료 코드 `1`, manifest·실행 자체의 하네스 오류는
 종료 코드 `2`입니다.
@@ -121,5 +140,5 @@ finding, 전역 finding을 함께 기록합니다. R00 control gate는 712개
 매핑 영향 분석, 변이 테스트 후 함께 갱신합니다.
 
 `make check`는 하네스 자체 테스트와 정적 동등성 감사를 필수로 실행합니다.
-따라서 현재처럼 전체 매핑이 미완료이면 기존 좁은 서버 gate가 PASS해도
-최종 `make check`는 FAIL하는 것이 정상입니다.
+정적 `make check` PASS는 runtime/package/staging 완료를 대신하지 않습니다.
+R36의 전체 종결은 별도 실행 증거 gate까지 통과해야 합니다.
