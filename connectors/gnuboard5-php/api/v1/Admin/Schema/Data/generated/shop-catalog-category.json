@@ -6,7 +6,7 @@
     "adm/shop_admin/categoryform.php"
   ],
   "layout": null,
-  "generated_at": "2026-08-31T08:28:26.305982+00:00",
+  "generated_at": "2026-08-31T08:55:49.652926+00:00",
   "field_count": 49,
   "section_count": 5,
   "source": {
@@ -15,7 +15,7 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_shop_category",
-    "extractor_version": 6,
+    "extractor_version": 7,
     "source_hash": "fd8b9cdd499bf7decd8aa2f4eac21ad1399748f08bddeacea717dba59120511d"
   },
   "sections": [

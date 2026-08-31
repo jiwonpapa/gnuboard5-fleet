@@ -6,7 +6,7 @@
     "adm/menu_list.php"
   ],
   "layout": null,
-  "generated_at": "2026-08-31T08:28:26.301420+00:00",
+  "generated_at": "2026-08-31T08:55:49.642306+00:00",
   "field_count": 8,
   "section_count": 1,
   "source": {
@@ -15,7 +15,7 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_menu",
-    "extractor_version": 6,
+    "extractor_version": 7,
     "source_hash": "a9e6c3d15c6f114ec8612dfe148bc65be1bdf5c6868e2e8882e6ef4e3056b823"
   },
   "sections": [

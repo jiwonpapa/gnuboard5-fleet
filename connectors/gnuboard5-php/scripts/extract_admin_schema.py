@@ -22,7 +22,7 @@ OUTPUT_DIR = SCHEMA_ROOT / "Data" / "generated"
 INSTALL_SQL_PATH = ROOT / "install" / "gnuboard5.sql"
 SHOP_SQL_PATH = ROOT / "install" / "gnuboard5shop.sql"
 DEFAULT_TABLE_SQL_PATHS = [str(INSTALL_SQL_PATH.relative_to(ROOT)), str(SHOP_SQL_PATH.relative_to(ROOT))]
-EXTRACTOR_VERSION = 6
+EXTRACTOR_VERSION = 7
 VOLATILE_KEYS = {"generated_at"}
 NO_DEFAULT = object()
 PHP_PLACEHOLDER_PREFIX = "__PHP_BLOCK_"
@@ -743,6 +743,20 @@ def find_literal_help(row_html: str) -> str | None:
     return value or None
 
 
+def find_field_literal_help(row_html: str, raw_name: str) -> str | None:
+    # G5 commonly puts two independent th/td pairs in a single row. Reading
+    # the first help() for that entire row can reverse allow/deny IP guidance.
+    # Only a cell actually owning this control may supply its description.
+    cells = [cell for cell in re.findall(r"<td\b[^>]*>.*?</td>", row_html, flags=re.S)
+             if raw_name in find_controls(cell)]
+    if cells:
+        descriptions = {value for cell in cells if (value := find_literal_help(cell))}
+        return next(iter(descriptions)) if len(descriptions) == 1 else None
+    if set(find_controls(row_html)) == {raw_name}:
+        return find_literal_help(row_html)
+    return None
+
+
 def build_row_candidates(
     row_html: str,
     section_id: str,
@@ -752,7 +766,6 @@ def build_row_candidates(
     row_header = extract_row_header(row_html)
     field_labels = extract_field_labels(row_html)
     controls = find_controls(row_html)
-    description = find_literal_help(row_html)
     candidates: list[dict[str, Any]] = []
 
     for raw_name, control_group in controls.items():
@@ -789,7 +802,7 @@ def build_row_candidates(
             {
                 "name": normalized_name,
                 "label": label or normalized_name,
-                "description": description,
+                "description": find_field_literal_help(row_html, raw_name),
                 "input_type": input_type,
                 "data_type": data_type,
                 "required": required,

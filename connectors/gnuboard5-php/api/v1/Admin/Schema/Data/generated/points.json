@@ -6,7 +6,7 @@
     "adm/point_list.php"
   ],
   "layout": null,
-  "generated_at": "2026-08-31T08:28:26.290151+00:00",
+  "generated_at": "2026-08-31T08:55:49.629509+00:00",
   "field_count": 6,
   "section_count": 3,
   "source": {
@@ -15,7 +15,7 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": null,
-    "extractor_version": 6,
+    "extractor_version": 7,
     "source_hash": "ac3630fe8d2c398a855fc49694b952068d03d9eda40370d1dad5c54333fa1ad6"
   },
   "sections": [

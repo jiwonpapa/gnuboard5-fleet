@@ -7,7 +7,7 @@
     "adm/config_form.php"
   ],
   "layout": null,
-  "generated_at": "2026-08-31T08:28:26.283567+00:00",
+  "generated_at": "2026-08-31T08:55:49.621166+00:00",
   "field_count": 2,
   "section_count": 1,
   "source": {
@@ -16,7 +16,7 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": null,
-    "extractor_version": 6,
+    "extractor_version": 7,
     "source_hash": "6ce2bea5f880149ee3d7734dee461563010409f0190828f3995f2b588b33d04c"
   },
   "sections": [

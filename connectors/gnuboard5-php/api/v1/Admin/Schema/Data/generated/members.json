@@ -6,7 +6,7 @@
     "adm/member_form.php"
   ],
   "layout": null,
-  "generated_at": "2026-08-31T08:28:26.293093+00:00",
+  "generated_at": "2026-08-31T08:55:49.633350+00:00",
   "field_count": 63,
   "section_count": 5,
   "source": {
@@ -15,7 +15,7 @@
     "repo_field_file": "api/v1/Admin/Member/Repository/AdminMemberMutationRepository.php",
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_member",
-    "extractor_version": 6,
+    "extractor_version": 7,
     "source_hash": "4b93a6150b9fd7256a6264b4d6226ee0bc6a1bde6b9d65ebc8d1912be3fd261b"
   },
   "sections": [

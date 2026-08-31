@@ -6,7 +6,7 @@
     "adm/shop_admin/itemeventform.php"
   ],
   "layout": null,
-  "generated_at": "2026-08-31T08:28:26.316308+00:00",
+  "generated_at": "2026-08-31T08:55:49.664319+00:00",
   "field_count": 16,
   "section_count": 1,
   "source": {
@@ -15,7 +15,7 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_shop_event",
-    "extractor_version": 6,
+    "extractor_version": 7,
     "source_hash": "3d03b3724d3b9cf19e9de75f394b98201eec7e9a2443fc99b52941f16bef281e"
   },
   "sections": [

@@ -6,7 +6,7 @@
     "adm/newwinform.php"
   ],
   "layout": null,
-  "generated_at": "2026-08-31T08:28:26.296212+00:00",
+  "generated_at": "2026-08-31T08:55:49.636689+00:00",
   "field_count": 13,
   "section_count": 1,
   "source": {
@@ -15,7 +15,7 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_new_win",
-    "extractor_version": 6,
+    "extractor_version": 7,
     "source_hash": "f750ec2f9086feaa29fd2b468c5715c3517d966a3b8cf4a566f68dd0eee26eea"
   },
   "sections": [

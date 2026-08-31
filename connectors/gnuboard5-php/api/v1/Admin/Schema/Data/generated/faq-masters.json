@@ -6,7 +6,7 @@
     "adm/faqmasterform.php"
   ],
   "layout": null,
-  "generated_at": "2026-08-31T08:28:26.302235+00:00",
+  "generated_at": "2026-08-31T08:55:49.643291+00:00",
   "field_count": 9,
   "section_count": 2,
   "source": {
@@ -15,7 +15,7 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_faq_master",
-    "extractor_version": 6,
+    "extractor_version": 7,
     "source_hash": "06a778250bfd69e08284d582cfa8420a8769fe1cf3149263c2244165af4f809f"
   },
   "sections": [

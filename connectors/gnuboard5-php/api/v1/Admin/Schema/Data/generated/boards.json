@@ -6,7 +6,7 @@
     "adm/board_form.php"
   ],
   "layout": null,
-  "generated_at": "2026-08-31T08:28:26.260608+00:00",
+  "generated_at": "2026-08-31T08:55:49.591837+00:00",
   "field_count": 96,
   "section_count": 7,
   "source": {
@@ -15,7 +15,7 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_board",
-    "extractor_version": 6,
+    "extractor_version": 7,
     "source_hash": "adb30e2a8787ea515785e81919a2ea5a24df3aa4c41577d71dda18ea747b0f0f"
   },
   "sections": [

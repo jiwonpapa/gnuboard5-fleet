@@ -6,7 +6,7 @@
     "adm/boardgroup_form.php"
   ],
   "layout": null,
-  "generated_at": "2026-08-31T08:28:26.299934+00:00",
+  "generated_at": "2026-08-31T08:55:49.640220+00:00",
   "field_count": 26,
   "section_count": 2,
   "source": {
@@ -15,7 +15,7 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_group",
-    "extractor_version": 6,
+    "extractor_version": 7,
     "source_hash": "5bd3896ffb7ef548402ecf4f3a4aaf8e002c844d920ccafe958491bae24812f6"
   },
   "sections": [

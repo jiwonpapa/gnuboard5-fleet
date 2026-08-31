@@ -34,6 +34,24 @@ HTTP E2E는 G5 provider 직접 수정·원복과 Fleet 2사용자×2사이트 �
 실제로 관측한/아직 관측하지 못한 Core API 목록을 기록합니다. HTTP 200,
 직접 PHP 호출, mock 또는 skip만으로 Fleet 소비 완료를 인증하지 않습니다.
 
+### 항목별 회귀 실행
+
+```bash
+make certification-regressions
+make audit-migration-runtime
+```
+
+첫 명령은 활성 Vitest 전체와 Cargo가 생성한 실제 test binary를 실행합니다.
+기존 frontend test-file 항목은 모든 대체 suite가 통과해야 하며, command·crate·
+Rust test는 모호하지 않은 실제 실행 test-name anchor가 필요합니다. 구현 함수나
+일반 PASS만으로 연결하지 않습니다. `ignored` 원격 테스트는 별도 목록에 남습니다.
+`.cache/evidence/r36-regression-execution.json`은 원본 runner 로그·case hash와
+관측 항목/미연결 항목을 기록합니다. React page와 실제 G5 readback을 인증하지 않습니다.
+
+`G5_CERT_FLEET_PORT=64179`처럼 사용 가능한 loopback port를 명시하면
+재검증에서도 승인된 내장 브라우저 origin을 유지할 수 있습니다. 사용 중인 listener가
+있으면 다른 port로 몰래 변경하지 않고 시작을 거부합니다.
+
 ## 2. Codex 내장 브라우저
 
 사용자 지정에 따라 Codex 내장 브라우저만 사용합니다. 별도 headed 브라우저를

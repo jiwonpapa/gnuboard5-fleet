@@ -6,7 +6,7 @@
     "adm/poll_form.php"
   ],
   "layout": null,
-  "generated_at": "2026-08-31T08:28:26.294660+00:00",
+  "generated_at": "2026-08-31T08:55:49.635010+00:00",
   "field_count": 27,
   "section_count": 2,
   "source": {
@@ -15,7 +15,7 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_poll",
-    "extractor_version": 6,
+    "extractor_version": 7,
     "source_hash": "97849c6021d16542724f9c7049ad353b6bdbe8e1167214af8b2ece76bd3c6d21"
   },
   "sections": [

@@ -2,7 +2,7 @@
 
 ## 현재 판정
 
-2026-08-31 검증 지점 `677bec690ad107aca47f5946191d83cc8f7042c2`의
+2026-08-31 검증 지점 `a7cce6fc5e1da7a64744eefd1e0c4c75f093aa33`의
 전체 이관 정적 동등성 결과는 `MIGRATION_STATIC_PASS`, finding 0개입니다.
 이는 구현·회귀 테스트의 **정적 매핑** 판정이며 실사용 검증 완료가 아닙니다.
 
@@ -19,14 +19,20 @@
   증거로 승격하지 않음
 - 정적 미완료 finding 0개
 - Core 실행 증거 189/189: 실제 provider readback 178개, routine 외부 발송
-  차단 확인 11개. 실행 중 PHP 8,524개 파일을 composed source와 SHA-256 대조
-- runtime profile은 FAIL: legacy 510개 실행 증거 연결 누락과 R04 원격
-  증거의 SHA 불일치·기간 만료 2개, 총 512 findings
+  차단 확인 11개. 실행 중 PHP 8,525개 파일을 composed source와 SHA-256 대조
+- legacy 실행 증거 356/510: command 192/253, page 0/43, crate 4/21,
+  frontend test 100/100, Rust test 60/93
+- runtime profile은 FAIL: legacy 154개 실행 증거 연결 누락과 R04 원격
+  증거의 SHA 불일치·기간 만료 2개, 총 156 findings
 - 등록된 32개 배치 중 31개 `batch_pass`, R36 `active`
 
-위 수치는 `677bec6`에서 전체 `make check`와 runtime 감사를 실행한 결과입니다.
-후속 FAQ·schema 설명 수정이 포함된 HEAD 전체의 재인증은 아직 아닙니다.
-내장 브라우저는 6개 참조 페이지의 예비 관측만 진행했고 package, staging
+위 수치는 `a7cce6f`에서 전체 `make check`와 runtime 감사를 실행한 결과입니다.
+Vitest 205개와 Rust 105개의 실제 실행 결과·원본 로그를 수집했으며 일반 회귀에서
+무시된 원격 테스트 1개는 제외했습니다. 별도 SSH/SFTP 실제 원격 실행도 통과했지만
+기존 R04 registry를 갱신하거나 legacy 원격 항목별 증거에 연결한 상태는 아닙니다.
+후속 설정 설명 8개 수정이 포함된 HEAD 전체의 재인증은 아직 아닙니다.
+내장 브라우저는 로그인·OTP·보안 설정·사이트 이름·FAQ CRUD의 6개 참조 페이지
+예비 관측을 진행했습니다. 항목별 완료 receipt는 미발급이며 package, staging
 기록은 서로 다른 이전 SHA입니다. 기록의 status만 복사하거나 날짜·SHA를
 바꿔 갱신하지 않습니다. 항목별 실제 실행 case와 원본 artifact를 연결하고
 현재 코드에서 필요한 검증을 재실행해야 합니다.

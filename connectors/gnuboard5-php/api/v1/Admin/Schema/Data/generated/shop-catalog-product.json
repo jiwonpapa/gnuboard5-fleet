@@ -6,7 +6,7 @@
     "adm/shop_admin/itemform.php"
   ],
   "layout": null,
-  "generated_at": "2026-08-31T08:28:26.311911+00:00",
+  "generated_at": "2026-08-31T08:55:49.659900+00:00",
   "field_count": 90,
   "section_count": 14,
   "source": {
@@ -15,7 +15,7 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_shop_item",
-    "extractor_version": 6,
+    "extractor_version": 7,
     "source_hash": "e442c6766e426fca802f462145b48ba0fc79d1d8a3ebfe2b632dc1ba717e2d7d"
   },
   "sections": [

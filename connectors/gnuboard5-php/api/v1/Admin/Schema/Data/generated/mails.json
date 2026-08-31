@@ -7,7 +7,7 @@
     "adm/mail_select_form.php"
   ],
   "layout": null,
-  "generated_at": "2026-08-31T08:28:26.289492+00:00",
+  "generated_at": "2026-08-31T08:55:49.628386+00:00",
   "field_count": 14,
   "section_count": 3,
   "source": {
@@ -16,7 +16,7 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": null,
-    "extractor_version": 6,
+    "extractor_version": 7,
     "source_hash": "51f1d5cc4a2980718a926733be49fff5e3ad83de69d287f6e447028b8caf38dc"
   },
   "sections": [

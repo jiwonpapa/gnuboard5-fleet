@@ -6,7 +6,7 @@
     "adm/faqform.php"
   ],
   "layout": null,
-  "generated_at": "2026-08-31T08:28:26.302916+00:00",
+  "generated_at": "2026-08-31T08:55:49.644105+00:00",
   "field_count": 5,
   "section_count": 1,
   "source": {
@@ -15,7 +15,7 @@
     "repo_field_file": null,
     "repo_field_const": "UPDATABLE_FIELDS",
     "table": "g5_faq",
-    "extractor_version": 6,
+    "extractor_version": 7,
     "source_hash": "27a10c66b5e677d57a99d6a3ceb49fb7e5a26ed20ef0a1792ab5e8699af8bba2"
   },
   "sections": [
