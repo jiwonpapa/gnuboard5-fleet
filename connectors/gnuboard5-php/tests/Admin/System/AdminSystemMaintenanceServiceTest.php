@@ -6,6 +6,7 @@ namespace Tests\Admin\System;
 
 use Api\Admin\System\Repository\AdminSystemMaintenanceRepository;
 use Api\Admin\System\Service\AdminSystemMaintenanceService;
+use Api\Admin\System\Service\Support\AdminSystemMaintenanceContext;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
@@ -14,6 +15,14 @@ use PHPUnit\Framework\TestCase;
 final class AdminSystemMaintenanceServiceTest extends TestCase
 {
     private array $tempDirectories = [];
+
+    public function testDefaultPluginRootIsG5RootNotApiDirectory(): void
+    {
+        $root = dirname(__DIR__, 3);
+        $context = new AdminSystemMaintenanceContext();
+        self::assertSame($root, $context->projectRoot());
+        self::assertSame($root . '/plugin/browscap/Browscap.php', $context->browscapPluginPath());
+    }
 
     protected function tearDown(): void
     {

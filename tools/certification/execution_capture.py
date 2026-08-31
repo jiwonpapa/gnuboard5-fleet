@@ -191,10 +191,14 @@ class ExecutionCapture:
             raise RuntimeError("no checkpoint-bound Rust-to-PHP operations were observed")
         return cases
 
-    def finish(self, server_log: Path, output: Path) -> dict[str, Any]:
+    def finish(self, server_log: Path, output: Path, *, require_complete: bool = False) -> dict[str, Any]:
         if clean_revision(self.root) != self.revision or execution_inputs(self.root) != self.inputs:
             raise RuntimeError("checkout/provider inputs changed during execution")
         cases = self.cases(server_log.read_text(encoding="utf-8"))
+        observed = sorted({subject["item_id"] for case in cases for subject in case["subjects"]})
+        missing = sorted(set(self.operations) - set(observed))
+        if require_complete and missing:
+            raise RuntimeError("required Core execution cases missing: " + ", ".join(missing))
         generated_at = datetime.now(UTC).isoformat()
         artifact_path = self.root / f"output/certification/r36/{self.run_id}/provider-cases.json"
         source = {
@@ -205,7 +209,6 @@ class ExecutionCapture:
         }
         write_json(artifact_path, source, immutable=True)
         content = artifact_path.read_bytes()
-        observed = sorted({subject["item_id"] for case in cases for subject in case["subjects"]})
         receipt = {
             "schema": EXECUTION_SCHEMA, "status": "PASS", "proof_level": "LOCAL_RUNTIME_PASS",
             "git_revision": self.revision, "inputs": self.inputs,
@@ -217,7 +220,7 @@ class ExecutionCapture:
             # This is measured coverage, never a declaration of whole-product completion.
             "coverage": {
                 "observed_core_operations": observed,
-                "unobserved_core_operations": sorted(set(self.operations) - set(observed)),
+                "unobserved_core_operations": missing,
                 "browser_workflows": 0,
             },
         }

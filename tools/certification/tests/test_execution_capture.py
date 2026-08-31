@@ -135,6 +135,17 @@ class ExecutionCaptureTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "changed during execution"):
                 self.capture.finish(log, output)
 
+    def test_complete_certification_refuses_partial_coverage(self) -> None:
+        request_id = self.observe()
+        self.capture.checkpoint("members", "fields checked")
+        log = self.root / "fleet.log"
+        log.write_text(self.event(request_id))
+        output = self.root / "receipt.json"
+        with mock.patch("tools.certification.execution_capture.clean_revision", return_value="a" * 40):
+            with self.assertRaisesRegex(RuntimeError, "required Core execution cases missing: exportMembers, sendSms"):
+                self.capture.finish(log, output, require_complete=True)
+        self.assertFalse(output.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

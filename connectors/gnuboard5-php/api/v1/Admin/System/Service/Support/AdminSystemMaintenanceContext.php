@@ -19,7 +19,7 @@ final class AdminSystemMaintenanceContext
 
     public function projectRoot(): string
     {
-        return rtrim($this->projectRoot ?? dirname(__DIR__, 5), '/');
+        return rtrim($this->projectRoot ?? dirname(__DIR__, 6), '/');
     }
 
     public function dataPath(): string

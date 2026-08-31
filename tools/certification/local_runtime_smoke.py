@@ -2879,32 +2879,22 @@ def main() -> int:
     ):
         raise RuntimeError("R34 Browscap confirmation did not fail closed")
 
-    convert_status = "provider_unavailable"
-    if browscap.get("available") and browscap.get("cache_exists"):
-        converted = request(
-            fleet_base, "POST", f"{browscap_path}/convert",
-            body={"confirm_action": True, "rows": 1},
-            headers=fleet_headers(admin_cookie, admin_csrf),
-        ).json()
-        if converted.get("rows") != 1 or converted.get("processed_count", -1) < 0:
-            raise RuntimeError("R34 Browscap conversion readback failed")
-        converted_visit = request(
-            fleet_base, "GET", "/api/v1/sites/owner-a-site/admin/visits/search?ip=198.51.100.34",
-            headers=fleet_headers(admin_cookie),
-        ).json().get("items", [])
-        if converted.get("processed_count") != 1 or len(converted_visit) != 1 or (
-            converted_visit[0].get("vi_browser"), converted_visit[0].get("vi_os"), converted_visit[0].get("vi_device")
-        ) != ("FleetTestBrowser", "FixtureOS", "Desktop"):
-            raise RuntimeError("R34 real Browscap synthetic-UA conversion readback failed")
-        convert_status = "passed"
-    else:
-        unavailable = request(
-            fleet_base, "POST", f"{browscap_path}/convert",
-            body={"confirm_action": True, "rows": 1},
-            headers=fleet_headers(admin_cookie, admin_csrf), expected=(400, 502),
-        ).json()
-        if not unavailable.get("error", {}).get("code"):
-            raise RuntimeError("R34 unavailable Browscap conversion did not fail closed")
+    if not browscap.get("available") or not browscap.get("cache_exists"):
+        raise RuntimeError("R34 isolated fixture requires the real upstream Browscap plugin and cache")
+    converted = request(
+        fleet_base, "POST", f"{browscap_path}/convert",
+        body={"confirm_action": True, "rows": 1},
+        headers=fleet_headers(admin_cookie, admin_csrf),
+    ).json()
+    converted_visit = request(
+        fleet_base, "GET", "/api/v1/sites/owner-a-site/admin/visits/search?ip=198.51.100.34",
+        headers=fleet_headers(admin_cookie),
+    ).json().get("items", [])
+    if converted.get("rows") != 1 or converted.get("processed_count") != 1 or len(converted_visit) != 1 or (
+        converted_visit[0].get("vi_browser"), converted_visit[0].get("vi_os"), converted_visit[0].get("vi_device")
+    ) != ("FleetTestBrowser", "FixtureOS", "Desktop"):
+        raise RuntimeError("R34 real Browscap synthetic-UA conversion readback failed")
+    convert_status = "passed"
 
     maintenance_results = {}
     for task in (
@@ -2942,7 +2932,7 @@ def main() -> int:
         "!file_exists('/var/www/html/data/member_list/fleet-r36-preserved.log')) { exit(1); }",
     ], check=True)
 
-    CAPTURE.checkpoint("system-tools", "PHP info summary and Browscap availability checked",
+    CAPTURE.checkpoint("system-tools", "PHP info summary and real Browscap synthetic-UA conversion read back",
                        "maintenance results checked; unavailable/skipped results do not certify success")
     notification_base = "/api/v1/sites/owner-a-site/notifications"
     transport_status = request(
@@ -3255,7 +3245,7 @@ def main() -> int:
         raise RuntimeError("R36 connector re-login readback failed")
     CAPTURE.checkpoint("connector-token-lifecycle", "refresh and logout executed against real G5",
                        "disconnected access rejected; re-login profile readback verified")
-    execution_receipt = CAPTURE.finish(args.session.parent / "fleet.log", args.execution_output)
+    execution_receipt = CAPTURE.finish(args.session.parent / "fleet.log", args.execution_output, require_complete=True)
     runtime_manifest = json.loads(
         (ROOT / ".cache/composed/gnuboard5-php.manifest.json").read_text(
             encoding="utf-8"
