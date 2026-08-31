@@ -373,6 +373,9 @@ INSERT INTO g5_visit
 VALUES
   ('198.51.100.31', '2026-08-18', '09:10:00', 'https://www.google.com/search?q=fleet', 'Fleet Certification Desktop', 'Chrome', 'macOS', 'desktop'),
   ('198.51.100.32', '2026-08-19', '10:20:00', '', 'Fleet Certification Mobile', 'Safari', 'iOS', 'mobile');
+INSERT INTO g5_visit
+  (vi_ip, vi_date, vi_time, vi_referer, vi_agent, vi_browser, vi_os, vi_device)
+VALUES ('198.51.100.34', '2030-01-01', '12:00:00', '', 'FleetR36Agent', '', '', '');
 INSERT INTO g5_visit_sum (vs_date, vs_count) VALUES
   ('2026-08-18', 1),
   ('2026-08-19', 1)
@@ -388,6 +391,8 @@ VALUES
   (9301, 'R28 기준 템플릿', 'R28 기준 본문', '2026-08-20 09:00:00', '127.0.0.1', '');
 COMMIT;
 SQL
+
+compose exec -T --user www-data g5 php < "$root/tools/certification/fixtures/prepare_runtime_files.php"
 
 (cd "$root/apps/admin-web" && bun run build >/dev/null)
 (cd "$root" && CARGO_TARGET_DIR="$certification_target" cargo build -p g5-fleet-admin-server \

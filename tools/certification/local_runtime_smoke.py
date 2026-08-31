@@ -161,6 +161,74 @@ def fleet_headers(cookie: str, csrf: str | None = None) -> dict[str, str]:
     return headers
 
 
+def verify_admin_bootstrap(fleet_base: str, cookie: str, csrf: str, member_id: str) -> None:
+    prefix = "/api/v1/sites/owner-a-site"
+    read = fleet_headers(cookie)
+    write = fleet_headers(cookie, csrf)
+    dashboard = request(fleet_base, "GET", f"{prefix}/admin/dashboard", headers=read).json()
+    if dashboard.get("summary", {}).get("members", {}).get("total_members", 0) < 2:
+        raise RuntimeError("R10 dashboard member summary readback failed")
+    catalog = request(fleet_base, "GET", f"{prefix}/admin/schema", headers=read).json()
+    if not catalog.get("items") or catalog.get("total") != len(catalog["items"]):
+        raise RuntimeError("R10 schema catalog readback failed")
+    domain = catalog["items"][0]["domain"]
+    detail = request(fleet_base, "GET", f"{prefix}/admin/schema/{domain}", headers=read).json()
+    if detail.get("domain") != domain or not detail.get("fields_by_name") or detail.get("field_count", 0) < 1:
+        raise RuntimeError("R10 schema field readback failed")
+    profile = request(fleet_base, "GET", f"{prefix}/member/me", headers=read).json()
+    if profile.get("mb_id") != "admin":
+        raise RuntimeError("R11 connected G5 profile readback failed")
+
+    grouped = f"{prefix}/admin/auth"
+    permissions = f"{prefix}/admin/permissions"
+    baseline = request(fleet_base, "GET", f"{grouped}?mb_id={member_id}", headers=read).json()
+    if any(row.get("auths") for row in baseline.get("items", [])):
+        raise RuntimeError("R11 permission fixture baseline is not empty")
+    request(fleet_base, "PUT", f"{grouped}/{member_id}",
+            body={"auths": [{"au_menu": "100100", "au_auth": "r"}]}, headers=write)
+    grouped_readback = request(fleet_base, "GET", f"{grouped}?mb_id={member_id}", headers=read).json()
+    assignments = [item for row in grouped_readback.get("items", []) for item in row.get("auths", [])]
+    if {"au_menu": "100100", "au_auth": "r"} not in assignments:
+        raise RuntimeError("R11 grouped permission readback failed")
+    request(fleet_base, "POST", permissions,
+            body={"mb_id": member_id, "au_menu": "200100", "au_auth": "rw"}, headers=write)
+    rows = request(fleet_base, "GET", f"{permissions}?mb_id={member_id}", headers=read).json()
+    if not any(row.get("au_menu") == "200100" and row.get("au_auth") == "rw" for row in rows.get("items", [])):
+        raise RuntimeError("R11 system permission save/list readback failed")
+    request(fleet_base, "DELETE", f"{permissions}/{member_id}/200100", headers=write, expected=(204,))
+    rows = request(fleet_base, "GET", f"{permissions}?mb_id={member_id}", headers=read).json()
+    if any(row.get("au_menu") == "200100" for row in rows.get("items", [])):
+        raise RuntimeError("R11 system permission delete readback failed")
+    request(fleet_base, "DELETE", f"{grouped}/{member_id}", headers=write, expected=(204,))
+    restored = request(fleet_base, "GET", f"{grouped}?mb_id={member_id}", headers=read).json()
+    if any(row.get("auths") for row in restored.get("items", [])):
+        raise RuntimeError("R11 grouped permission cleanup failed")
+    if CAPTURE:
+        CAPTURE.checkpoint("admin-schema-permissions", "dashboard/schema/profile fields read back",
+                           "canonical and system permission writes/deletes read back; baseline restored")
+
+    visits = f"{prefix}/admin/visits"
+    dates = "date_from=2026-08-18&date_to=2026-08-19"
+    stats = request(fleet_base, "GET", f"{visits}/stats?{dates}&type=date", headers=read).json()
+    if stats.get("summary", {}).get("visit_rows") != 2:
+        raise RuntimeError("R24 seeded visit statistics failed")
+    matches = request(fleet_base, "GET", f"{visits}/search?{dates}&ip=198.51.100.32", headers=read).json()
+    if len(matches.get("items", [])) != 1 or matches["items"][0].get("vi_browser") != "Safari":
+        raise RuntimeError("R24 visit search/filter readback failed")
+    request(fleet_base, "DELETE", visits, body={}, headers=write, expected=(400,))
+    deleted = request(fleet_base, "DELETE", visits,
+                      body={"date_from": "2026-08-19", "date_to": "2026-08-19", "ip": "198.51.100.32"},
+                      headers=write).json()
+    if deleted.get("deleted_rows") != 1:
+        raise RuntimeError("R24 bounded visit deletion failed")
+    after = request(fleet_base, "GET", f"{visits}/search?{dates}", headers=read).json()
+    if [row.get("vi_ip") for row in after.get("items", [])] != ["198.51.100.31"]:
+        raise RuntimeError("R24 deletion readback or untargeted preservation failed")
+    if CAPTURE:
+        CAPTURE.checkpoint("visits-stats-search-delete", "seeded statistics and IP filter verified",
+                           "empty deletion blocked; exact fixture deleted and untargeted fixture preserved")
+
+
 def main() -> int:
     global CAPTURE
     parser = argparse.ArgumentParser()
@@ -400,6 +468,7 @@ def main() -> int:
 
     CAPTURE.checkpoint("install-connector-config", "OTP install/login and owner isolation guards passed",
                        "connector health/login and baseline configuration were read back")
+    verify_admin_bootstrap(fleet_base, admin_cookie, admin_csrf, member_id)
     member_path = f"/api/v1/sites/owner-a-site/admin/members/{member_id}"
     member_list = request(
         fleet_base,
@@ -2819,6 +2888,14 @@ def main() -> int:
         ).json()
         if converted.get("rows") != 1 or converted.get("processed_count", -1) < 0:
             raise RuntimeError("R34 Browscap conversion readback failed")
+        converted_visit = request(
+            fleet_base, "GET", "/api/v1/sites/owner-a-site/admin/visits/search?ip=198.51.100.34",
+            headers=fleet_headers(admin_cookie),
+        ).json().get("items", [])
+        if converted.get("processed_count") != 1 or len(converted_visit) != 1 or (
+            converted_visit[0].get("vi_browser"), converted_visit[0].get("vi_os"), converted_visit[0].get("vi_device")
+        ) != ("FleetTestBrowser", "FixtureOS", "Desktop"):
+            raise RuntimeError("R34 real Browscap synthetic-UA conversion readback failed")
         convert_status = "passed"
     else:
         unavailable = request(
@@ -2856,6 +2933,14 @@ def main() -> int:
         ):
             raise RuntimeError(f"R34 {task} result contract failed")
         maintenance_results[task] = result.get("deleted_count", 0)
+        if task == "member-list-files" and (result.get("status") != "completed" or result.get("deleted_count") != 1):
+            raise RuntimeError("R34 member-list fixture was not actually purged")
+
+    subprocess.run([
+        "docker", "exec", f"{project}-g5-1", "php", "-r",
+        "if (file_exists('/var/www/html/data/member_list/fleet-r36-disposable.txt') || "
+        "!file_exists('/var/www/html/data/member_list/fleet-r36-preserved.log')) { exit(1); }",
+    ], check=True)
 
     CAPTURE.checkpoint("system-tools", "PHP info summary and Browscap availability checked",
                        "maintenance results checked; unavailable/skipped results do not certify success")
@@ -3153,6 +3238,23 @@ def main() -> int:
 
     CAPTURE.checkpoint("groups-cleanup-and-final-isolation", "canonical/legacy membership and group cleanup checked",
                        "member soft-delete date checked; configuration and owner site lists read back")
+    connector_base = "/api/v1/sites/owner-a-site/connector"
+    refreshed = request(fleet_base, "POST", f"{connector_base}/refresh", headers=fleet_headers(admin_cookie, admin_csrf)).json()
+    if refreshed.get("connected") is not True:
+        raise RuntimeError("R36 connector refresh failed")
+    request(fleet_base, "POST", f"{connector_base}/logout", headers=fleet_headers(admin_cookie, admin_csrf), expected=(204,))
+    disconnected = request(fleet_base, "GET", "/api/v1/sites/owner-a-site/config/basic",
+                           headers=fleet_headers(admin_cookie), expected=(401,)).json()
+    if disconnected.get("error", {}).get("code") != "connector_login_required":
+        raise RuntimeError("R36 connector logout did not remove stored credentials")
+    request(fleet_base, "POST", f"{connector_base}/login",
+            body={"mb_id": env["G5_CERT_G5_ADMIN_ID"], "mb_password": env["G5_CERT_G5_ADMIN_VALUE"]},
+            headers=fleet_headers(admin_cookie, admin_csrf))
+    reconnected = request(fleet_base, "GET", "/api/v1/sites/owner-a-site/member/me", headers=fleet_headers(admin_cookie)).json()
+    if reconnected.get("mb_id") != env["G5_CERT_G5_ADMIN_ID"]:
+        raise RuntimeError("R36 connector re-login readback failed")
+    CAPTURE.checkpoint("connector-token-lifecycle", "refresh and logout executed against real G5",
+                       "disconnected access rejected; re-login profile readback verified")
     execution_receipt = CAPTURE.finish(args.session.parent / "fleet.log", args.execution_output)
     runtime_manifest = json.loads(
         (ROOT / ".cache/composed/gnuboard5-php.manifest.json").read_text(
