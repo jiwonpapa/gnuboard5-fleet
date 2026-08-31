@@ -15,7 +15,7 @@ case "$mode" in
   *) echo "usage: local_stack.sh up [--foreground]|down|clean" >&2; exit 1 ;;
 esac
 
-for dependency in docker git curl openssl python3 cargo bun; do
+for dependency in docker git curl openssl python3 cargo bun tar; do
   command -v "$dependency" >/dev/null 2>&1 || {
     echo "required command missing: $dependency" >&2
     exit 1
@@ -153,13 +153,21 @@ G5_CERT_REVISION=$revision
 EOF
 chmod 0600 "$session_file"
 
+# Composed files have reproducible mtime=0. Sending a complete tar context avoids
+# incremental file-sync reusing old bytes for same-size, same-mtime edits.
+tar -cf "$state_root/g5-build-context.tar" \
+  -C "$root/tools/certification" G5Containerfile \
+  -C "$root/.cache/composed/gnuboard5-php" .
 docker buildx build \
-  --file "$root/tools/certification/G5Containerfile" \
+  --file G5Containerfile \
   --provenance=false \
   --load \
   --tag "$g5_image" \
-  "$root/.cache/composed/gnuboard5-php"
+  - < "$state_root/g5-build-context.tar"
+rm -- "$state_root/g5-build-context.tar"
 compose up -d
+python3 "$root/tools/certification/verify_provider_tree.py" \
+  --container "$project-g5-1" --output "$state_root/provider-tree.json"
 
 count=0
 install_probe="$state_root/install-probe.html"

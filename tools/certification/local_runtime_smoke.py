@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from tools.certification.execution_capture import ExecutionCapture, clean_revision  # noqa: E402
+from tools.certification.verify_provider_tree import tree_manifest, verify_container  # noqa: E402
 
 CAPTURE: ExecutionCapture | None = None
 
@@ -262,6 +263,19 @@ def main() -> int:
     project = env.get("G5_CERT_PROJECT", "")
     if not re.fullmatch(r"g5-fleet-local-certification-[a-z0-9-]+", project):
         raise RuntimeError("isolated per-run certification project is required")
+    provider_tree_path = args.session.parent / "provider-tree.json"
+    provider_tree = json.loads(provider_tree_path.read_bytes())
+    source_entries = tree_manifest(ROOT / ".cache/composed/gnuboard5-php")
+    source_tree_hash = hashlib.sha256(json.dumps(source_entries, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    if (
+        provider_tree.get("status") != "PASS"
+        or provider_tree.get("git_revision") != env["G5_CERT_REVISION"]
+        or provider_tree.get("container") != f"{project}-g5-1"
+        or provider_tree.get("tree_sha256") != source_tree_hash
+        or provider_tree.get("files") != len(source_entries)
+    ):
+        raise RuntimeError("provider tree identity is stale or does not match source")
+    verify_container(f"{project}-g5-1", source_entries)
     network_internal = subprocess.check_output(
         ["docker", "network", "inspect", "--format", "{{.Internal}}", f"{project}_certification"],
         text=True,
@@ -3257,6 +3271,11 @@ def main() -> int:
         "revision": env["G5_CERT_REVISION"],
         "execution_run_id": execution_receipt["run_id"],
         "execution_receipt_sha256": sha256(args.execution_output),
+        "provider_source": {
+            "tree_receipt_sha256": sha256(provider_tree_path),
+            "tree_sha256": source_tree_hash,
+            "files": len(source_entries),
+        },
         "openapi_sha256": sha256(
             ROOT / "connectors/gnuboard5-php/api/docs/openapi.yaml"
         ),
