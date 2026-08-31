@@ -78,6 +78,25 @@ class ExecutionCaptureTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             provider_command_bindings(manifest)
 
+    def test_exact_operation_literal_supports_shared_media_method_without_aliasing(self) -> None:
+        check = {"path": "crates/fleet-connector/src/lib.rs", "contains": "uploadIcon"}
+        row = {"legacy_id": "legacy_icon", "provider_operation_id": "uploadIcon", "checks": [dict(check)]}
+        manifest = {"core_operation_mappings": [{"operation_id": "uploadIcon", "checks": [dict(check)]}],
+                    "mappings": {"tauri_commands": [row]}}
+        self.assertEqual({"uploadIcon": ["legacy_icon"]}, provider_command_bindings(manifest))
+        row["checks"][0]["contains"] = "shared_non_operation_symbol"
+        manifest["core_operation_mappings"][0]["checks"] = row["checks"]
+        with self.assertRaises(ValueError):
+            provider_command_bindings(manifest)
+
+    def test_checked_in_provider_bindings_are_all_valid(self) -> None:
+        root = Path(__file__).resolve().parents[3]
+        manifest = json.loads((root / "governance/MIGRATION_PARITY.json").read_bytes())
+        bindings = provider_command_bindings(manifest)
+        expected = {row["legacy_id"] for row in manifest["mappings"]["tauri_commands"] if row.get("provider_operation_id")}
+        self.assertTrue(expected)
+        self.assertEqual(expected, {value for values in bindings.values() for value in values})
+
     def test_catalog_or_http_success_without_provider_event_is_not_proof(self) -> None:
         self.observe()
         self.capture.checkpoint("members", "response checked")

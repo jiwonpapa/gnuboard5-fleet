@@ -44,7 +44,7 @@ def write_json(path: Path, data: dict[str, Any], *, immutable: bool = False) -> 
 
 
 def provider_command_bindings(manifest: dict[str, Any]) -> dict[str, list[str]]:
-    """Require an explicit operation ID sharing the mapped connector function."""
+    """Require the same connector function or exact canonical operation literal."""
     core = {row["operation_id"]: row for row in manifest["core_operation_mappings"]}
     bindings: dict[str, list[str]] = {}
     seen: set[str] = set()
@@ -58,12 +58,13 @@ def provider_command_bindings(manifest: dict[str, Any]) -> dict[str, list[str]]:
         connector_checks = {
             check["contains"] for check in row["checks"]
             if check["path"] == "crates/fleet-connector/src/lib.rs"
-            and re.fullmatch(r"async fn [a-z_][a-z_0-9]*", check.get("contains", ""))
+            and (re.fullmatch(r"async fn [a-z_][a-z_0-9]*", check.get("contains", ""))
+                 or check.get("contains") == operation_id)
         }
         if not any(check.get("contains") in connector_checks
                    and check["path"] == "crates/fleet-connector/src/lib.rs"
                    for check in core[operation_id]["checks"]):
-            raise ValueError("provider binding does not share the canonical connector function")
+            raise ValueError(f"provider binding does not share the canonical connector function/operation: {row['legacy_id']}")
         bindings.setdefault(operation_id, []).append(row["legacy_id"])
     return bindings
 
