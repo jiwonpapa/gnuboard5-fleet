@@ -64,6 +64,21 @@ class ExecutionEvidenceTest(unittest.TestCase):
     def test_exact_observed_case_passes(self) -> None:
         self.assertEqual(set(), self.codes())
 
+    def test_original_runner_artifact_tampering_and_omission_fail(self) -> None:
+        raw = b"one original runner result\n"
+        (self.root / "runner.log").write_bytes(raw)
+        self.source["producer"] = "tools/certification/regression_runtime.py"
+        self.source["raw_artifacts"] = [{
+            "path": "runner.log", "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest(),
+        }]
+        self.write_source()
+        self.assertEqual(set(), self.codes())
+        (self.root / "runner.log").write_bytes(b"altered")
+        self.assertIn("evidence.artifact_invalid", self.codes())
+        del self.source["raw_artifacts"]
+        self.write_source()
+        self.assertIn("evidence.artifact_invalid", self.codes())
+
     def test_unrelated_passing_case_cannot_certify_another_operation(self) -> None:
         self.assertIn("evidence.item_unverified", self.codes({("core_operations", "deleteBoard")}))
 

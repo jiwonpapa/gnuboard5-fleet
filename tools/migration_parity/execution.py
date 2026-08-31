@@ -142,6 +142,24 @@ def validate_execution_claims(
             source_time = execution_timestamp(source.get("generated_at"))
             if not 0 <= (receipt_time - source_time).total_seconds() <= 24 * 3600:
                 raise ValueError("case timestamp is newer than receipt or over 24h older")
+            raw_artifacts = source.get("raw_artifacts")
+            if source.get("producer") == "tools/certification/regression_runtime.py" and not raw_artifacts:
+                raise ValueError("regression producer must retain original runner artifacts")
+            if raw_artifacts is not None:
+                if not isinstance(raw_artifacts, list) or not raw_artifacts:
+                    raise ValueError("raw runner artifacts must be a non-empty list")
+                raw_paths: set[str] = set()
+                for raw in raw_artifacts:
+                    if not isinstance(raw, dict):
+                        raise ValueError("raw runner artifact must be an object")
+                    raw_path = safe_evidence_path(root, raw.get("path"))
+                    if raw["path"] in raw_paths:
+                        raise ValueError("duplicate raw runner artifact")
+                    raw_paths.add(raw["path"])
+                    raw_content = raw_path.read_bytes()
+                    if (type(raw.get("bytes")) is not int or len(raw_content) != raw["bytes"]
+                            or hashlib.sha256(raw_content).hexdigest() != raw.get("sha256")):
+                        raise ValueError("raw runner artifact checksum/size mismatch")
             cases = source.get("cases")
             if not isinstance(cases, list) or not cases:
                 raise ValueError("executed cases are missing")
