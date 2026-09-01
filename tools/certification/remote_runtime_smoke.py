@@ -7,10 +7,14 @@ import json
 import os
 import stat
 import subprocess
+import sys
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from tools.certification.execution_capture import clean_revision, write_json
 from tools.certification.regression_capture import artifact, parse_libtest
