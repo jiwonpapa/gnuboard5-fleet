@@ -96,11 +96,11 @@ critical_readback_preserved() {
       after_count = split(after, after_pairs, ",")
       if (before_count < 1 || after_count < before_count) exit 1
       for (i = 1; i <= after_count; i++) {
-        if (after_pairs[i] !~ /^"[A-Za-z0-9_]+"\:[0-9]+$/) exit 1
+        if (after_pairs[i] !~ /^"[A-Za-z0-9_]+":[0-9]+$/) exit 1
       }
       wrapped_after = "," after ","
       for (i = 1; i <= before_count; i++) {
-        if (before_pairs[i] !~ /^"[A-Za-z0-9_]+"\:[0-9]+$/) exit 1
+        if (before_pairs[i] !~ /^"[A-Za-z0-9_]+":[0-9]+$/) exit 1
         if (index(wrapped_after, "," before_pairs[i] ",") == 0) exit 1
       }
     }
