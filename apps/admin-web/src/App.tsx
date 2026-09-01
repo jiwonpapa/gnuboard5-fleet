@@ -30,6 +30,7 @@ import { AdminBrowscapPage } from "./features/system-tools/AdminBrowscapPage";
 import { AdminPhpInfoPage } from "./features/system-tools/AdminPhpInfoPage";
 import { AdminQaPage } from "./features/qa/AdminQaPage";
 import { AdminReportsPage } from "./features/reports/AdminReportsPage";
+import { SiteRemoteWorkspacePage } from "./features/remote/SiteRemoteWorkspacePage";
 import { AdminVisitsPage } from "./features/visits/AdminVisitsPage";
 import { AdminWriteCountPage } from "./features/write-count/AdminWriteCountPage";
 import { AdminMailsPage } from "./features/mails/AdminMailsPage";
@@ -192,6 +193,10 @@ export default function App() {
             <Route
               path="/sites/:siteId/admin/maintenance"
               element={<AdminMaintenancePage />}
+            />
+            <Route
+              path="/sites/:siteId/admin/remote"
+              element={<SiteRemoteWorkspacePage />}
             />
             <Route path="/audit" element={<AuditLogPage />} />
             <Route path="/backup" element={<BackupPage />} />

@@ -86,6 +86,7 @@ export const adminRoutes: readonly AdminRouteMeta[] = [
     ["알림 전달", "notifications", "메시징", "notifications/NotificationSettingsPage.tsx"],
     ["시스템 도구", "system-tools", "시스템", "system-tools/AdminPhpInfoPage.tsx"],
     ["유지보수", "maintenance", "시스템", "maintenance/AdminMaintenancePage.tsx"],
+    ["원격 서버", "remote", "시스템", "server-ssh/SiteSshSessionPage.tsx + server-files/SiteSftpBrowserPage.tsx"],
   ].map(([label, slug, group, legacySource]) => ({
     path: `/admin/${slug}` as const,
     label,

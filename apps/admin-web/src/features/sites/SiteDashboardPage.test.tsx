@@ -103,5 +103,9 @@ describe("SiteDashboardPage", () => {
       "href",
       "/sites/site-a/admin/points",
     );
+    expect(screen.getByRole("link", { name: "SSH · SFTP" })).toHaveAttribute(
+      "href",
+      "/sites/site-a/admin/remote",
+    );
   });
 });

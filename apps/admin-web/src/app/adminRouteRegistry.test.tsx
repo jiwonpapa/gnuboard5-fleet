@@ -106,6 +106,10 @@ describe("adminRouteRegistry", () => {
       label: "유지보수",
       delivery: "active",
     });
+    expect(resolveRouteMeta("/admin/remote")).toMatchObject({
+      label: "원격 서버",
+      delivery: "active",
+    });
     expect(resolveRouteMeta("/admin/permissions")?.delivery).toBe("active");
     expect(resolveRouteMeta("/admin/boards")?.delivery).toBe("active");
     expect(resolveRouteMeta("/admin/contents")?.delivery).toBe("active");
