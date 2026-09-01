@@ -337,19 +337,18 @@ API·health·ready는 제외합니다. Commerce SDK는 canonical Shop 26개와
 
 `LOCAL_RUNTIME_PASS`, `PACKAGE_PASS`, `STAGING_PASS`, `LIVE_CERTIFIED`는 서로 대체하지 않습니다.
 
-현재 상태: 부분 인증 완료. 공식 G5 v5.6.32+Shop의 Connector
-로그인·설정 수정·재조회·원복과 2사용자×2사이트 HTTP·Chromium 격리로
+현재 상태: 완료. 공식 G5 v5.6.32+Shop의 Connector readback,
+2사용자×2사이트 내장 브라우저 격리, 승인된 SSH/SFTP roundtrip으로
 `LOCAL_RUNTIME_PASS`를 확보했습니다. OCI clean install, 데이터 보존
 upgrade, 검증 backup·암호화 master-key 복원과 실패 upgrade rollback으로
-`PACKAGE_PASS`도 확보했습니다. staging host에서 현재 runtime image
-ID·platform·version/revision을 결속하고 실패 upgrade·검증 snapshot
-복원·핵심 row readback으로 배포/rollback receipt를 생성하는 rehearsal을
-추가했습니다. target은 기존 PHP staging과 분리된 libvirt VM이며 사설
-HTTPS origin은 내부 CA로 검증합니다.
+`PACKAGE_PASS` 47/47을 확보했습니다. 전용 staging VM에서 runtime image
+ID·platform·version/revision, 내부 CA HTTPS, 배포·rollback receipt와 핵심
+row readback을 확인해 `STAGING_PASS` 50/50도 확보했습니다. routine 외부
+알림은 발송하지 않았으므로 `LIVE_CERTIFIED`를 주장하지 않습니다.
 
-## 4. 현재 바로 시작할 배치
+## 4. 현재 배치 상태
 
-현재 시작점은 새 실행 정본의 **R36 전체 종결**입니다.
+R36 전체 종결까지 완료했습니다.
 R00 배치 통제, R01 공통 기반 49개, R02 설치·인증·보안 66개와
 R03 사이트·활동·backup 57개, R04 SSH·SFTP·terminal 73개,
 R10 admin·config·schema 19개, R11 auth·member self·system auth 19개,
@@ -357,10 +356,8 @@ R12 members 26개, R13 groups 37개, R14 boards 17개,
 R15 contents 13개, R16 faq-masters·faqs 31개, R17 menus 17개,
 R18 layouts 18개, R19 theme 11개, R20 points 19개와 R21~R35의
 polls·popups·popular·visits·reports·qa·write-count·mails·sms config·sms contacts·sms templates·sms messages·push·system tools·maintenance·notification·PWA는 공식 G5 5.6.32
-실런타임 readback까지 tracked 증거로 닫았고, 남은 2개 capability finding은
-`DOMAIN_REUSE_MIGRATION_PLAN.md`의 단일 활성 배치 순서로 실제
-target·회귀 test·symbol check를 채웁니다.
+실런타임 readback까지 tracked 증거로 닫았습니다. 최종 2개 capability도
+내장 브라우저와 항목별 실행 증거로 닫혀 전역 finding은 0개입니다.
 
-staging VM은 유지하되 정적 이관 동등성이 PASS하기 전에는 staging
-readiness·배포 receipt만으로 B10 또는 전체 전환 완료를 주장하지
-않습니다.
+staging VM은 인증 환경으로 유지합니다. 이후 변경은 정적 결과나 readiness만
+재사용하지 않고 동일 revision의 runtime·package·staging gate를 다시 실행합니다.

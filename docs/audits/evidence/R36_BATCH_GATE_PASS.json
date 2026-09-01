@@ -1,0 +1,111 @@
+{
+  "schema": "g5-fleet.migration-batch-evidence/v1",
+  "batch": "R36",
+  "status": "BATCH_GATE_PASS",
+  "implementation_commit": "7dce00afeb3ee7a54980fbcc193708686d53021a",
+  "verified_remote": {
+    "ref": "origin/main",
+    "commit": "7dce00afeb3ee7a54980fbcc193708686d53021a"
+  },
+  "generated_at": "2026-09-01T02:20:02Z",
+  "commands": [
+    "make certification-local-smoke",
+    "make certification-regressions",
+    "python3 tools/certification/remote_runtime_smoke.py --host 192.168.0.127 --user neojins --port 22 --private-key-file <approved-key>",
+    "Codex in-app browser 41 workflow cases / 43 React pages",
+    "make certification-browser-evidence BROWSER_CASES=output/certification/r36/browser-7dce00a/cases.json",
+    "make audit-migration-runtime",
+    "make package-smoke",
+    "make package-build VERSION=0.1.0",
+    "make staging-smoke CONFIG=<local-staging-config>",
+    "make audit-package",
+    "make audit-staging",
+    "make audit-migration-staging",
+    "make check"
+  ],
+  "results": {
+    "canonical_make_check": {
+      "status": "PASS",
+      "server_static": {"passed": 35, "failed": 0},
+      "web_test_files": 87,
+      "web_tests": {"passed": 207, "failed": 0},
+      "migration_static_findings": 0
+    },
+    "migration_inventory": {
+      "legacy": {
+        "total": 510,
+        "tauri_commands": 253,
+        "react_pages": 43,
+        "rust_workspace_members": 21,
+        "frontend_tests": 100,
+        "rust_tests": 93
+      },
+      "core_operations": 189,
+      "legacy_and_core_runtime_total": 699,
+      "required_capabilities": 13,
+      "governed_total": 712,
+      "runtime_findings": 0
+    },
+    "local_runtime": {
+      "status": "PASS",
+      "proof_level": "LOCAL_RUNTIME_PASS",
+      "official_g5_version": "5.6.32",
+      "provider_source_files_verified": 8525,
+      "provider_cases": 30,
+      "regression_cases": 329,
+      "remote_roundtrip_cases": 4,
+      "external_delivery_attempts": 0
+    },
+    "browser_runtime": {
+      "status": "PASS",
+      "browser": "Codex in-app Chromium",
+      "workflow_cases": 41,
+      "react_page_subjects": 43,
+      "two_users_two_sites_isolated": true,
+      "first_install_and_forced_totp": "PASS",
+      "browser_secret_exposure": "NONE"
+    },
+    "package": {
+      "status": "PASS",
+      "proof_level": "PACKAGE_PASS",
+      "checks": {"passed": 47, "failed": 0},
+      "compose_services": ["app", "caddy"],
+      "database_services": [],
+      "sqlite_schema_version": 4,
+      "upgrade_row_preservation": "PASS",
+      "backup_master_key_restore": "PASS",
+      "failed_upgrade_rollback": "PASS",
+      "image": "ghcr.io/jiwonpapa/gnuboard5-fleet:0.1.0",
+      "image_id": "sha256:bab65e08c44bb257c29c66161b83efed6491d4925ba4d62192c8e34e9e8ffa33",
+      "platform": "linux/amd64"
+    },
+    "staging": {
+      "status": "PASS",
+      "proof_level": "STAGING_PASS",
+      "checks": {"passed": 50, "failed": 0},
+      "provider_id": "b78f57a04b604a49812c8e20e376cdf5",
+      "base_url": "https://g5-fleet.test",
+      "deployment_receipt": "PASS",
+      "backup_restore_readback": "PASS",
+      "rollback_receipt": "PASS",
+      "migration_findings": 0
+    },
+    "live_notification_delivery": {
+      "status": "NOT_RUN",
+      "external_delivery_attempts": 0,
+      "reason": "Routine certification forbids Telegram, Web Push, mail, and SMS external delivery."
+    },
+    "batch_scope": {"legacy": 0, "core_operations": 0, "required_capabilities": 2},
+    "batch_findings": 0,
+    "global_migration": {"status": "PASS", "findings": 0}
+  },
+  "source_reports": [
+    {"path": "output/audit/runs/20260901T021745Z-ec4a5f1e1f29/result.json", "sha256": "b6d6ecbc9bc6d874f05fd40cab27b0ad6e1a595f8d18903c570f28353e88330d"},
+    {"path": "output/audit/runs/migration-parity-20260901T021802Z-1dde0157/result.json", "sha256": "ad8d04213d6541563f00e1e204e86a67d352e3ee2da698f5e6d1c65dd7150b90"},
+    {"path": "output/audit/runs/migration-parity-20260901T020745Z-79350f21/result.json", "sha256": "fb41cddec0eba3b66666875682f590ade14b9c75372275a90bfbed9fd72132ad"},
+    {"path": "output/audit/runs/20260901T021546Z-55744ee5a93a/result.json", "sha256": "0255d7279c97a3ba95a861be807af68daaebfad73f665673ca915c52fdddb9ba"},
+    {"path": "output/audit/runs/20260901T021546Z-a92aa9d90433/result.json", "sha256": "208844153ad62bf0d01041a84bbf24c580d40d6b10e4079d669dda41053af699"},
+    {"path": "output/audit/runs/migration-parity-20260901T021432Z-e959f9e2/result.json", "sha256": "2e23e457ab772c63f91a54e073ac64e460311891530dba8e4c8e78b5af23b0b2"}
+  ],
+  "claim_limit": "R36 proves the 699 legacy/Core runtime evidence closure, 43-page in-app browser workflows, approved SSH/SFTP staging roundtrips, and the SQLite-inclusive one-app-container install, persistence, upgrade, restore, rollback, and private HTTPS staging path at the implementation commit. It does not claim production deployment or real external notification delivery."
+}

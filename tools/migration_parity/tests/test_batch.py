@@ -73,6 +73,14 @@ def make_batch_manifest() -> dict:
     }
 
 
+def completion(commit: str) -> dict:
+    return {
+        "implementation_commit": commit,
+        "evidence_path": "docs/audits/evidence/R99_BATCH_GATE_PASS.json",
+        "closed_at": "2026-09-01T00:00:00Z",
+    }
+
+
 class BatchManifestTest(unittest.TestCase):
     def test_repository_manifest_owns_every_item_once(self) -> None:
         parity_manifest = load_manifest(ROOT / "governance/MIGRATION_PARITY.json")
@@ -112,6 +120,31 @@ class BatchManifestTest(unittest.TestCase):
                 ["fixtureOperation"],
                 batch_scope("R01", audit)["core_operations"],
             )
+
+    def test_final_closeout_allows_zero_active_batches(self) -> None:
+        batches = make_batch_manifest()
+        batches["batches"][0]["state"] = "batch_pass"
+        batches["batches"][0]["completion"] = completion("a" * 40)
+        batches["batches"][1]["state"] = "batch_pass"
+        batches["batches"][1]["completion"] = completion("b" * 40)
+
+        validate_batch_manifest_shape(batches)
+
+    def test_zero_active_before_final_closeout_fails_closed(self) -> None:
+        batches = make_batch_manifest()
+        batches["batches"][0]["state"] = "planned"
+
+        with self.assertRaisesRegex(ManifestError, "exactly one active"):
+            validate_batch_manifest_shape(batches)
+
+    def test_final_closeout_rejects_an_incomplete_predecessor(self) -> None:
+        batches = make_batch_manifest()
+        batches["batches"][0]["state"] = "planned"
+        batches["batches"][1]["state"] = "batch_pass"
+        batches["batches"][1]["completion"] = completion("b" * 40)
+
+        with self.assertRaisesRegex(ManifestError, "every batch closed"):
+            validate_batch_manifest_shape(batches)
 
     def test_unassigned_legacy_item_fails_closed(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

@@ -18,9 +18,8 @@ Rust Axum HTTP·WebSocket 경계로 교체합니다.
   - Core operation typed 소비 189
   - 필수 capability 13
 
-따라서 UI는 재사용 가능성이 높지만 아직 이관 완료가 아닙니다. 과거
-B00~B10은 기반 작업 이력으로만 보존하고, 아래 R 배치의 PASS 증거 없이
-전환 완료를 주장하지 않습니다.
+이 수치는 최초 이관 기준선입니다. 현재는 아래 R 배치의 PASS 증거와
+R36 종결 인증으로 서버 전환을 완료했습니다.
 
 ## 2. 고정 실행 규칙
 
@@ -67,9 +66,8 @@ R00에서 `make check-batch BATCH=Rxx`를 구현합니다. 각 배치는 아래
 
 ## 4. 배치 순서
 
-현재 manifest 상태는 R00~R35 `batch_pass`, R36 `active`입니다.
-9차의 R35를 닫았고 전체 감사에는 2개 capability findings가 남아
-있으므로 제품 기능 이관 완료를 뜻하지 않습니다.
+현재 manifest 상태는 R00~R36 전부 `batch_pass`입니다. 9차의 R35와
+R36을 닫았고 전체 정적·runtime·staging finding은 0개입니다.
 
 ### 4.1 이관 통제와 공통 기반
 
@@ -139,7 +137,7 @@ R28, 나머지 10개는 R34가 소유합니다.
 | 6차 (완료) | R29 sms config → R30 sms-contacts | Core 18 | SMS 설정과 주소록 CRUD·동기화 경계를 닫기 |
 | 7차 (완료) | R31 sms-templates → R32 sms-messages | Core 19 | SMS 템플릿·발송 작성·이력 workflow를 닫기 |
 | 8차 (완료) | R33 push → R34 system tools·maintenance | Core 12 | Push와 시스템 점검·정리 도구의 보안 경계를 닫기 |
-| 9차 (진행 중) | R35 알림·PWA → R36 전체 종결 | capability 4 | R35 완료, R36 정적 finding 0·실행 증거 및 배포 검증 진행 |
+| 9차 (완료) | R35 알림·PWA → R36 전체 종결 | capability 4 | R35 알림·PWA와 R36 실행 증거·내장 브라우저·package·staging 종결 |
 
 메일·SMS·Push는 routine 검증에서 실제 외부 발송을 금지하고 fake adapter와
 outbox readback으로 증명합니다. 실제 발송은 별도 `LIVE` 승인과 증거가
@@ -168,10 +166,10 @@ commit/push: 미실행
 
 ## 6. 현재 실행
 
-R00~R35는 닫혔고 현재 목표 추진 단위는 9차의 R36 전체 종결입니다.
-2026-08-31 재검사에서 정적 mapping/capability는 PASS, runtime 증거는
-FAIL 701입니다. 세부 실행·커밋 순서는 [R36_CLOSEOUT.md](R36_CLOSEOUT.md)를
-따르며 아래 도메인별 기록은 각 배치 당시의 검증 이력입니다.
+R00~R36은 모두 닫혔습니다. 2026-09-01 구현 기준선 `7dce00a`에서 정적,
+runtime, package, staging을 모두 재검사했고 finding은 0개입니다. 종결 결과는
+[R36_CLOSEOUT.md](R36_CLOSEOUT.md)를 따르며 아래 도메인별 기록은 각 배치
+당시의 검증 이력입니다.
 
 1. R27 write-count의 legacy 3개와 Core operation 1개는 runtime·브라우저까지 닫았습니다.
 2. R28 mails의 legacy 19개와 Core 13개도 runtime·브라우저까지 닫았습니다.
@@ -187,7 +185,7 @@ FAIL 701입니다. 세부 실행·커밋 순서는 [R36_CLOSEOUT.md](R36_CLOSEOU
 12. 표준 Push도 외부효과로 재분류했으며 routine 외부 Web Push 전달 시도는 0입니다.
 13. R34 시스템 도구·유지보수 legacy 15개와 Core 10개를 typed 서버·웹, 공식 G5 REST readback으로 닫았습니다.
 14. phpinfo 원문은 브라우저에서 차단하고 Browscap 외부 업데이트 시도는 0으로 유지했습니다.
-15. global static parity는 현재 PASS 0, runtime parity는 미연결·stale 증거로 FAIL 701입니다.
+15. global static·runtime·staging parity는 모두 PASS, finding 0입니다.
 16. R35 운영 Telegram·Web Push transport와 암호화 구독 생성·회전·폐기를 구현했습니다.
 17. 공식 G5 로컬 인증에서 알림 비밀 비노출·SSRF 경계·미설정 dead-letter와 외부 전송 0을 확인했습니다.
 
@@ -203,8 +201,8 @@ make check-batch BATCH=R34
 make check-batch BATCH=R35
 ```
 
-배치 gate가 PASS하더라도 전역 `make audit-migration-parity`는 R36 전까지
-FAIL과 전체 잔여 수를 그대로 반환합니다.
+배치 gate와 별도로 전역 `make audit-migration-parity`가 finding 0인지
+검증합니다. 새 commit에서는 runtime·package·staging 증거를 다시 수집합니다.
 
 R30 closeout:
 

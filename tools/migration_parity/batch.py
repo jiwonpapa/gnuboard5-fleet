@@ -195,12 +195,24 @@ def validate_batch_manifest_shape(data: dict[str, Any]) -> None:
 
     if final_batch not in ids:
         raise ManifestError(f"batch $.policy.final_batch: unknown {final_batch}")
-    if active_count != 1:
+    by_id = {batch["id"]: batch for batch in batches}
+    final_state = by_id[final_batch]["state"]
+    if final_state == "batch_pass":
+        incomplete = [
+            batch["id"] for batch in batches if batch["state"] != "batch_pass"
+        ]
+        if active_count != 0 or incomplete:
+            raise ManifestError(
+                "batch $.batches: final batch_pass requires every batch "
+                f"closed and zero active batches; active={active_count}, "
+                f"incomplete={incomplete}"
+            )
+    elif active_count != 1:
         raise ManifestError(
-            f"batch $.batches: exactly one active batch required, got {active_count}"
+            "batch $.batches: exactly one active batch required before final "
+            f"closeout, got {active_count}"
         )
 
-    by_id = {batch["id"]: batch for batch in batches}
     for batch in batches:
         for dependency in batch["depends_on"]:
             if dependency not in by_id:

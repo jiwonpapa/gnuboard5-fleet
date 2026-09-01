@@ -1420,8 +1420,13 @@
       "id": "R36",
       "sequence": 31,
       "title": "전체 종결",
-      "state": "active",
+      "state": "batch_pass",
       "depends_on": ["R35"],
+      "completion": {
+        "implementation_commit": "7dce00afeb3ee7a54980fbcc193708686d53021a",
+        "evidence_path": "docs/audits/evidence/R36_BATCH_GATE_PASS.json",
+        "closed_at": "2026-09-01T02:20:02Z"
+      },
       "core": {
         "domains": [],
         "operation_ids": [],

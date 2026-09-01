@@ -8,8 +8,8 @@ registry를 검사할 뿐, desktop snapshot 전체가 서버·웹으로 이관�
 
 전체 전환 완료 판정은 별도 모듈인 `tools/migration_parity`,
 `governance/MIGRATION_PARITY.json`과
-`governance/MIGRATION_BATCHES.json`만 담당합니다. 2026-08-31 기준선
-`94c8a1c`의 정적 결과는 `PASS`, 실행 증거 결과는 `FAIL`입니다.
+`governance/MIGRATION_BATCHES.json`만 담당합니다. 2026-09-01 구현 기준선
+`7dce00a`의 정적·runtime·staging 결과는 모두 `PASS`입니다.
 
 | legacy 감사 축 | 기준선 | 유효 매핑 | 현재 판정 |
 |---|---:|---:|---|
@@ -21,11 +21,9 @@ registry를 검사할 뿐, desktop snapshot 전체가 서버·웹으로 이관�
 | Core operation typed 소비 | 189 | 189 | STATIC PASS |
 | 서버 전환 필수 capability | 13 | 13 | STATIC PASS |
 
-R00~R35의 31개 배치는 닫혔고 R36 전체 종결이 활성 상태입니다.
-정적 매핑 712개(legacy 510 + Core 189 + capability 13)는 유효하지만,
-runtime에서는 legacy/Core 699개에 항목별 실행 증거가 연결되지 않았습니다.
-R04 원격 증거의 SHA/기간 문제 2개를 포함해 runtime finding은 701개입니다.
-이 숫자는 기능 701개의 실패 횟수가 아니라 증거 감사의 미종결 수입니다.
+R00~R36의 32개 배치는 모두 닫혔습니다. 정적 매핑 712개(legacy 510 +
+Core 189 + capability 13)는 유효하고, runtime 감사 대상 legacy/Core
+699개에도 항목별 실행 증거가 연결됐습니다. runtime·staging finding은 0개입니다.
 
 ## 구조
 
@@ -141,4 +139,6 @@ finding, 전역 finding을 함께 기록합니다. R00 control gate는 712개
 
 `make check`는 하네스 자체 테스트와 정적 동등성 감사를 필수로 실행합니다.
 정적 `make check` PASS는 runtime/package/staging 완료를 대신하지 않습니다.
-R36의 전체 종결은 별도 실행 증거 gate까지 통과해야 합니다.
+R36 종결은 구현 기준선에서 별도 runtime, package, staging gate도 통과했고
+tracked 종결 증거에 원본 report hash를 기록했습니다. 새 commit에는 기존
+revision-bound 증거를 재사용하지 않습니다.
