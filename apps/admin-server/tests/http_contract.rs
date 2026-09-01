@@ -1447,6 +1447,30 @@ async fn authenticated_site_connector_config_roundtrip_and_rollback() {
         .unwrap();
     assert_eq!(profile_readback.status(), StatusCode::NOT_FOUND);
 
+    let remote_activity = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/activity?site_id=site-a&limit=100",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(remote_activity.status(), StatusCode::OK);
+    let remote_activity: Vec<g5_fleet_store::AuditEntry> = json(remote_activity).await;
+    assert!(remote_activity.iter().any(|entry| {
+        entry.action == "http.put"
+            && entry.outcome == "success"
+            && entry.details["path"] == "/sites/site-a/ssh/profile"
+    }));
+    assert!(remote_activity.iter().any(|entry| {
+        entry.action == "http.delete"
+            && entry.outcome == "success"
+            && entry.details["path"] == "/sites/site-a/ssh/profile"
+    }));
+
     let health = app
         .clone()
         .oneshot(json_request(
@@ -4048,6 +4072,21 @@ async fn site_lifecycle_dashboard_diagnostics_and_portable_backup_are_live() {
         .unwrap();
     assert_eq!(create.status(), StatusCode::CREATED);
 
+    let unknown = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/sites/site-missing",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(unknown.status(), StatusCode::NOT_FOUND);
+    let unknown: ErrorEnvelope = json(unknown).await;
+    assert_eq!(unknown.error.code, "site_not_found");
+
     let update = app
         .clone()
         .oneshot(json_request(
@@ -4142,6 +4181,30 @@ async fn site_lifecycle_dashboard_diagnostics_and_portable_backup_are_live() {
         .await
         .unwrap();
     assert_eq!(delete.status(), StatusCode::NO_CONTENT);
+
+    let activity = app
+        .clone()
+        .oneshot(json_request(
+            Method::GET,
+            "/api/v1/activity?limit=100",
+            Some(&cookie),
+            None,
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(activity.status(), StatusCode::OK);
+    let activity: Vec<g5_fleet_store::AuditEntry> = json(activity).await;
+    assert!(
+        activity.iter().any(|entry| {
+            entry.action == "http.delete"
+                && entry.outcome == "success"
+                && entry.site_id.as_deref() == Some("site-a")
+                && entry.details["path"] == "/sites/site-a"
+                && entry.details["status"] == 204
+        }),
+        "site delete audit entries: {activity:#?}"
+    );
 
     let import = app
         .clone()

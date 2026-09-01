@@ -114,8 +114,10 @@ def remote_cases() -> list[dict[str, Any]]:
                 "g5-admin/src-tauri/src/app_state/tests/sftp.rs::download_file_reuses_cached_sftp_session",
                 "g5-admin/src-tauri/src/app_state/tests/sftp.rs::list_dir_and_stat_reuse_the_same_cached_sftp_session",
                 "g5-admin/src-tauri/src/app_state/tests/sftp.rs::mkdir_reuses_cached_sftp_session",
+                "g5-admin/src-tauri/src/app_state/tests/sftp.rs::read_file_reuses_cached_sftp_session",
                 "g5-admin/src-tauri/src/app_state/tests/sftp.rs::transfer_queue_processes_upload_and_download_items",
                 "g5-admin/src-tauri/src/app_state/tests/sftp.rs::upload_file_reuses_cached_sftp_session",
+                "g5-admin/src-tauri/src/app_state/tests/sftp.rs::write_file_reuses_cached_sftp_session",
             ),
         },
         {

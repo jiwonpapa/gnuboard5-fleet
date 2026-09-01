@@ -250,14 +250,16 @@ async fn portable_backup_rejects_wrong_password_and_merges_owned_sites() {
         .create_site("site-b", "user-a", "Source B", "https://b.example.invalid")
         .await
         .expect("source site");
-    let envelope = encrypt_portable_backup(
-        &source
-            .list_owned_sites("user-a")
-            .await
-            .expect("source sites"),
-        "portable password",
-    )
-    .expect("encrypted portable backup");
+    let source_sites = source
+        .list_owned_sites("user-a")
+        .await
+        .expect("source sites");
+    assert!(matches!(
+        encrypt_portable_backup(&source_sites, "too short"),
+        Err(StoreError::PortableBackup(_))
+    ));
+    let envelope = encrypt_portable_backup(&source_sites, "portable password")
+        .expect("encrypted portable backup");
     assert_eq!(envelope.site_count, 2);
     assert!(matches!(
         decrypt_portable_backup(&envelope, "wrong password"),

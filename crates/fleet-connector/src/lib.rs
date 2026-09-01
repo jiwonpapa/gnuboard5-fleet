@@ -6901,6 +6901,22 @@ mod tests {
         assert!(result.is_err());
     }
 
+    #[tokio::test]
+    async fn health_fails_at_api_boundary_when_only_root_responds() {
+        let app = Router::new().route("/", get(|| async { "gnuboard root" }));
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+
+        let client = G5Client::for_test(&format!("http://{address}")).unwrap();
+        assert!(matches!(
+            client.health("req-health-missing-api").await,
+            Err(ConnectorError::Http(404))
+        ));
+    }
+
     #[derive(Clone)]
     struct MockState {
         cf_10: Arc<Mutex<String>>,
@@ -6929,6 +6945,8 @@ mod tests {
         let client = G5Client::for_test(&format!("http://{address}")).unwrap();
         let health = client.health("req-health").await.unwrap();
         assert_eq!(health.status, "ok");
+        assert_eq!(health.version, "test");
+        assert_eq!(health.timestamp, 1);
         let image = client
             .faq_master_image_content("req-faq-image", 7, "header")
             .await

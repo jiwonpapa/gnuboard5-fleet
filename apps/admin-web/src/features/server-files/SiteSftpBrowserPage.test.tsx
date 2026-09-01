@@ -6,6 +6,20 @@ import { SiteSftpBrowserPage } from "./SiteSftpBrowserPage";
 describe("SiteSftpBrowserPage", () => {
   afterEach(() => vi.unstubAllGlobals());
 
+  it("requires a saved SSH profile before exposing SFTP operations", () => {
+    render(
+      <SiteSftpBrowserPage
+        csrfToken="csrf"
+        profileReady={false}
+        siteId="site-a"
+        onError={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("SFTP 사용 준비 중")).toBeVisible();
+    expect(screen.getByText(/프로필과 서버 키 신뢰를 먼저 저장/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "파일 업로드" })).not.toBeInTheDocument();
+  });
+
   it("consumes typed file operations and persistent transfer snapshot", async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const path = new URL(input.toString()).pathname;
@@ -106,6 +120,85 @@ describe("SiteSftpBrowserPage", () => {
     expect(fetcher.mock.calls.some(([input, init]) => (
       new URL(input.toString()).pathname === "/api/v1/sites/site-a/sftp"
       && init?.method === "POST"
+    ))).toBe(true);
+  });
+
+  it("reads a remote text file and writes edited bytes through site-scoped transfers", async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(input.toString()).pathname;
+      if (path.endsWith("/sftp")) {
+        return new Response(JSON.stringify({
+          output: "-rw-r--r-- deploy www-data 12 Jul 27 12:00 config.txt",
+          resolved_path: "/",
+          parent_path: null,
+          entries: [{
+            name: "config.txt",
+            path: "/config.txt",
+            kind: "file",
+            size: 12,
+            permissions: "-rw-r--r--",
+            owner: "deploy",
+            group: "www-data",
+            modified: "Jul 27 12:00",
+          }],
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (path.endsWith("/transfers/download")) {
+        expect(JSON.parse(String(init?.body))).toEqual({ path: "/config.txt" });
+        return new Response("before=true", {
+          status: 200,
+          headers: { "content-type": "text/plain", "x-g5-fleet-job-id": "job-download" },
+        });
+      }
+      if (path.endsWith("/transfers/upload")) {
+        expect(init?.headers).toMatchObject({
+          "x-csrf-token": "csrf",
+          "x-g5-remote-path": "/config.txt",
+        });
+        expect(await (init?.body as File).text()).toBe("after=true");
+        return new Response(JSON.stringify({
+          job_id: "job-upload",
+          owner_user_id: "user-a",
+          site_id: "site-a",
+          kind: "sftp_upload",
+          state: "succeeded",
+          input: { remote_path: "/config.txt" },
+          result: { bytes: 10, progress: 100 },
+          created_at: "2026-07-27T00:00:01Z",
+          updated_at: "2026-07-27T00:00:02Z",
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (path.endsWith("/transfers")) {
+        return new Response(JSON.stringify({
+          site_id: "site-a",
+          jobs: [],
+          active_count: 0,
+          queued_count: 0,
+          paused_count: 0,
+          failed_count: 0,
+          concurrency_limit: 2,
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      return new Response("{}", { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetcher);
+
+    render(
+      <SiteSftpBrowserPage
+        csrfToken="csrf"
+        profileReady
+        siteId="site-a"
+        onError={vi.fn()}
+      />,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "config.txt" }));
+    const editor = await screen.findByLabelText("SFTP 텍스트 편집기");
+    expect(editor).toHaveValue("before=true");
+    fireEvent.change(editor, { target: { value: "after=true" } });
+    fireEvent.click(screen.getByRole("button", { name: "서버에 저장" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(fetcher.mock.calls.some(([input]) => (
+      new URL(input.toString()).pathname.endsWith("/transfers/upload")
     ))).toBe(true);
   });
 
