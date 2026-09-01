@@ -26,9 +26,9 @@ KINDS = {
 REQUIRED_KINDS = {
     "core_operations": {"provider_readback", "safe_external_boundary"},
     "react_pages": {"browser_workflow"},
-    "rust_workspace_members": {"regression"},
+    "rust_workspace_members": {"regression", "remote_roundtrip"},
     "frontend_tests": {"regression"},
-    "rust_tests": {"regression"},
+    "rust_tests": {"regression", "remote_roundtrip"},
     "tauri_commands": KINDS,
 }
 

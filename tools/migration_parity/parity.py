@@ -234,6 +234,43 @@ def _validate_implementation(
                         item_id=owner_id,
                     )
                 )
+    execution_tests = entry.get("execution_tests")
+    if execution_tests is not None:
+        if not isinstance(execution_tests, list) or not execution_tests:
+            findings.append(Finding(
+                "mapping.execution_tests_invalid",
+                "execution_tests는 하나 이상의 exact runner·file·name selector여야 합니다.",
+                item_id=owner_id,
+            ))
+        else:
+            seen_execution_tests: set[tuple[str, str, str]] = set()
+            for selector in execution_tests:
+                if not isinstance(selector, dict):
+                    findings.append(Finding(
+                        "mapping.execution_test_invalid",
+                        "execution_tests selector는 object여야 합니다.",
+                        item_id=owner_id,
+                    ))
+                    continue
+                identity = (
+                    selector.get("runner"),
+                    selector.get("file"),
+                    selector.get("name"),
+                )
+                if (
+                    identity[0] not in {"vitest", "libtest"}
+                    or not all(isinstance(value, str) and value for value in identity)
+                    or not isinstance(test_paths, list)
+                    or identity[1] not in test_paths
+                    or identity in seen_execution_tests
+                ):
+                    findings.append(Finding(
+                        "mapping.execution_test_invalid",
+                        "execution_tests는 test_paths 안의 중복 없는 exact 실행 case여야 합니다.",
+                        item_id=owner_id,
+                    ))
+                    continue
+                seen_execution_tests.add(identity)
     findings.extend(
         _validate_checks(
             root,

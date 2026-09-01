@@ -90,6 +90,19 @@ class ExecutionEvidenceTest(unittest.TestCase):
         self.write_source()
         self.assertIn("evidence.item_unverified", self.codes({("react_pages", "createBoard")}))
 
+    def test_remote_roundtrip_can_certify_replaced_rust_but_not_provider_or_browser(self) -> None:
+        self.source["cases"][0]["kind"] = "remote_roundtrip"
+        self.subject["category"] = "rust_tests"
+        self.write_source()
+        self.assertEqual(set(), self.codes({("rust_tests", "createBoard")}))
+        self.subject["category"] = "rust_workspace_members"
+        self.write_source()
+        self.assertEqual(set(), self.codes({("rust_workspace_members", "createBoard")}))
+        for category in ("core_operations", "react_pages"):
+            self.subject["category"] = category
+            self.write_source()
+            self.assertIn("evidence.item_unverified", self.codes({(category, "createBoard")}))
+
     def test_failed_skipped_empty_or_duplicate_cases_fail_closed(self) -> None:
         for change in ({"status": "FAIL"}, {"status": "SKIP"}, {"assertions": []}):
             with self.subTest(change=change):

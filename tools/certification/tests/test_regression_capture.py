@@ -77,6 +77,25 @@ class RegressionCaptureTests(unittest.TestCase):
         mapping["checks"][0] = {"path": "apps/admin-web/src/impl.ts", "contains": "preserves site isolation"}
         self.assertEqual([], bind_regressions(self.root, manifest, executed)[0])
 
+    def test_explicit_execution_selector_requires_exact_executed_case_and_test_path(self) -> None:
+        executed = parse_vitest(self.root, self.report)
+        selector = executed[0]
+        mapping = {
+            "legacy_id": "command",
+            "test_paths": [self.web],
+            "checks": [{"path": "apps/admin-web/src/impl.ts", "contains": "implementation"}],
+            "execution_tests": [selector],
+        }
+        manifest = {"mappings": {"tauri_commands": [mapping]}}
+        cases, missing = bind_regressions(self.root, manifest, executed)
+        self.assertEqual(1, len(cases))
+        self.assertEqual([], missing["tauri_commands"])
+        mapping["execution_tests"][0] = {**selector, "name": "not executed"}
+        self.assertEqual([], bind_regressions(self.root, manifest, executed)[0])
+        mapping["execution_tests"][0] = selector
+        mapping["test_paths"] = ["apps/admin-web/src/other.test.tsx"]
+        self.assertEqual([], bind_regressions(self.root, manifest, executed)[0])
+
     def test_rust_child_module_name_and_source_must_match(self) -> None:
         source = "crates/fleet-security/src/auth.rs"
         path = self.root / source

@@ -325,7 +325,8 @@ R04 closeout:
 
 - 구현 commit: `fac6a92fc2213d39257fad04fc9c70e75c22dcdd`
 - tracked 증거: `docs/audits/evidence/R04_BATCH_GATE_PASS.json`
-- runtime 증거: `docs/audits/evidence/R04_REMOTE_RUNTIME_CERTIFICATION.json`
+- 당시 runtime 증거: `docs/audits/evidence/R04_REMOTE_RUNTIME_CERTIFICATION.json`
+- 현재 revision 항목별 receipt: `.cache/evidence/r04-remote-execution.json`
 - scope: legacy 72, Core 0, capability 1
 - reuse: 1 reused / 55 adapted / 16 redesigned / 0 deferred
 - R04 finding: 0

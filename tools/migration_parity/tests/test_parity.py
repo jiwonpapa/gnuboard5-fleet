@@ -97,3 +97,32 @@ class ParityTest(unittest.TestCase):
                 git_revision="a" * 40,
             )
             self.assertIn("evidence.ids_missing", {finding.code for finding in findings})
+
+    def test_execution_selector_must_reference_exact_test_path_without_duplicates(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest, legacy, active = make_fixture(root)
+            mapping = manifest["mappings"]["tauri_commands"][0]
+            selector = {
+                "runner": "libtest",
+                "file": "apps/admin-server/tests/parity.rs",
+                "name": "migration_is_preserved",
+            }
+            mapping["execution_tests"] = [selector]
+            findings, *_ = audit_parity(
+                root, manifest, legacy, active,
+                profile="static", git_revision="a" * 40,
+            )
+            self.assertNotIn("mapping.execution_test_invalid", {row.code for row in findings})
+            mapping["execution_tests"] = [selector, selector]
+            findings, *_ = audit_parity(
+                root, manifest, legacy, active,
+                profile="static", git_revision="a" * 40,
+            )
+            self.assertIn("mapping.execution_test_invalid", {row.code for row in findings})
+            mapping["execution_tests"] = [{**selector, "file": "apps/admin-server/tests/other.rs"}]
+            findings, *_ = audit_parity(
+                root, manifest, legacy, active,
+                profile="static", git_revision="a" * 40,
+            )
+            self.assertIn("mapping.execution_test_invalid", {row.code for row in findings})

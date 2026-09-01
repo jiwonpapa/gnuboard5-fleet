@@ -314,6 +314,31 @@
         }
       ]
     },
+    "executionTest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runner",
+        "file",
+        "name"
+      ],
+      "properties": {
+        "runner": {
+          "enum": [
+            "vitest",
+            "libtest"
+          ]
+        },
+        "file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
     "implementation": {
       "type": "object",
       "properties": {
@@ -327,6 +352,14 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/check"
+          }
+        },
+        "execution_tests": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/executionTest"
           }
         },
         "evidence_ids": {

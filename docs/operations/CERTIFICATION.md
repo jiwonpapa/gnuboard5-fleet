@@ -48,6 +48,21 @@ Rust test는 모호하지 않은 실제 실행 test-name anchor가 필요합니�
 `.cache/evidence/r36-regression-execution.json`은 원본 runner 로그·case hash와
 관측 항목/미연결 항목을 기록합니다. React page와 실제 G5 readback을 인증하지 않습니다.
 
+### 실제 SSH/SFTP 실행
+
+```bash
+python3 tools/certification/remote_runtime_smoke.py \
+  --host <승인된-host> --user <승인된-user> --port 22 \
+  --private-key-file <승인된-private-key-path>
+make audit-migration-runtime
+```
+
+이 명령은 별도 승인된 관리형 VM에서 ignored Rust 원격 테스트를 실제 실행합니다.
+runner 원문과 항목별 host-key·terminal·SFTP·transfer-abort case를 불변 hash로
+묶어 `.cache/evidence/r04-remote-execution.json`을 만듭니다. 호스트·사용자는
+hash만 남기고 개인키 원문과 경로는 receipt에 기록하지 않습니다. 실행하지 않은
+SFTP read/write, terminal resize, retry 동작을 원격 PASS로 승격하지 않습니다.
+
 `G5_CERT_FLEET_PORT=64179`처럼 사용 가능한 loopback port를 명시하면
 재검증에서도 승인된 내장 브라우저 origin을 유지할 수 있습니다. 사용 중인 listener가
 있으면 다른 port로 몰래 변경하지 않고 시작을 거부합니다.
@@ -62,7 +77,7 @@ cookie 주입으로 로그인을 우회하지 않습니다.
 도메인 저장·재조회·원복 및 모바일 viewport를 확인합니다. 각 워크플로우는
 관측 case, 화면 증거와 현재 revision/부모 실행 ID에 결속되어야 합니다.
 기존 `write_browser_evidence.py`의 일반 PASS/스크린샷 파일만으로 항목별
-브라우저 검증을 대체하지 않습니다. 비밀 입력이 비워진 뒤 저장한 DOM·PNG와
+브라우저 검증을 대체하지 않습니다. 비밀 입력이 비워진 뒤 저장한 DOM·실제 PNG와
 정확한 React page subject, 양성·음성 assertion을 다음 명령으로 재검증합니다.
 
 ```bash

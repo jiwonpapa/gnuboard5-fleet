@@ -121,6 +121,26 @@ def bind_regressions(
                         selected = []
                         break
                     selected.extend(suite)
+            elif mapping.get("execution_tests") is not None:
+                selectors = mapping["execution_tests"]
+                if not isinstance(selectors, list) or not selectors:
+                    missing[category].append(mapping["legacy_id"])
+                    continue
+                for selector in selectors:
+                    if (
+                        not isinstance(selector, dict)
+                        or selector.get("runner") not in {"vitest", "libtest"}
+                        or selector.get("file") not in paths
+                        or not isinstance(selector.get("name"), str)
+                        or not selector["name"]
+                    ):
+                        selected = []
+                        break
+                    matches = [case for case in executed if case == selector]
+                    if len(matches) != 1:
+                        selected = []
+                        break
+                    selected.extend(matches)
             else:
                 checks = [check for check in mapping["checks"] if check["path"] in paths]
                 for check in checks:
