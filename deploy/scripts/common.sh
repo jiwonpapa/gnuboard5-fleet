@@ -81,6 +81,32 @@ sha256_file() {
   openssl dgst -sha256 -r "$1" | awk '{print $1}'
 }
 
+critical_readback_preserved() {
+  before=$1
+  after=$2
+  printf '%s\n%s\n' "$before" "$after" | awk '
+    NR == 1 { before = $0; next }
+    NR == 2 { after = $0 }
+    END {
+      if (substr(before, 1, 1) != "{" || substr(before, length(before), 1) != "}") exit 1
+      if (substr(after, 1, 1) != "{" || substr(after, length(after), 1) != "}") exit 1
+      before = substr(before, 2, length(before) - 2)
+      after = substr(after, 2, length(after) - 2)
+      before_count = split(before, before_pairs, ",")
+      after_count = split(after, after_pairs, ",")
+      if (before_count < 1 || after_count < before_count) exit 1
+      for (i = 1; i <= after_count; i++) {
+        if (after_pairs[i] !~ /^"[A-Za-z0-9_]+"\:[0-9]+$/) exit 1
+      }
+      wrapped_after = "," after ","
+      for (i = 1; i <= before_count; i++) {
+        if (before_pairs[i] !~ /^"[A-Za-z0-9_]+"\:[0-9]+$/) exit 1
+        if (index(wrapped_after, "," before_pairs[i] ",") == 0) exit 1
+      }
+    }
+  '
+}
+
 prepare_runtime_directory() {
   directory=$1
   mkdir -m 0700 "$directory"

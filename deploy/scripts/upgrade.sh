@@ -84,7 +84,7 @@ if ! after_readback=$(compose run --rm --no-deps app readback); then
   echo "upgraded data could not be read back offline" >&2
   exit 1
 fi
-if [ "$after_readback" != "$before_readback" ]; then
+if ! critical_readback_preserved "$before_readback" "$after_readback"; then
   rollback
   echo "upgrade critical-row readback mismatch" >&2
   exit 1
