@@ -1388,6 +1388,25 @@ mod tests {
             true
         );
 
+        let cancelled = transfers
+            .queue(
+                "user-a",
+                "site-a",
+                "sftp_upload",
+                &json!({"remote_path":"/uploads/cancelled.bin"}),
+            )
+            .await
+            .unwrap();
+        transfers.cancel("user-a", &cancelled.job_id).await.unwrap();
+        assert_eq!(
+            transfers
+                .get("user-a", &cancelled.job_id)
+                .await
+                .unwrap()
+                .state,
+            "cancelled"
+        );
+
         let first = transfers
             .queue(
                 "user-a",
