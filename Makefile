@@ -4,7 +4,7 @@ export PYTHONDONTWRITEBYTECODE := 1
 
 .NOTPARALLEL: bootstrap prepare check
 .PHONY: test-connector-scripts check-connector-schema
-.PHONY: certification-regressions
+.PHONY: certification-regressions certification-browser-evidence
 .PHONY: doctor bootstrap prepare check check-batch test-versioning check-versioning test-audit test-migration-parity test-upstream test-runtime test-package test-certification runtime-prepare runtime-verify audit-runtime-prepare audit-runtime-verify active-prepare active-check active-server-check active-web-check legacy-consumer-prepare legacy-consumer-verify audit-scaffold audit-migration audit-migration-parity audit-migration-batch audit-migration-runtime audit-migration-staging audit-server-scaffold audit-server-static audit-local audit-package audit-staging upstream-sync upstream-audit upstream-verify secret-scan package-build package-smoke certification-up certification-down certification-clean certification-local-smoke staging-rehearsal staging-smoke
 
 doctor:
@@ -47,6 +47,10 @@ test-certification:
 
 certification-regressions:
 	cd "$(ROOT)" && $(PYTHON) -m tools.certification.regression_runtime
+
+certification-browser-evidence:
+	test -n "$(BROWSER_CASES)"
+	cd "$(ROOT)" && $(PYTHON) -m tools.certification.browser_runtime --cases "$(BROWSER_CASES)"
 
 test-connector-scripts:
 	cd "$(ROOT)" && $(PYTHON) -m unittest discover -s connectors/gnuboard5-php/scripts/tests -p 'test_*.py'

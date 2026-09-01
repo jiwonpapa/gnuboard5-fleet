@@ -62,8 +62,17 @@ cookie 주입으로 로그인을 우회하지 않습니다.
 도메인 저장·재조회·원복 및 모바일 viewport를 확인합니다. 각 워크플로우는
 관측 case, 화면 증거와 현재 revision/부모 실행 ID에 결속되어야 합니다.
 기존 `write_browser_evidence.py`의 일반 PASS/스크린샷 파일만으로 항목별
-브라우저 검증을 대체하지 않습니다. 내장 브라우저의 항목별 증거 연결은
-R36 C단계에서 마감합니다.
+브라우저 검증을 대체하지 않습니다. 비밀 입력이 비워진 뒤 저장한 DOM·PNG와
+정확한 React page subject, 양성·음성 assertion을 다음 명령으로 재검증합니다.
+
+```bash
+make certification-browser-evidence \
+  BROWSER_CASES=output/certification/r36/browser-<revision>/cases.json
+make audit-migration-runtime
+```
+
+검증기는 현재 HEAD·OpenAPI·upstream·local runtime 부모와 artifact hash를
+결속하고, 알 수 없는 page·누락 assertion·남은 인증 비밀을 거부합니다.
 
 종료:
 
