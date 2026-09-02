@@ -10,6 +10,7 @@
 
 ### Added
 
+- 새 G5 Fleet 심볼·워드마크와 JW SOFT 제작자 로고를 담은 밝은 README 인트로 이미지.
 - legacy/Core 699개 항목별 실행 증거, 내장 브라우저 43개 페이지,
   원컨테이너 SQLite 영구저장·업그레이드·복원과 전용 HTTPS staging을 묶은
   R36 전체 종결 인증.

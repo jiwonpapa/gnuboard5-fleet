@@ -1,3 +1,5 @@
+![G5 Fleet — 그누보드5 멀티사이트 통합 관리자. Rust · React · SQLite, JW SOFT.](docs/assets/branding/g5-fleet-intro.png)
+
 # G5 Fleet
 
 그누보드5 여러 사이트를 한 서버에서 관리하기 위한 self-hosted 통합 관리자입니다.
@@ -6,7 +8,7 @@
 
 활성 제품은 Rust Axum 서버와 React PWA로만 배포합니다. 기존 Tauri 코드는 UI와 Rust 소비 구현을 서버 구조로 이관하기 위한 참조 snapshot이며 데스크톱 제품, 네이티브 wrapper, 코드 서명·공증 또는 updater를 제공하지 않습니다. 결정 근거는 [`ADR-0006`](docs/adr/0006-server-only-product-pivot.md), 구현 기준은 [`서버·웹 기술 스택`](docs/architecture/SERVER_WEB_TECH_STACK.md)에 있습니다.
 
-실제 재이관은 [`도메인별 재사용 이관 배치`](docs/roadmap/DOMAIN_REUSE_MIGRATION_PLAN.md)의 R00 → R36 순서로 진행합니다. 과거 B00 → B10은 서버 기반 작업 이력일 뿐 전체 전환 완료 근거가 아닙니다. R00~R35는 배치 PASS로 닫혔고, 전체 종결 배치 R36의 필수 capability 2개가 남아 있어 전체 판정은 `MIGRATION_STATIC FAIL`입니다.
+서버 전환은 [`도메인별 재사용 이관 배치`](docs/roadmap/DOMAIN_REUSE_MIGRATION_PLAN.md)의 R00 → R36 순서로 진행했으며, 2026-09-01 기준 전 배치를 종결했습니다. 과거 B00 → B10은 서버 기반 작업 이력이며, 전체 전환 판정과 정적·로컬·패키지·스테이징별 증거는 [`현재 전환 상태`](docs/MIGRATION_STATUS.md)와 [`R36 종결 보고서`](docs/roadmap/R36_CLOSEOUT.md)를 따릅니다. 인터넷 공개 운영과 실제 외부 알림 발송 인증은 별도 범위입니다.
 
 ## 제품 구성
 
@@ -37,7 +39,7 @@ make check-batch BATCH=R36
 
 `make check`는 네트워크나 의존성 설치를 수행하지 않습니다. prepared manifest, G5 commit/tree/ref, connector subtree, Composer vendor와 Python/PyYAML fingerprint가 하나라도 누락되거나 달라지면 실패합니다. 그 뒤 합성 runtime의 실제 `adm/`·`install/`·`vendor/`를 입력으로 PHP 계약 검사를 실행하며 OpenAPI 해시는 tracked connector 원본과 동일해야 합니다. PHPUnit과 문서 감사가 만드는 `.phpunit.result.cache`와 `output/`은 소스 overlay fingerprint에서 제외하되 symlink와 위험 권한은 계속 거부합니다.
 
-따라서 `make check`는 외부 서비스나 GitHub Actions 없이 이관 이력, 필수 legacy 소스 폐쇄, OpenAPI 312개, 활성 분류 189개, 일반 게시판 26개, 관리자 Shop 26개를 검증합니다. 활성 workspace에서는 Axum fmt·Clippy·test와 React typecheck·lint·test·build를 오프라인 실행합니다. 참조 Tauri snapshot은 빌드하지 않지만, 별도 동등성 하네스가 Tauri command 253개, React page 43개, Rust workspace member 21개, frontend test 100개, Rust test 93개와 Core operation 189개의 1:1 매핑·target·회귀 test·구현 symbol을 검사합니다. `governance/MIGRATION_BATCHES.json`은 이 712개 항목과 필수 capability 13개의 단일 배치 소유권을 강제합니다. 이 검사가 실패하면 좁은 `SERVER_STATIC_PASS`가 있어도 최종 `make check`는 실패합니다. 실제 G5·Chromium은 별도 `LOCAL_RUNTIME_PASS`, OCI 설치·업그레이드·복구는 별도 `PACKAGE_PASS`로 검증합니다. 소스 또는 lock이 바뀌면 먼저 commit한 뒤 `make prepare`로 prepared runtime을 갱신해야 합니다.
+따라서 `make check`는 외부 서비스나 GitHub Actions 없이 이관 이력, 필수 legacy 소스 폐쇄, OpenAPI 312개, 활성 분류 189개, 일반 게시판 26개, 관리자 Shop 26개를 검증합니다. 활성 workspace에서는 Axum fmt·Clippy·test와 React typecheck·lint·test·build를 오프라인 실행합니다. 참조 Tauri snapshot은 빌드하지 않지만, 별도 동등성 하네스가 Tauri command 253개, React page 43개, Rust workspace member 21개, frontend test 100개, Rust test 93개와 Core operation 189개의 1:1 매핑·target·회귀 test·구현 symbol을 검사합니다. `governance/MIGRATION_BATCHES.json`은 이 699개 항목과 필수 capability 13개, 총 712개의 단일 배치 소유권을 강제합니다. 이 검사가 실패하면 좁은 `SERVER_STATIC_PASS`가 있어도 최종 `make check`는 실패합니다. 실제 G5·Chromium은 별도 `LOCAL_RUNTIME_PASS`, OCI 설치·업그레이드·복구는 별도 `PACKAGE_PASS`로 검증합니다. 소스 또는 lock이 바뀌면 먼저 commit한 뒤 `make prepare`로 prepared runtime을 갱신해야 합니다.
 
 개발 서버는 최초 한 번 `G5_FLEET_INSTALLATION_ID=local-fleet-01 cargo run -p g5-fleet-admin-server -- init-store`로 저장소를 명시적으로 초기화합니다. 이후 32-byte master key를 Base64로 `G5_FLEET_MASTER_KEY_BASE64`에 주입하고 `cargo run -p g5-fleet-admin-server -- serve`로 실행합니다. 웹주소에 처음 접속하면 관리자 → OTP 검증 → 일회성 복구 코드 확인을 모두 마쳐야 로그인 화면이 열립니다. OTP 비활성화와 OTP 없이 추가 관리자를 만드는 API는 정책상 거부됩니다. 기본 데이터 경로는 `data`, 웹 경로는 `apps/admin-web/dist`입니다. master key는 DB·Git에 넣지 않으며 DB backup과 별도로 보관합니다.
 
